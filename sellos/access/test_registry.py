@@ -2,6 +2,7 @@
 import unittest
 
 import frappe
+from frappe.tests.utils import whitelist_for_tests
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 
@@ -20,7 +21,7 @@ def _declared_for_company_admin():
 	return "ok"
 
 
-@frappe.whitelist()
+@whitelist_for_tests()
 def _whitelisted_without_declaration():
 	return "should never run over HTTP"
 
