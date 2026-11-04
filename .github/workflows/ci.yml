@@ -11,6 +11,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    name: Frontend
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          check-latest: true
+      - name: Install, test and build (P0.07)
+        working-directory: frontend
+        run: |
+          yarn install --frozen-lockfile
+          yarn test
+          yarn build
+
   tests:
     runs-on: ubuntu-latest
     strategy:
@@ -105,7 +121,6 @@ jobs:
         working-directory: /home/runner/frappe-bench/apps/sellos/frontend
         run: |
           yarn install --frozen-lockfile
-          yarn test
           yarn build
 
       - name: Run Tests
@@ -115,6 +130,24 @@ jobs:
           bench --site test_site run-tests --app sellos
         env:
           TYPE: server
+
+      - name: Create test users (P0.07)
+        working-directory: /home/runner/frappe-bench
+        run: bench --site test_site execute sellos.testing.users.ensure_test_users
+
+      - name: HTTP smoke check (P0.07)
+        # Same steps as scripts/test_all.sh: serve on port 8004, wait, log in as every test user.
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench --site test_site serve --port 8004 > /tmp/smoke_server.log 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -s -o /dev/null http://localhost:8004/api/method/ping && break
+            sleep 1
+          done
+          curl -sf -o /dev/null http://localhost:8004/api/method/ping || { tail -n 40 /tmp/smoke_server.log; exit 1; }
+          export SELLOS_SMOKE_BASE=http://localhost:8004
+          export SELLOS_SMOKE_USERS="$(bench --site test_site execute sellos.testing.users.users_for_smoke | tail -n 1)"
+          python3 "$GITHUB_WORKSPACE/scripts/smoke_http.py"
 
       - name: Report run time (P0.07)
         if: always()
