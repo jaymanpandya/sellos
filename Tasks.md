@@ -228,7 +228,7 @@ Goal: a reproducible Frappe 16 platform on DigitalOcean with continuous integrat
 
 ## P0.02 Create the repositories
 
-* [ ] **P0.02** · Points 3 · Owner Claude Code · Depends on P0.01 · Status not started
+* [x] **P0.02** · Points 3 · Owner Claude Code · Depends on P0.01 · Status done
 
 **Story.** As a developer, I want a repository for each app and a deployment repository, mirroring BuildOS, so that work is organised the same way.
 
@@ -237,6 +237,8 @@ Goal: a reproducible Frappe 16 platform on DigitalOcean with continuous integrat
 **Acceptance criteria.** (1) All repositories exist with the BuildOS layout. (2) Each installs on the staging bench. (3) Branch protection requires a reviewed pull request.
 
 **Test criteria.** Continuous integration is green on the empty skeletons, and a direct push to the main branch is rejected.
+
+**Change to this story (Jayman).** BuildOS is one Frappe app with subpackages, so no separate repositories are created. Instead the `sellos` app has empty subpackages `access`, `telephony`, `intel`, `inventory`, `reports`, `scraper`, `whatsapp` and `billing`, each with an `__init__.py` and a one line docstring. `frontend/` is unchanged. Criteria (2) staging install and (3) branch protection are not covered by this change and stay with P0.04 and P0.07.
 
 ## P0.03 Write a CLAUDE.md in every repository
 
