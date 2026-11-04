@@ -15,6 +15,7 @@ from sellos.tests.phones import in_mobile
 DOCTYPES = ("Client", "Lead", "Lead Activity", "Lead Task", "Site Visit")
 PHONE = in_mobile(11)
 PHONE_MIDDLE = PHONE[3:8]
+MASKED = "*" * 9 + PHONE[-3:]
 
 
 def as_user(key):
@@ -45,7 +46,7 @@ class CrmCase(IntegrationTestCase):
 
 class TestPureRules(IntegrationTestCase):
 	def test_masking_keeps_the_last_three_digits(self):
-		self.assertEqual(mask_phone(PHONE), "*" * 9 + PHONE[-3:])
+		self.assertEqual(mask_phone(PHONE), MASKED)
 		self.assertEqual(mask_phone(""), "")
 		self.assertEqual(mask_phone(None), "")
 
@@ -85,7 +86,7 @@ class TestDoctypeSettings(IntegrationTestCase):
 class TestEndToEnd(CrmCase):
 	def test_an_agent_creates_a_lead_and_logs_an_activity(self):
 		client, lead = self.make_lead()
-		self.assertEqual(client["phone"], "*********345")
+		self.assertEqual(client["phone"], MASKED)
 		activity = api.add_activity(lead, "Call", "Spoke about a 2BHK")
 		self.assertEqual(activity["lead"], lead)
 		view = api.get_lead(lead)
@@ -141,12 +142,12 @@ class TestWhoSeesWhat(CrmCase):
 		client, lead = self.make_lead("agent")
 		for key in ("agent",):
 			as_user(key)
-			self.assertEqual(api.get_lead(lead)["client"]["phone"], "*********345")
+			self.assertEqual(api.get_lead(lead)["client"]["phone"], MASKED)
 		as_user("agent")
 		doc = frappe.get_doc("Client", client["name"])
 		doc.apply_fieldlevel_read_permissions()
 		self.assertFalse(doc.get("phone"))
-		self.assertEqual(doc.phone_masked, "*********345")
+		self.assertEqual(doc.phone_masked, MASKED)
 
 	def test_an_agent_reading_through_the_rest_style_calls_gets_no_phone(self):
 		client, _ = self.make_lead("agent")
@@ -155,7 +156,7 @@ class TestWhoSeesWhat(CrmCase):
 			"Client", fields=["name", "phone", "phone_masked"], filters={"name": client["name"]}
 		)
 		self.assertEqual(row[0].get("phone"), None)
-		self.assertEqual(row[0].phone_masked, "*********345")
+		self.assertEqual(row[0].phone_masked, MASKED)
 
 	def test_a_shared_lead_is_visible_with_its_timeline(self):
 		_, lead = self.make_lead("agent")
