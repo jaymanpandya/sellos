@@ -242,7 +242,7 @@ Goal: a reproducible Frappe 16 platform on DigitalOcean with continuous integrat
 
 ## P0.03 Write a CLAUDE.md in every repository
 
-* [ ] **P0.03** · Points 2 · Owner Claude Code · Depends on P0.02 · Status not started
+* [x] **P0.03** · Points 2 · Owner Claude Code · Depends on P0.02 · Status done
 
 **Story.** As Claude Code, I want a conventions file in every repository, so that each session starts with the rules.
 
@@ -251,6 +251,8 @@ Goal: a reproducible Frappe 16 platform on DigitalOcean with continuous integrat
 **Acceptance criteria.** (1) Every repository has the file. (2) It lists build, test and lint commands. (3) It states when Claude Code must stop and ask.
 
 **Test criteria.** A fresh Claude Code session reads the file and completes a small change, such as adding a doctype, in line with the conventions.
+
+**Change to this story (Jayman).** SellOS is a single app repository, so "every repository" now means two files: the `CLAUDE.md` in the repository root and `frontend/CLAUDE.md`.
 
 ## P0.04 Provision DigitalOcean
 

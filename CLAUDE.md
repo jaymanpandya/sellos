@@ -35,3 +35,33 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 * An acceptance criterion is ambiguous.
 * A change touches permissions, the consent check, billing or personal data.
 * A dependency is blocked, or the plan and this file disagree.
+
+## Commands
+
+Run these from the app folder (`apps/sellos` in the bench). Never start, stop or restart the bench on port 8000. To run SellOS locally use only `bench --site sellos.localhost serve --port 8003`.
+
+* Build the web app: `cd frontend && yarn install && yarn build`
+* Build all assets through the bench: `bench build --app sellos`
+* Server tests: `bench --site sellos.localhost run-tests --app sellos` (the site needs `allow_tests` set)
+* Lint and format: `pre-commit run --all-files` (ruff, prettier, eslint and file checks). Run it before every pull request.
+* Continuous integration runs the same checks on every pull request.
+
+## Frappe 16 conventions
+
+* Python 3.14, tabs for indentation, double quotes, line length 110 (see `pyproject.toml` and `.editorconfig`).
+* Code is grouped in subpackages of `sellos/`: `access`, `telephony`, `intel`, `inventory`, `reports`, `scraper`, `whatsapp` and `billing`. Tests are named `test_*.py` and sit beside the code.
+* Each DocType has its own folder under `sellos/sellos/doctype/<name>/` with its JSON, Python file and test.
+* Comments cite story IDs such as P1.04, not other ticket schemes.
+* The BuildOS conventions are in `docs/buildos-conventions.md`.
+
+## Role model
+
+Platform Admin, Company Admin, Agent, Client and Channel Partner. In code the role names are `SellOS Platform Admin`, `SellOS Company Admin`, `SellOS Agent`, `SellOS Client` and `SellOS Channel Partner`. The web app maps them to areas in `frontend/src/personas.js`. Any change to roles or permissions needs Jayman's approval first.
+
+## Secrets
+
+Keys and passwords live in `site_config.json` or environment variables, never in the repository. A secret scan runs in pre-commit and in continuous integration. If a story needs a key you do not have, stop and ask Jayman.
+
+## Frontend
+
+See `frontend/CLAUDE.md`. The build plan is in `Tasks.md`, and the earlier brief is in `docs/legacy/`.
