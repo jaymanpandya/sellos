@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-# Runs the whole gate before a commit is created.
-exec "$(git rev-parse --show-toplevel)/scripts/test_all.sh" "${SELLOS_GATE_MODE:-full}"

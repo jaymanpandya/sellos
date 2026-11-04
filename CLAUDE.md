@@ -4,7 +4,7 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 
 ## Where the work is defined
 
-* Tasks.md is the backlog. Work one story at a time, in dependency order, and follow its "Rules for Claude Code".
+* TASKS.md is the backlog. Work one story at a time, in dependency order, and follow its "Rules for Claude Code".
 * KICKOFF.md says how the first week starts.
 * docs/legacy/SellOS_Build_Brief_v1.md is the earlier build brief. It is reference material only. Use it for domain field lists such as Project, Unit, Lead, Booking and Payment Schedule when the matching story needs them. Do not follow its phase order, its tenant field approach, or its instruction to create DocTypes in the Desk.
 
@@ -23,11 +23,10 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 
 ## Working rules
 
-* Make one commit per story on the 1.0 branch, with the story ID at the start of the message. Push to 1.0 directly after `pre-commit run --all-files` passes. Do not open pull requests, and never force push.
+* The build loop makes one commit per task on the 1.0 branch, with the task ID at the start of the message, and pushes to 1.0 after the gate passes. The agent leaves its work uncommitted. Do not open pull requests, and never force push.
 * Write the tests named in the story's Test criteria with the code. Continuous integration must pass.
-* Tick the story's checkbox and update its status in the commit that completes it.
-* Do not start a story whose dependencies are not ticked, and do not work on parked stories.
-* Do the first story, P0.01, before anything else, and wait for Jayman's written approval of the BuildOS conventions summary.
+* The loop sets a task's status in TASKS.md (In Progress, Complete, Blocked). The agent never changes one.
+* Do not start a task whose dependencies are not Complete, and do not work on Parked tasks.
 
 ## Stop and ask Jayman when
 
@@ -73,26 +72,28 @@ Keys and passwords live in `site_config.json` or environment variables, never in
 
 ## Frontend
 
-See `frontend/CLAUDE.md`. The build plan is in `Tasks.md`, and the earlier brief is in `docs/legacy/`.
+See `frontend/CLAUDE.md`. The build plan is in `TASKS.md`, and the earlier brief is in `docs/legacy/`.
 
 ## Testing (the gate)
 
-* Run nothing as "done" that the gate has not passed. The git hooks run `scripts/test_all.sh`
-  before every commit. Never use `--no-verify`. Never edit the hooks or the scripts to get past a
-  failure. Fix the failure.
-* Write backend tests the way the Frappe documentation says
-  (https://docs.frappe.io/framework-git/testing/overview): `IntegrationTestCase` from
-  `frappe.tests` for anything that touches the database, `UnitTestCase` for anything that does
-  not, data created in the test class and rolled back by the framework. Read the documentation
-  or the Frappe source before inventing a test helper.
-* Tests live beside the code: `test_*.py` in the same package, `*.test.js` beside the frontend
-  file. A commit that changes code needs a test change in the same commit.
-* Anything a story creates on a site (users, roles, records, settings) must come from code that
-  can be run again safely, and a backend test must read it back. For users, add them to
-  `TEST_USERS` in `sellos/testing/users.py`. The smoke check logs in as each of them over HTTP.
-* Never state that something exists or works unless a test read it back or the gate output shows
-  it. When you report on a story, quote the gate summary line.
-* When a story creates a role, add a test user for it in the same commit.
-* The gate uses only the site `sellos_test.localhost` and port 8004. It never touches the main
-  bench. `SELLOS_NO_TEST_REASON` is for renames and comments only. List every waiver you use in
-  PROGRESS.md.
+* The build loop (`scripts/build-loop.sh`) picks a task from `TASKS.md`, calls the agent, runs the
+  gate `scripts/run-tests.sh` and commits and pushes only if it passes. The agent never runs
+  `git commit`, `git push`, `git reset`, `git stash`, `git rebase` or `git merge`, and never changes a
+  task's status. There are no git hooks.
+* Run only the single backend module and the single Cypress spec you changed, in the foreground:
+  `bench --site sellos_test.localhost run-tests --app sellos --module <dotted.path>` and
+  `bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>`.
+  Never run the whole suite, and never start, stop or restart the bench.
+* Read `docs/TESTING.md` and `docs/DEV_STRATEGY.md`. Write backend tests the way the Frappe
+  documentation says (`IntegrationTestCase` for the database, `UnitTestCase` otherwise). Tests live
+  beside the code. A task also needs a Cypress spec when its block says `Browser spec: required`.
+* Never edit a gate file (listed in `docs/TESTING.md`) unless the task block says
+  `Gate files: allowed`. Never remove an assertion or delete a test file. Fix a failing test in the
+  code, not in the test.
+* Fake phone numbers come from `sellos.tests.phones`, never a literal.
+* Anything a task creates on a site (users, roles, records, settings) must come from code that can be
+  run again safely, and a backend test must read it back. When a task creates a role, add a test user
+  for it to `TEST_USERS` in `sellos/testing/users.py`.
+* Never state that something exists or works unless a test read it back or the gate output shows it.
+  When you report on a task, quote the gate summary line.
+* The gate uses only `sellos_test.localhost`. It never touches the main bench or BuildOS.

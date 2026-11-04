@@ -1,71 +1,83 @@
 # Testing SellOS
 
-Nothing is committed unless the gate passes. The gate is `scripts/test_all.sh`. The git hooks run
-it for you before every commit, and the pre push hook refuses to push a commit that never passed.
+SellOS is tested the way BuildOS is: a build loop (`scripts/build-loop.sh`) gives one task at a time
+to the agent, then runs the real gate (`scripts/run-tests.sh`) and commits only if it passes. Read
+`docs/DEV_STRATEGY.md` for the loop and for the holes in the BuildOS strategy that this gate closes.
+The agent never commits. Git hooks are not used.
 
-## What the gate runs
+## What the gate runs, in order
 
-1. Tests accompany code changes. Staged code in `sellos/` or `frontend/src/` needs a staged test
-   (`test_*.py` or `*.test.js`) in the same commit.
-2. Lint. All the pre-commit hooks (ruff, prettier, eslint and the rest).
-3. Frontend install with a frozen lockfile, then the frontend unit tests (Vitest).
-4. Frontend build.
-5. Site migrate on the dedicated test site, then the test users are created and read back.
-6. Backend tests (`bench run-tests --app sellos`), including the site state tests.
-7. HTTP smoke check. A real server starts on port 8004. For every user in `TEST_USERS` it checks
-   that a wrong password is refused, that login works, that `/sellos` opens, that the page holds
-   the app root and the user's boot data, and that every built asset loads. A guest must be sent
-   to the login page.
+1. Preflight: no BuildOS gate or loop is running, the bench serves `sellos_test.localhost`, the clean
+   baseline and Semgrep exist.
+2. Lint (`pre-commit run --all-files`) and Semgrep with the Frappe rules.
+3. The task guards (only when the loop sets the task): gate files untouched, no assertion removed, and
+   a test that names the task.
+4. Restore the clean baseline over `sellos_test.localhost`.
+5. Build the web app (`npm ci`, `npm run build`), migrate.
+6. The test files the task changed, first. A failure stops the gate.
+7. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
+   that needed a rerun is logged FLAKY, and one that is FLAKY three times fails the gate.
 
-A commit that changes only Markdown runs the lint step alone.
+The gate uses only `sellos_test` and `sellos_test.localhost`. Create the site and the baseline once
+with `scripts/make-baseline.sh --create`.
 
-## One time setup
+## Fake phone numbers
 
-```
-scripts/install_hooks.sh
-scripts/setup_test_site.sh
-```
+Any phone number in a backend test or a Cypress spec comes from `sellos.tests.phones` (`in_mobile`,
+`au_mobile`, `ae_mobile`, `near_in_mobile`). Never write one by hand or build one with string
+formatting. A Cypress spec gets its number from the backend fixture that seeds its data.
+`sellos/tests/test_no_raw_phone_numbers.py` scans every test and spec and fails on a literal number.
+Its allowed list is empty and stays empty.
 
-The second command creates `sellos_test.localhost`. It asks for the MariaDB root password. The
-gate refuses to use `sellos.localhost`, any BuildOS, Pamaa or AWH site, and ports 8000, 8003, 9000,
-11000 and 13000. It never starts or stops the main bench.
+## Backend tests
 
-## How backend tests are written
+Follow the Frappe documentation: https://docs.frappe.io/framework-git/testing/overview
 
-Follow the Frappe testing documentation: https://docs.frappe.io/framework-git/testing/overview
+* `IntegrationTestCase` from `frappe.tests` for anything that touches the database, `UnitTestCase`
+  for anything that does not. Create data inside the test class and let the framework roll it back.
+* Tests live beside the code as `test_*.py`. Put the task ID in the class docstring.
+* Anything a task creates on a site (users, roles, records, settings) comes from code that can be
+  run again safely, and a test reads it back. Add test users for a new role to `TEST_USERS` in
+  `sellos/testing/users.py`.
 
-* Tests that touch the database extend `IntegrationTestCase` from `frappe.tests`. It rolls back
-  after the class, so tests leave nothing behind. If you override `setUpClass`, call `super()`.
-* Tests that never touch the database extend `UnitTestCase`.
-* Create data inside the test class with `frappe.get_doc(...).insert()`, guarded by
-  `frappe.db.exists`, the way Frappe's own tests do. Do not commit inside a test.
-* The one exception is `ensure_test_users` in `sellos/testing/users.py`. The HTTP smoke check
-  runs against a separate server process, so its users must be committed. The gate runs that
-  fixture with `bench execute`.
+## Cypress specs
 
-## Rules that stop silent failures
+Specs are in `cypress/integration/<area>/<screen_or_flow>.cy.js`, with the task ID in `context()`.
 
-* A story that creates users, roles, records or settings must create them in code that can be run
-  again safely (a function in `sellos/testing/` or a patch), and a test must read them back.
-* Every user in `sellos/testing/users.py` is logged in through the real login endpoint by the
-  smoke check. A user that does not exist, or whose login fails, fails the gate.
-* When a story creates a role, add a test user for it to `TEST_USERS` in the same commit.
-  `test_every_sellos_role_has_a_test_user` fails otherwise.
-* Never commit with `--no-verify`. If the gate cannot run, fix that first.
+* Select by `data-testid="sellos-<area>-<thing>"` through `cy.getByTestId("<area>-<thing>")`. Never by
+  style, position or visible text.
+* `cy.signInFresh(role)` signs in as `platform_admin`, `company_admin`, `agent`, `channel_partner`,
+  `client` or `basic`. `cy.signOut()` ends the session.
+* `cy.bench("sellos.tests.ui_fixtures.<name>", {kwargs})` runs a server side helper. Helpers are
+  never exposed over HTTP.
+* Make the records a spec needs inside the spec, with names unique to it.
+* Three things fail a test even when its own assertions pass: an `/api/` answer of 400 or more, a
+  console error, and an uncaught error. Declare an expected one with `cy.expectApiStatus(urlPart,
+  status)` or `cy.expectConsoleError(text)`. Only the two ResizeObserver wordings are ignored.
+* A leak spec must first show the user can read the record on at least one path, then try every path
+  in `cy.genericReads` for the current value and the replaced one.
 
-## Waivers
+## Gate files
 
-* `SELLOS_NO_TEST_REASON="reason"` lets a commit without tests through (renames, moves, comments).
-  The reason is written to `.git/sellos_gate_waivers`.
-* `SELLOS_SKIP_GATE="reason"` lets a push through that has ungated commits. Use it for emergencies
-  only. It is logged in the same file.
+These decide whether a task passes, so a task may not change them unless its block says
+`Gate files: allowed`, which only a human writes: `scripts/run-tests.sh`, `build-loop.sh`,
+`watchdog.sh`, `select-next-task.sh`, `set-task-status.sh`, `make-baseline.sh`, `scripts/lib/*`,
+`scripts/check_*.py`, `cypress.config.js`, `cypress/support/e2e.js`, `.pre-commit-config.yaml`,
+`.github/workflows/*`, `docs/DEV_STRATEGY.md` and this file.
+
+## Human overrides
+
+* `SELLOS_ALLOW_NO_BASELINE="reason"` lets one gate run go on without the baseline.
+* `SELLOS_ALLOW_ASSERTION_DROP="reason"` lets one run drop assertions. The loop never sets either.
 
 ## Running parts by hand
 
+From `~/iespl-bench`, with `bench start` running:
+
 ```
-scripts/test_all.sh fast        lint, test presence check and frontend unit tests
-scripts/test_all.sh             everything
-cd frontend && yarn test        frontend unit tests only
+bench --site sellos_test.localhost run-tests --app sellos --module sellos.crm.test_crm
+bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/smoke/app_shell.cy.js
+apps/sellos/scripts/run-tests.sh        # the whole gate
 ```
 
-Step logs are in `/tmp/sellos_gate/`.
+Logs are in `/tmp/sellos-test-logs/` and `latest.log` is the last run.
