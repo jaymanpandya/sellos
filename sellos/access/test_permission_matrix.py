@@ -47,7 +47,9 @@ def matrix_problems(matrix, registry, undeclared):
 		if path not in matrix:
 			problems.append(f"{path} is declared but has no matrix entry")
 		elif matrix[path] != registry[path]:
-			problems.append(f"{path} matrix roles {sorted(matrix[path])} differ from {sorted(registry[path])}")
+			problems.append(
+				f"{path} matrix roles {sorted(matrix[path])} differ from {sorted(registry[path])}"
+			)
 	problems += [f"{path} is in the matrix but not declared" for path in sorted(set(matrix) - set(registry))]
 	problems += [f"{path} is whitelisted with no declaration" for path in undeclared]
 	return problems
@@ -129,9 +131,7 @@ class TestMatrixCalls(unittest.TestCase):
 		client = Client(application, Response)
 		headers = {"Host": frappe.local.site}
 		if who != "guest":
-			client.post(
-				"/api/method/login", data={"usr": self.users[who], "pwd": PASSWORD}, headers=headers
-			)
+			client.post("/api/method/login", data={"usr": self.users[who], "pwd": PASSWORD}, headers=headers)
 		return client.post(f"/api/method/{method}", headers=headers)
 
 	def test_every_role_outsider_and_guest_gets_the_declared_answer(self):
