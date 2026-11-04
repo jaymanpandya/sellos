@@ -91,7 +91,8 @@ jobs:
       - name: Setup
         run: |
           pip install frappe-bench
-          bench init --skip-redis-config-generation --skip-assets --python "$(which python)" ~/frappe-bench
+          # Pinned to the branch the local bench runs. scripts/check_ci_parity.py keeps them equal.
+          bench init --frappe-branch version-16 --skip-redis-config-generation --skip-assets --python "$(which python)" ~/frappe-bench
 
       - name: Install
         working-directory: /home/runner/frappe-bench
@@ -176,7 +177,8 @@ jobs:
       - name: Init bench
         run: |
           pip install frappe-bench
-          bench init ~/frappe-bench --skip-assets --python "$(which python)"
+          # Pinned to the branch the local bench runs. scripts/check_ci_parity.py keeps them equal.
+          bench init ~/frappe-bench --frappe-branch version-16 --skip-assets --python "$(which python)"
           cd ~/frappe-bench
           # No file watcher or scheduler in CI, as in Frappe's own setup.
           sed -i '/^watch:/d' Procfile
@@ -225,9 +227,7 @@ jobs:
           curl -sf -o /dev/null http://test_site:8000/api/method/ping || { tail -n 60 "$GITHUB_WORKSPACE/bench_start.log"; exit 1; }
 
       - name: Prepare the clean site
-        # The same fixture scripts/run-tests.sh runs on every local gate run.
-        # Until SOS-P1-06A this step is expected to fail, and on this line only:
-        #   NotImplementedError: Call the provisioning code that makes this a company site.
+        # The same fixture scripts/run-tests.sh runs on every local gate run (SOS-P1-06A made it work).
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site migrate

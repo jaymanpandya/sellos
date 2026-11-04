@@ -14,7 +14,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GUARD = REPO_ROOT / "scripts" / "check_gate_files.py"
 PYPROJECT = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-NEWLY_PROTECTED = [".semgrepignore", ".eslintrc", "scripts/check_no_stale_skips.py"]
+NEWLY_PROTECTED = [
+	".semgrepignore",
+	".eslintrc",
+	"scripts/check_no_stale_skips.py",
+	"scripts/check_ci_parity.py",
+]
 ALLOWED_BLOCK = "### SOS-X-1: a task\n- **Status:** In Progress\n- **Gate files:** allowed\n"
 PLAIN_BLOCK = "### SOS-X-1: a task\n- **Status:** In Progress\n"
 

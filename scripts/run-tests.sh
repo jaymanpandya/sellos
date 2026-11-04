@@ -77,6 +77,12 @@ fi
 # affected: it runs on its own machine on port 8000 and never runs this script.
 sellos_require_port "$BENCH_DIR" "$SITE"
 sellos_preflight "$SITE" "$PORT"
+# SOS-SETUP-17: CI must build the bench this machine runs. CI's bench init once named no Frappe
+# branch, got Frappe develop (no cypress/support), and every UI spec failed there while passing here.
+if ! python3 "$REPO_DIR/scripts/check_ci_parity.py" "$BENCH_DIR" "$REPO_DIR/.github/workflows/ci.yml"; then
+  echo "Make the local bench and .github/workflows/ci.yml agree, then run this again." >&2
+  sellos_env_exit 3
+fi
 # The baseline is what makes every run start from the same data. Running without it is how a test
 # passes today and fails tomorrow, so it is an error unless a human says otherwise.
 if [ ! -f "$BASELINE" ] && [ -z "${SELLOS_ALLOW_NO_BASELINE:-}" ]; then

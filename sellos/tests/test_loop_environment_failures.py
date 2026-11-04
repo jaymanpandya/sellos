@@ -306,6 +306,16 @@ class GateExitCodes(Sandbox):
 		shutil.copy2(SCRIPTS / "lib" / "tasks.py", self.repo / "scripts" / "lib" / "tasks.py")
 		self.write(self.repo / "TASKS.md", "### SOS-X-1: a task\n- **Status:** In Progress\n")
 		(self.repo / "cypress" / "integration").mkdir(parents=True, exist_ok=True)
+		# SOS-SETUP-17: the preflight compares this bench with CI. Give it CI's workflow, a Frappe
+		# checkout on CI's branch, and a Python and Node at CI's versions, so the preflight passes.
+		shutil.copy2(SCRIPTS / "check_ci_parity.py", self.repo / "scripts" / "check_ci_parity.py")
+		(self.repo / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
+		shutil.copy2(REPO_ROOT / ".github/workflows/ci.yml", self.repo / ".github/workflows/ci.yml")
+		self.frappe = self.bench / "apps" / "frappe"
+		self.frappe.mkdir(parents=True)
+		subprocess.run(["git", "init", "-q", "-b", "version-16"], cwd=self.frappe, check=True)
+		self.write(self.bench / "env/bin/python", "#!/usr/bin/env bash\necho Python 3.14.0\n", 0o755)
+		self.write(self.bin / "node", "#!/usr/bin/env bash\necho v24.0.0\n", 0o755)
 		subprocess.run(["git", "init", "-q"], cwd=self.repo, check=True)
 		self.baseline = self.root / "baseline"
 		semgrep = self.baseline / "semgrep-venv/bin/semgrep"
@@ -367,6 +377,14 @@ class GateExitCodes(Sandbox):
 		self.assertEqual(self.run_gate(), 1, self.out)
 		self.assertIn("fake bench failed", self.out)
 		self.assertIn("Reporting it as a test failure (1)", self.out)
+
+	def test_a_frappe_branch_ci_does_not_build_makes_the_gate_exit_3(self):
+		self.serve(302)
+		self.resolves()
+		subprocess.run(["git", "symbolic-ref", "HEAD", "refs/heads/develop"], cwd=self.frappe, check=True)
+		self.assertEqual(self.run_gate(), 3, self.out)
+		self.assertIn("CI installs Frappe version-16", self.out)
+		self.assertNotIn("fake bench failed", self.out)
 
 	def test_wrong_port_makes_the_gate_exit_2(self):
 		self.serve(302)
