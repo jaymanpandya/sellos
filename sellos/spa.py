@@ -31,16 +31,17 @@ def get_html():
 	if not os.path.isfile(path):
 		frappe.throw(_("The SellOS app has not been built. Run bench build --app sellos."))
 
-	with open(path, encoding="utf-8") as f:
+	with open(path, encoding="utf-8") as f:  # fixed path inside the app, no user input  # nosemgrep
 		source = f.read()
 
-	return frappe.render_template(source, {"boot": get_boot()}, safe_render=False)
+	# The source is the built app page from this repository, not user input.
+	return frappe.render_template(source, {"boot": get_boot()}, safe_render=False)  # nosemgrep
 
 
 def get_boot():
 	user = frappe.get_cached_doc("User", frappe.session.user)
 	csrf_token = frappe.sessions.get_csrf_token()
-	frappe.db.commit()  # nosemgrep: page renders are GET requests, so the token is saved by hand
+	frappe.db.commit()  # page renders are GET requests, so the token is saved by hand  # nosemgrep
 
 	return {
 		"csrf_token": csrf_token,
