@@ -299,6 +299,13 @@ class GateExitCodes(Sandbox):
 	def setUp(self):
 		super().setUp()
 		shutil.copy2(SCRIPTS / "run-tests.sh", self.repo / "scripts" / "run-tests.sh")
+		# SOS-SETUP-16: the gate checks skipped specs before the baseline restore. Give it the real
+		# check, a backlog and a spec folder with no skips, so it passes and the restore still runs.
+		shutil.copy2(SCRIPTS / "check_no_stale_skips.py", self.repo / "scripts" / "check_no_stale_skips.py")
+		(self.repo / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
+		shutil.copy2(SCRIPTS / "lib" / "tasks.py", self.repo / "scripts" / "lib" / "tasks.py")
+		self.write(self.repo / "TASKS.md", "### SOS-X-1: a task\n- **Status:** In Progress\n")
+		(self.repo / "cypress" / "integration").mkdir(parents=True, exist_ok=True)
 		subprocess.run(["git", "init", "-q"], cwd=self.repo, check=True)
 		self.baseline = self.root / "baseline"
 		semgrep = self.baseline / "semgrep-venv/bin/semgrep"
@@ -308,7 +315,7 @@ class GateExitCodes(Sandbox):
 			["bash", "-c", f"echo select 1 | gzip > {self.baseline}/sellos_test_clean.sql.gz"], check=True
 		)
 		self.write(self.bin / "pre-commit", "#!/usr/bin/env bash\nexit 0\n", 0o755)
-		# The first command after the preflight is the baseline restore. This bench fails it with 2.
+		# The first bench command after the preflight is the baseline restore. This bench fails it with 2.
 		self.write(self.bin / "bench", "#!/usr/bin/env bash\necho fake bench failed >&2\nexit 2\n", 0o755)
 
 	def run_gate(self):
