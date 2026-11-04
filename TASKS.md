@@ -16,7 +16,7 @@ This file is the backlog for building SellOS, in the BuildOS block format that `
 * The Plivo account is created and its KYC is approved.
 * The Indian number +91 22 6998 6373 is bought. It is a 022 landline series number, so it is for service and transactional calls only.
 * Decisions already made: Frappe 16.x without ERPNext, DigitalOcean for DNS and servers, a custom web app for every role, one Frappe site per company at a subdomain of sellos.interactivesoftwares.com, Razorpay for India and Stripe for international billing, and the Bandra to Andheri corridor for the first five years of market data.
-* Checkpoint A (Jayman, 4 November 2026) passed after SOS-P1-06. It decided the desk, CRM data and masking rules in `CLAUDE.md`.
+* Checkpoint A (Jayman, 4 November 2026) decided the desk, CRM data and masking rules in `CLAUDE.md`. The same day Jayman's browser test failed the first SOS-P1-06, so it was reopened as SOS-P1-06A and SOS-P1-06B, which sit first among the Phase 1 tasks and are picked before any other.
 
 ## Rules for the agent
 
@@ -357,6 +357,40 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Dependencies:** SOS-P0-04
 - **Status:** Waiting
 
+### SOS-P1-06A: CRM works on a fresh company site
+- **Epic:** Core CRM and consent
+- **Description:** Reopens SOS-P1-06, which was ticked while the CRM did not work in a browser. On 4 November 2026, on the SellOS test site, every CRM call answered 403, the Leads page showed "No leads yet", the page used placeholder colours and fonts, and the page named the site instead of the company, and the whole gate was green. This task makes the CRM work on a fresh company site, for the right roles, and makes the screens say so when it does not. The records, permissions and masking rules built in SOS-P1-06 stay as they are (see CLAUDE.md, "CRM data rules").
+- **Acceptance Criteria:**
+  - sellos.crm.api.list_leads and save_client work for the Company Admin and the Agent on a fresh site made by prepare_clean_site, and are refused with a clear message for the others, as the permission matrix says. Quote the code that refused every user, and fix its cause without weakening the guard.
+  - sellos.tests.ui_fixtures: implement _configure_company_site (call the same code that provisioning uses), seed_agent_leads and seed_client_with_phone as their docstrings say.
+  - The Leads screens show an error when a call fails and never "No leads yet". The form shows the server's message. Add the data-testid attributes that cypress/integration/smoke/app_shell.cy.js and cypress/integration/crm/leads_by_role.cy.js use.
+  - Those two specs pass.
+  - The page uses the approved tokens (#0f4c35, #e8954a, Syne headings, DM Sans body, a filled --sos-brand-mid) and shows the company name, not the site name. Find what replaced the approved tokens and restore them.
+- **Test Criteria:** Backend tests for the refusals and for both fixtures, and the two Cypress specs named above pass in the gate.
+- **Notes:** Where to start, all unconfirmed until reproduced. (1) The refusal text on the guard is "This method has no declared roles." from guard_api in sellos/access/registry.py, which runs as a before_request hook and looks a method up in _REGISTRY. The registry is filled when a module with @sellos_api is imported, and a fresh server process may not have imported sellos.crm.api when the first request arrives. Reproduce over HTTP against a running server, not only in a test process. (2) The docstring of _configure_company_site says a site type or company profile is checked by sellos.access, but no such check was found in sellos/access when this task was written. Find the real cause before using that wording. (3) The placeholder tokens are in frontend/src/theme/tokens.js (brand #1d4e5f, accent #c98a2b, Inter), written in P0.10 "until the product brand is chosen". The approved values are in this task. Record them in the tokens file and in docs, with --sos-brand-mid filled in. (4) sellos/spa.py get_company_branding returns the site name when SellOS Settings has no company name.
+- **Owner:** Claude Code
+- **Priority:** P1
+- **Story Points:** 5
+- **Dependencies:** SOS-P1-04
+- **Status:** Not Started
+- **Browser spec:** required
+
+### SOS-P1-06B: Phone numbers do not leak
+- **Epic:** Core CRM and consent
+- **Description:** Closes the personal data checks for the CRM records (docs/DEV_STRATEGY.md section 6). Agents and partners see masked phone numbers and only a Company Admin sees full numbers (CLAUDE.md, "CRM data rules"). The change history, the form loader and the generic Frappe read paths must not show a full number to a role that may not see it.
+- **Acceptance Criteria:**
+  - cypress/integration/security/phone_masking_leaks.cy.js passes as written.
+  - A backend test for the masking and the permission rules. Reuse the approach of buildos.security.field_history so the change history never shows a full number to a role that may not see it (read BuildOS's version first).
+  - Showing a full number to a Company Admin is logged, or this task says which later task logs it.
+- **Test Criteria:** The backend test and the leak spec pass in the gate, and the spec first shows that the agent can read the client on at least one path.
+- **Notes:** buildos/buildos/security/field_history.py wraps frappe.desk.form.load.getdoc and get_docinfo through override_whitelisted_methods in hooks.py, and takes the changes to fields the reader may not read (permission level above their access) out of each Version row. The phone and overseas_phone fields are at permission level 1 here, so the same approach applies. Changing permissions, masking or personal data needs Jayman's approval, so reply NEEDS_INPUT if the approach has to change.
+- **Owner:** Claude Code
+- **Priority:** P1
+- **Story Points:** 3
+- **Dependencies:** SOS-P1-06A
+- **Status:** Not Started
+- **Browser spec:** required
+
 ### SOS-P1-14: Back up every site and prove the restore
 - **Epic:** Platform foundations and DevOps
 - **Description:** As Jayman, I want per site backups and a proven restore, so that no company's data is lost. Back up every site nightly to Spaces with 30 days of retention, and provide a script that restores one site to staging.
@@ -533,22 +567,6 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Dependencies:** SOS-P1-03
 - **Status:** Not Started
 
-### SOS-P1-06: Build Client, Lead, Activity, Task and Site Visit
-- **Epic:** Core CRM and consent
-- **Description:** As an Agent, I want to record clients, leads, activities, tasks and site visits, so that I can work every enquiry in one place. Build the records and their screens in the app. A Client can be a buyer, seller, investor or NRI. A Lead links to a Client, and activities, tasks and site visits attach to a lead on a timeline.
-- **Acceptance Criteria:**
-  - Records can be created, viewed and edited from the app.
-  - A lead shows a timeline of activities, tasks and visits.
-  - Tasks have due dates and show as overdue.
-  - An agent sees only their own leads.
-- **Test Criteria:** Unit and permission tests, and an end to end test that creates a lead and logs an activity.
-- **Owner:** Claude Code
-- **Priority:** P1
-- **Story Points:** 8
-- **Dependencies:** SOS-P1-04
-- **Status:** Complete
-- **Browser spec:** required
-
 ### SOS-P1-07: Build the buyer pipeline
 - **Epic:** Core CRM and consent
 - **Description:** As an Agent, I want a buyer pipeline with clear stages, so that I know where every buyer stands. Build the stages New, Consent pending, Contacted, Qualified, Site visit booked, Site visit done, Negotiation, Booking, Closed won, Closed lost and Nurture. A lead cannot move to Contacted without a live consent record.
@@ -560,7 +578,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 5
-- **Dependencies:** SOS-P1-06, SOS-P1-08
+- **Dependencies:** SOS-P1-06B, SOS-P1-08
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -576,7 +594,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 5
-- **Dependencies:** SOS-P1-06
+- **Dependencies:** SOS-P1-06B
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1189,7 +1207,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Story Points:** 8
-- **Dependencies:** SOS-P1-06
+- **Dependencies:** SOS-P1-06B
 - **Status:** Not Started
 - **Browser spec:** required
 
