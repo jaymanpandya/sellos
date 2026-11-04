@@ -8,9 +8,9 @@ This is the SellOS web app, a Vue 3 single page app built with Vite and frappe-u
 
 Run from this folder, with Node 24:
 
-* `yarn install` installs the packages. In CI use `yarn install --frozen-lockfile`.
-* `yarn build` builds into `../sellos/public/frontend` and writes `../sellos/www/sellos.html`.
-* `yarn dev` starts the Vite dev server. Run SellOS itself only with `bench --site sellos.localhost serve --port 8003`, and never touch the bench on port 8000.
+* `npm install` installs the packages and updates `package-lock.json`. The gate and CI use `npm ci`.
+* `npm run build` builds into `../sellos/public/frontend` and writes `../sellos/www/sellos.html`.
+* `npm run dev` starts the Vite dev server. Run SellOS itself only with `bench --site sellos.localhost serve --port 8003`, and never touch the bench on port 8000.
 
 ## Where things live
 
@@ -21,6 +21,8 @@ Run from this folder, with Node 24:
 * The app is served at `/sellos`. The route must match `frontendRoute` in `vite.config.js` and `website_route_rules` in `sellos/hooks.py`.
 
 ## Rules
+
+* There are no unit tests in this folder. Browser behaviour is tested with Cypress specs in `cypress/integration/frontend/`, which select elements by `data-testid="sellos-..."`. Give every element a spec needs a test id.
 
 * Plain JavaScript with ES modules, tabs for indentation.
 * A new page needs a route with an area, and a persona that may see it.

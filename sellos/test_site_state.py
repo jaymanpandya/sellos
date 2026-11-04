@@ -23,7 +23,7 @@ class TestSiteState(IntegrationTestCase):
 
 	def test_built_frontend_exists(self):
 		path = os.path.join(frappe.get_app_path("sellos"), "www", "sellos.html")
-		self.assertTrue(os.path.isfile(path), "Run yarn build in frontend/")
+		self.assertTrue(os.path.isfile(path), "Run npm run build in frontend/")
 		with open(path, encoding="utf-8") as f:  # nosemgrep: fixed path inside the app
 			self.assertIn('id="app"', f.read())
 

@@ -1,6 +1,6 @@
 <template>
-	<div class="max-w-2xl">
-		<h1 class="text-2xl font-semibold text-ink">
+	<div class="max-w-2xl" data-testid="sellos-home">
+		<h1 class="text-2xl font-semibold text-ink" data-testid="sellos-home-welcome">
 			Welcome{{ session.fullName ? ", " + session.fullName : "" }}
 		</h1>
 		<p class="mt-2 text-ink-muted">

@@ -156,3 +156,48 @@ Cypress.Commands.add("genericReads", (doctype, name) => {
 	});
 	return cy.wrap(results);
 });
+
+// Change the boot data the server writes into the app page before the app reads it, so a spec can
+// reach a state a real sign in does not give (a blank company name, a logo, a colour):
+// cy.bootOverride((boot) => { boot.company.name = ""; }). Call it before cy.visit.
+Cypress.Commands.add("bootOverride", (mutate) => {
+	cy.intercept(
+		{ method: "GET", resourceType: "document", url: /\/sellos(\/[^.?]*)?(\?.*)?$/ },
+		(req) => {
+			req.continue((res) => {
+				res.body = String(res.body).replace(
+					/(window\["sellos_boot"\] = )(\{.*?\});/s,
+					(_all, head, json) => {
+						const boot = JSON.parse(json);
+						mutate(boot);
+						return `${head}${JSON.stringify(boot)};`;
+					}
+				);
+			});
+		}
+	);
+});
+
+// A request body as an object, whether the app sent JSON or a form: values that are JSON text are
+// parsed, so a spec can assert on what the app asked the server to do.
+Cypress.Commands.add("bodyOf", (body) => {
+	let data = body;
+	if (typeof data === "string") {
+		try {
+			data = JSON.parse(data);
+		} catch {
+			data = Object.fromEntries(new URLSearchParams(data));
+		}
+	}
+	Object.keys(data || {}).forEach((key) => {
+		if (typeof data[key] === "string") {
+			try {
+				const parsed = JSON.parse(data[key]);
+				if (parsed && typeof parsed === "object") data[key] = parsed;
+			} catch {
+				// a plain string stays as it is
+			}
+		}
+	});
+	return cy.wrap(data, { log: false });
+});

@@ -1,8 +1,14 @@
 <template>
-	<div class="max-w-3xl">
+	<div class="max-w-3xl" data-testid="sellos-leads-page">
 		<div class="flex items-center justify-between gap-3">
 			<h1 class="text-2xl font-semibold text-ink">Leads</h1>
-			<button v-if="canCreate" type="button" class="btn" @click="creating = !creating">
+			<button
+				v-if="canCreate"
+				type="button"
+				class="btn"
+				data-testid="sellos-leads-new"
+				@click="creating = !creating"
+			>
 				{{ creating ? "Cancel" : "New lead" }}
 			</button>
 		</div>
@@ -10,13 +16,25 @@
 		<form
 			v-if="creating"
 			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
+			data-testid="sellos-lead-form"
 			@submit.prevent="create"
 		>
-			<input v-model="form.client_name" required placeholder="Client name" class="field" />
-			<select v-model="form.client_type" class="field">
+			<input
+				v-model="form.client_name"
+				data-testid="sellos-lead-form-name"
+				required
+				placeholder="Client name"
+				class="field"
+			/>
+			<select v-model="form.client_type" data-testid="sellos-lead-form-type" class="field">
 				<option v-for="t in CLIENT_TYPES" :key="t">{{ t }}</option>
 			</select>
-			<input v-model="form.phone" placeholder="Phone" class="field" />
+			<input
+				v-model="form.phone"
+				data-testid="sellos-lead-form-phone"
+				placeholder="Phone"
+				class="field"
+			/>
 			<input
 				v-if="form.client_type === 'NRI'"
 				v-model="form.overseas_phone"
@@ -29,16 +47,39 @@
 				placeholder="Country of residence (optional)"
 				class="field"
 			/>
-			<input v-model="form.email" type="email" placeholder="Email" class="field" />
-			<input v-model="form.source" placeholder="Source" class="field" />
-			<p v-if="error" class="text-sm text-accent">{{ error }}</p>
-			<button type="submit" class="btn">Save lead</button>
+			<input
+				v-model="form.email"
+				data-testid="sellos-lead-form-email"
+				type="email"
+				placeholder="Email"
+				class="field"
+			/>
+			<input
+				v-model="form.source"
+				data-testid="sellos-lead-form-source"
+				placeholder="Source"
+				class="field"
+			/>
+			<p v-if="error" data-testid="sellos-lead-form-error" class="text-sm text-accent">
+				{{ error }}
+			</p>
+			<button type="submit" class="btn" data-testid="sellos-lead-form-save">
+				Save lead
+			</button>
 		</form>
 
-		<input v-model="search" placeholder="Search leads" class="field mt-4" @input="load" />
-		<p v-if="!leads.length" class="mt-4 text-ink-muted">No leads yet.</p>
+		<input
+			v-model="search"
+			data-testid="sellos-leads-search"
+			placeholder="Search leads"
+			class="field mt-4"
+			@input="load"
+		/>
+		<p v-if="!leads.length" data-testid="sellos-leads-empty" class="mt-4 text-ink-muted">
+			No leads yet.
+		</p>
 		<ul class="mt-4 divide-y divide-line rounded-input border border-line bg-surface">
-			<li v-for="lead in leads" :key="lead.name">
+			<li v-for="lead in leads" :key="lead.name" data-testid="sellos-lead-row">
 				<router-link
 					:to="`${basePath}/${lead.name}`"
 					class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-brand-light"
@@ -51,6 +92,7 @@
 					</span>
 					<span
 						v-if="lead.overdue_tasks"
+						data-testid="sellos-lead-overdue"
 						class="rounded-input bg-accent px-2 py-1 text-xs text-white"
 					>
 						{{ lead.overdue_tasks }} overdue

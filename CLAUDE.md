@@ -39,7 +39,7 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 
 Run these from the app folder (`apps/sellos` in the bench). Never start, stop or restart the bench on port 8000. To run SellOS locally use only `bench --site sellos.localhost serve --port 8003`.
 
-* Build the web app: `cd frontend && yarn install && yarn build`
+* Build the web app: `cd frontend && npm ci && npm run build`
 * Build all assets through the bench: `bench build --app sellos`
 * Server tests: `bench --site sellos.localhost run-tests --app sellos` (the site needs `allow_tests` set)
 * Lint and format: `pre-commit run --all-files` (ruff, prettier, eslint and file checks). Run it before every push.

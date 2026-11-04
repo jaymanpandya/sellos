@@ -1,58 +1,122 @@
 <template>
-	<div v-if="detail" class="max-w-3xl">
-		<router-link :to="listPath" class="text-sm text-ink-muted">Back to leads</router-link>
+	<div v-if="detail" class="max-w-3xl" data-testid="sellos-lead-page">
+		<router-link :to="listPath" data-testid="sellos-lead-back" class="text-sm text-ink-muted"
+			>Back to leads</router-link
+		>
 		<div class="mt-2 flex items-start justify-between gap-3">
 			<div>
-				<h1 class="text-2xl font-semibold text-ink">{{ detail.client.client_name }}</h1>
+				<h1 class="text-2xl font-semibold text-ink" data-testid="sellos-lead-name">
+					{{ detail.client.client_name }}
+				</h1>
 				<p class="text-sm text-ink-muted">
-					{{ detail.client.client_type }} · {{ detail.client.phone || "No phone" }}
+					{{ detail.client.client_type }} ·
+					<span data-testid="sellos-lead-phone">{{
+						detail.client.phone || "No phone"
+					}}</span>
 					<span v-if="detail.client.overseas_phone">
 						· {{ detail.client.overseas_phone }}</span
 					>
 				</p>
 			</div>
-			<button v-if="canLog" type="button" class="btn" @click="archive">Archive</button>
+			<button
+				v-if="canLog"
+				type="button"
+				class="btn"
+				data-testid="sellos-lead-archive"
+				@click="archive"
+			>
+				Archive
+			</button>
 		</div>
 
 		<section
 			v-if="canLog"
+			data-testid="sellos-lead-log"
 			class="mt-6 space-y-3 rounded-input border border-line bg-surface p-4"
 		>
 			<h2 class="font-medium text-ink">Log something</h2>
-			<form class="flex flex-wrap gap-2" @submit.prevent="logActivity">
-				<select v-model="activity.type" class="field w-auto">
+			<form
+				class="flex flex-wrap gap-2"
+				data-testid="sellos-lead-activity-form"
+				@submit.prevent="logActivity"
+			>
+				<select
+					v-model="activity.type"
+					data-testid="sellos-lead-activity-type"
+					class="field w-auto"
+				>
 					<option v-for="t in ACTIVITY_TYPES" :key="t">{{ t }}</option>
 				</select>
-				<input v-model="activity.notes" placeholder="Notes" class="field flex-1" />
-				<button type="submit" class="btn">Add activity</button>
+				<input
+					v-model="activity.notes"
+					data-testid="sellos-lead-activity-notes"
+					placeholder="Notes"
+					class="field flex-1"
+				/>
+				<button type="submit" class="btn" data-testid="sellos-lead-activity-save">
+					Add activity
+				</button>
 			</form>
-			<form class="flex flex-wrap gap-2" @submit.prevent="addTask">
-				<input v-model="task.title" required placeholder="Task" class="field flex-1" />
-				<input v-model="task.due_date" required type="date" class="field w-auto" />
-				<button type="submit" class="btn">Add task</button>
+			<form
+				class="flex flex-wrap gap-2"
+				data-testid="sellos-lead-task-form"
+				@submit.prevent="addTask"
+			>
+				<input
+					v-model="task.title"
+					data-testid="sellos-lead-task-title"
+					required
+					placeholder="Task"
+					class="field flex-1"
+				/>
+				<input
+					v-model="task.due_date"
+					data-testid="sellos-lead-task-due"
+					required
+					type="date"
+					class="field w-auto"
+				/>
+				<button type="submit" class="btn" data-testid="sellos-lead-task-save">
+					Add task
+				</button>
 			</form>
-			<form class="flex flex-wrap gap-2" @submit.prevent="addVisit">
+			<form
+				class="flex flex-wrap gap-2"
+				data-testid="sellos-lead-visit-form"
+				@submit.prevent="addVisit"
+			>
 				<input
 					v-model="visit.project_name"
+					data-testid="sellos-lead-visit-project"
 					required
 					placeholder="Site visit: project"
 					class="field flex-1"
 				/>
 				<input
 					v-model="visit.visit_datetime"
+					data-testid="sellos-lead-visit-when"
 					required
 					type="datetime-local"
 					class="field w-auto"
 				/>
-				<button type="submit" class="btn">Add visit</button>
+				<button type="submit" class="btn" data-testid="sellos-lead-visit-save">
+					Add visit
+				</button>
 			</form>
 		</section>
 
 		<h2 class="mt-6 font-medium text-ink">Timeline</h2>
-		<p v-if="!detail.timeline.length" class="mt-2 text-ink-muted">Nothing logged yet.</p>
-		<ul class="mt-2 space-y-2">
+		<p
+			v-if="!detail.timeline.length"
+			data-testid="sellos-lead-timeline-empty"
+			class="mt-2 text-ink-muted"
+		>
+			Nothing logged yet.
+		</p>
+		<ul class="mt-2 space-y-2" data-testid="sellos-lead-timeline">
 			<li
 				v-for="item in detail.timeline"
+				data-testid="sellos-lead-timeline-item"
 				:key="item.kind + item.name"
 				class="rounded-input border border-line bg-surface p-3"
 			>
@@ -63,6 +127,7 @@
 					</span>
 					<span
 						v-if="item.overdue"
+						data-testid="sellos-lead-timeline-overdue"
 						class="rounded-input bg-accent px-2 py-1 text-xs text-white"
 						>Overdue</span
 					>
@@ -83,7 +148,7 @@
 			</li>
 		</ul>
 	</div>
-	<p v-else class="text-ink-muted">{{ error || "Loading" }}</p>
+	<p v-else data-testid="sellos-lead-loading" class="text-ink-muted">{{ error || "Loading" }}</p>
 </template>
 
 <script setup>
