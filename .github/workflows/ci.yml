@@ -35,6 +35,9 @@ jobs:
         options: --health-cmd="mariadb-admin ping" --health-interval=5s --health-timeout=2s --health-retries=3
 
     steps:
+      - name: Record start time (P0.07)
+        run: echo "CI_START=$(date +%s)" >> "$GITHUB_ENV"
+
       - name: Clone
         uses: actions/checkout@v6
 
@@ -96,6 +99,12 @@ jobs:
         env:
           CI: 'Yes'
 
+      - name: Build web app (P0.07)
+        working-directory: ${{ github.workspace }}/frontend
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |
@@ -103,3 +112,9 @@ jobs:
           bench --site test_site run-tests --app sellos
         env:
           TYPE: server
+
+      - name: Report run time (P0.07)
+        if: always()
+        run: |
+          elapsed=$(( $(date +%s) - CI_START ))
+          echo "Server job run time: $((elapsed / 60)) min $((elapsed % 60)) s" | tee -a "$GITHUB_STEP_SUMMARY"
