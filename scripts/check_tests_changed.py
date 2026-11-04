@@ -57,8 +57,8 @@ def main():
 		root = subprocess.run(
 			["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True
 		).stdout.strip()
-		# nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
 		# Fixed path under the repo's own .git folder, no user input (P0.07).
+		# nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
 		with open(os.path.join(root, ".git", "sellos_gate_waivers"), "a", encoding="utf-8") as f:
 			f.write(f"{int(time.time())} no test: {reason}: {', '.join(code)}\n")
 		print(f"Test requirement waived: {reason}")
