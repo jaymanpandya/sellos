@@ -16,8 +16,11 @@ module.exports = {
 		openMode: 0,
 	},
 	e2e: {
-		// baseUrl is overridden by run-ui-tests via CYPRESS_baseUrl.
-		baseUrl: "http://sellos_test.localhost:8000",
+		// baseUrl is overridden by run-ui-tests via CYPRESS_baseUrl, built from the site's
+		// webserver_port. Locally that is 8004, on the SellOS server pinned to the site:
+		//   cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004
+		// CI is not affected: it runs on its own machine on port 8000 and sets its own host_name.
+		baseUrl: "http://sellos_test.localhost:8004",
 		specPattern: "cypress/integration/**/*.cy.js",
 		supportFile: "cypress/support/e2e.js",
 		testIsolation: false,

@@ -23,6 +23,7 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 
 ## Working rules
 
+* Ports (Jayman's rule, always): BuildOS runs on port 8000, Pamaa on 8002, SellOS on 8004. SellOS never uses 8000 or 8002, and never starts, stops or touches the servers on them. Each server is pinned to one site. The SellOS server is always started as `cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`. Never run `bench serve --port 8004` without `--site`: it falls back to default_site and serves BuildOS's site for every host name. The gate and `scripts/prepare-regression.sh` refuse any port but 8004 and check that the server really is SellOS.
 * The build loop makes one commit per task on the 1.0 branch, with the task ID at the start of the message, and pushes to 1.0 after the gate passes. The agent leaves its work uncommitted. Do not open pull requests, and never force push.
 * Write the tests named in the story's Test criteria with the code. Continuous integration must pass.
 * The loop sets a task's status in TASKS.md (In Progress, Complete, Blocked). The agent never changes one.
@@ -37,7 +38,7 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 
 ## Commands
 
-Run these from the app folder (`apps/sellos` in the bench). Never start, stop or restart the bench on port 8000. To run SellOS locally use only `bench --site sellos.localhost serve --port 8003`.
+Run these from the app folder (`apps/sellos` in the bench). Never start, stop or touch the servers on port 8000 (BuildOS) or 8002 (Pamaa). The SellOS server runs on port 8004 and is always started as `cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`.
 
 * Build the web app: `cd frontend && npm ci && npm run build`
 * Build all assets through the bench: `bench build --app sellos`
@@ -83,7 +84,7 @@ See `frontend/CLAUDE.md`. The build plan is in `TASKS.md`, and the earlier brief
 * Run only the single backend module and the single Cypress spec you changed, in the foreground:
   `bench --site sellos_test.localhost run-tests --app sellos --module <dotted.path>` and
   `bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>`.
-  Never run the whole suite, and never start, stop or restart the bench.
+  Never run the whole suite, and never start, stop or restart the bench or any server.
 * Read `docs/TESTING.md` and `docs/DEV_STRATEGY.md`. Write backend tests the way the Frappe
   documentation says (`IntegrationTestCase` for the database, `UnitTestCase` otherwise). Tests live
   beside the code. A task also needs a Cypress spec when its block says `Browser spec: required`.

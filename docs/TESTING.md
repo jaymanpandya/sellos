@@ -82,7 +82,7 @@ passes. `sellos/tests/test_check_gate_files.py` tests the guard.
 
 ## Running parts by hand
 
-From `~/iespl-bench`, with `bench start` running:
+From `~/iespl-bench`, with the SellOS server running on port 8004 (`cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`):
 
 ```
 bench --site sellos_test.localhost run-tests --app sellos --module sellos.crm.test_crm

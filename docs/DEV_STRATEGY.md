@@ -17,13 +17,20 @@ disagree, the rule wins. Gate files (see below) may only be changed by a human.
 | Unit tests | `bench --site test_site run-tests --app buildos` | `bench --site sellos_test.localhost run-tests --app sellos` |
 | UI tests | Cypress through `bench --site test_site run-ui-tests buildos --headless` | the same command with `sellos` |
 | UI fixtures | `buildos/tests/ui_fixtures.py` through `cy.bench` | `sellos/tests/ui_fixtures.py` through `cy.bench` |
-| Server for UI tests | the running `bench start` on port 8000, site picked by its host name | the same |
+| Server for UI tests | the running `bench start` on port 8000, site picked by its host name | the SellOS server on port 8004, pinned to `sellos_test.localhost`: `cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004` |
 | Lint | pre-commit: ruff, prettier 2.7.1, eslint 8.44, pyupgrade | the same |
 | CI | server job (fresh site, run-tests), Linters (Semgrep, pip-audit) | the same, plus a UI job |
 | Who commits | the build loop, never the agent | the same |
 
 The SellOS gate refuses to run against any site other than `sellos_test` or `sellos_test.localhost`,
 because it restores the baseline over that site and wipes it.
+
+Ports (Jayman's rule, always): BuildOS runs on port 8000, Pamaa on 8002, SellOS on 8004. Each
+server is pinned to one site with `--site`. SellOS never uses 8000 or 8002, and never starts, stops
+or touches the servers on them. `bench serve --port 8004` without `--site` falls back to
+`default_site` and serves BuildOS's site for every host name, so it is never used. The SellOS server
+is always started as `cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`. `scripts/make-baseline.sh` sets `webserver_port` 8004 on the site
+it creates. CI is not affected: it runs on its own machine, on port 8000, and is not changed.
 
 ## 2. The loop (copied from BuildOS)
 
@@ -101,7 +108,7 @@ leads yet", and the whole gate was green.
 | 1 | `cypress/support/e2e.js` ends with `Cypress.on("uncaught:exception", () => false)`, so every error the app throws is ignored | A page that breaks quietly passes any spec that checks the wrong thing | An uncaught error fails the spec. Only the two ResizeObserver wordings are ignored | `cypress/support/e2e.js` |
 | 2 | A spec passes if its own assertions pass | An API call that answered 403 or 500, or a console error, never fails anything | After every test, any `/api/` answer of 400 or more, and any console error, fails the test unless the spec declared it with `cy.expectApiStatus` or `cy.expectConsoleError` | `cypress/support/e2e.js` |
 | 3 | If the clean baseline file is missing the gate warns and carries on with whatever data is there | A result that cannot be repeated | Missing baseline stops the gate (exit 3). A human may allow one run with `SELLOS_ALLOW_NO_BASELINE` | `scripts/run-tests.sh` |
-| 4 | The UI tests need `bench start` and the site at its own address, and say nothing if they are not there | Cypress times out with an unhelpful message | A preflight asks the site to answer first and says what is missing | `scripts/run-tests.sh` |
+| 4 | The UI tests need `bench start` and the site at its own address, and say nothing if they are not there | Cypress times out with an unhelpful message | A preflight asks the site to answer first and says what is missing. The site's `webserver_port` (site config first, shared config second, as `frappe.get_conf` reads it) must be 8004 or the gate exits 2 | `scripts/run-tests.sh`, `scripts/prepare-regression.sh`, `scripts/lib/sellos_server.sh` |
 | 5 | The agent can edit the gate, the Cypress config, the support file or CI in the same task | A failing test is "fixed" by changing what judges it | Those files are protected: `scripts/run-tests.sh`, `build-loop.sh`, `watchdog.sh`, `select-next-task.sh`, `set-task-status.sh`, `make-baseline.sh`, `prepare-regression.sh`, `scripts/lib/*`, `scripts/check_*.py`, `cypress.config.js`, `cypress/support/e2e.js`, `.pre-commit-config.yaml`, `.semgrepignore`, `.eslintrc`, `.github/workflows/*`, `docs/DEV_STRATEGY.md`, `docs/TESTING.md` and `docs/regression/README.md`. `pyproject.toml` is not protected as a whole, because tasks add dependencies to it, but any change to its `[tool.ruff]` tables fails. `docs/regression/flows.md` is append only. A task changes any of these only if its block says `Gate files: allowed`, which only a human writes | `scripts/check_gate_files.py` |
 | 6 | "Never weaken an assertion" is one sentence in a prompt | Nothing stops it | The number of assertions in every changed test file may not fall, and a test file may not be deleted | `scripts/check_assertion_ratchet.py` |
 | 7 | A task can be marked Complete with no test that names it | Acceptance criteria nobody tests | A new or changed test that names the task ID and holds assertions is required. A task marked `Browser spec: required` also needs a Cypress spec | `scripts/check_task_evidence.py` |
@@ -118,6 +125,7 @@ leads yet", and the whole gate was green.
 | 17 | Test data is made by hand | An invalid or real phone number breaks a test or leaks into the repository | `sellos.tests.phones` makes valid numbers, and a test fails on any hand written one. The allowed list starts empty and stays empty | `sellos/tests/test_no_raw_phone_numbers.py` |
 | 18 | A human walks through the product by hand | Skipped when time is short | Each milestone is a Waiting task, SOS-REG-0 to SOS-REG-6 and SOS-REG-2B, that the next phase depends on. Claude in chat walks every flow in `docs/regression/flows.md` in a browser and writes a report. A task marked `Browser spec: required` fails the gate unless it adds its flows (section 8) | `TASKS.md`, `scripts/check_task_evidence.py`, `docs/regression/` |
 | 19 | The loop runs one `git push` after a task passes and assumes it worked | A loop that cannot push leaves finished work unpushed, and the next tasks pile up on top of it | At start the loop checks `git ls-remote --exit-code origin HEAD` and stops before any task if the remote does not answer, and pushes first if the branch is ahead of origin. After a passing task the push is retried after 10, 30 and 90 seconds, and GitHub's "fatal error in commit_refs" is retried, not taken as a rejection. If every try fails the commit is kept, never reset, the exact git error is sent, and the loop stops. At start the loop also stops if `gh auth status` fails, and before pushing commits that are ahead it lists them, refuses any whose message does not start with `SOS-`, and waits for CI on the pushed head before picking a task. Git never prompts (`GIT_TERMINAL_PROMPT=0`, and SSH in batch mode with a 15 second timeout when origin is an SSH remote) | `scripts/build-loop.sh` |
+| 20 | A preflight asks `/api/method/ping` and takes any answer as the right server | On 4 November 2026 the server on 8004 answered ping while serving BuildOS's site, because it was started without `--site` and fell back to `default_site` | A preflight must prove it is talking to the right app, not only that something answers. A guest GET of `/sellos` must answer 301 or 302, because only SellOS's page renderer redirects a guest. Anything else exits 3 and names the pinned start command | `scripts/lib/sellos_server.sh`, used by `scripts/run-tests.sh` and `scripts/prepare-regression.sh` |
 | 20 | The gate ran its own Semgrep command: only the Frappe rules, with its own `--exclude` list, on every file in the folder | The gate can pass while CI fails, because the two scan different files with different rules. On 6b0fade the Linters run went red on three `open()` calls in `scripts/lib/tasks.py` | The gate runs exactly CI's command, `semgrep ci --config <frappe rules> --config r/python.lang.correctness`, and both read the same `.semgrepignore` at the repo root. Any new CI check is added to the gate in the same change | `scripts/run-tests.sh`, `.semgrepignore`, `.github/workflows/linter.yml` |
 | 21 | The gate lints the files git tracks, and a task's new files are untracked until the loop commits them | CI checks every file in the commit, so a new file the gate never looked at fails CI after the push. On 8d9389a a new test file passed the local pre-commit run and failed ruff-format in the Linters run | Before anything else the gate runs `git ls-files --others --exclude-standard -z \| xargs -0 git add --intent-to-add`, so pre-commit, Semgrep, the three guards and the changed tests step all see new files, without staging their content. The loop's failure path still removes them | `scripts/run-tests.sh`, `sellos/tests/test_gate_untracked_files.py` |
 
@@ -174,8 +182,9 @@ before its task is done:
   protection and the failed branch reset are what limit the damage.
 * A test the agent writes cannot be judged by the agent that wrote it. The ratchet and the evidence
   check stop the worst cases, and a human reads each milestone.
-* The UI tests share the bench server with BuildOS development. Restarting `bench start` while the
-  gate runs breaks the run.
+* The UI tests run on the SellOS server on port 8004, pinned to `sellos_test.localhost`
+  (`cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`). Restarting it while the gate runs breaks the run. The servers on 8000
+  (BuildOS) and 8002 (Pamaa) are never touched.
 
 ## 8. Waiting tasks and the regression milestones
 

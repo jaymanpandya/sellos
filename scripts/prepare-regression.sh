@@ -6,9 +6,13 @@
 # It refuses to run while the build loop, a gate run or a BuildOS gate is running, because it wipes the
 # test site. Then it restores the clean baseline over sellos_test.localhost, clears the cache, builds the
 # front end, migrates, runs prepare_clean_site and seed_regression_data, checks that the site answers at
-# /sellos, and prints the URL and the six test users. It never starts or stops the bench: bench start
-# must already be running and serving the site. docs/regression/README.md says how a milestone is run.
+# /sellos, and prints the URL and the six test users. It never starts or stops a server. The SellOS
+# server must already be running on port 8004, pinned to the site:
+#   cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004
+# docs/regression/README.md says how a milestone is run.
 set -euo pipefail
+# shellcheck source=lib/sellos_server.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/sellos_server.sh"
 
 BENCH_DIR="${SELLOS_BENCH_DIR:-$HOME/iespl-bench}"
 APP="${SELLOS_APP:-sellos}"
@@ -33,11 +37,11 @@ if [ ! -f "$BASELINE" ]; then
 fi
 cd "$BENCH_DIR"
 [ -d "sites/$SITE" ] || { echo "Site $SITE does not exist. Run scripts/make-baseline.sh --create." >&2; exit 3; }
-PORT="$(python3 -c "import json;print(json.load(open('sites/common_site_config.json')).get('webserver_port', 8000))")"
-if ! curl -s -o /dev/null --max-time 10 "http://$SITE:$PORT/api/method/ping"; then
-  echo "The bench is not serving $SITE on port $PORT. Start it yourself with bench start. This script never does." >&2
-  exit 3
-fi
+# The same port rule and two part preflight as the gate (scripts/lib/sellos_server.sh): port 8004
+# from the site's config or exit 2, and a server that answers ping and is SellOS or exit 3. This
+# script never starts or stops a server.
+sellos_require_port "$BENCH_DIR" "$SITE"
+sellos_preflight "$SITE" "$PORT"
 
 echo "--- Restoring the clean baseline over $SITE ---"
 gunzip -c "$BASELINE" | bench --site "$SITE" mariadb

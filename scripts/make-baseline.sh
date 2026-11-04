@@ -24,6 +24,9 @@ if [ "${1:-}" = "--create" ] && [ ! -d "sites/$SITE" ]; then
   echo "bench will ask for the MariaDB root password."
   bench new-site "$SITE" --admin-password "${SELLOS_TEST_ADMIN_PASSWORD:-admin}" --install-app "$APP"
   bench --site "$SITE" set-config allow_tests true
+  # SellOS runs only on port 8004. run-ui-tests builds Cypress's base URL from this, and the gate
+  # refuses any other port. Serve it with: cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004
+  bench --site "$SITE" set-config -p webserver_port 8004
 fi
 [ -d "sites/$SITE" ] || { echo "Site $SITE does not exist. Run with --create." >&2; exit 1; }
 

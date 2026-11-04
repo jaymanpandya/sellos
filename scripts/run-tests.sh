@@ -40,6 +40,8 @@ FLAKY_LOG="$BASELINE_DIR/sellos-flaky.log"
 rm -f "$LOG_DIR/latest.log"
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/sellos_server.sh
+source "$REPO_DIR/scripts/lib/sellos_server.sh"
 cd "$BENCH_DIR"
 
 set +e
@@ -63,12 +65,12 @@ if pgrep -f "buildos/scripts/(run-tests|build-loop)\.sh" >/dev/null 2>&1; then
   echo "A BuildOS gate or loop is running on this bench. Wait for it, then run this again." >&2
   exit 3
 fi
-PORT="$(python3 -c "import json;print(json.load(open('sites/common_site_config.json')).get('webserver_port', 8000))")"
-if ! curl -s -o /dev/null --max-time 10 "http://$SITE:$PORT/api/method/ping"; then
-  echo "The bench is not serving $SITE on port $PORT. Start it with bench start, and make sure $SITE exists." >&2
-  echo "Cypress needs the site at its own address. Create it once with scripts/make-baseline.sh --create." >&2
-  exit 3
-fi
+# SellOS runs only on port 8004, on its own server pinned to this site (scripts/lib/sellos_server.sh).
+# The port comes from the site's config the way run-ui-tests reads it, anything else is refused
+# (exit 2), and the server must prove it is SellOS, not only that it answers (exit 3). CI is not
+# affected: it runs on its own machine on port 8000 and never runs this script.
+sellos_require_port "$BENCH_DIR" "$SITE"
+sellos_preflight "$SITE" "$PORT"
 # The baseline is what makes every run start from the same data. Running without it is how a test
 # passes today and fails tomorrow, so it is an error unless a human says otherwise.
 if [ ! -f "$BASELINE" ] && [ -z "${SELLOS_ALLOW_NO_BASELINE:-}" ]; then

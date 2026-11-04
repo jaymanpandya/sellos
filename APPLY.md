@@ -96,8 +96,8 @@ exist yet. Stop and tell me if any step cannot be done.
 
 8. Run the gate's own checks without the Cypress parts you cannot run yet: pre-commit run --all-files,
    the three scripts/check_*.py against a throw away branch, and bash -n on every script. Then stop
-   and tell me exactly what I must run: scripts/make-baseline.sh --create, restarting bench start
-   once so the running server loads the SellOS hooks, and the first scripts/run-tests.sh. Tell me
+   and tell me exactly what I must run: scripts/make-baseline.sh --create, restarting the SellOS server
+   once so it loads the SellOS hooks (`cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`), and the first scripts/run-tests.sh. Tell me
    which specs you expect to fail on that first run, and why.
 
 Rules: never stop, start or restart the bench. Never touch buildos or its sites. Never edit a file

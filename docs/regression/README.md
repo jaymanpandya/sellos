@@ -13,7 +13,8 @@ clickthrough regression".
 2. Run `scripts/prepare-regression.sh`. It refuses while the build loop, a gate run or a BuildOS gate is
    running. It restores the clean baseline over `sellos_test.localhost`, builds the front end, migrates,
    runs `prepare_clean_site` and `seed_regression_data`, checks `/sellos` answers, and prints the URL
-   and the six test users. It never starts or stops the bench, so `bench start` must already be running.
+   and the six test users. It never starts or stops a server, so the SellOS server must already be running on port 8004:
+   `cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`. It refuses any other port, and stops if that server is not SellOS.
 3. Read `docs/regression/flows.md`. Walk every flow of every task the milestone depends on. A flow is
    one line: `FLOW <task id>-<n> | role | start path | steps | expected result`. Sign in as the role
    named in the flow. Take a screenshot of anything that fails.

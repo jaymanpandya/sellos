@@ -1,6 +1,8 @@
 # SellOS UI tests (Cypress)
 
-Run from the bench, with `bench start` running and the site served at its own address:
+Run from the bench, with the SellOS server running on port 8004, pinned to the site:
+`cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`.
+Never use `bench start` or the servers on 8000 (BuildOS) and 8002 (Pamaa) for SellOS.
 
 ```bash
 cd ~/iespl-bench

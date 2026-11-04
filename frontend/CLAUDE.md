@@ -10,7 +10,7 @@ Run from this folder, with Node 24:
 
 * `npm install` installs the packages and updates `package-lock.json`. The gate and CI use `npm ci`.
 * `npm run build` builds into `../sellos/public/frontend` and writes `../sellos/www/sellos.html`.
-* `npm run dev` starts the Vite dev server. Run SellOS itself only with `bench --site sellos.localhost serve --port 8003`, and never touch the bench on port 8000.
+* `npm run dev` starts the Vite dev server. Run SellOS itself only with `cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`, and never start, stop or touch the servers on port 8000 (BuildOS) or 8002 (Pamaa).
 
 ## Where things live
 
