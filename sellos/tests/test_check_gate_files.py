@@ -94,7 +94,9 @@ class TestCheckGateFiles(unittest.TestCase):
 		self.assertNotIn("tool.ruff", out)
 
 	def test_ruff_per_file_ignore_change_fails(self):
-		self.edit_pyproject('"scripts/lib/tasks.py" = ["UP015"]', '"scripts/lib/tasks.py" = ["UP015", "F841"]')
+		self.edit_pyproject(
+			'"scripts/lib/tasks.py" = ["UP015"]', '"scripts/lib/tasks.py" = ["UP015", "F841"]'
+		)
 		code, out = self.run_guard(PLAIN_BLOCK)
 		self.assertEqual(code, 1, out)
 		self.assertIn("pyproject.toml [tool.ruff]", out)
