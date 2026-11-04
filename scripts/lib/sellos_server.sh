@@ -15,6 +15,15 @@
 SELLOS_PORT=8004
 SELLOS_SERVE_CMD="cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004"
 
+# Exit with an environment status (2 or 3), and record it in $SELLOS_ENV_EXIT_FILE when that is set.
+# scripts/run-tests.sh trusts a 2 or 3 only when it was recorded here, because under set -e a failing
+# command exits with its own status, which can be 2 or 3 too (SOS-SETUP-14).
+#   sellos_env_exit <status>
+sellos_env_exit() {
+  if [ -n "${SELLOS_ENV_EXIT_FILE:-}" ]; then echo "$1" >"$SELLOS_ENV_EXIT_FILE"; fi
+  exit "$1"
+}
+
 # Print the webserver_port Frappe uses for a site: sites/<site>/site_config.json first, then
 # sites/common_site_config.json, the order frappe.get_conf(site) uses. run-ui-tests builds Cypress's
 # base URL from it. Prints nothing when neither file sets it.
@@ -40,11 +49,11 @@ PY
 # Set PORT to the site's port, or exit 2 if it is not 8004.
 #   sellos_require_port <bench dir> <site>
 sellos_require_port() {
-  PORT="$(sellos_site_port "$1" "$2")"
+  PORT="$(sellos_site_port "$1" "$2" || true)"
   if [ "$PORT" != "$SELLOS_PORT" ]; then
     echo "The webserver_port for $2 is '${PORT:-unset}', not $SELLOS_PORT. SellOS runs only on port $SELLOS_PORT." >&2
     echo "Run: bench --site $2 set-config -p webserver_port $SELLOS_PORT" >&2
-    exit 2
+    sellos_env_exit 2
   fi
 }
 
@@ -56,7 +65,7 @@ sellos_preflight() {
   if ! curl -sf -o /dev/null --max-time 10 "http://$host:$port/api/method/ping"; then
     echo "Nothing answers http://$host:$port/api/method/ping. Start the SellOS server with: $SELLOS_SERVE_CMD" >&2
     echo "Cypress needs the site at its own address. Create it once with scripts/make-baseline.sh --create." >&2
-    exit 3
+    sellos_env_exit 3
   fi
   code="$(curl -s -o /dev/null --max-time 20 -w '%{http_code}' "http://$host:$port/sellos" || true)"
   case "$code" in
@@ -64,7 +73,7 @@ sellos_preflight() {
     *)
       echo "A guest GET of http://$host:$port/sellos answered '$code', not 301 or 302." >&2
       echo "The server on port $port is not serving SellOS. Start it with: $SELLOS_SERVE_CMD" >&2
-      exit 3
+      sellos_env_exit 3
       ;;
   esac
 }

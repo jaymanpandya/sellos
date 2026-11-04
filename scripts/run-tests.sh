@@ -31,13 +31,19 @@ if [ -n "${SELLOS_TEST_ADMIN_PASSWORD:-}" ]; then
   export CYPRESS_adminPassword="$SELLOS_TEST_ADMIN_PASSWORD"
 fi
 
-LOG_DIR="/tmp/sellos-test-logs"
+LOG_DIR="${SELLOS_LOG_DIR:-/tmp/sellos-test-logs}"
 mkdir -p "$LOG_DIR"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="$LOG_DIR/run-$STAMP.log"
 UI_LOG="$LOG_DIR/ui-$STAMP.log"
 FLAKY_LOG="$BASELINE_DIR/sellos-flaky.log"
 rm -f "$LOG_DIR/latest.log"
+# Exit 2 and 3 mean an environment problem, and the build loop never repairs, resets or Blocks a
+# task for one (SOS-SETUP-14). Only the preflight's own exits, recorded by sellos_env_exit, keep a
+# 2 or 3. Any other failure ends as 1, whatever status the failing command returned: under set -e
+# a command's own 2 (a click usage error, say) would otherwise look like an environment problem.
+export SELLOS_ENV_EXIT_FILE="$LOG_DIR/env-exit-$STAMP"
+rm -f "$SELLOS_ENV_EXIT_FILE"
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=lib/sellos_server.sh
@@ -63,7 +69,7 @@ echo "--- Preflight ---"
 # under each other, so wait for it rather than corrupt both runs.
 if pgrep -f "buildos/scripts/(run-tests|build-loop)\.sh" >/dev/null 2>&1; then
   echo "A BuildOS gate or loop is running on this bench. Wait for it, then run this again." >&2
-  exit 3
+  sellos_env_exit 3
 fi
 # SellOS runs only on port 8004, on its own server pinned to this site (scripts/lib/sellos_server.sh).
 # The port comes from the site's config the way run-ui-tests reads it, anything else is refused
@@ -76,11 +82,11 @@ sellos_preflight "$SITE" "$PORT"
 if [ ! -f "$BASELINE" ] && [ -z "${SELLOS_ALLOW_NO_BASELINE:-}" ]; then
   echo "No clean baseline at $BASELINE. Create it with scripts/make-baseline.sh." >&2
   echo "A human may set SELLOS_ALLOW_NO_BASELINE=reason to run without it, once." >&2
-  exit 3
+  sellos_env_exit 3
 fi
 if [ ! -x "$BASELINE_DIR/semgrep-venv/bin/semgrep" ] || [ ! -d "$BASELINE_DIR/semgrep-rules/rules" ]; then
   echo "Semgrep or the Frappe rules are missing. Run scripts/make-baseline.sh once. CI runs them on every push." >&2
-  exit 3
+  sellos_env_exit 3
 fi
 
 echo "--- Lint and Semgrep (the same checks CI runs) ---"
@@ -210,5 +216,10 @@ echo "--- GATE PASSED ---"
 } 2>&1 | tee "$LOG_FILE"
 
 STATUS="${PIPESTATUS[0]}"
+if [[ "$STATUS" -eq 2 || "$STATUS" -eq 3 ]] && [ "$(cat "$SELLOS_ENV_EXIT_FILE" 2>/dev/null)" != "$STATUS" ]; then
+  echo "The gate failed with status $STATUS from a command, not from its preflight. Reporting it as a test failure (1)." | tee -a "$LOG_FILE"
+  STATUS=1
+fi
+rm -f "$SELLOS_ENV_EXIT_FILE"
 ln -sf "$LOG_FILE" "$LOG_DIR/latest.log"
 exit "$STATUS"

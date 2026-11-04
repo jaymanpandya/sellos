@@ -10,6 +10,10 @@
 #      Pass -> mark Complete, commit, push. Fail -> mark Blocked, stop.
 #   5. On NEEDS_INPUT: notify and stop — a human needs to answer.
 #   6. On a crashed Claude process: mark Blocked, notify, stop.
+#   7. On an environment problem (SOS-SETUP-14): the gate exits 2 or 3, or the server preflight
+#      fails after a failed gate run. Notify and stop, leaving the task In Progress and the
+#      working tree untouched: no repair run, no reset, no salvage, not Blocked. Restarting the
+#      loop resumes the task.
 #
 # The loop stops itself on any blocked/needs-input/no-work state. It is
 # not designed to grind through failures unattended — that's deliberate,
@@ -50,7 +54,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 TASKS_FILE="$PROJECT_DIR/TASKS.md"
-LOCK_FILE="/tmp/sellos-build-loop.lock"
+LOCK_FILE="${SELLOS_LOOP_LOCK:-/tmp/sellos-build-loop.lock}"
+# The gate writes its logs here too (scripts/run-tests.sh reads the same variable).
+LOG_DIR="${SELLOS_LOG_DIR:-/tmp/sellos-test-logs}"
+TASK_BLOCK_PATH="${SELLOS_TASK_BLOCK_PATH:-/tmp/sellos-task-block.md}"
 BRANCH="${SELLOS_BRANCH:-1.0}"
 
 # Both loops restore databases and clear the cache on the same bench, so they must not overlap.
@@ -82,8 +89,8 @@ fi
 
 # What went wrong in the last gate run: the unit test failures, the browser test failures, and the end of the log.
 failure_context() {
-  local log="/tmp/sellos-test-logs/latest.log"
-  if [[ ! -f "$log" ]]; then log="$(ls -t /tmp/sellos-test-logs/run-*.log 2>/dev/null | head -1)"; fi
+  local log="$LOG_DIR/latest.log"
+  if [[ ! -f "$log" ]]; then log="$(ls -t "$LOG_DIR"/run-*.log 2>/dev/null | head -1)"; fi
   if [[ -z "$log" || ! -f "$log" ]]; then echo "no log available"; return; fi
   local eq; eq="$(printf '=%.0s' $(seq 1 70))"
   {
@@ -148,6 +155,61 @@ push_with_retry() {
     sleep "${waits[$attempt]}"
     attempt=$((attempt + 1))
   done
+}
+
+# SOS-SETUP-14: an environment problem is not a task failure. The gate exits 2 or 3 only from its
+# preflight (wrong site or port, a server that is down or is not SellOS, no baseline, no Semgrep,
+# another gate running), never because of the task's code: run-tests.sh maps every other failure to
+# 1. A server that dies in the middle of a Cypress run makes the gate exit 1, so after every failed
+# gate run the loop runs the gate's own server preflight again (scripts/lib/sellos_server.sh: the
+# port, ping, and the guest /sellos redirect). If it fails, the failure is the environment's.
+BENCH_DIR="${SELLOS_BENCH_DIR:-$HOME/iespl-bench}"
+TEST_SITE="${SELLOS_TEST_SITE:-sellos_test.localhost}"
+GATE_OUT="$LOG_DIR/loop-gate-output.txt"
+# shellcheck source=lib/sellos_server.sh
+source "$SCRIPT_DIR/lib/sellos_server.sh"
+
+# The gate's server preflight. Prints its message, and returns 0, 2 (port) or 3 (server).
+server_preflight() {
+  (
+    sellos_require_port "$BENCH_DIR" "$TEST_SITE"
+    sellos_preflight "$TEST_SITE" "$PORT"
+  ) 2>&1
+}
+
+# Connection errors to a server: Cypress (cy.visit / cy.request "failed trying to load", with the
+# network error under it), Node, curl and Python requests.
+CONNECTION_ERROR_RE='ECONNREFUSED|ECONNRESET|ESOCKETTIMEDOUT|socket hang up|failed trying to load|request failed without a response|We received this error at the network level|Connection refused|Failed to connect|Max retries exceeded|NewConnectionError|RemoteDisconnected'
+# Lines that report a failure. Summary lines (counts, "failed again", the run table) only repeat
+# the failures above them, so they are not causes.
+FAILURE_LINE_RE='Error|Exception|Traceback|AssertionError|expected .* to |FAIL:|ERROR:'
+SUMMARY_LINE_RE='FAILED \(|FAILED AGAIN|SPEC FAILED|UI tests failed|Failing:|[0-9]+ of [0-9]+ failed|│|GATE PASSED'
+
+# True when the gate's output has a connection error to the SellOS server and every failure line
+# in it is a connection error, as when the server dies in the middle of a Cypress run.
+only_connection_errors() {
+  local out="$1" other
+  [[ -f "$out" ]] || return 1
+  grep -E "$CONNECTION_ERROR_RE" "$out" | grep -q -E "(${TEST_SITE//./\\.}|127\.0\.0\.1|localhost|\[::1\]):$SELLOS_PORT" ||
+    grep -A3 -E 'failed trying to load' "$out" | grep -q -E "(${TEST_SITE//./\\.}|127\.0\.0\.1|localhost):$SELLOS_PORT" ||
+    return 1
+  other="$(grep -E "$FAILURE_LINE_RE" "$out" | grep -v -E "$CONNECTION_ERROR_RE" | grep -v -E "$SUMMARY_LINE_RE" || true)"
+  [[ -z "$other" ]]
+}
+
+# Stop the loop for an environment problem. The task stays In Progress, and its work stays in the
+# working tree exactly as it is: no repair run, no reset, no salvage, not Blocked. The next start
+# of the loop resumes the In Progress task.
+stop_for_environment() {
+  local why="$1" detail="$2"
+  echo "Environment problem, not the task: $why"
+  printf '%s\n' "$detail"
+  "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: Environment problem, not the task. $why
+$TASK_ID stays In Progress and its work is left in the working tree as it is: no repair run, no reset, no salvage, not Blocked.
+The gate said:
+$(printf '%s' "$detail" | tail -c 3000)
+Fix it, then restart the loop. It resumes $TASK_ID." || true
+  exit 3
 }
 
 # Before any task starts: the remote must answer, and anything committed but not pushed goes up first.
@@ -273,8 +335,8 @@ $TASK_BLOCK"
   fi
 
   # Keep every reply, and take the marker from whichever line carries it.
-  mkdir -p /tmp/sellos-test-logs
-  printf '%s\n' "$RESPONSE" > "/tmp/sellos-test-logs/claude-reply-${TASK_ID}-$(date +%Y%m%d-%H%M%S).txt"
+  mkdir -p "$LOG_DIR"
+  printf '%s\n' "$RESPONSE" > "$LOG_DIR/claude-reply-${TASK_ID}-$(date +%Y%m%d-%H%M%S).txt"
   MARKER_LINE="$(printf '%s\n' "$RESPONSE" | grep -m1 -E '^(IMPLEMENTATION_READY|NEEDS_INPUT):' || true)"
   if [[ -n "$MARKER_LINE" ]]; then RESPONSE="$MARKER_LINE"; fi
 
@@ -334,19 +396,35 @@ $TASK_BLOCK"
   SUMMARY="${RESPONSE#IMPLEMENTATION_READY: }"
 
   # The gate runs the three task guards from these.
-  printf '%s\n' "$TASK_BLOCK" > /tmp/sellos-task-block.md
+  printf '%s\n' "$TASK_BLOCK" > "$TASK_BLOCK_PATH"
   export SELLOS_TASK_ID="$TASK_ID"
   export SELLOS_BASE_SHA="$IP_SHA"
-  export SELLOS_TASK_BLOCK_FILE=/tmp/sellos-task-block.md
+  export SELLOS_TASK_BLOCK_FILE="$TASK_BLOCK_PATH"
 
   MAX_GATE_RUNS="${SELLOS_MAX_GATE_RUNS:-3}"
   GATE_RUN=1
   while true; do
     set +e
-    "$SCRIPT_DIR/run-tests.sh"
-    TEST_EXIT=$?
+    mkdir -p "$LOG_DIR"
+    "$SCRIPT_DIR/run-tests.sh" 2>&1 | tee "$GATE_OUT"
+    TEST_EXIT="${PIPESTATUS[0]}"
     set -e
     if [[ "$TEST_EXIT" -eq 0 ]]; then break; fi
+    # Exit 2 or 3: the gate stopped in its preflight and tested nothing (SOS-SETUP-14).
+    if [[ "$TEST_EXIT" -eq 2 || "$TEST_EXIT" -eq 3 ]]; then
+      stop_for_environment "The gate stopped before testing anything (exit $TEST_EXIT)." "$(tail -n 15 "$GATE_OUT")"
+    fi
+    # Exit 1. Before this failure may be repaired as code, or Block the task, the server must still
+    # be SellOS. A server that died in the middle of a Cypress run must not be repaired as code.
+    if only_connection_errors "$GATE_OUT"; then
+      if ! PREFLIGHT_OUT="$(server_preflight)"; then
+        stop_for_environment "Every failure in the gate's output was a connection error to the site, and the server preflight fails now." "$(grep -E "$CONNECTION_ERROR_RE" "$GATE_OUT" | head -n 5)
+$PREFLIGHT_OUT"
+      fi
+      echo "Every failure was a connection error, but the server preflight passes now. Handling it as the task's failure."
+    elif ! PREFLIGHT_OUT="$(server_preflight)"; then
+      stop_for_environment "The gate failed, and the server preflight fails now (port, ping or the guest /sellos redirect), so the failure is not the code's." "$PREFLIGHT_OUT"
+    fi
     if [[ "$GATE_RUN" -ge "$MAX_GATE_RUNS" ]]; then break; fi
     GATE_RUN=$((GATE_RUN + 1))
     echo "The gate failed. Asking Claude to repair it from the failure output (gate run $GATE_RUN of $MAX_GATE_RUNS)."
@@ -372,8 +450,8 @@ $FAILCTX"
       REPAIR_EXIT=$?
     done
     set -e
-    mkdir -p /tmp/sellos-test-logs
-    printf '%s\n' "$REPAIR_RESPONSE" > "/tmp/sellos-test-logs/claude-repair-${TASK_ID}-$(date +%Y%m%d-%H%M%S).txt"
+    mkdir -p "$LOG_DIR"
+    printf '%s\n' "$REPAIR_RESPONSE" > "$LOG_DIR/claude-repair-${TASK_ID}-$(date +%Y%m%d-%H%M%S).txt"
     REPAIR_MARKER="$(printf '%s\n' "$REPAIR_RESPONSE" | grep -m1 -E '^IMPLEMENTATION_READY:' || true)"
     if [[ -z "$REPAIR_MARKER" && "$REPAIR_EXIT" -eq 0 ]] && printf '%s\n' "$REPAIR_RESPONSE" | grep -q -E '^NEEDS_INPUT:'; then
       echo "The repair step asked a question. Nobody can answer during a run, so it is told to decide for itself."
@@ -387,7 +465,7 @@ $QUESTION
 Decide for yourself, following the policy above, and fix it now. Do not ask again." --dangerously-skip-permissions)"
       REPAIR_EXIT=$?
       set -e
-      printf '%s\n' "$REPAIR_RESPONSE" > "/tmp/sellos-test-logs/claude-repair2-${TASK_ID}-$(date +%Y%m%d-%H%M%S).txt"
+      printf '%s\n' "$REPAIR_RESPONSE" > "$LOG_DIR/claude-repair2-${TASK_ID}-$(date +%Y%m%d-%H%M%S).txt"
       REPAIR_MARKER="$(printf '%s\n' "$REPAIR_RESPONSE" | grep -m1 -E '^IMPLEMENTATION_READY:' || true)"
     fi
     if [[ "$REPAIR_EXIT" -ne 0 || -z "$REPAIR_MARKER" ]]; then break; fi
@@ -409,7 +487,7 @@ $(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
       break
     fi
   else
-    TAIL="$(tail -n 40 /tmp/sellos-test-logs/latest.log 2>/dev/null || echo 'no log available')"
+    TAIL="$(tail -n 40 "$LOG_DIR/latest.log" 2>/dev/null || echo 'no log available')"
     SALVAGE_BRANCH="failed/${TASK_ID}-$(date +%Y%m%d-%H%M%S)"
     git add -A
     git commit -m "$TASK_ID: salvage before revert (may not build or pass tests)" --allow-empty >/dev/null 2>&1 || true
