@@ -4,11 +4,17 @@
 Usage: check_gate_files.py <BASE_SHA> <TASK_BLOCK_FILE>
 A task may change these files only when its block in TASKS.md says "- **Gate files:** allowed",
 which only a human writes. The build loop passes the block in a file.
+
+pyproject.toml is not protected as a whole, because tasks add dependencies to it. Its [tool.ruff]
+tables decide what lint passes, so any change to them (rules, ignores, per file ignores, format)
+fails the same way a protected file does.
 """
 
 import fnmatch
 import subprocess
 import sys
+import tomllib
+from pathlib import Path
 
 PROTECTED = [
 	"scripts/run-tests.sh",
@@ -22,6 +28,8 @@ PROTECTED = [
 	"cypress.config.js",
 	"cypress/support/e2e.js",
 	".pre-commit-config.yaml",
+	".semgrepignore",
+	".eslintrc",
 	".github/workflows/*",
 	"docs/DEV_STRATEGY.md",
 	"docs/TESTING.md",
@@ -32,6 +40,8 @@ PROTECTED = [
 # A task adds its flows here, so the file is not protected from a change. A flow already in it may
 # not be removed or edited, which is the same ratchet check_assertion_ratchet.py applies to tests.
 FLOWS_FILE = "docs/regression/flows.md"
+
+PYPROJECT = "pyproject.toml"
 
 
 def changed(base):
@@ -57,6 +67,24 @@ def removed_flows(base):
 	return [line[1:] for line in out.splitlines() if line.startswith("-FLOW")]
 
 
+def ruff_tables(text):
+	"""The [tool.ruff] tables of a pyproject.toml, or None when the file has none."""
+	return tomllib.loads(text).get("tool", {}).get("ruff")
+
+
+def ruff_changed(base):
+	"""True when [tool.ruff] in the working tree differs from the base commit in any way."""
+	shown = subprocess.run(["git", "show", f"{base}:{PYPROJECT}"], capture_output=True, text=True)
+	before = shown.stdout if shown.returncode == 0 else ""
+	path = Path(PYPROJECT)
+	after = path.read_text(encoding="utf-8") if path.exists() else ""
+	try:
+		return ruff_tables(before) != ruff_tables(after)
+	except tomllib.TOMLDecodeError as e:
+		print(f"{PYPROJECT} does not parse, so its [tool.ruff] tables cannot be checked: {e}")
+		return True
+
+
 def main():
 	base, block_file = sys.argv[1], sys.argv[2]
 	# A path the build loop passes in, not user input.
@@ -76,6 +104,8 @@ def main():
 		return 1
 
 	hits = [p for p in changed(base) if any(fnmatch.fnmatch(p, pat) for pat in PROTECTED)]
+	if ruff_changed(base):
+		hits.append(f"{PYPROJECT} [tool.ruff] (a dependency change is allowed, a lint setting change is not)")
 	if not hits:
 		print("Gate files: untouched.")
 		return 0

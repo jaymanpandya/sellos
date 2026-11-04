@@ -2,8 +2,8 @@
 # A .semgrepignore replaces Semgrep's built in ignore list, so that list is repeated below
 # to keep everything else scanned exactly as before.
 
-# scripts/lib/ holds BuildOS's loop scripts, copied from BuildOS. SellOS has adapted only the
-# task IDs, priorities and the waiting report. The open() calls Semgrep flags are BuildOS's own,
+# scripts/lib/ holds BuildOS's loop scripts, copied from BuildOS and adapted (the SellOS name,
+# priorities P0 to P6, the Owner field and the waiting report). The open() calls Semgrep flags are BuildOS's own,
 # reading and writing TASKS.md. This is build tooling, not app code, so the Frappe app rules do
 # not apply to it.
 scripts/lib/

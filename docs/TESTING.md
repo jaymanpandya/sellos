@@ -63,9 +63,14 @@ These decide whether a task passes, so a task may not change them unless its blo
 `Gate files: allowed`, which only a human writes: `scripts/run-tests.sh`, `build-loop.sh`,
 `watchdog.sh`, `select-next-task.sh`, `set-task-status.sh`, `make-baseline.sh`, `scripts/lib/*`,
 `scripts/check_*.py`, `cypress.config.js`, `cypress/support/e2e.js`, `.pre-commit-config.yaml`,
-`.github/workflows/*`, `docs/DEV_STRATEGY.md`, `scripts/prepare-regression.sh`,
-`docs/regression/README.md` and this file. `docs/regression/flows.md` is append only: a task adds its
-flows and may never remove one.
+`.semgrepignore`, `.eslintrc`, `.github/workflows/*`, `docs/DEV_STRATEGY.md`,
+`scripts/prepare-regression.sh`, `docs/regression/README.md` and this file. `docs/regression/flows.md`
+is append only: a task adds its flows and may never remove one.
+
+`pyproject.toml` is not protected as a whole, because tasks add dependencies to it. The guard loads it
+at the base commit and in the working tree with `tomllib` and fails if the `[tool.ruff]` tables differ
+in any way (rules, ignores, per file ignores, format settings). A comment or a dependency change
+passes. `sellos/tests/test_check_gate_files.py` tests the guard.
 
 ## Human overrides
 

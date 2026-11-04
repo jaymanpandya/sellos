@@ -2,7 +2,7 @@
 
 SellOS is built the way BuildOS is built, on the same bench, with the same tools and the same loop.
 This file records what BuildOS does (read from its repository on 4 November 2026), what SellOS
-copies unchanged, and every place where SellOS is stricter and why. If a rule here and a habit
+copies from it and how each copy is adapted, and every place where SellOS is stricter and why. If a rule here and a habit
 disagree, the rule wins. Gate files (see below) may only be changed by a human.
 
 ## 1. The environment is the BuildOS environment
@@ -47,9 +47,19 @@ because it restores the baseline over that site and wipes it.
    resumed by itself. A human finds the cause, checks it by hand in a browser, and resets it to
    Not Started.
 
-Copied unchanged from `../buildos/scripts`: `select-next-task.sh`, `set-task-status.sh`,
-`lib/tasks.py` (priorities now run P0 to P6, and it has a `waiting` report), `watchdog.sh`, `notify-telegram.sh`, `limit_wait.py`. Only the names, paths and
-prompt text in `build-loop.sh` change (section 5).
+Copied from `../buildos/scripts` and adapted. Only `select-next-task.sh` is unchanged. Python files
+were also reformatted to the SellOS ruff style (tabs, one statement per line), which changes no
+behaviour.
+
+* `lib/tasks.py`: the task ID pattern is the same as BuildOS's. What differs is the SellOS name in
+  the docstring, priorities that run P0 to P6 (BuildOS stops at P2), an `Owner` field that is read
+  from each task, and the `waiting` command, a report of the Waiting tasks that hold up Not
+  Started work, which the loop sends when nothing is eligible.
+* `set-task-status.sh`: a SellOS task ID in the usage example.
+* `limit_wait.py`: `SELLOS_LIMIT_WAIT_OVERRIDE` in place of `BUILDOS_LIMIT_WAIT_OVERRIDE`.
+* `notify-telegram.sh`: the `SELLOS_TELEGRAM_*` variables and the SellOS name.
+* `watchdog.sh`: the SellOS name in its message.
+* `make-baseline.sh`, `run-tests.sh` and `build-loop.sh` change more, see sections 4 and 5.
 
 ## 3. Tasks
 
@@ -92,7 +102,7 @@ leads yet", and the whole gate was green.
 | 2 | A spec passes if its own assertions pass | An API call that answered 403 or 500, or a console error, never fails anything | After every test, any `/api/` answer of 400 or more, and any console error, fails the test unless the spec declared it with `cy.expectApiStatus` or `cy.expectConsoleError` | `cypress/support/e2e.js` |
 | 3 | If the clean baseline file is missing the gate warns and carries on with whatever data is there | A result that cannot be repeated | Missing baseline stops the gate (exit 3). A human may allow one run with `SELLOS_ALLOW_NO_BASELINE` | `scripts/run-tests.sh` |
 | 4 | The UI tests need `bench start` and the site at its own address, and say nothing if they are not there | Cypress times out with an unhelpful message | A preflight asks the site to answer first and says what is missing | `scripts/run-tests.sh` |
-| 5 | The agent can edit the gate, the Cypress config, the support file or CI in the same task | A failing test is "fixed" by changing what judges it | Those files are protected. A task changes them only if its block says `Gate files: allowed`, which only a human writes | `scripts/check_gate_files.py` |
+| 5 | The agent can edit the gate, the Cypress config, the support file or CI in the same task | A failing test is "fixed" by changing what judges it | Those files are protected: `scripts/run-tests.sh`, `build-loop.sh`, `watchdog.sh`, `select-next-task.sh`, `set-task-status.sh`, `make-baseline.sh`, `prepare-regression.sh`, `scripts/lib/*`, `scripts/check_*.py`, `cypress.config.js`, `cypress/support/e2e.js`, `.pre-commit-config.yaml`, `.semgrepignore`, `.eslintrc`, `.github/workflows/*`, `docs/DEV_STRATEGY.md`, `docs/TESTING.md` and `docs/regression/README.md`. `pyproject.toml` is not protected as a whole, because tasks add dependencies to it, but any change to its `[tool.ruff]` tables fails. `docs/regression/flows.md` is append only. A task changes any of these only if its block says `Gate files: allowed`, which only a human writes | `scripts/check_gate_files.py` |
 | 6 | "Never weaken an assertion" is one sentence in a prompt | Nothing stops it | The number of assertions in every changed test file may not fall, and a test file may not be deleted | `scripts/check_assertion_ratchet.py` |
 | 7 | A task can be marked Complete with no test that names it | Acceptance criteria nobody tests | A new or changed test that names the task ID and holds assertions is required. A task marked `Browser spec: required` also needs a Cypress spec | `scripts/check_task_evidence.py` |
 | 8 | Lint and Semgrep are not in the gate, only in CI after the push | The commit lands, CI goes red afterwards. It happened three times on SellOS (ruff on PR 1, Semgrep twice on P0.07) | Pre-commit and Semgrep with the Frappe rules run inside the gate | `scripts/run-tests.sh` |
