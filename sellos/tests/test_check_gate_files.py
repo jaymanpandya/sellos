@@ -14,7 +14,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GUARD = REPO_ROOT / "scripts" / "check_gate_files.py"
 PYPROJECT = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-NEWLY_PROTECTED = [".semgrepignore", ".eslintrc"]
+NEWLY_PROTECTED = [".semgrepignore", ".eslintrc", "scripts/check_no_stale_skips.py"]
 ALLOWED_BLOCK = "### SOS-X-1: a task\n- **Status:** In Progress\n- **Gate files:** allowed\n"
 PLAIN_BLOCK = "### SOS-X-1: a task\n- **Status:** In Progress\n"
 
@@ -38,6 +38,7 @@ class TestCheckGateFiles(unittest.TestCase):
 		git(self.repo, "init", "-q")
 		(self.repo / "pyproject.toml").write_text(PYPROJECT, encoding="utf-8")
 		for name in NEWLY_PROTECTED:
+			(self.repo / name).parent.mkdir(parents=True, exist_ok=True)
 			(self.repo / name).write_text("# base\n", encoding="utf-8")
 		(self.repo / "app.py").write_text("x = 1\n", encoding="utf-8")
 		git(self.repo, "add", "-A")

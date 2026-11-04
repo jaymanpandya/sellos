@@ -25,6 +25,8 @@ PROTECTED = [
 	"scripts/make-baseline.sh",
 	"scripts/lib/*",
 	"scripts/check_*.py",
+	# Named as well as matched, so narrowing the pattern above cannot unprotect it (SOS-SETUP-16).
+	"scripts/check_no_stale_skips.py",
 	"cypress.config.js",
 	"cypress/support/e2e.js",
 	".pre-commit-config.yaml",

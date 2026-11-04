@@ -1,4 +1,4 @@
-// SOS-P1-06: one lead, its timeline and what each role may do on it. Replaces the lead page half of
+// SOS-P1-06A (reopened from SOS-P1-06): one lead, its timeline and what each role may do on it. Replaces the lead page half of
 // crm.test.js. The server's answers are stubbed, as the old tests stubbed crmApi.
 const lead = (timeline = []) => ({
 	message: {
@@ -8,7 +8,7 @@ const lead = (timeline = []) => ({
 	},
 });
 
-context("SOS-P1-06: lead detail", () => {
+context("SOS-P1-06A: lead detail", () => {
 	it("logs an activity and reloads the timeline", () => {
 		cy.signInFresh("agent");
 		let loads = 0;

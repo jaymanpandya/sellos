@@ -99,6 +99,14 @@ echo "--- Lint and Semgrep (the same checks CI runs) ---"
     --config "$BASELINE_DIR/semgrep-rules/rules" --config r/python.lang.correctness
 )
 
+# SOS-SETUP-16: the whole Cypress suite runs below, so a spec for a later task is skipped until that
+# task. A skip that names no task, or a task that is Complete or is the one being finished, fails.
+echo "--- Skipped specs wait for an unfinished task ---"
+(
+  cd "$REPO_DIR"
+  python3 scripts/check_no_stale_skips.py ${SELLOS_TASK_ID:+--current "$SELLOS_TASK_ID"} TASKS.md cypress/integration
+)
+
 if [ -n "${SELLOS_TASK_ID:-}" ]; then
   echo "--- Task guards: $SELLOS_TASK_ID ---"
   (

@@ -1,6 +1,6 @@
 // Defines what the leads screen must do for each role. It goes through the real screens, so a
 // list that fails to load, or a save the server refuses, fails here instead of showing an empty page.
-context("SOS-P1-06: leads by role", () => {
+context("SOS-P1-06A: leads by role", () => {
 	const unique = (label) => `${label} ${Date.now()}`;
 
 	it("the company admin creates a lead and sees it in the list", () => {

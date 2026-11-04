@@ -1,4 +1,4 @@
-// SOS-P1-06: the leads list and the new lead form. Replaces the leads page half of crm.test.js.
+// SOS-P1-06A (reopened from SOS-P1-06): the leads list and the new lead form. Replaces the leads page half of crm.test.js.
 // The server's answers are stubbed, as the old tests stubbed crmApi, so these check the screen
 // and what it asks the server to do. cypress/integration/crm/leads_by_role.cy.js uses the real server.
 const LEAD = {
@@ -9,7 +9,7 @@ const LEAD = {
 	},
 };
 
-context("SOS-P1-06: leads screen", () => {
+context("SOS-P1-06A: leads screen", () => {
 	it("lists leads and shows overdue tasks", () => {
 		cy.signInFresh("agent");
 		cy.intercept("**/api/method/sellos.crm.api.list_leads*", {
