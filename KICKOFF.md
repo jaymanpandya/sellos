@@ -40,7 +40,7 @@ approval, which is the gate for P0.02 and P0.10.
 1. Claude Code does P0.02, then P0.03, P0.07 and P0.09 once the repositories exist.
 2. AMP Labs and Claude Code do P0.04 once N18 is decided, then P0.05 and P0.06.
 3. Claude Code builds P0.10, the web app shell, from the approved conventions.
-4. Gate 0 is signed off when the conventions are approved, the web app signs in, and a test company site is created by script.
+4. SOS-REG-0 is Complete (a clickthrough report with Result: PASS) when the conventions are approved, the web app signs in, and a test company site is created by script.
 
 ## Standing rules
 

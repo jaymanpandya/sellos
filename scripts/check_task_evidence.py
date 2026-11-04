@@ -4,7 +4,9 @@
 Usage: check_task_evidence.py <TASK_ID> <BASE_SHA> <TASK_BLOCK_FILE>
 A task needs at least one new or changed test file (test_*.py or *.cy.js) that mentions its ID,
 and that file must hold assertions. A block with "- **Docs only:** yes" is exempt. A task whose
-block says "- **Browser spec:** required" also needs a changed *.cy.js that names the task.
+block says "- **Browser spec:** required" also needs a changed *.cy.js that names the task, and its
+flows in docs/regression/flows.md: at least one line "FLOW <task id>-<n> | role | start path | steps |
+expected result" (five fields), which the clickthrough regression walks in a browser.
 """
 
 import re
@@ -32,6 +34,21 @@ def changed_files(base):
 	).stdout
 	files.update(p for p in diff.splitlines() if p)
 	return sorted(f for f in files if TEST_FILE.search(f))
+
+
+FLOWS_FILE = "docs/regression/flows.md"
+
+
+def flows_for(task_id):
+	"""The well formed FLOW lines for a task in docs/regression/flows.md."""
+	try:
+		# A fixed path in the repository, not user input.
+		with open(FLOWS_FILE, encoding="utf-8") as f:  # nosemgrep
+			text = f.read()
+	except OSError:
+		return []
+	pattern = re.compile(rf"^FLOW\s+{re.escape(task_id)}-\d+\s*\|(?:[^|\n]+\|){{3}}[^|\n]+$", re.M)
+	return pattern.findall(text)
 
 
 def main():
@@ -63,6 +80,11 @@ def main():
 		p.endswith(".cy.js") for p in named
 	):
 		print(f"Task evidence FAILED: {task_id} needs a Cypress spec that names it.")
+		return 1
+
+	if re.search(r"\*\*Browser spec:\*\*\s*required", block, re.I) and not flows_for(task_id):
+		print(f"Task evidence FAILED: {task_id} has no flow in {FLOWS_FILE}.")
+		print(f"Add a line: FLOW {task_id}-1 | role | start path | steps | expected result")
 		return 1
 
 	print(f"Task evidence: {task_id} is covered by {', '.join(named)}")

@@ -9,7 +9,7 @@ This file is the backlog for building SellOS, in the BuildOS block format that `
 * Waiting means the task belongs to Jayman, AMP Labs, Counsel or the Accountant and is not a task for the agent. A person marks it Complete with `scripts/set-task-status.sh <ID> Complete` when the work is done.
 * Priority is the phase: Phase 0 is P0, Phase 1 is P1, and so on. The N tasks (enablers owned by people) are P0.
 * `Browser spec: required` means a person sees or uses the result, so the task needs a Cypress spec that names it. `Docs only: yes` and `Gate files: allowed` are written only by a human.
-* The SOS-GATE tasks are the phase gates. When a gate's evidence tasks are Complete, the loop picks the gate, the agent replies NEEDS_INPUT with TEST NOW and the steps, and the loop stops. Jayman checks by hand, then marks the gate Complete. The old numbers map as P1.06 to SOS-P1-06 and N16 to SOS-N16.
+* The SOS-REG tasks are the clickthrough regression milestones (SOS-REG-0 to SOS-REG-6, and SOS-REG-2B inside Phase 2). They are Waiting tasks owned by Claude in chat. Each depends on every task of its phase that a person sees or uses, and every task of the next phase depends on it, so the loop runs out of eligible tasks at each milestone. Claude in chat then follows `docs/regression/README.md`, and when the report says "Result: PASS" and no SOS-FIX task is open, the milestone is marked Complete by hand and the loop is started again. The old numbers map as P1.06 to SOS-P1-06 and N16 to SOS-N16.
 
 ## Done so far
 
@@ -47,24 +47,24 @@ This file is the backlog for building SellOS, in the BuildOS block format that `
 
 ## Phase gates and sprint plan
 
-The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). The sprint plan below is indicative.
+The regression milestones are tasks in this file (SOS-REG-0 to SOS-REG-6, and SOS-REG-2B). The sprint plan below is indicative.
 
 * S1, weeks 1 to 2: E1 starts. Phase 0 foundations: repositories, servers, bench.
 * S2, weeks 3 to 4: Phase 0 app shell and test site script. Phase 1 starts. Velocity measured.
 * S3, weeks 5 to 6: Phase 1 control site, provisioning, roles and permission tests.
-* S4, weeks 7 to 8: Phase 1 CRM, consent, website endpoint, Pandya site. Gate 1.
+* S4, weeks 7 to 8: Phase 1 CRM, consent, website endpoint, Pandya site. Regression 1.
 * S5, weeks 9 to 10: Phase 2 settings, adapter, router, consent check, Call Log.
-* S6, weeks 11 to 12: Phase 2 click to call, inbound opt in route, reports. Gate 2.
+* S6, weeks 11 to 12: Phase 2 click to call, inbound opt in route, reports. Regression 2.
 * S7, weeks 13 to 14: Phase 3 ingestion, normaliser, building master.
 * S8, weeks 15 to 16: Phase 3 matcher, nightly jobs, comparables.
-* S9, weeks 17 to 18: Phase 3 valuation and assistant. Gate 3. Phase 4 starts.
+* S9, weeks 17 to 18: Phase 3 valuation and assistant. Regression 3. Phase 4 starts.
 * S10, weeks 19 to 20: Phase 4 inventory, listings, mandates.
-* S11, weeks 21 to 22: Phase 4 deals and website feed. Gate 4.
+* S11, weeks 21 to 22: Phase 4 deals and website feed. Regression 4.
 * S12, weeks 23 to 24: Phase 5 reporting module.
 * S13, weeks 25 to 26: Phase 5 portals and voice agent service.
-* S14, weeks 27 to 28: Phase 5 AI pilot review and security review. Gate 5. Phase 6 starts.
+* S14, weeks 27 to 28: Phase 5 AI pilot review and security review. Regression 5. Phase 6 starts.
 * S15, weeks 29 to 30: Phase 6 billing, listing sources, WhatsApp.
-* S16, week 31: Phase 6 platform tests and the first outside agency. Gate 6.
+* S16, week 31: Phase 6 platform tests and the first outside agency. Regression 6.
 
 ### SOS-N07: Counsel reviews the consent basis and calling script
 - **Epic:** Compliance, procurement and access
@@ -367,7 +367,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
   - Those two specs pass.
   - The page uses the approved tokens (#0f4c35, #e8954a, Syne headings, DM Sans body, a filled --sos-brand-mid) and shows the company name, not the site name. Find what replaced the approved tokens and restore them.
 - **Test Criteria:** Backend tests for the refusals and for both fixtures, and the two Cypress specs named above pass in the gate.
-- **Notes:** Where to start, all unconfirmed until reproduced. (1) The refusal text on the guard is "This method has no declared roles." from guard_api in sellos/access/registry.py, which runs as a before_request hook and looks a method up in _REGISTRY. The registry is filled when a module with @sellos_api is imported, and a fresh server process may not have imported sellos.crm.api when the first request arrives. Reproduce over HTTP against a running server, not only in a test process. (2) The docstring of _configure_company_site says a site type or company profile is checked by sellos.access, but no such check was found in sellos/access when this task was written. Find the real cause before using that wording. (3) The placeholder tokens are in frontend/src/theme/tokens.js (brand #1d4e5f, accent #c98a2b, Inter), written in P0.10 "until the product brand is chosen". The approved values are in this task. Record them in the tokens file and in docs, with --sos-brand-mid filled in. (4) sellos/spa.py get_company_branding returns the site name when SellOS Settings has no company name.
+- **Notes:** Where to start, all unconfirmed until reproduced. (1) The refusal text on the guard is "This method has no declared roles." from guard_api in sellos/access/registry.py, which runs as a before_request hook and looks a method up in _REGISTRY. The registry is filled when a module with @sellos_api is imported, and a fresh server process may not have imported sellos.crm.api when the first request arrives. Reproduce over HTTP against a running server, not only in a test process. (2) The docstring of _configure_company_site says a site type or company profile is checked by sellos.access, but no such check was found in sellos/access when this task was written. Find the real cause before using that wording. (3) The placeholder tokens are in frontend/src/theme/tokens.js (brand #1d4e5f, accent #c98a2b, Inter), written in P0.10 "until the product brand is chosen". The approved values are in this task. Record them in the tokens file and in docs, with --sos-brand-mid filled in. (4) sellos/spa.py get_company_branding returns the site name when SellOS Settings has no company name. FINDING (4 November 2026, measured over HTTP, hypothesis (1) confirmed): a freshly started server process (`bench --site sellos_test.localhost serve --port 8005`) answered the first `GET /api/method/sellos.crm.api.list_leads` as the test company admin (after logging in) with 403 `{"exc_type":"PermissionError"}`, and answered 403 again on the second, third and fourth call, after `/sellos` and `/api/resource/Lead` had been requested. Nothing in a server process imports `sellos.crm.api`: `sellos/access/matrix.py` only holds the method names as strings, and `guard_api` runs before Frappe imports the method. The same Frappe WSGI app started with `import sellos.crm.api` run first (a harness in the scratchpad, not in the repository) answered the same call with 200 `{"message":[]}`. In a Python process, `is_refused("sellos.crm.api.list_leads")` is True before the import and False after it. The code that refused every user is in `sellos/access/registry.py`: `_REGISTRY` is filled only as a side effect of importing a module that uses `@sellos_api` (`_REGISTRY[path] = allowed` inside `decorate`), `is_refused` returns `bool(method) and method.startswith(PREFIX) and method not in _REGISTRY`, and the before_request hook does `method = method_from_path(request.path) or request.values.get("cmd")`, then `if is_refused(method): raise frappe.PermissionError(frappe._("This method has no declared roles."))`. So a declared method is refused until its module has been imported, and a refused call never imports it. This is also why the tests passed: the test process imports the CRM module. The fix must make the registry complete at startup without weakening the guard: an undeclared method must still be denied. For example, import every module that holds API methods (the ones in `sellos/access/matrix.py`) when `sellos.access.registry` loads or in a hook that runs at startup, and add a test that starts from a process where `sellos.crm.api` was not imported. Hypothesis (2) stands: `_configure_company_site` has no cause in `sellos.access` to quote, because the refusal above is the only thing found that refuses every user.
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 5
@@ -387,7 +387,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 3
-- **Dependencies:** SOS-P1-06A
+- **Dependencies:** SOS-P1-06A, SOS-REG-0
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -402,7 +402,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 5
-- **Dependencies:** SOS-P1-02
+- **Dependencies:** SOS-P1-02, SOS-REG-0
 - **Status:** Not Started
 
 ### SOS-P6-12: Run the restore, upgrade and load tests
@@ -412,11 +412,11 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
   - The restore completes within the agreed time.
   - The upgrade across 20 sites loses no data.
   - The load test meets the agreed response times.
-- **Test Criteria:** A results report is stored, and every failure becomes a tracked bug before Gate 6.
+- **Test Criteria:** A results report is stored, and every failure becomes a tracked bug before SOS-REG-6.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 8
-- **Dependencies:** SOS-P0-08, SOS-P1-14
+- **Dependencies:** SOS-P0-08, SOS-P1-14, SOS-REG-5
 - **Status:** Not Started
 
 ### SOS-P0-10: Build the web app shell
@@ -476,7 +476,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 3
-- **Dependencies:** SOS-P1-04
+- **Dependencies:** SOS-P1-04, SOS-REG-0
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -491,7 +491,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** AMP Labs
 - **Priority:** P5
 - **Story Points:** 5
-- **Dependencies:** SOS-P1-05
+- **Dependencies:** SOS-P1-05, SOS-REG-4
 - **Status:** Waiting
 
 ### SOS-P0-11: Write the test site script
@@ -519,7 +519,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 5
-- **Dependencies:** SOS-P0-06
+- **Dependencies:** SOS-P0-06, SOS-REG-0
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -535,7 +535,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 8
-- **Dependencies:** SOS-P1-01, SOS-P0-11
+- **Dependencies:** SOS-P1-01, SOS-P0-11, SOS-REG-0
 - **Status:** Not Started
 
 ### SOS-P1-03: Build the setup wizard
@@ -549,7 +549,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 8
-- **Dependencies:** SOS-P1-02
+- **Dependencies:** SOS-P1-02, SOS-REG-0
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -564,7 +564,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** AMP Labs, Claude Code
 - **Priority:** P1
 - **Story Points:** 3
-- **Dependencies:** SOS-P1-03
+- **Dependencies:** SOS-P1-03, SOS-REG-0
 - **Status:** Not Started
 
 ### SOS-P1-07: Build the buyer pipeline
@@ -578,7 +578,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 5
-- **Dependencies:** SOS-P1-06B, SOS-P1-08
+- **Dependencies:** SOS-P1-06B, SOS-P1-08, SOS-REG-0
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -594,7 +594,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 5
-- **Dependencies:** SOS-P1-06B
+- **Dependencies:** SOS-P1-06B, SOS-REG-0
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -610,7 +610,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 5
-- **Dependencies:** SOS-P1-08
+- **Dependencies:** SOS-P1-08, SOS-REG-0
 - **Status:** Not Started
 
 ### SOS-P1-10: Connect the Pandya website forms
@@ -625,7 +625,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** AMP Labs
 - **Priority:** P1
 - **Story Points:** 3
-- **Dependencies:** SOS-P1-09
+- **Dependencies:** SOS-P1-09, SOS-REG-0
 - **Status:** Waiting
 
 ### SOS-P1-12: Import the bought lead lists
@@ -639,7 +639,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 3
-- **Dependencies:** SOS-P1-07
+- **Dependencies:** SOS-P1-07, SOS-REG-0
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -655,7 +655,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 3
-- **Dependencies:** SOS-P1-04, SOS-N09
+- **Dependencies:** SOS-P1-04, SOS-N09, SOS-REG-1
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -670,7 +670,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 8
-- **Dependencies:** SOS-P2-01
+- **Dependencies:** SOS-P2-01, SOS-REG-1
 - **Status:** Not Started
 
 ### SOS-P2-03: Build the call router
@@ -684,7 +684,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 5
-- **Dependencies:** SOS-P2-02
+- **Dependencies:** SOS-P2-02, SOS-REG-1
 - **Status:** Not Started
 
 ### SOS-P2-04: Build the consent check
@@ -700,7 +700,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 5
-- **Dependencies:** SOS-P1-08
+- **Dependencies:** SOS-P1-08, SOS-REG-1
 - **Status:** Not Started
 
 ### SOS-P2-05: Extend the Call Log
@@ -714,7 +714,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 5
-- **Dependencies:** SOS-P2-02
+- **Dependencies:** SOS-P2-02, SOS-REG-1
 - **Status:** Not Started
 
 ### SOS-P2-06: Build the webhook endpoint
@@ -729,7 +729,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 5
-- **Dependencies:** SOS-P2-05
+- **Dependencies:** SOS-P2-05, SOS-REG-1
 - **Status:** Not Started
 
 ### SOS-P2-07: Build click to call
@@ -745,7 +745,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 8
-- **Dependencies:** SOS-P2-03, SOS-P2-04, SOS-P2-06
+- **Dependencies:** SOS-P2-03, SOS-P2-04, SOS-P2-06, SOS-REG-1
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -761,7 +761,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 8
-- **Dependencies:** SOS-P2-04
+- **Dependencies:** SOS-P2-04, SOS-REG-1, SOS-REG-2B
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -776,7 +776,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 3
-- **Dependencies:** SOS-P2-04
+- **Dependencies:** SOS-P2-04, SOS-REG-1, SOS-REG-2B
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -791,7 +791,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 5
-- **Dependencies:** SOS-P2-04, SOS-N10
+- **Dependencies:** SOS-P2-04, SOS-N10, SOS-REG-1, SOS-REG-2B
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -806,7 +806,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 5
-- **Dependencies:** SOS-P2-05
+- **Dependencies:** SOS-P2-05, SOS-REG-1, SOS-REG-2B
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -821,7 +821,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Story Points:** 2
-- **Dependencies:** SOS-P2-03
+- **Dependencies:** SOS-P2-03, SOS-REG-1, SOS-REG-2B
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -836,7 +836,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Jayman
 - **Priority:** P2
 - **Story Points:** 3
-- **Dependencies:** SOS-P2-07
+- **Dependencies:** SOS-P2-07, SOS-REG-1
 - **Status:** Waiting
 
 ### SOS-P2-14: Onboard the first caller and start the baseline
@@ -850,7 +850,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Jayman
 - **Priority:** P2
 - **Story Points:** 3
-- **Dependencies:** SOS-P2-13
+- **Dependencies:** SOS-P2-13, SOS-REG-1
 - **Status:** Waiting
 
 ### SOS-P3-01: Build the source adapter
@@ -865,7 +865,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 5
-- **Dependencies:** SOS-N11, SOS-N12
+- **Dependencies:** SOS-N11, SOS-N12, SOS-REG-2
 - **Status:** Not Started
 
 ### SOS-P3-02: Create the raw transaction table
@@ -879,7 +879,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 3
-- **Dependencies:** SOS-P3-01
+- **Dependencies:** SOS-P3-01, SOS-REG-2
 - **Status:** Not Started
 
 ### SOS-P3-03: Build the normaliser
@@ -894,7 +894,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 8
-- **Dependencies:** SOS-P3-02
+- **Dependencies:** SOS-P3-02, SOS-REG-2
 - **Status:** Not Started
 
 ### SOS-P3-04: Build the building and micro market master
@@ -908,7 +908,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code, Jayman
 - **Priority:** P3
 - **Story Points:** 5
-- **Dependencies:** SOS-P3-02
+- **Dependencies:** SOS-P3-02, SOS-REG-2
 - **Status:** Not Started
 
 ### SOS-P3-05: Build the matcher
@@ -922,7 +922,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 8
-- **Dependencies:** SOS-P3-03, SOS-P3-04
+- **Dependencies:** SOS-P3-03, SOS-P3-04, SOS-REG-2
 - **Status:** Not Started
 
 ### SOS-P3-06: Flag outliers
@@ -936,7 +936,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 5
-- **Dependencies:** SOS-P3-05
+- **Dependencies:** SOS-P3-05, SOS-REG-2
 - **Status:** Not Started
 
 ### SOS-P3-07: Build the nightly jobs
@@ -950,7 +950,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 5
-- **Dependencies:** SOS-P3-05
+- **Dependencies:** SOS-P3-05, SOS-REG-2
 - **Status:** Not Started
 
 ### SOS-P3-08: Build the comparables API and profiles
@@ -965,7 +965,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 8
-- **Dependencies:** SOS-P3-07
+- **Dependencies:** SOS-P3-07, SOS-REG-2
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -980,7 +980,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 8
-- **Dependencies:** SOS-P3-08
+- **Dependencies:** SOS-P3-08, SOS-REG-2
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -996,7 +996,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 8
-- **Dependencies:** SOS-P3-08
+- **Dependencies:** SOS-P3-08, SOS-REG-2
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1011,7 +1011,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 3
-- **Dependencies:** SOS-P3-07
+- **Dependencies:** SOS-P3-07, SOS-REG-2
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1027,7 +1027,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Story Points:** 3
-- **Dependencies:** SOS-N13, SOS-P3-02
+- **Dependencies:** SOS-N13, SOS-P3-02, SOS-REG-2
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1042,7 +1042,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Jayman
 - **Priority:** P3
 - **Story Points:** 5
-- **Dependencies:** SOS-P3-05
+- **Dependencies:** SOS-P3-05, SOS-REG-2
 - **Status:** Waiting
 
 ### SOS-P4-01: Build Developer, Project, Unit and Property
@@ -1057,7 +1057,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Story Points:** 8
-- **Dependencies:** SOS-P1-04
+- **Dependencies:** SOS-P1-04, SOS-REG-3
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1072,7 +1072,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Story Points:** 5
-- **Dependencies:** SOS-P4-01
+- **Dependencies:** SOS-P4-01, SOS-REG-3
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1087,7 +1087,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Story Points:** 3
-- **Dependencies:** SOS-P4-02
+- **Dependencies:** SOS-P4-02, SOS-REG-3
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1102,7 +1102,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Story Points:** 5
-- **Dependencies:** SOS-P4-02
+- **Dependencies:** SOS-P4-02, SOS-REG-3
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1118,7 +1118,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Story Points:** 8
-- **Dependencies:** SOS-P4-04
+- **Dependencies:** SOS-P4-04, SOS-REG-3
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1134,7 +1134,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Story Points:** 8
-- **Dependencies:** SOS-P4-05
+- **Dependencies:** SOS-P4-05, SOS-REG-3
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1149,7 +1149,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Story Points:** 5
-- **Dependencies:** SOS-P3-09, SOS-P4-05
+- **Dependencies:** SOS-P3-09, SOS-P4-05, SOS-REG-3
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1164,7 +1164,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Story Points:** 5
-- **Dependencies:** SOS-P4-02
+- **Dependencies:** SOS-P4-02, SOS-REG-3
 - **Status:** Not Started
 
 ### SOS-P4-09: Switch the website to read listings from SellOS
@@ -1178,7 +1178,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** AMP Labs
 - **Priority:** P4
 - **Story Points:** 3
-- **Dependencies:** SOS-P4-08
+- **Dependencies:** SOS-P4-08, SOS-REG-3
 - **Status:** Waiting
 
 ### SOS-P4-10: Import current listings and mandates
@@ -1192,7 +1192,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** AMP Labs, Jayman
 - **Priority:** P4
 - **Story Points:** 3
-- **Dependencies:** SOS-P4-05
+- **Dependencies:** SOS-P4-05, SOS-REG-3
 - **Status:** Waiting
 
 ### SOS-P5-01: Build the report engine
@@ -1207,7 +1207,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Story Points:** 8
-- **Dependencies:** SOS-P1-06B
+- **Dependencies:** SOS-P1-06B, SOS-REG-4
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1222,7 +1222,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Story Points:** 8
-- **Dependencies:** SOS-P5-01, SOS-P4-06, SOS-P2-11
+- **Dependencies:** SOS-P5-01, SOS-P4-06, SOS-P2-11, SOS-REG-4
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1237,7 +1237,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Story Points:** 5
-- **Dependencies:** SOS-P5-01
+- **Dependencies:** SOS-P5-01, SOS-REG-4
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1253,7 +1253,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Story Points:** 5
-- **Dependencies:** SOS-P5-01
+- **Dependencies:** SOS-P5-01, SOS-REG-4
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1269,7 +1269,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Story Points:** 8
-- **Dependencies:** SOS-P4-05
+- **Dependencies:** SOS-P4-05, SOS-REG-4
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1285,7 +1285,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Story Points:** 8
-- **Dependencies:** SOS-P4-06
+- **Dependencies:** SOS-P4-06, SOS-REG-4
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1302,7 +1302,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Story Points:** 8
-- **Dependencies:** SOS-P2-03, SOS-P2-04
+- **Dependencies:** SOS-P2-03, SOS-P2-04, SOS-REG-4
 - **Status:** Not Started
 
 ### SOS-P5-08: Run the AI pilot
@@ -1316,7 +1316,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Jayman
 - **Priority:** P5
 - **Story Points:** 5
-- **Dependencies:** SOS-P5-07, SOS-P2-14
+- **Dependencies:** SOS-P5-07, SOS-P2-14, SOS-REG-4
 - **Status:** Waiting
 
 ### SOS-P5-09: Compare AI with the human baseline
@@ -1330,7 +1330,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Jayman, Claude Code
 - **Priority:** P5
 - **Story Points:** 3
-- **Dependencies:** SOS-P5-08
+- **Dependencies:** SOS-P5-08, SOS-REG-4
 - **Status:** Not Started
 
 ### SOS-P6-01: Build the billing records
@@ -1344,7 +1344,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 5
-- **Dependencies:** SOS-P1-01
+- **Dependencies:** SOS-P1-01, SOS-REG-5
 - **Status:** Not Started
 
 ### SOS-P6-02: Define the plan tiers
@@ -1358,7 +1358,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code, Jayman
 - **Priority:** P6
 - **Story Points:** 3
-- **Dependencies:** SOS-P0-01
+- **Dependencies:** SOS-P0-01, SOS-REG-5
 - **Status:** Not Started
 
 ### SOS-P6-03: Build the Razorpay adapter and recurring payments
@@ -1373,7 +1373,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 8
-- **Dependencies:** SOS-N14, SOS-P6-01
+- **Dependencies:** SOS-N14, SOS-P6-01, SOS-REG-5
 - **Status:** Not Started
 
 ### SOS-P6-15: Build the Stripe adapter
@@ -1388,7 +1388,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 5
-- **Dependencies:** SOS-P6-03
+- **Dependencies:** SOS-P6-03, SOS-REG-5
 - **Status:** Not Started
 
 ### SOS-P6-04: Build the billing lifecycle
@@ -1404,7 +1404,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 8
-- **Dependencies:** SOS-P6-03, SOS-P6-02
+- **Dependencies:** SOS-P6-03, SOS-P6-02, SOS-REG-5
 - **Status:** Not Started
 
 ### SOS-P6-05: Build coupons
@@ -1418,7 +1418,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 3
-- **Dependencies:** SOS-P6-01
+- **Dependencies:** SOS-P6-01, SOS-REG-5
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1434,7 +1434,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 5
-- **Dependencies:** SOS-N15, SOS-P6-01
+- **Dependencies:** SOS-N15, SOS-P6-01, SOS-REG-5
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1450,7 +1450,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 8
-- **Dependencies:** SOS-P6-04, SOS-P1-03
+- **Dependencies:** SOS-P6-04, SOS-P1-03, SOS-REG-5
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1466,7 +1466,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 8
-- **Dependencies:** SOS-P4-02
+- **Dependencies:** SOS-P4-02, SOS-REG-5
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1481,7 +1481,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Jayman, Counsel
 - **Priority:** P6
 - **Story Points:** 3
-- **Dependencies:** SOS-P6-08
+- **Dependencies:** SOS-P6-08, SOS-REG-5
 - **Status:** Waiting
 
 ### SOS-P6-10: Build the Facebook capture assist
@@ -1496,7 +1496,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 8
-- **Dependencies:** SOS-P6-08
+- **Dependencies:** SOS-P6-08, SOS-REG-5
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1512,7 +1512,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 8
-- **Dependencies:** SOS-P1-08
+- **Dependencies:** SOS-P1-08, SOS-REG-5
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1528,7 +1528,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 8
-- **Dependencies:** SOS-P6-11
+- **Dependencies:** SOS-P6-11, SOS-REG-5
 - **Status:** Not Started
 
 ### SOS-P6-17: Rebuild WhatsApp flows, group two
@@ -1543,7 +1543,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Story Points:** 8
-- **Dependencies:** SOS-P6-11
+- **Dependencies:** SOS-P6-11, SOS-REG-5
 - **Status:** Not Started
 
 ### SOS-P6-13: Prepare legal terms and the support process
@@ -1558,7 +1558,7 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Owner:** Jayman, Counsel
 - **Priority:** P6
 - **Story Points:** 5
-- **Dependencies:** SOS-P6-07
+- **Dependencies:** SOS-P6-07, SOS-REG-5
 - **Status:** Waiting
 
 ### SOS-P6-14: Onboard the first outside agency
@@ -1568,110 +1568,101 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
   - The agency signs up and pays in live or agreed mode.
   - Their data is isolated from Pandya's.
   - Issues are logged and triaged.
-  - Gate 6 is signed off.
+  - SOS-REG-6 is Complete.
 - **Test Criteria:** A cross company isolation check on live data, and a review of the issue log.
 - **Owner:** Jayman
 - **Priority:** P6
 - **Story Points:** 5
-- **Dependencies:** SOS-P6-07, SOS-P6-12, SOS-P5-10
+- **Dependencies:** SOS-P6-07, SOS-P6-12, SOS-P5-10, SOS-REG-5
 - **Status:** Waiting
 
-### SOS-GATE-0: Gate 0, Foundations
-- **Epic:** Phase gates
-- **Description:** Human sign-off milestone. BuildOS conventions approved, the web app signs in, and a test company site is created by script. Do not change any file. Reply with NEEDS_INPUT whose text starts with TEST NOW and lists the steps in the acceptance criteria, so the loop stops and Jayman can check by hand. Jayman marks this task Complete with scripts/set-task-status.sh when the checks pass.
+### SOS-REG-0: Regression 0, Foundations
+- **Epic:** Regression
+- **Description:** Clickthrough regression milestone, done by Claude in chat, not by the build loop. It covers the app shell: sign in as each of the five roles, the home page, the navigation and the no access page. Run `scripts/prepare-regression.sh`, walk every flow in `docs/regression/flows.md` for the tasks it depends on in a real browser, and write the report to `docs/regression/reg-0.md` in the format of `docs/regression/README.md`. Every defect becomes an SOS-FIX task. The milestone is marked Complete by hand with `scripts/set-task-status.sh SOS-REG-0 Complete TASKS.md`, then committed and pushed.
 - **Acceptance Criteria:**
-  - TEST NOW: Open the web app on staging and sign in as each of the five roles.
-  - TEST NOW: Run the test site script and open the site it makes.
-  - TEST NOW: Read the P0.01 summary and confirm your written approval is on file.
-- **Owner:** Jayman
+  - A report exists at docs/regression/reg-0.md with "Result: PASS".
+  - No SOS-FIX task is open.
+- **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P0
-- **Story Points:** 1
-- **Dependencies:** SOS-P0-01, SOS-P0-10, SOS-P0-11
-- **Status:** Not Started
-- **Docs only:** yes
+- **Dependencies:** SOS-P0-10
+- **Status:** Waiting
 
-### SOS-GATE-1: Gate 1, Tenancy and core CRM
-- **Epic:** Phase gates
-- **Description:** Human sign-off milestone. A Pandya admin logs in and a website lead arrives with its consent record. Do not change any file. Reply with NEEDS_INPUT whose text starts with TEST NOW and lists the steps in the acceptance criteria, so the loop stops and Jayman can check by hand. Jayman marks this task Complete with scripts/set-task-status.sh when the checks pass.
+### SOS-REG-1: Regression 1, Tenancy and core CRM
+- **Epic:** Regression
+- **Description:** Clickthrough regression milestone, done by Claude in chat, not by the build loop. It covers the CRM screens, the control site, the setup wizard, the buyer pipeline, the Consent Record and support access. Run `scripts/prepare-regression.sh`, walk every flow in `docs/regression/flows.md` for the tasks it depends on in a real browser, and write the report to `docs/regression/reg-1.md` in the format of `docs/regression/README.md`. Every defect becomes an SOS-FIX task. The milestone is marked Complete by hand with `scripts/set-task-status.sh SOS-REG-1 Complete TASKS.md`, then committed and pushed.
 - **Acceptance Criteria:**
-  - TEST NOW: Sign in to the Pandya Realtors site as the Company Admin.
-  - TEST NOW: Submit the enquiry form on the Pandya website and open the new lead.
-  - TEST NOW: Check the lead shows its Consent Record and that the permission test suite passes.
-- **Owner:** Jayman
+  - A report exists at docs/regression/reg-1.md with "Result: PASS".
+  - No SOS-FIX task is open.
+- **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P1
-- **Story Points:** 1
-- **Dependencies:** SOS-P1-05, SOS-P1-09, SOS-P1-10
-- **Status:** Not Started
-- **Docs only:** yes
+- **Dependencies:** SOS-P1-06A, SOS-P1-06B, SOS-P1-13, SOS-P1-01, SOS-P1-03, SOS-P1-07, SOS-P1-08, SOS-P1-12
+- **Status:** Waiting
 
-### SOS-GATE-2: Gate 2, Calling
-- **Epic:** Phase gates
-- **Description:** Human sign-off milestone. Calls are logged with cost, and leads without consent cannot be called. Do not change any file. Reply with NEEDS_INPUT whose text starts with TEST NOW and lists the steps in the acceptance criteria, so the loop stops and Jayman can check by hand. Jayman marks this task Complete with scripts/set-task-status.sh when the checks pass.
+### SOS-REG-2B: Regression 2B, Click to call checkpoint
+- **Epic:** Regression
+- **Description:** Clickthrough regression milestone, done by Claude in chat, not by the build loop. It covers telephony settings and click to call, before the rest of Phase 2 is built on them. Run `scripts/prepare-regression.sh`, walk every flow in `docs/regression/flows.md` for the tasks it depends on in a real browser, and write the report to `docs/regression/reg-2b.md` in the format of `docs/regression/README.md`. Every defect becomes an SOS-FIX task. The milestone is marked Complete by hand with `scripts/set-task-status.sh SOS-REG-2B Complete TASKS.md`, then committed and pushed.
 - **Acceptance Criteria:**
-  - TEST NOW: Place a test call to a lead with consent and check the Call Log holds its cost.
-  - TEST NOW: Try to call a lead without consent and check the call is refused.
-  - TEST NOW: Check the P2.13 reconciliation against the Plivo statement.
-- **Owner:** Jayman
+  - A report exists at docs/regression/reg-2b.md with "Result: PASS".
+  - No SOS-FIX task is open.
+- **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P2
-- **Story Points:** 1
-- **Dependencies:** SOS-P2-04, SOS-P2-13
-- **Status:** Not Started
-- **Docs only:** yes
+- **Dependencies:** SOS-P2-01, SOS-P2-07
+- **Status:** Waiting
 
-### SOS-GATE-3: Gate 3, Market intelligence
-- **Epic:** Phase gates
-- **Description:** Human sign-off milestone. Five years of corridor data are loaded and comparables are checked by Pandya agents. Do not change any file. Reply with NEEDS_INPUT whose text starts with TEST NOW and lists the steps in the acceptance criteria, so the loop stops and Jayman can check by hand. Jayman marks this task Complete with scripts/set-task-status.sh when the checks pass.
+### SOS-REG-2: Regression 2, Calling
+- **Epic:** Regression
+- **Description:** Clickthrough regression milestone, done by Claude in chat, not by the build loop. It covers the whole calling area: click to call, the inbound opt in route, the caller queue, calling hours, call reports and the UAE cap. Run `scripts/prepare-regression.sh`, walk every flow in `docs/regression/flows.md` for the tasks it depends on in a real browser, and write the report to `docs/regression/reg-2.md` in the format of `docs/regression/README.md`. Every defect becomes an SOS-FIX task. The milestone is marked Complete by hand with `scripts/set-task-status.sh SOS-REG-2 Complete TASKS.md`, then committed and pushed.
 - **Acceptance Criteria:**
-  - TEST NOW: Ask two Pandya agents to check ten comparables each against what they know.
-  - TEST NOW: Read the P3.13 audit.
-  - TEST NOW: Read the P3.09 back test.
-- **Owner:** Jayman
+  - A report exists at docs/regression/reg-2.md with "Result: PASS".
+  - No SOS-FIX task is open.
+- **Owner:** Claude in chat, clickthrough regression
+- **Priority:** P2
+- **Dependencies:** SOS-P2-01, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-12, SOS-REG-2B
+- **Status:** Waiting
+
+### SOS-REG-3: Regression 3, Market intelligence
+- **Epic:** Regression
+- **Description:** Clickthrough regression milestone, done by Claude in chat, not by the build loop. It covers comparables, valuation, the agent assistant, watched building alerts and the party name rules. Run `scripts/prepare-regression.sh`, walk every flow in `docs/regression/flows.md` for the tasks it depends on in a real browser, and write the report to `docs/regression/reg-3.md` in the format of `docs/regression/README.md`. Every defect becomes an SOS-FIX task. The milestone is marked Complete by hand with `scripts/set-task-status.sh SOS-REG-3 Complete TASKS.md`, then committed and pushed.
+- **Acceptance Criteria:**
+  - A report exists at docs/regression/reg-3.md with "Result: PASS".
+  - No SOS-FIX task is open.
+- **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P3
-- **Story Points:** 1
-- **Dependencies:** SOS-P3-09, SOS-P3-13
-- **Status:** Not Started
-- **Docs only:** yes
+- **Dependencies:** SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12
+- **Status:** Waiting
 
-### SOS-GATE-4: Gate 4, Inventory and mandates
-- **Epic:** Phase gates
-- **Description:** Human sign-off milestone. Pandya runs real listings and mandates in SellOS and the website reads listings from it. Do not change any file. Reply with NEEDS_INPUT whose text starts with TEST NOW and lists the steps in the acceptance criteria, so the loop stops and Jayman can check by hand. Jayman marks this task Complete with scripts/set-task-status.sh when the checks pass.
+### SOS-REG-4: Regression 4, Inventory and mandates
+- **Epic:** Regression
+- **Description:** Clickthrough regression milestone, done by Claude in chat, not by the build loop. It covers developers, projects, units, listings, media, the seller pipeline, mandates and deals. Run `scripts/prepare-regression.sh`, walk every flow in `docs/regression/flows.md` for the tasks it depends on in a real browser, and write the report to `docs/regression/reg-4.md` in the format of `docs/regression/README.md`. Every defect becomes an SOS-FIX task. The milestone is marked Complete by hand with `scripts/set-task-status.sh SOS-REG-4 Complete TASKS.md`, then committed and pushed.
 - **Acceptance Criteria:**
-  - TEST NOW: Open a real Pandya listing and mandate in SellOS.
-  - TEST NOW: Open the same listing on the Pandya website and check it comes from SellOS.
-- **Owner:** Jayman
+  - A report exists at docs/regression/reg-4.md with "Result: PASS".
+  - No SOS-FIX task is open.
+- **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P4
-- **Story Points:** 1
-- **Dependencies:** SOS-P4-09, SOS-P4-10
-- **Status:** Not Started
-- **Docs only:** yes
+- **Dependencies:** SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07
+- **Status:** Waiting
 
-### SOS-GATE-5: Gate 5, Reports and portals
-- **Epic:** Phase gates
-- **Description:** Human sign-off milestone. Reports and portals are in use, the AI pilot is reviewed, and there are zero complaints. Do not change any file. Reply with NEEDS_INPUT whose text starts with TEST NOW and lists the steps in the acceptance criteria, so the loop stops and Jayman can check by hand. Jayman marks this task Complete with scripts/set-task-status.sh when the checks pass.
+### SOS-REG-5: Regression 5, Reports and portals
+- **Epic:** Regression
+- **Description:** Clickthrough regression milestone, done by Claude in chat, not by the build loop. It covers the report engine, the agent and Company Admin reports, saved views and export, and the client and partner views. Run `scripts/prepare-regression.sh`, walk every flow in `docs/regression/flows.md` for the tasks it depends on in a real browser, and write the report to `docs/regression/reg-5.md` in the format of `docs/regression/README.md`. Every defect becomes an SOS-FIX task. The milestone is marked Complete by hand with `scripts/set-task-status.sh SOS-REG-5 Complete TASKS.md`, then committed and pushed.
 - **Acceptance Criteria:**
-  - TEST NOW: Open the reports as an agent and as the Company Admin.
-  - TEST NOW: Open the client and partner views.
-  - TEST NOW: Read the P5.09 comparison and the P5.10 security review, and check the complaint log is empty.
-- **Owner:** Jayman
+  - A report exists at docs/regression/reg-5.md with "Result: PASS".
+  - No SOS-FIX task is open.
+- **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P5
-- **Story Points:** 1
-- **Dependencies:** SOS-P5-09, SOS-P5-10
-- **Status:** Not Started
-- **Docs only:** yes
+- **Dependencies:** SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06
+- **Status:** Waiting
 
-### SOS-GATE-6: Gate 6, Billing and integrations
-- **Epic:** Phase gates
-- **Description:** Human sign-off milestone. Another agency can sign up, pay and use SellOS, and the restore, upgrade and load tests pass. Do not change any file. Reply with NEEDS_INPUT whose text starts with TEST NOW and lists the steps in the acceptance criteria, so the loop stops and Jayman can check by hand. Jayman marks this task Complete with scripts/set-task-status.sh when the checks pass.
+### SOS-REG-6: Regression 6, Billing and integrations
+- **Epic:** Regression
+- **Description:** Clickthrough regression milestone, done by Claude in chat, not by the build loop. It covers coupons, invoices, self service sign up, the listing scraper, the Facebook capture assist and the WhatsApp channel. Run `scripts/prepare-regression.sh`, walk every flow in `docs/regression/flows.md` for the tasks it depends on in a real browser, and write the report to `docs/regression/reg-6.md` in the format of `docs/regression/README.md`. Every defect becomes an SOS-FIX task. The milestone is marked Complete by hand with `scripts/set-task-status.sh SOS-REG-6 Complete TASKS.md`, then committed and pushed.
 - **Acceptance Criteria:**
-  - TEST NOW: Sign up a test agency, pay, and use the product.
-  - TEST NOW: Check the P6.12 restore, upgrade and load results.
-  - TEST NOW: Check the outside agency cannot see any Pandya data.
-- **Owner:** Jayman
+  - A report exists at docs/regression/reg-6.md with "Result: PASS".
+  - No SOS-FIX task is open.
+- **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P6
-- **Story Points:** 1
-- **Dependencies:** SOS-P6-12, SOS-P6-14
-- **Status:** Not Started
-- **Docs only:** yes
+- **Dependencies:** SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-10, SOS-P6-11
+- **Status:** Waiting
 
 ### SOS-N02: Get written confirmation on the Mira Road registration
 - **Epic:** Parked (Tata DLT and 140 series route)
@@ -1738,3 +1729,4 @@ The seven gates are tasks at the end of this file (SOS-GATE-0 to SOS-GATE-6). Th
 - **Story Points:** 3
 - **Dependencies:** SOS-N04
 - **Status:** Parked
+

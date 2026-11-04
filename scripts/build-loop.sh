@@ -118,7 +118,13 @@ while true; do
   TASK_ID="$("$SCRIPT_DIR/select-next-task.sh" "$TASKS_FILE")"
 
   if [[ "$TASK_ID" == "NONE_ELIGIBLE" ]]; then
-    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: no eligible tasks left. Stopping."
+    WAITING_LINES="$(python3 "$SCRIPT_DIR/lib/tasks.py" waiting "$TASKS_FILE" | head -12 || true)"
+    if [[ -n "$WAITING_LINES" ]]; then
+      "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: no eligible tasks left. Stopping. Waiting tasks that hold up Not Started work (finish one by hand with scripts/set-task-status.sh <ID> Complete TASKS.md, then commit and push):
+$WAITING_LINES"
+    else
+      "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: no eligible tasks left. Stopping."
+    fi
     break
   fi
 
@@ -149,7 +155,7 @@ while true; do
   IP_SHA="$(git rev-parse HEAD)"
 
   PROMPT="You are implementing one task from SellOS's TASKS.md inside the
-sellos Frappe v16 app. Never run the full test suite or the whole browser suite, and never run anything in the background. You may, and should, run the single backend test module and the single browser spec that you add or change, one at a time and in the foreground: for a module, from ~/iespl-bench, bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>; for a spec, from ~/iespl-bench, bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Fix whatever fails before you reply. The loop then runs scripts/run-tests.sh separately and blocks on its real result. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree.
+sellos Frappe v16 app. Never run the full test suite or the whole browser suite, and never run anything in the background. You may, and should, run the single backend test module and the single browser spec that you add or change, one at a time and in the foreground: for a module, from ~/iespl-bench, bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>; for a spec, from ~/iespl-bench, bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Fix whatever fails before you reply. The loop then runs scripts/run-tests.sh separately and blocks on its real result. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. A task whose block says Browser spec: required also adds its flows to docs/regression/flows.md, one line each in the form FLOW <task id>-<n> | role | start path | steps | expected result (see that file). Add flows, never remove or change one, and if the task adds data a person sees, add it to seed_regression_data in sellos/tests/ui_fixtures.py through the production API and update its docstring.
 Follow SellOS's locked architecture: no ERPNext. The web app never uses
 the Frappe desk, and every customer feature is built in the SellOS web
 app. There are five roles: Platform Admin, Company Admin, Agent, Client

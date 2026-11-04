@@ -6,7 +6,7 @@ logic documented for that build:
 
   1. If any task is already "In Progress", resume that one first.
   2. Otherwise pick the first "Not Started" task, in file order, among the
-     highest priority tier (P0 before P1 before P2), whose Dependencies
+     highest priority tier (P0 before P1 ... before P6), whose Dependencies
      are all "Complete".
   3. If nothing is eligible, report NONE_ELIGIBLE.
 
@@ -28,8 +28,9 @@ HEADER_RE = re.compile(r"^### (?P<id>[A-Za-z0-9_-]+):")
 STATUS_RE = re.compile(r"^(?P<prefix>-\s*\*\*Status:\*\*\s*)(?P<value>.*)$")
 PRIORITY_RE = re.compile(r"^-\s*\*\*Priority:\*\*\s*(?P<value>.*)$")
 DEPS_RE = re.compile(r"^-\s*\*\*Dependencies:\*\*\s*(?P<value>.*)$")
+OWNER_RE = re.compile(r"^-\s*\*\*Owner:\*\*\s*(?P<value>.*)$")
 
-PRIORITY_RANK = {"P0": 0, "P1": 1, "P2": 2}
+PRIORITY_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4, "P5": 5, "P6": 6}
 
 
 def parse(path):
@@ -43,7 +44,7 @@ def parse(path):
 		if m:
 			if current:
 				tasks.append(current)
-			current = {"id": m.group("id"), "status": "", "priority": "", "deps": []}
+			current = {"id": m.group("id"), "status": "", "priority": "", "owner": "", "deps": []}
 			continue
 		if current is None:
 			continue
@@ -54,6 +55,10 @@ def parse(path):
 		m = PRIORITY_RE.match(line.strip())
 		if m:
 			current["priority"] = m.group("value").strip()
+			continue
+		m = OWNER_RE.match(line.strip())
+		if m:
+			current["owner"] = m.group("value").strip()
 			continue
 		m = DEPS_RE.match(line.strip())
 		if m:
@@ -94,6 +99,35 @@ def select_next(tasks):
 	return best["id"] if best else "NONE_ELIGIBLE"
 
 
+def waiting_report(tasks):
+	"""Lines for the Waiting tasks that still hold up a Not Started task, and what each waits on.
+
+	A Waiting task belongs to a person (or to Claude in chat for a regression milestone). The loop
+	never picks it, so when nothing else is eligible this tells the person which ones to finish by
+	hand: scripts/set-task-status.sh <ID> Complete TASKS.md, then commit and push.
+	"""
+	by_id = {t["id"]: t for t in tasks}
+	lines = []
+	for t in tasks:
+		if t["status"] != "Waiting":
+			continue
+		held = [d["id"] for d in tasks if d["status"] == "Not Started" and t["id"] in d["deps"]]
+		if not held:
+			continue
+		unmet = [
+			f"{d} ({by_id[d]['status']})" if d in by_id else d
+			for d in t["deps"]
+			if d not in by_id or by_id[d]["status"] != "Complete"
+		]
+		if len(unmet) > 3:
+			unmet = [*unmet[:3], f"{len(unmet) - 3} more"]
+		waits = ", ".join(unmet) if unmet else f"its owner, {t['owner'] or 'unknown'}"
+		lines.append(
+			f"{t['id']} waits on {waits}; holds up {', '.join(held[:4])}{' and more' if len(held) > 4 else ''}"
+		)
+	return lines
+
+
 def set_status(path, task_id, new_status):
 	with open(path, "r", encoding="utf-8") as f:
 		lines = f.readlines()
@@ -130,7 +164,7 @@ def set_status(path, task_id, new_status):
 def main():
 	if len(sys.argv) < 3:
 		print(
-			"Usage: tasks.py select <TASKS_FILE> | tasks.py set-status <TASKS_FILE> <TASK_ID> <STATUS>",
+			"Usage: tasks.py select <TASKS_FILE> | tasks.py waiting <TASKS_FILE> | tasks.py set-status <TASKS_FILE> <TASK_ID> <STATUS>",
 			file=sys.stderr,
 		)
 		sys.exit(2)
@@ -140,6 +174,9 @@ def main():
 		path = sys.argv[2]
 		tasks = parse(path)
 		print(select_next(tasks))
+	elif cmd == "waiting":
+		for line in waiting_report(parse(sys.argv[2])):
+			print(line)
 	elif cmd == "set-status":
 		if len(sys.argv) != 5:
 			print(

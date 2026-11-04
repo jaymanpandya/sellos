@@ -28,8 +28,8 @@ fi
 [ -d "sites/$SITE" ] || { echo "Site $SITE does not exist. Run with --create." >&2; exit 1; }
 
 bench --site "$SITE" migrate
-# the fixture puts the site in the state a real company site is in, and makes the role users
-bench --site "$SITE" execute "$APP.tests.ui_fixtures.prepare_clean_site"
+# The baseline is the clean migrated install only. prepare_clean_site (the company site state and the
+# role users) runs in scripts/run-tests.sh on every run, so it is never frozen into the snapshot.
 bench --site "$SITE" clear-cache
 bench --site "$SITE" backup
 LATEST="$(ls -t "sites/$SITE/private/backups/"*-database.sql.gz | head -1)"

@@ -43,12 +43,12 @@ because it restores the baseline over that site and wipes it.
    repair: saves the attempt on a `failed/<task>-<time>` branch, hard resets the branch to the
    commit it started from, marks the task Blocked, notifies, and stops. No broken code ever stays
    on the main branch.
-7. Stops on Blocked, NEEDS_INPUT, a crashed agent or no eligible task. A Blocked task is never
+7. Stops on Blocked, NEEDS_INPUT (a question the agent cannot settle, never a milestone), a crashed agent or no eligible task. A Blocked task is never
    resumed by itself. A human finds the cause, checks it by hand in a browser, and resets it to
    Not Started.
 
 Copied unchanged from `../buildos/scripts`: `select-next-task.sh`, `set-task-status.sh`,
-`lib/tasks.py`, `watchdog.sh`, `notify-telegram.sh`, `limit_wait.py`. Only the names, paths and
+`lib/tasks.py` (priorities now run P0 to P6, and it has a `waiting` report), `watchdog.sh`, `notify-telegram.sh`, `limit_wait.py`. Only the names, paths and
 prompt text in `build-loop.sh` change (section 5).
 
 ## 3. Tasks
@@ -98,14 +98,14 @@ leads yet", and the whole gate was green.
 | 8 | Lint and Semgrep are not in the gate, only in CI after the push | The commit lands, CI goes red afterwards. It happened three times on SellOS (ruff on PR 1, Semgrep twice on P0.07) | Pre-commit and Semgrep with the Frappe rules run inside the gate | `scripts/run-tests.sh` |
 | 9 | A spec that fails and then passes alone is logged FLAKY and counts as a pass | A real race stays in the suite for good | The same spec flaky three times fails the gate until it is fixed | `scripts/run-tests.sh` |
 | 10 | CI runs only the server tests | Browser behaviour is never checked on a clean machine | CI gets a UI job that provisions a fresh site and runs the Cypress suite (section 5) | `.github/workflows/ci.yml` |
-| 11 | The gate migrates a long lived site | A fresh install is never exercised in a browser | The baseline is built by `prepare_clean_site`, the same code provisioning uses, and CI builds a fresh site the same way | `sellos/tests/ui_fixtures.py` |
+| 11 | The gate migrates a long lived site | A fresh install is never exercised in a browser | The baseline is only a clean migrated install. The state a provisioned company site is in, and the role users, are made by code on every run: `run-tests.sh` runs `prepare_clean_site` right after the migrate and cache clear, before the changed tests, and CI builds a fresh site the same way | `scripts/run-tests.sh`, `sellos/tests/ui_fixtures.py` |
 | 12 | The BuildOS gate and the SellOS gate share one bench | Two gates restore databases and clear the cache under each other | The SellOS gate refuses to start while a BuildOS gate or loop is running | `scripts/run-tests.sh` |
 | 13 | The gate restores a baseline over its site | A wrong site name wipes real work | Only `sellos_test` and `sellos_test.localhost` are accepted | `scripts/run-tests.sh`, `scripts/make-baseline.sh` |
 | 14 | Permission specs can pass because the user cannot read the record at all | A leak check that has nothing to find | A leak spec must first show the user can read the record on at least one path | `cypress/integration/security/` |
 | 15 | Personal data leaks are found one at a time by a person | The change history held old and new values in BuildOS (BOS-282) | Every path in `cy.genericReads` is tried as every role for every DocType that holds personal data, for the current value and the replaced one. Reuse `buildos.security.field_history` | `cy.genericReads`, the security specs |
 | 16 | After a push the loop starts the next task without looking at CI | A red CI sits unnoticed while new work piles on | After each push the loop waits for CI on that commit. If it is red the loop stops and notifies, and starts nothing new | `scripts/build-loop.sh` |
 | 17 | Test data is made by hand | An invalid or real phone number breaks a test or leaks into the repository | `sellos.tests.phones` makes valid numbers, and a test fails on any hand written one. The allowed list starts empty and stays empty | `sellos/tests/test_no_raw_phone_numbers.py` |
-| 18 | A human walks through the product by hand | Skipped when time is short | `MANUAL_QA_CHECKLIST.md` stays, and the loop stops at each milestone with TEST NOW and the exact steps | `Tasks.md`, the loop prompt |
+| 18 | A human walks through the product by hand | Skipped when time is short | Each milestone is a Waiting task, SOS-REG-0 to SOS-REG-6 and SOS-REG-2B, that the next phase depends on. Claude in chat walks every flow in `docs/regression/flows.md` in a browser and writes a report. A task marked `Browser spec: required` fails the gate unless it adds its flows (section 8) | `TASKS.md`, `scripts/check_task_evidence.py`, `docs/regression/` |
 
 ## 5. Changes to `build-loop.sh`
 
@@ -153,3 +153,29 @@ before its task is done:
   check stop the worst cases, and a human reads each milestone.
 * The UI tests share the bench server with BuildOS development. Restarting `bench start` while the
   gate runs breaks the run.
+
+## 8. Waiting tasks and the regression milestones
+
+A Waiting task is never picked by the loop. It belongs to a person (Jayman, AMP Labs, Counsel, the
+Accountant) or, for a SOS-REG milestone, to Claude in chat. Dependants stay Not Started until it is
+Complete, so when nothing else is eligible the loop stops. Its notification lists each Waiting task
+that still holds up a Not Started task, what it waits on, and what it holds up.
+
+To finish a Waiting task by hand, do the work, then:
+
+```
+scripts/set-task-status.sh <ID> Complete TASKS.md
+git add TASKS.md            # and the report or evidence, for a regression milestone
+git commit -m "<ID> <what was done>"
+git push origin 1.0
+```
+
+and start the loop again. A Waiting task stays Waiting until then, so the loop never reaches past it.
+
+The regression milestones are Waiting tasks with the owner "Claude in chat, clickthrough regression".
+Each depends on every task of its phase that a person sees or uses, and every task of the next phase
+depends on it. SOS-REG-2B is a checkpoint inside Phase 2, after click to call. Their support files are
+gate files: `docs/regression/README.md`, `scripts/prepare-regression.sh` and the evidence check that
+needs each browser task's flows in `docs/regression/flows.md` (a task may add flows, never remove one).
+`seed_regression_data` in `sellos/tests/ui_fixtures.py` builds the dataset through the production API and
+its docstring lists the data, which each task that adds data updates.

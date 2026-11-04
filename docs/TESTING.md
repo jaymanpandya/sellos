@@ -12,8 +12,8 @@ The agent never commits. Git hooks are not used.
 2. Lint (`pre-commit run --all-files`) and Semgrep with the Frappe rules.
 3. The task guards (only when the loop sets the task): gate files untouched, no assertion removed, and
    a test that names the task.
-4. Restore the clean baseline over `sellos_test.localhost`.
-5. Build the web app (`npm ci`, `npm run build`), migrate.
+4. Restore the clean baseline (a clean migrated install) over `sellos_test.localhost`.
+5. Build the web app (`npm ci`, `npm run build`), migrate, then `prepare_clean_site` (code, on every run).
 6. The test files the task changed, first. A failure stops the gate.
 7. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
    that needed a rerun is logged FLAKY, and one that is FLAKY three times fails the gate.
@@ -63,7 +63,9 @@ These decide whether a task passes, so a task may not change them unless its blo
 `Gate files: allowed`, which only a human writes: `scripts/run-tests.sh`, `build-loop.sh`,
 `watchdog.sh`, `select-next-task.sh`, `set-task-status.sh`, `make-baseline.sh`, `scripts/lib/*`,
 `scripts/check_*.py`, `cypress.config.js`, `cypress/support/e2e.js`, `.pre-commit-config.yaml`,
-`.github/workflows/*`, `docs/DEV_STRATEGY.md` and this file.
+`.github/workflows/*`, `docs/DEV_STRATEGY.md`, `scripts/prepare-regression.sh`,
+`docs/regression/README.md` and this file. `docs/regression/flows.md` is append only: a task adds its
+flows and may never remove one.
 
 ## Human overrides
 

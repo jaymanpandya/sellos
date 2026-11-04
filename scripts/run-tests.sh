@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
-# Order: preflight, lint and Semgrep, the task guards, build the web app, put the clean baseline
-# back, migrate, the test files the task changed first (a failure stops the gate at once), the
+# Order: preflight, lint and Semgrep, the task guards, put the clean baseline back, build the web
+# app, migrate, prepare_clean_site (code, every run), the test files the task changed first (a failure stops the gate at once), the
 # whole backend suite, then the whole Cypress suite. A failed UI spec is rerun once, alone. The
 # gate passes only if every rerun passes, each spec that needed a rerun is logged as FLAKY, and a
 # spec that is FLAKY three times is a failure until it is fixed. More than 5 failed specs, or
@@ -114,6 +114,11 @@ echo "--- Building web app: $APP/frontend ---"
 
 echo "--- Migrating $SITE ---"
 bench --site "$SITE" migrate
+bench --site "$SITE" clear-cache
+# The baseline is a clean migrated install. The state a provisioned company site is in, and the role
+# users, are made by code on every run, so the gate exercises the same code provisioning uses.
+echo "--- Preparing the clean site (code, every run) ---"
+bench --site "$SITE" execute "$APP.tests.ui_fixtures.prepare_clean_site"
 bench --site "$SITE" clear-cache
 
 echo "--- Changed tests first: $APP ---"

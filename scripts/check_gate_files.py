@@ -25,7 +25,13 @@ PROTECTED = [
 	".github/workflows/*",
 	"docs/DEV_STRATEGY.md",
 	"docs/TESTING.md",
+	"scripts/prepare-regression.sh",
+	"docs/regression/README.md",
 ]
+
+# A task adds its flows here, so the file is not protected from a change. A flow already in it may
+# not be removed or edited, which is the same ratchet check_assertion_ratchet.py applies to tests.
+FLOWS_FILE = "docs/regression/flows.md"
 
 
 def changed(base):
@@ -43,6 +49,14 @@ def changed(base):
 	return sorted(files)
 
 
+def removed_flows(base):
+	"""FLOW lines the working tree no longer has compared with the base commit."""
+	out = subprocess.run(
+		["git", "diff", base, "--", FLOWS_FILE], capture_output=True, text=True, check=True
+	).stdout
+	return [line[1:] for line in out.splitlines() if line.startswith("-FLOW")]
+
+
 def main():
 	base, block_file = sys.argv[1], sys.argv[2]
 	# A path the build loop passes in, not user input.
@@ -51,6 +65,15 @@ def main():
 	if "**Gate files:** allowed" in block:
 		print("Gate files: this task is allowed to change them.")
 		return 0
+
+	lost = removed_flows(base)
+	if lost:
+		print(
+			f"Gate files FAILED. {FLOWS_FILE} lost or changed flows. A task may add flows, never remove one:"
+		)
+		for line in lost:
+			print(f"  {line}")
+		return 1
 
 	hits = [p for p in changed(base) if any(fnmatch.fnmatch(p, pat) for pat in PROTECTED)]
 	if not hits:

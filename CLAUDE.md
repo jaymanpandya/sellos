@@ -90,6 +90,7 @@ See `frontend/CLAUDE.md`. The build plan is in `TASKS.md`, and the earlier brief
 * Never edit a gate file (listed in `docs/TESTING.md`) unless the task block says
   `Gate files: allowed`. Never remove an assertion or delete a test file. Fix a failing test in the
   code, not in the test.
+* A task marked `Browser spec: required` also adds its flows to `docs/regression/flows.md`, one line per flow (`FLOW <task id>-<n> | role | start path | steps | expected result`), and adds any data a person sees to `seed_regression_data` in `sellos/tests/ui_fixtures.py` through the production API. Add flows, never remove one. The clickthrough regression milestones (SOS-REG) are run by Claude in chat, not by the loop (`docs/regression/README.md`).
 * Fake phone numbers come from `sellos.tests.phones`, never a literal.
 * Anything a task creates on a site (users, roles, records, settings) must come from code that can be
   run again safely, and a backend test must read it back. When a task creates a role, add a test user
