@@ -9,15 +9,15 @@ There are 107 stories worth 523 points. Six stories (13 points) are parked, whic
 * The Plivo account is created and its KYC is approved.
 * The Indian number +91 22 6998 6373 is bought. It is a 022 landline series number, so it is for service and transactional calls only.
 * Decisions already made: Frappe 16.x without ERPNext, DigitalOcean for DNS and servers, a custom web app for every role, one Frappe site per company at a subdomain of sellos.interactivesoftwares.com, Razorpay for India and Stripe for international billing, and the Bandra to Andheri corridor for the first five years of market data.
-* Claude Code builds. Jayman reviews and approves the pull requests.
+* Claude Code builds. Jayman reviews the commits on 1.0.
 
 ## Rules for Claude Code
 
 1. Work one story at a time, in dependency order. A story is ready only when every story in its Depends on list is ticked.
 2. Read the CLAUDE.md in the repository first. After P0.01 is approved, also read the BuildOS conventions summary and follow it.
 3. Write the tests named in Test criteria with the code. A story is not done until they pass in continuous integration.
-4. Open one pull request per story, titled with the story ID. Keep it small. Never push to the main branch.
-5. Tick the story's checkbox and change its Status in the same pull request that completes it, after the acceptance criteria have been shown on staging.
+4. Make one commit per story on 1.0, with the story ID at the start of the message. Push after `pre-commit run --all-files` passes. Do not open pull requests, and never force push.
+5. Tick the story's checkbox and change its Status in the same commit that completes it, after the acceptance criteria have been shown on staging.
 6. Stop and ask Jayman when a story needs a secret or account you do not have, when an acceptance criterion is ambiguous, when a change touches permissions or the consent check, or when a dependency is blocked.
 7. Never add an override to the consent check. Never build captcha solving or any bypass of access controls. Never commit a secret.
 8. Calls placed from the 022 number are service or transactional only. The system must refuse a promotional call purpose.

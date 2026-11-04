@@ -1,6 +1,6 @@
 # SellOS
 
-SellOS is a multitenant real estate platform for Indian agents, built on Frappe 16.x and hosted on DigitalOcean. Pandya Realtors is the first company on it. The AMP Labs builds it, Claude Code writes the code, and Jayman reviews every pull request.
+SellOS is a multitenant real estate platform for Indian agents, built on Frappe 16.x and hosted on DigitalOcean. Pandya Realtors is the first company on it. The AMP Labs builds it, Claude Code writes the code, and Jayman reviews the work on 1.0.
 
 ## Where the work is defined
 
@@ -23,9 +23,9 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 
 ## Working rules
 
-* Open one small pull request per story, titled with the story ID. Never push to the main branch.
+* Make one commit per story on the 1.0 branch, with the story ID at the start of the message. Push to 1.0 directly after `pre-commit run --all-files` passes. Do not open pull requests, and never force push.
 * Write the tests named in the story's Test criteria with the code. Continuous integration must pass.
-* Tick the story's checkbox and update its status in the pull request that completes it.
+* Tick the story's checkbox and update its status in the commit that completes it.
 * Do not start a story whose dependencies are not ticked, and do not work on parked stories.
 * Do the first story, P0.01, before anything else, and wait for Jayman's written approval of the BuildOS conventions summary.
 
@@ -43,8 +43,8 @@ Run these from the app folder (`apps/sellos` in the bench). Never start, stop or
 * Build the web app: `cd frontend && yarn install && yarn build`
 * Build all assets through the bench: `bench build --app sellos`
 * Server tests: `bench --site sellos.localhost run-tests --app sellos` (the site needs `allow_tests` set)
-* Lint and format: `pre-commit run --all-files` (ruff, prettier, eslint and file checks). Run it before every pull request.
-* Continuous integration runs the same checks on every pull request.
+* Lint and format: `pre-commit run --all-files` (ruff, prettier, eslint and file checks). Run it before every push.
+* Continuous integration runs the same checks on every push to 1.0.
 
 ## Frappe 16 conventions
 
