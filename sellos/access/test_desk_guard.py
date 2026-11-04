@@ -58,7 +58,7 @@ class TestDeskGuardRequests(unittest.TestCase):
 				user.append("roles", {"role": role})
 				user.insert()
 			cls.users[role] = email
-		frappe.db.commit()  # the requests below run in their own transactions
+		frappe.db.commit()  # the requests below run in their own transactions  # nosemgrep
 
 	@classmethod
 	def tearDownClass(cls):
@@ -69,7 +69,7 @@ class TestDeskGuardRequests(unittest.TestCase):
 			frappe.delete_doc("User", email, force=True)
 		for role in cls.ROLES:
 			frappe.delete_doc("Role", role, force=True)
-		frappe.db.commit()
+		frappe.db.commit()  # removes the committed test users  # nosemgrep
 
 	def test_each_role_signs_in_to_the_app_and_customer_roles_cannot_open_the_desk(self):
 		import frappe
