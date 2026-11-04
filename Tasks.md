@@ -392,7 +392,7 @@ Goal: the custom SellOS app and a permission model that tests prove. It totals 3
 
 ## P1.05 Build the permission test suite
 
-* [ ] **P1.05** · Points 8 · Owner Claude Code · Depends on P1.04 · Status not started
+* [x] **P1.05** · Points 8 · Owner Claude Code · Depends on P1.04 · Status done
 
 **Story.** As Jayman, I want automated proof that roles and companies are isolated, so that a release can never leak data.
 

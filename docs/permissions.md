@@ -42,3 +42,7 @@ the Lead DocType.
 | None yet | |
 
 Each story that adds a method adds a row here.
+
+## API method matrix
+
+`sellos/access/matrix.py` lists the roles for every method. The build fails when the list and the `@sellos_api` declarations disagree, or when a sellos method is whitelisted without a declaration (P1.05).

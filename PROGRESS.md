@@ -10,11 +10,12 @@ Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of 
 * P0.07 33155b2, 7adddcc (CI green on 7adddcc)
 * P0.09 9fcd899 (gitleaks in pre-commit and Linters; a fake key was blocked locally)
 * P0.10 be29195, 357da0f, 7a68e5f (CI fixes) (shell, sign out, session watch, branding from SellOS Settings, desk guard)
-* P1.04 this commit (five roles from code, @sellos_api registry and guard, lead permission queries, docs/permissions.md)
+* P1.04 910ba25, e100a3e, 03cc783 (CI green on 03cc783) (five roles from code, @sellos_api registry and guard, lead permission queries, docs/permissions.md)
+* P1.05 this commit (permission matrix `sellos/access/matrix.py`, `test_permission_matrix.py`)
 
 ## Working on
 
-* Next ready: P1.05 (permission test suite), then Checkpoint A.
+* Checkpoint A is next (TEST NOW posted to Jayman). After it passes: P0.11, P1.01 are blocked on P0.06 (N18), so the next ready story is P1.06 (needs P1.04), then P1.08, P1.09.
 
 ## Blocked
 
@@ -26,6 +27,8 @@ Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of 
 * P0.04, P0.05, P0.06, P0.08, P0.12 wait on N18 (DigitalOcean decisions).
 
 ## Open questions (default chosen)
+
+* P1.05 criterion 2 (no call returns data from another company): each company is its own site and database, so a user of another company cannot sign in here at all. The matrix tests an outsider, who is signed in but holds no role here, and a guest. A real two-site check comes with P1.11 (Pandya Realtors site) and P4/E4 provisioning. The matrix is empty of production methods because none exist yet.
 
 * P1.04 Agents' "own leads" means the lead's owner or its `assigned_to` user, plus Frappe shares. The Lead DocType is named `Lead` and has an `assigned_to` field, to be created by P1.06. Change `sellos/access/lead_permissions.py` if P1.06 names them otherwise.
 * P1.04 Frappe's built in Administrator account passes the role check, as everywhere in Frappe. No SellOS role has an override.
