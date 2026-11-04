@@ -125,3 +125,122 @@ jobs:
         run: |
           elapsed=$(( $(date +%s) - CI_START ))
           echo "Server job run time: $((elapsed / 60)) min $((elapsed % 60)) s" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  ui:
+    # Modelled on frappe/frappe .github/workflows/ui-tests.yml and its setup action: a fresh site, the
+    # app installed, bench start running in the background, then bench run-ui-tests. Cypress picks the
+    # site by its host name, so test_site is added to /etc/hosts and given host_name http://test_site:8000.
+    runs-on: ubuntu-latest
+    name: UI
+    timeout-minutes: 45
+    env:
+      PYTHONWARNINGS: ignore
+      DB_ROOT_PASSWORD: db_root
+      # Tells the Cypress specs which site cy.bench runs its fixtures on.
+      CYPRESS_site: test_site
+
+    services:
+      mariadb:
+        image: mariadb:11.8
+        ports:
+          - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-timeout=2s --health-retries=3 --tmpfs=/var/lib/mysql:rw,noexec,nosuid,size=2g
+        env:
+          MARIADB_ROOT_PASSWORD: db_root
+
+    steps:
+      - name: Add test_site to /etc/hosts
+        run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
+
+      - name: Clone
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          check-latest: true
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install system packages
+        run: |
+          sudo apt update
+          sudo apt-get install -y redis-server mariadb-client
+
+      - name: Init bench
+        run: |
+          pip install frappe-bench
+          bench init ~/frappe-bench --skip-assets --python "$(which python)"
+          cd ~/frappe-bench
+          # No file watcher or scheduler in CI, as in Frappe's own setup.
+          sed -i '/^watch:/d' Procfile
+          sed -i '/^schedule:/d' Procfile
+
+      - name: Get the app and install requirements
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench get-app sellos $GITHUB_WORKSPACE
+          bench setup requirements --dev
+        env:
+          CI: 'Yes'
+
+      - name: Create the site
+        working-directory: /home/runner/frappe-bench
+        run: |
+          mariadb -h 127.0.0.1 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL innodb_flush_log_at_trx_commit = 0; SET GLOBAL sync_binlog = 0;"
+          bench set-config -g root_login root
+          bench set-config -g root_password "$DB_ROOT_PASSWORD"
+          bench set-config -g admin_password admin
+          bench new-site test_site --db-type mariadb --db-host 127.0.0.1 --db-name test_sellos --db-password test_sellos --verbose
+          bench --site test_site set-config allow_tests 1 --parse
+          bench --site test_site set-config host_name "http://test_site:8000"
+          bench --site test_site install-app sellos
+
+      - name: Build the web app and assets
+        # The web app is built inside the bench copy of the app, because bench get-app clones only
+        # tracked files and the built page is not tracked.
+        working-directory: /home/runner/frappe-bench
+        run: |
+          (cd apps/sellos/frontend && npm ci --no-audit --no-fund && npm run build)
+          CI=Yes bench build --force
+
+      - name: Prepare the clean site
+        # The same fixture scripts/make-baseline.sh runs for the local gate.
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench --site test_site migrate
+          bench --site test_site execute sellos.tests.ui_fixtures.prepare_clean_site
+          bench --site test_site clear-cache
+
+      - name: Start bench
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench start &> "$GITHUB_WORKSPACE/bench_start.log" &
+          for _ in $(seq 1 90); do
+            curl -s -o /dev/null http://test_site:8000/api/method/ping && break
+            sleep 2
+          done
+          curl -sf -o /dev/null http://test_site:8000/api/method/ping || { tail -n 60 "$GITHUB_WORKSPACE/bench_start.log"; exit 1; }
+
+      - name: Run the Cypress suite
+        working-directory: /home/runner/frappe-bench
+        run: bench --site test_site run-ui-tests sellos --headless
+
+      - name: Upload Cypress screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cypress-screenshots
+          path: /home/runner/frappe-bench/apps/sellos/cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Show bench output
+        if: always()
+        run: |
+          cat "$GITHUB_WORKSPACE/bench_start.log" || true
