@@ -49,7 +49,9 @@ class TestLeadQueries(unittest.TestCase):
 
 	def test_the_condition_is_valid_sql(self):
 		sql = self._conditions([AGENT])
-		frappe.db.sql(f"select 1 from `tabDocShare` as `tabLead` where {sql.replace('`tabLead`.`assigned_to`', '`tabLead`.`user`').replace('`tabLead`.`owner`', '`tabLead`.`user`')} limit 1")
+		frappe.db.sql(
+			f"select 1 from `tabDocShare` as `tabLead` where {sql.replace('`tabLead`.`assigned_to`', '`tabLead`.`user`').replace('`tabLead`.`owner`', '`tabLead`.`user`')} limit 1"
+		)
 
 
 class TestLeadHasPermission(unittest.TestCase):
