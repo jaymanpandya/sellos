@@ -9,7 +9,10 @@ import { session, sessionExpired, signOut, watchSession } from "./session";
 
 function shellFor(role) {
 	session.roles = [role];
-	const router = createRouter({ history: createMemoryHistory(), routes: [{ path: "/", component: {} }] });
+	const router = createRouter({
+		history: createMemoryHistory(),
+		routes: [{ path: "/", component: {} }],
+	});
 	return mount(AppShell, { global: { plugins: [router] } });
 }
 
@@ -36,7 +39,10 @@ describe("navigation per role", () => {
 	});
 
 	it("hides a nav item whose area the persona does not have", () => {
-		const persona = { areas: ["home"], nav: [{ key: "x", label: "X", to: "/x", area: "platform" }] };
+		const persona = {
+			areas: ["home"],
+			nav: [{ key: "x", label: "X", to: "/x", area: "platform" }],
+		};
 		expect(navFor(persona)).toEqual([]);
 	});
 
@@ -62,7 +68,9 @@ describe("sign out and session expiry", () => {
 	});
 
 	it("treats Guest and 401 as expired and a failed network call as not expired", async () => {
-		const reply = (message, status = 200) => async () => ({ status, json: async () => ({ message }) });
+		const reply =
+			(message, status = 200) =>
+			async () => ({ status, json: async () => ({ message }) });
 		expect(await sessionExpired(reply("Guest"))).toBe(true);
 		expect(await sessionExpired(reply("a@x.com"))).toBe(false);
 		expect(await sessionExpired(reply("", 401))).toBe(true);

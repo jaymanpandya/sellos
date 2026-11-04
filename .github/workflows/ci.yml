@@ -100,7 +100,9 @@ jobs:
           CI: 'Yes'
 
       - name: Build web app (P0.07)
-        working-directory: ${{ github.workspace }}/frontend
+        # Built inside the bench copy of the app, because bench get-app clones only tracked files
+        # and the built page is not tracked.
+        working-directory: /home/runner/frappe-bench/apps/sellos/frontend
         run: |
           yarn install --frozen-lockfile
           yarn test

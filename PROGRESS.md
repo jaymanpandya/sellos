@@ -9,7 +9,7 @@ Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of 
 * P0.03 ce4a3d1, 19bae4e
 * P0.07 33155b2, 7adddcc (CI green on 7adddcc)
 * P0.09 9fcd899 (gitleaks in pre-commit and Linters; a fake key was blocked locally)
-* P0.10 this commit (shell, sign out, session watch, branding from SellOS Settings, desk guard)
+* P0.10 be29195, fix in the next commit (shell, sign out, session watch, branding from SellOS Settings, desk guard)
 
 ## Working on
 

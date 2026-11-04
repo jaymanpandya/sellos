@@ -1,5 +1,6 @@
 # P0.10 customer roles are redirected away from the desk.
 import unittest
+from typing import ClassVar
 
 from sellos.access.desk_guard import is_blocked
 
@@ -26,7 +27,7 @@ class TestDeskGuard(unittest.TestCase):
 class TestDeskGuardRequests(unittest.TestCase):
 	"""Real requests through the Frappe app, one user per SellOS role (P0.10)."""
 
-	ROLES = {
+	ROLES: ClassVar[dict[str, bool]] = {
 		"SellOS Platform Admin": False,
 		"SellOS Company Admin": True,
 		"SellOS Agent": True,
@@ -72,10 +73,9 @@ class TestDeskGuardRequests(unittest.TestCase):
 
 	def test_each_role_signs_in_to_the_app_and_customer_roles_cannot_open_the_desk(self):
 		import frappe
+		from frappe.app import application
 		from werkzeug.test import Client
 		from werkzeug.wrappers import Response
-
-		from frappe.app import application
 
 		for role, blocked in self.ROLES.items():
 			client = Client(application, Response)
