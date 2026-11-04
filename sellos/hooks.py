@@ -280,3 +280,5 @@ app_license = "mit"
 website_route_rules = [
 	{"from_route": "/sellos/<path:app_path>", "to_route": "sellos"},
 ]
+
+page_renderer = ["sellos.spa.SellOSPage"]
