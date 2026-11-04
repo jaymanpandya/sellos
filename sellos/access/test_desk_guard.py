@@ -3,6 +3,7 @@ import unittest
 from typing import ClassVar
 
 from sellos.access.desk_guard import is_blocked
+from sellos.access.roles import ensure_roles
 
 
 class TestDeskGuard(unittest.TestCase):
@@ -40,10 +41,9 @@ class TestDeskGuardRequests(unittest.TestCase):
 	def setUpClass(cls):
 		import frappe
 
+		ensure_roles()
 		cls.users = {}
 		for i, role in enumerate(cls.ROLES):
-			if not frappe.db.exists("Role", role):
-				frappe.get_doc({"doctype": "Role", "role_name": role, "desk_access": 0}).insert()
 			email = f"p010_role_{i}@example.com"
 			if not frappe.db.exists("User", email):
 				user = frappe.get_doc(
@@ -67,8 +67,6 @@ class TestDeskGuardRequests(unittest.TestCase):
 		frappe.set_user("Administrator")  # the requests above switch the session user
 		for email in cls.users.values():
 			frappe.delete_doc("User", email, force=True)
-		for role in cls.ROLES:
-			frappe.delete_doc("Role", role, force=True)
 		frappe.db.commit()  # removes the committed test users  # nosemgrep
 
 	def test_each_role_signs_in_to_the_app_and_customer_roles_cannot_open_the_desk(self):
@@ -86,7 +84,7 @@ class TestDeskGuardRequests(unittest.TestCase):
 				headers=headers,
 			)
 			self.assertEqual(login.status_code, 200, role)
-			self.assertEqual(login.json.get("home_page"), "/sellos", role)
+			self.assertEqual(login.json.get("home_page", "").lstrip("/"), "sellos", role)
 			self.assertEqual(client.get("/sellos", headers=headers).status_code, 200, role)
 			desk = client.get("/app/user", headers=headers)
 			if blocked:

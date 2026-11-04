@@ -380,7 +380,7 @@ Goal: the custom SellOS app and a permission model that tests prove. It totals 3
 
 ## P1.04 Define the roles and permissions
 
-* [ ] **P1.04** · Points 8 · Owner Claude Code · Depends on P0.10 · Status not started
+* [x] **P1.04** · Points 8 · Owner Claude Code · Depends on P0.10 · Status done
 
 **Story.** As a Company Admin, I want each role to see and do only what it should, so that client and company data stays private.
 

@@ -101,7 +101,8 @@ role_home_page = {
 # ------------
 
 # before_install = "sellos.install.before_install"
-# after_install = "sellos.install.after_install"
+after_install = "sellos.access.roles.after_install"
+after_migrate = ["sellos.access.roles.after_migrate"]
 
 # Uninstallation
 # ------------
@@ -152,10 +153,17 @@ role_home_page = {
 # -----------
 # Permissions evaluated in scripted ways
 
+# P1.04 agents see their own leads unless shared. The Lead DocType comes in P1.06.
+permission_query_conditions = {
+	"Lead": "sellos.access.lead_permissions.get_permission_query_conditions",
+}
 # permission_query_conditions = {
 # 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
 # }
 #
+has_permission = {
+	"Lead": "sellos.access.lead_permissions.has_permission",
+}
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
@@ -232,7 +240,7 @@ role_home_page = {
 # Request Events
 # ----------------
 # P0.10 customer roles never see the desk
-before_request = ["sellos.access.desk_guard.block_desk"]
+before_request = ["sellos.access.desk_guard.block_desk", "sellos.access.registry.guard_api"]
 # after_request = ["sellos.utils.after_request"]
 
 # Job Events

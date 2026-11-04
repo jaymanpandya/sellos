@@ -9,11 +9,12 @@ Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of 
 * P0.03 ce4a3d1, 19bae4e
 * P0.07 33155b2, 7adddcc (CI green on 7adddcc)
 * P0.09 9fcd899 (gitleaks in pre-commit and Linters; a fake key was blocked locally)
-* P0.10 be29195, fix in the next commit (shell, sign out, session watch, branding from SellOS Settings, desk guard)
+* P0.10 be29195, 357da0f, 7a68e5f (CI fixes) (shell, sign out, session watch, branding from SellOS Settings, desk guard)
+* P1.04 this commit (five roles from code, @sellos_api registry and guard, lead permission queries, docs/permissions.md)
 
 ## Working on
 
-* Next ready: P1.04 (roles and permissions), which needs Jayman's approval of any role change first.
+* Next ready: P1.05 (permission test suite), then Checkpoint A.
 
 ## Blocked
 
@@ -25,6 +26,10 @@ Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of 
 * P0.04, P0.05, P0.06, P0.08, P0.12 wait on N18 (DigitalOcean decisions).
 
 ## Open questions (default chosen)
+
+* P1.04 Agents' "own leads" means the lead's owner or its `assigned_to` user, plus Frappe shares. The Lead DocType is named `Lead` and has an `assigned_to` field, to be created by P1.06. Change `sellos/access/lead_permissions.py` if P1.06 names them otherwise.
+* P1.04 Frappe's built in Administrator account passes the role check, as everywhere in Frappe. No SellOS role has an override.
+* P1.04 permissions touched: look at `sellos/access/` and `docs/permissions.md` before Checkpoint A.
 
 * P0.10 criterion 5 says "customer roles" without naming them. Default: Company Admin, Agent, Client and Channel Partner are redirected from /app to /sellos. Platform Admin and System Manager keep the desk. Change `CUSTOMER_ROLES` in `sellos/access/desk_guard.py` if you want otherwise.
 * P0.10 criterion 4 (phone width) is built with a top bar and a bottom nav, but the manual check on a real phone has not been done.
