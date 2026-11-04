@@ -7,7 +7,7 @@ Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of 
 * P0.01 0045f42 (conventions summary d1f9d25)
 * P0.02 9c1331b
 * P0.03 ce4a3d1, 19bae4e
-* P0.07 33155b2, 7adddcc (CI green on 7adddcc)
+* P0.07 33155b2, 7adddcc, d22ba77, c8e1832, 6e3badd (CI and Linters green on 6e3badd; frontend job, smoke check in CI, Semgrep suppression approved by Jayman)
 * P0.09 9fcd899 (gitleaks in pre-commit and Linters; a fake key was blocked locally)
 * P0.10 be29195, 357da0f, 7a68e5f (CI fixes) (shell, sign out, session watch, branding from SellOS Settings, desk guard)
 * P1.04 910ba25, e100a3e, 03cc783 (CI green on 03cc783) (five roles from code, @sellos_api registry and guard, lead permission queries, docs/permissions.md)
@@ -43,3 +43,7 @@ Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of 
 
 * P0.07 criterion 2 (a failing check blocks the merge): direct pushes to 1.0 cannot be blocked by CI. Default: left as is. It needs a GitHub branch rule set by Jayman, or a decision that it no longer applies.
 * The CI concurrency group is keyed on the PR number, so a push to 1.0 cancels the previous push's CI run. Default: left as is.
+
+## Gate waivers used
+
+* SELLOS_NO_TEST_REASON on c8e1832 (semgrep suppression comment only) and 6e3badd (comment order only), both approved edits to scripts/check_tests_changed.py.
