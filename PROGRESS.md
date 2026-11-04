@@ -13,6 +13,8 @@ Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of 
 * P1.04 910ba25, e100a3e, 03cc783 (CI green on 03cc783) (five roles from code, @sellos_api registry and guard, lead permission queries, docs/permissions.md)
 * P1.05 eb21d97, 67068b5 (CI green on 67068b5) (permission matrix `sellos/access/matrix.py`, `test_permission_matrix.py`)
 
+* P0.10 follow up: the desk guard also blocks /desk (Frappe 16's desk path), found while testing Checkpoint A.
+
 ## Working on
 
 * Waiting on Jayman: Checkpoint A (roles and isolation), TEST NOW posted. After it passes: P0.11, P1.01 are blocked on P0.06 (N18), so the next ready story is P1.06 (needs P1.04), then P1.08, P1.09.

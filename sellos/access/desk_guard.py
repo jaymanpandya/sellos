@@ -25,8 +25,12 @@ CUSTOMER_ROLES = frozenset(
 DESK_EXEMPT_ROLES = frozenset({"SellOS Platform Admin", "System Manager", "Administrator"})
 
 
+# Frappe 16 serves the desk at /desk, and /app redirects to it. Both are blocked.
+DESK_PREFIXES = ("/app", "/desk")
+
+
 def is_desk_path(path: str) -> bool:
-	return path == "/app" or path.startswith("/app/")
+	return any(path == prefix or path.startswith(prefix + "/") for prefix in DESK_PREFIXES)
 
 
 def is_blocked(user: str, roles, path: str) -> bool:

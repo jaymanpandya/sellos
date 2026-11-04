@@ -11,6 +11,8 @@ class TestDeskGuard(unittest.TestCase):
 		for role in ("Company Admin", "Agent", "Client", "Channel Partner"):
 			self.assertTrue(is_blocked("a@x.com", ["All", f"SellOS {role}"], "/app/user"), role)
 			self.assertTrue(is_blocked("a@x.com", [f"SellOS {role}"], "/app"), role)
+			self.assertTrue(is_blocked("a@x.com", [f"SellOS {role}"], "/desk/user"), role)
+			self.assertTrue(is_blocked("a@x.com", [f"SellOS {role}"], "/desk"), role)
 
 	def test_other_paths_are_not_blocked(self):
 		for path in ("/sellos", "/api/method/ping", "/application", "/login"):
@@ -86,7 +88,7 @@ class TestDeskGuardRequests(unittest.TestCase):
 			self.assertEqual(login.status_code, 200, role)
 			self.assertEqual(login.json.get("home_page", "").lstrip("/"), "sellos", role)
 			self.assertEqual(client.get("/sellos", headers=headers).status_code, 200, role)
-			desk = client.get("/app/user", headers=headers)
+			desk = client.get("/desk/user", headers=headers)
 			if blocked:
 				self.assertEqual(desk.status_code, 302, role)
 				self.assertEqual(desk.headers.get("Location"), "/sellos", role)
