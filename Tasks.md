@@ -292,7 +292,7 @@ Goal: a reproducible Frappe 16 platform on DigitalOcean with continuous integrat
 
 ## P0.07 Set up continuous integration
 
-* [ ] **P0.07** · Points 3 · Owner Claude Code · Depends on P0.02 · Status not started
+* [x] **P0.07** · Points 3 · Owner Claude Code · Depends on P0.02 · Status done
 
 **Story.** As a reviewer, I want automated checks on every pull request, so that broken changes cannot merge.
 
