@@ -216,7 +216,7 @@ Goal: a reproducible Frappe 16 platform on DigitalOcean with continuous integrat
 
 ## P0.01 Summarise the BuildOS conventions
 
-* [ ] **P0.01** · Points 5 · Owner Claude Code · Depends on N16 · Status not started
+* [x] **P0.01** · Points 5 · Owner Claude Code · Depends on N16 · Status done
 
 **Story.** As Jayman, I want a written summary of BuildOS's structure, tooling, build process and frontend, so that SellOS replicates them.
 
