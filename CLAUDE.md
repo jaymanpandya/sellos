@@ -60,7 +60,7 @@ Platform Admin, Company Admin, Agent, Client and Channel Partner. In code the ro
 
 ## Secrets
 
-Keys and passwords live in `site_config.json` or environment variables, never in the repository. A secret scan runs in pre-commit and in continuous integration. If a story needs a key you do not have, stop and ask Jayman.
+Keys and passwords live in `site_config.json` or environment variables, never in the repository. A secret scan will be added by P0.09. Until then, never commit keys, and check your diff for anything that looks like one. If a story needs a key you do not have, stop and ask Jayman.
 
 ## Frontend
 
