@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
-# Order: preflight, lint and Semgrep, the task guards, put the clean baseline back, build the web
+# Order: new files marked intent-to-add, preflight, lint and Semgrep, the task guards, put the clean baseline back, build the web
 # app, migrate, prepare_clean_site (code, every run), the test files the task changed first (a failure stops the gate at once), the
 # whole backend suite, then the whole Cypress suite. A failed UI spec is rerun once, alone. The
 # gate passes only if every rerun passes, each spec that needed a rerun is logged as FLAKY, and a
@@ -46,6 +46,15 @@ set +e
 {
 set -e
 echo "=== SellOS test run: $(date) ==="
+
+# CI lints and scans every file in the commit, new ones included. pre-commit --all-files and
+# semgrep ci see only files git tracks, and a task's new files stay untracked until the loop
+# commits them. Mark them intent-to-add so every check below sees them, without staging content.
+# The loop's failure path (git add -A, salvage commit, reset --hard, clean -fd) still removes them.
+(
+  cd "$REPO_DIR"
+  git ls-files --others --exclude-standard -z | xargs -0 git add --intent-to-add
+)
 
 echo "--- Preflight ---"
 # The BuildOS gate uses the same bench. Two gates at once restore databases and clear the cache

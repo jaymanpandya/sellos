@@ -210,15 +210,11 @@ jobs:
           (cd apps/sellos/frontend && npm ci --no-audit --no-fund && npm run build)
           CI=Yes bench build --force
 
-      - name: Prepare the clean site
-        # The same fixture scripts/make-baseline.sh runs for the local gate.
-        working-directory: /home/runner/frappe-bench
-        run: |
-          bench --site test_site migrate
-          bench --site test_site execute sellos.tests.ui_fixtures.prepare_clean_site
-          bench --site test_site clear-cache
-
       - name: Start bench
+        # Before any site command that needs the services, as in Frappe's setup action, whose last
+        # step is bench start. This job has no Redis service container: redis-server comes from
+        # apt and bench init writes its configs, so redis_cache and redis_queue run only once
+        # bench start's Procfile starts them. bench migrate refuses to run without them.
         working-directory: /home/runner/frappe-bench
         run: |
           bench start &> "$GITHUB_WORKSPACE/bench_start.log" &
@@ -227,6 +223,16 @@ jobs:
             sleep 2
           done
           curl -sf -o /dev/null http://test_site:8000/api/method/ping || { tail -n 60 "$GITHUB_WORKSPACE/bench_start.log"; exit 1; }
+
+      - name: Prepare the clean site
+        # The same fixture scripts/run-tests.sh runs on every local gate run.
+        # Until SOS-P1-06A this step is expected to fail, and on this line only:
+        #   NotImplementedError: Call the provisioning code that makes this a company site.
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench --site test_site migrate
+          bench --site test_site execute sellos.tests.ui_fixtures.prepare_clean_site
+          bench --site test_site clear-cache
 
       - name: Run the Cypress suite
         working-directory: /home/runner/frappe-bench
