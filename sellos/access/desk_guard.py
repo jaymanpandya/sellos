@@ -1,9 +1,9 @@
-"""Keep customer roles out of the Frappe desk (P0.10).
+"""Keep everyone but the Platform Admin out of the Frappe desk (P0.10, tightened in P1.06).
 
-Customers never use the desk. A signed in user who holds a SellOS customer role and is not also a
-Platform Admin or System Manager is sent to the web app when they ask for a desk page. This only
-redirects page loads. The API stays open, because the web app calls it, and each method checks
-its own roles (P1.04).
+Only the Platform Admin may open /desk, and only to operate the control site. No customer role ever
+gets it (decided by Jayman at Checkpoint A). Anyone else who asks for a desk page is sent to the
+web app. This only redirects page loads. The API stays open, because the web app calls it, and each
+method checks its own roles (P1.04).
 """
 
 import frappe
@@ -12,17 +12,9 @@ from werkzeug.utils import redirect
 
 APP_ROUTE = "/sellos"
 
-# Company Admin, Agent, Client and Channel Partner. The Platform Admin runs the control site and
-# may use the desk. Default chosen for P0.10, see PROGRESS.md.
-CUSTOMER_ROLES = frozenset(
-	{
-		"SellOS Company Admin",
-		"SellOS Agent",
-		"SellOS Client",
-		"SellOS Channel Partner",
-	}
-)
-DESK_EXEMPT_ROLES = frozenset({"SellOS Platform Admin", "System Manager", "Administrator"})
+# Frappe's built in Administrator is the bench's own login, not a SellOS role.
+DESK_ROLES = frozenset({"SellOS Platform Admin"})
+DESK_USERS = frozenset({"Administrator"})
 
 
 # Frappe 16 serves the desk at /desk, and /app redirects to it. Both are blocked.
@@ -34,13 +26,10 @@ def is_desk_path(path: str) -> bool:
 
 
 def is_blocked(user: str, roles, path: str) -> bool:
-	"""True when this user must not see this desk path."""
+	"""True when this user must not see this desk path. A guest is left to Frappe's login."""
 	if user == "Guest" or not is_desk_path(path):
 		return False
-	roles = set(roles)
-	if roles & DESK_EXEMPT_ROLES:
-		return False
-	return bool(roles & CUSTOMER_ROLES)
+	return user not in DESK_USERS and not (set(roles) & DESK_ROLES)
 
 
 def block_desk():

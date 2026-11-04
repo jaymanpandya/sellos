@@ -7,7 +7,7 @@ every migrate. Nothing here is set up in the Desk.
 
 | Role | Role name in code | Web app areas | Frappe desk |
 | --- | --- | --- | --- |
-| Platform Admin | `SellOS Platform Admin` | platform, home, profile | Yes (control site) |
+| Platform Admin | `SellOS Platform Admin` | platform, home, profile | Yes, the only role, control site only |
 | Company Admin | `SellOS Company Admin` | company, crm, reports, home, profile | No |
 | Agent | `SellOS Agent` | crm, home, profile | No |
 | Channel Partner | `SellOS Channel Partner` | partner, home, profile | No |
@@ -17,15 +17,24 @@ The areas come from `frontend/src/personas.js`. The desk block is `sellos/access
 
 ## Data rules
 
+Sees (CRM data, P1.06): "all" is every record on the site, "own" is the leads the user owns, is assigned, or
+has a Frappe share on, plus the records that follow those leads. "None" is nothing.
+
 | Data | Platform Admin | Company Admin | Agent | Channel Partner | Client |
 | --- | --- | --- | --- | --- | --- |
-| Leads | All on the site | All | Own, assigned, or shared with them | Own, assigned, or shared with them | None |
+| Lead | None (support grant only, P1.13) | All, edit, reassign, archive | Own, edit own | Own, create and edit own | None |
+| Client (record) | None | All, full phone | Created by them, or on a lead they can see. Masked phone | Same as Agent | None |
+| Activity, Task, Site Visit | None | All, create and edit | Follow the lead, create and edit | Follow the lead, read only | None |
+| Delete | Nobody. Records are archived | | | | |
+| Bulk export | Yes (`export` permission) | No | No | No | No |
+| Change tracking | Every field of all five DocTypes | | | | |
 | SellOS Settings | System Manager only (the wizard in P1.03 writes it for the Company Admin) | | | | |
 
-Leads are the only data rule so far. Each later story that adds a DocType adds its row here and
-its rules in code. "Own" means the lead's owner or its `assigned_to` user. Sharing uses Frappe's
-normal share. The rules are in `sellos/access/lead_permissions.py` and apply once P1.06 creates
-the Lead DocType.
+"Own" means the lead's owner or its `assigned_to` user. Sharing uses Frappe's normal share. A shared
+lead brings its timeline with it. The rules are in `sellos/access/lead_permissions.py`. Phone numbers
+sit at permission level 1, so a direct read (`/api/resource/Client`) gives an Agent or Partner only
+`phone_masked`. The Platform Admin's `export` and level 1 rows exist on the DocTypes but give no data
+on a company site, because the data scope above is "none".
 
 ## API methods
 
@@ -39,7 +48,8 @@ the Lead DocType.
 
 | Method | Roles |
 | --- | --- |
-| None yet | |
+| `sellos.crm.api.list_clients`, `save_client`, `list_leads`, `get_lead`, `save_lead`, `set_archived` | Company Admin, Agent, Channel Partner |
+| `sellos.crm.api.add_activity`, `save_task`, `save_site_visit` | Company Admin, Agent |
 
 Each story that adds a method adds a row here.
 

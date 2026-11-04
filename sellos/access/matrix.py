@@ -12,5 +12,20 @@ every method here as every role, as an outsider and as a guest, and fails the bu
 Add one line per method, in the same commit that adds the method.
 """
 
-# dotted method path -> the roles that may call it. Empty for now: no sellos API method exists yet.
-MATRIX: dict[str, frozenset[str]] = {}
+from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
+
+_READERS = frozenset({AGENT, CHANNEL_PARTNER, COMPANY_ADMIN})
+_LOGGERS = frozenset({AGENT, COMPANY_ADMIN})
+
+# dotted method path -> the roles that may call it.
+MATRIX: dict[str, frozenset[str]] = {
+	"sellos.crm.api.list_clients": _READERS,
+	"sellos.crm.api.save_client": _READERS,
+	"sellos.crm.api.list_leads": _READERS,
+	"sellos.crm.api.save_lead": _READERS,
+	"sellos.crm.api.get_lead": _READERS,
+	"sellos.crm.api.add_activity": _LOGGERS,
+	"sellos.crm.api.save_task": _LOGGERS,
+	"sellos.crm.api.save_site_visit": _LOGGERS,
+	"sellos.crm.api.set_archived": _READERS,
+}

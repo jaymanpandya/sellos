@@ -1,4 +1,4 @@
-# P1.04 agents see their own leads unless shared. Unit tests of the permission queries.
+# P1.04, P1.06 agents see their own leads unless shared. Unit tests of the permission queries.
 import unittest
 from unittest.mock import patch
 
@@ -11,7 +11,7 @@ from sellos.access.roles import AGENT, CHANNEL_PARTNER, CLIENT, COMPANY_ADMIN, P
 class TestLeadScope(unittest.TestCase):
 	def test_scope_by_role(self):
 		self.assertEqual(lp.scope_for([COMPANY_ADMIN]), "all")
-		self.assertEqual(lp.scope_for([PLATFORM_ADMIN]), "all")
+		self.assertEqual(lp.scope_for([PLATFORM_ADMIN]), "none")  # P1.06: no company CRM data
 		self.assertEqual(lp.scope_for(["System Manager"]), "all")
 		self.assertEqual(lp.scope_for([AGENT]), "own")
 		self.assertEqual(lp.scope_for([CHANNEL_PARTNER]), "own")
@@ -30,7 +30,7 @@ class TestLeadQueries(unittest.TestCase):
 
 	def test_admins_have_no_restriction(self):
 		self.assertEqual(self._conditions([COMPANY_ADMIN]), "")
-		self.assertEqual(self._conditions([PLATFORM_ADMIN]), "")
+		self.assertEqual(self._conditions([PLATFORM_ADMIN]), "1=0")
 		self.assertEqual(lp.get_permission_query_conditions("Administrator"), "")
 
 	def test_a_client_sees_nothing(self):
@@ -78,3 +78,34 @@ class TestLeadHasPermission(unittest.TestCase):
 	def test_company_admin_sees_all_and_client_sees_none(self):
 		self.assertTrue(self._check([COMPANY_ADMIN], self._doc(owner="b@x.com")))
 		self.assertFalse(self._check([CLIENT], self._doc(owner="a@x.com")))
+
+
+class TestRecordsThatFollowTheLead(unittest.TestCase):
+	"""P1.06 clients, activities, tasks and visits."""
+
+	def _sql(self, fn, roles, user="a@x.com", **kw):
+		with patch.object(frappe, "get_roles", return_value=roles):
+			return fn(user, **kw)
+
+	def test_children_follow_the_lead(self):
+		sql = self._sql(lp.get_child_query_conditions, [AGENT], doctype="Lead Task")
+		self.assertIn("`tabLead Task`.`lead` in (select `name` from `tabLead` where", sql)
+		self.assertIn("`tabLead`.`assigned_to` = 'a@x.com'", sql)
+		self.assertEqual(self._sql(lp.get_child_query_conditions, [CLIENT]), "1=0")
+		self.assertEqual(self._sql(lp.get_child_query_conditions, [PLATFORM_ADMIN]), "1=0")
+		self.assertEqual(self._sql(lp.get_child_query_conditions, [COMPANY_ADMIN]), "")
+
+	def test_a_client_record_is_seen_through_its_leads_or_its_creator(self):
+		sql = self._sql(lp.get_client_query_conditions, [CHANNEL_PARTNER])
+		self.assertIn("`tabClient`.`owner` = 'a@x.com'", sql)
+		self.assertIn("select `client` from `tabLead`", sql)
+		self.assertEqual(self._sql(lp.get_client_query_conditions, [CLIENT]), "1=0")
+		self.assertEqual(self._sql(lp.get_client_query_conditions, [COMPANY_ADMIN]), "")
+
+	def test_any_agent_may_create(self):
+		doc = frappe._dict({"doctype": "Lead", "name": None})
+		with patch.object(frappe, "get_roles", return_value=[AGENT]):
+			self.assertTrue(lp.has_permission(doc, "create", "a@x.com"))
+			self.assertTrue(lp.has_client_permission(doc, "create", "a@x.com"))
+		with patch.object(frappe, "get_roles", return_value=[PLATFORM_ADMIN]):
+			self.assertFalse(lp.has_permission(doc, "create", "p@x.com"))

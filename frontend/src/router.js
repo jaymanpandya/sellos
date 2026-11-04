@@ -4,6 +4,8 @@ import { base, session } from "./session";
 import { inAreas, personaFor, routeArea } from "./personas";
 
 const HomePage = () => import("./pages/HomePage.vue");
+const LeadsPage = () => import("./pages/LeadsPage.vue");
+const LeadPage = () => import("./pages/LeadPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
 
 export function createAppRouter() {
@@ -11,6 +13,20 @@ export function createAppRouter() {
 		history: createWebHistory(base),
 		routes: [
 			{ path: "/", name: "home", component: HomePage, meta: { area: "home" } },
+			{ path: "/crm/leads", name: "leads", component: LeadsPage, meta: { area: "crm" } },
+			{ path: "/crm/leads/:name", name: "lead", component: LeadPage, meta: { area: "crm" } },
+			{
+				path: "/partner/leads",
+				name: "partner-leads",
+				component: LeadsPage,
+				meta: { area: "partner" },
+			},
+			{
+				path: "/partner/leads/:name",
+				name: "partner-lead",
+				component: LeadPage,
+				meta: { area: "partner" },
+			},
 			{
 				path: "/no-access",
 				name: "no-access",

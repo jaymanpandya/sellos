@@ -18,13 +18,18 @@ class TestDeskGuard(unittest.TestCase):
 		for path in ("/sellos", "/api/method/ping", "/application", "/login"):
 			self.assertFalse(is_blocked("a@x.com", ["SellOS Agent"], path), path)
 
-	def test_platform_admin_and_system_manager_keep_the_desk(self):
+	def test_only_the_platform_admin_keeps_the_desk(self):
 		self.assertFalse(is_blocked("p@x.com", ["SellOS Platform Admin"], "/app/user"))
-		self.assertFalse(is_blocked("s@x.com", ["SellOS Agent", "System Manager"], "/app"))
+		self.assertFalse(is_blocked("p@x.com", ["SellOS Platform Admin"], "/desk"))
+		self.assertFalse(is_blocked("Administrator", ["System Manager"], "/desk"))
 
-	def test_guest_and_users_with_no_sellos_role_are_not_touched(self):
+	def test_system_manager_and_users_with_no_sellos_role_are_blocked(self):
+		self.assertTrue(is_blocked("s@x.com", ["SellOS Agent", "System Manager"], "/app"))
+		self.assertTrue(is_blocked("s@x.com", ["System Manager"], "/desk"))
+		self.assertTrue(is_blocked("u@x.com", ["Desk User"], "/app"))
+
+	def test_a_guest_is_left_to_the_login_page(self):
 		self.assertFalse(is_blocked("Guest", [], "/app"))
-		self.assertFalse(is_blocked("u@x.com", ["Desk User"], "/app"))
 
 
 class TestDeskGuardRequests(unittest.TestCase):

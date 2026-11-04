@@ -1,18 +1,24 @@
-"""Who may see which leads (P1.04). P1.06 creates the Lead DocType and these hooks apply to it.
+"""Who may see which CRM records (P1.04, extended in P1.06).
 
-* Platform Admin, Company Admin and System Manager see every lead of the site.
+* Company Admin and System Manager see every record of the site.
+* The Platform Admin sees no company CRM data. Support gets in through a time limited grant
+  (a later story), never by role. (Decided by Jayman, P1.06.)
 * An Agent or Channel Partner sees only the leads they own or are assigned, plus leads shared with
   them through Frappe's normal share.
-* A Client sees no leads.
+* Activities, tasks and site visits follow their lead. A client record follows the leads that use
+  it, and a record the user created.
+* A Client (the role) sees nothing.
 """
 
 import frappe
 
-from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, PLATFORM_ADMIN
+from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
 
-SEES_ALL = frozenset({PLATFORM_ADMIN, COMPANY_ADMIN, "System Manager"})
+SEES_ALL = frozenset({COMPANY_ADMIN, "System Manager"})
 SEES_OWN = frozenset({AGENT, CHANNEL_PARTNER})
 DOCTYPE = "Lead"
+CLIENT_DOCTYPE = "Client"
+LEAD_CHILDREN = ("Lead Activity", "Lead Task", "Site Visit")
 
 
 def scope_for(roles) -> str:
@@ -25,15 +31,11 @@ def scope_for(roles) -> str:
 	return "none"
 
 
-def get_permission_query_conditions(user=None, doctype=DOCTYPE):
-	user = user or frappe.session.user
-	if user == "Administrator":
-		return ""
-	scope = scope_for(frappe.get_roles(user))
-	if scope == "all":
-		return ""
-	if scope == "none":
-		return "1=0"
+def _own_lead_sql(user) -> str:
+	return _own_sql(user, "Lead")
+
+
+def _own_sql(user, doctype) -> str:
 	quoted_user = frappe.db.escape(user)
 	table = f"`tab{doctype}`"
 	return (
@@ -43,15 +45,74 @@ def get_permission_query_conditions(user=None, doctype=DOCTYPE):
 	)
 
 
-def has_permission(doc, ptype=None, user=None, **kwargs):
+def _conditions(user, build):
 	user = user or frappe.session.user
 	if user == "Administrator":
-		return True
+		return ""
 	scope = scope_for(frappe.get_roles(user))
 	if scope == "all":
-		return True
+		return ""
 	if scope == "none":
+		return "1=0"
+	return build(user)
+
+
+def get_permission_query_conditions(user=None, doctype=DOCTYPE):
+	return _conditions(user, lambda u: _own_sql(u, doctype))
+
+
+def get_child_query_conditions(user=None, doctype="Lead Activity"):
+	"""Activities, tasks and site visits: the user can see the lead."""
+	return _conditions(
+		user,
+		lambda u: f"`tab{doctype}`.`lead` in (select `name` from `tabLead` where {_own_lead_sql(u)})",
+	)
+
+
+def get_client_query_conditions(user=None, doctype=CLIENT_DOCTYPE):
+	"""Clients the user created, or whose lead the user can see."""
+	return _conditions(
+		user,
+		lambda u: (
+			f"(`tab{doctype}`.`owner` = {frappe.db.escape(u)} or `tab{doctype}`.`name` in"
+			f" (select `client` from `tabLead` where {_own_lead_sql(u)}))"
+		),
+	)
+
+
+def _share_flag(ptype):
+	# Sharing grants read, write and so on separately. Anything else needs read.
+	flag = ptype if ptype in ("read", "write", "share", "submit") else "read"
+	return {flag: 1}
+
+
+def _can_use_lead(lead, ptype, user) -> bool:
+	"""True when the user owns, is assigned, or has a share on this lead."""
+	row = frappe.db.get_value("Lead", lead, ["owner", "assigned_to"], as_dict=True)
+	if not row:
 		return False
+	if user in (row.owner, row.assigned_to):
+		return True
+	return bool(
+		frappe.db.exists(
+			"DocShare", {"user": user, "share_doctype": "Lead", "share_name": lead, **_share_flag(ptype)}
+		)
+	)
+
+
+def _scope(user):
+	user = user or frappe.session.user
+	if user == "Administrator":
+		return user, "all"
+	return user, scope_for(frappe.get_roles(user))
+
+
+def has_permission(doc, ptype=None, user=None, **kwargs):
+	user, scope = _scope(user)
+	if scope != "own":
+		return scope == "all"
+	if ptype == "create":
+		return True  # a new lead has no owner yet, the doctype's role rows decide who may create
 	if user in (doc.get("owner"), doc.get("assigned_to")):
 		return True
 	return bool(
@@ -62,7 +123,22 @@ def has_permission(doc, ptype=None, user=None, **kwargs):
 	)
 
 
-def _share_flag(ptype):
-	# Sharing grants read, write and so on separately. Anything else needs read.
-	flag = ptype if ptype in ("read", "write", "share", "submit") else "read"
-	return {flag: 1}
+def has_child_permission(doc, ptype=None, user=None, **kwargs):
+	"""An activity, task or site visit is allowed when its lead is."""
+	user, scope = _scope(user)
+	if scope != "own":
+		return scope == "all"
+	lead = doc.get("lead")
+	if not lead:
+		return False
+	return _can_use_lead(lead, "write" if ptype == "create" else ptype, user)
+
+
+def has_client_permission(doc, ptype=None, user=None, **kwargs):
+	user, scope = _scope(user)
+	if scope != "own":
+		return scope == "all"
+	if ptype == "create" or user == doc.get("owner"):
+		return True
+	leads = frappe.get_all("Lead", filters={"client": doc.name}, pluck="name")
+	return any(_can_use_lead(lead, ptype, user) for lead in leads)

@@ -37,6 +37,15 @@ describe("personas", () => {
 		expect(inAreas(null, "home")).toBe(false);
 	});
 
+	it("shows leads to agents, company admins and partners only, each in their own area", () => {
+		const leads = (role) => personaFor([role]).nav.find((i) => i.key === "leads");
+		expect(leads("SellOS Agent").to).toBe("/crm/leads");
+		expect(leads("SellOS Company Admin").to).toBe("/crm/leads");
+		expect(leads("SellOS Channel Partner").to).toBe("/partner/leads");
+		expect(leads("SellOS Client")).toBeUndefined();
+		expect(leads("SellOS Platform Admin")).toBeUndefined();
+	});
+
 	it("falls back to the home area when a route has none", () => {
 		expect(routeArea({ meta: { area: "crm" } })).toBe("crm");
 		expect(routeArea({ meta: {} })).toBe("home");

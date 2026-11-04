@@ -5,3 +5,12 @@
 body {
 	@apply bg-surface text-ink antialiased;
 }
+
+@layer components {
+	.btn {
+		@apply rounded-input bg-brand px-3 py-2 text-sm font-medium text-white;
+	}
+	.field {
+		@apply block w-full rounded-input border border-line bg-surface px-3 py-2 text-sm text-ink;
+	}
+}

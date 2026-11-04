@@ -13,11 +13,13 @@ Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of 
 * P1.04 910ba25, e100a3e, 03cc783 (CI green on 03cc783) (five roles from code, @sellos_api registry and guard, lead permission queries, docs/permissions.md)
 * P1.05 eb21d97, 67068b5 (CI green on 67068b5) (permission matrix `sellos/access/matrix.py`, `test_permission_matrix.py`)
 
+* P1.06 (this commit) Client, Lead, Lead Activity, Lead Task and Site Visit DocTypes, `sellos/crm/api.py`, leads pages in the web app, tighter desk guard.
+
 * P0.10 follow up: the desk guard also blocks /desk (Frappe 16's desk path), found while testing Checkpoint A.
 
 ## Working on
 
-* Waiting on Jayman: Checkpoint A (roles and isolation), TEST NOW posted. After it passes: P0.11, P1.01 are blocked on P0.06 (N18), so the next ready story is P1.06 (needs P1.04), then P1.08, P1.09.
+* Checkpoint A passed. P1.06 done. P0.11 and P1.01 are blocked on P0.06 (N18). Next ready: P1.08, P1.09.
 
 ## Blocked
 
@@ -43,6 +45,16 @@ Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of 
 
 * P0.07 criterion 2 (a failing check blocks the merge): direct pushes to 1.0 cannot be blocked by CI. Default: left as is. It needs a GitHub branch rule set by Jayman, or a decision that it no longer applies.
 * The CI concurrency group is keyed on the PR number, so a push to 1.0 cancels the previous push's CI run. Default: left as is.
+
+## P1.06 decisions (Jayman, 2026-11-04)
+
+* Only the Platform Admin may open /desk, control site only. `desk_guard.py` now blocks everyone else, System Manager included. Administrator (the bench login) is exempt.
+* The Platform Admin has no company CRM data by role. Support access is P1.13, 4 hour expiry.
+* Nothing is deleted, only archived. Everything is change tracked. Only the Platform Admin may bulk export. Agents and partners see masked phones.
+* The Channel Partner sees their own leads and those leads' records, read only. Earnings, potential earnings and a personal QR code went to P5.06.
+* I added `crm` to the subpackage list in CLAUDE.md. Partners can create and edit their own leads and clients but cannot log activities, tasks or visits (my reading of "see their leads and its activity").
+* Not done in P1.06: reveal logging for masked phones, a consent field, project or property records (site visits hold a project name as text), the pipeline stage (P1.07).
+* "Callers" masking applies to Agent and Channel Partner. Company Admin sees full numbers.
 
 ## Gate waivers used
 

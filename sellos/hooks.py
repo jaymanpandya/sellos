@@ -153,20 +153,22 @@ after_migrate = ["sellos.access.roles.after_migrate"]
 # -----------
 # Permissions evaluated in scripted ways
 
-# P1.04 agents see their own leads unless shared. The Lead DocType comes in P1.06.
+# P1.04 and P1.06: agents and partners see their own leads, and the records that follow a lead.
+_LEAD_PERMS = "sellos.access.lead_permissions"
 permission_query_conditions = {
-	"Lead": "sellos.access.lead_permissions.get_permission_query_conditions",
+	"Lead": f"{_LEAD_PERMS}.get_permission_query_conditions",
+	"Client": f"{_LEAD_PERMS}.get_client_query_conditions",
+	"Lead Activity": f"{_LEAD_PERMS}.get_child_query_conditions",
+	"Lead Task": f"{_LEAD_PERMS}.get_child_query_conditions",
+	"Site Visit": f"{_LEAD_PERMS}.get_child_query_conditions",
 }
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
 has_permission = {
-	"Lead": "sellos.access.lead_permissions.has_permission",
+	"Lead": f"{_LEAD_PERMS}.has_permission",
+	"Client": f"{_LEAD_PERMS}.has_client_permission",
+	"Lead Activity": f"{_LEAD_PERMS}.has_child_permission",
+	"Lead Task": f"{_LEAD_PERMS}.has_child_permission",
+	"Site Visit": f"{_LEAD_PERMS}.has_child_permission",
 }
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
 
 # Document Events
 # ---------------

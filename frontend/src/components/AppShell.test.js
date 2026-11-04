@@ -32,11 +32,13 @@ describe("AppShell", () => {
 		expect(wrapper.text()).toContain("page body");
 	});
 
-	it("shows the company name and the home link for an agent", async () => {
+	it("shows the company name and the home and leads links for an agent", async () => {
 		session.roles = ["SellOS Agent"];
 		session.company = { name: "Pandya Realtors", brandColor: "" };
 		const wrapper = await render();
 		expect(wrapper.text()).toContain("Pandya Realtors");
-		expect(new Set(wrapper.findAll("a").map((a) => a.text()))).toEqual(new Set(["Home"]));
+		expect(new Set(wrapper.findAll("a").map((a) => a.text()))).toEqual(
+			new Set(["Home", "Leads"])
+		);
 	});
 });

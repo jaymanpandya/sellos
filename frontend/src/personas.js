@@ -11,19 +11,28 @@ export const PERSONAS = [
 		key: "company_admin",
 		role: "SellOS Company Admin",
 		areas: ["company", "crm", "reports", "home", "profile"],
-		nav: [{ key: "home", label: "Home", to: "/", area: "home" }],
+		nav: [
+			{ key: "home", label: "Home", to: "/", area: "home" },
+			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
+		],
 	},
 	{
 		key: "agent",
 		role: "SellOS Agent",
 		areas: ["crm", "home", "profile"],
-		nav: [{ key: "home", label: "Home", to: "/", area: "home" }],
+		nav: [
+			{ key: "home", label: "Home", to: "/", area: "home" },
+			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
+		],
 	},
 	{
 		key: "channel_partner",
 		role: "SellOS Channel Partner",
 		areas: ["partner", "home", "profile"],
-		nav: [{ key: "home", label: "Home", to: "/", area: "home" }],
+		nav: [
+			{ key: "home", label: "Home", to: "/", area: "home" },
+			{ key: "leads", label: "Leads", to: "/partner/leads", area: "partner" },
+		],
 	},
 	{
 		key: "client",

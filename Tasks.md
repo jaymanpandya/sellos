@@ -408,9 +408,9 @@ Goal: the custom SellOS app and a permission model that tests prove. It totals 3
 
 **Story.** As a Company Admin, I want to grant platform support time limited access, so that support can help without permanent access.
 
-**Description.** Build a grant with an expiry that gives the Platform Admin read access to a company site, with every action logged.
+**Description.** Build a grant with an expiry that gives the Platform Admin read access to a company site, with every action logged. Decided at P1.06: the Platform Admin sees no company CRM data by role (`SEES_ALL` in `sellos/access/lead_permissions.py` excludes them), so this grant is the only way in. Support signs in remotely, and the grant expires automatically after 4 hours.
 
-**Acceptance criteria.** (1) A Company Admin can grant access for a chosen duration. (2) Access ends automatically at expiry. (3) Every action is logged with user and time.
+**Acceptance criteria.** (1) A Company Admin can grant access for a chosen duration, up to 4 hours. (2) Access ends automatically at expiry, at most 4 hours after it starts. (3) Every action is logged with user and time.
 
 **Test criteria.** Grant access for 1 hour, confirm it works and then ends, and confirm the log entries exist.
 
@@ -496,7 +496,7 @@ Goal: leads, clients and consent records that gate every contact. It totals 29 p
 
 ## P1.06 Build Client, Lead, Activity, Task and Site Visit
 
-* [ ] **P1.06** · Points 8 · Owner Claude Code · Depends on P1.04 · Status not started
+* [x] **P1.06** · Points 8 · Owner Claude Code · Depends on P1.04 · Status done
 
 **Story.** As an Agent, I want to record clients, leads, activities, tasks and site visits, so that I can work every enquiry in one place.
 
@@ -1096,9 +1096,9 @@ Goal: Client and Channel Partner access inside the same app. It totals 16 points
 
 **Story.** As a Channel Partner, I want to register leads and track my deals, so that I can work with Pandya.
 
-**Description.** Build partner views to register leads with consent, see shared inventory, and track their own deals and commission status.
+**Description.** Build partner views to register leads with consent, see shared inventory, and track their own deals and commission status. Added at P1.06 (Jayman): the partner also sees earnings so far, potential future earnings, and a QR code specific to them for sharing sales materials. P1.06 already gives partners their own leads and the timeline of those leads, read only.
 
-**Acceptance criteria.** (1) Leads can be registered with consent wording. (2) Shared inventory is visible. (3) Deals and commission status show only the partner's own. (4) Partners cannot see other partners' leads.
+**Acceptance criteria.** (1) Leads can be registered with consent wording. (2) Shared inventory is visible. (3) Deals and commission status show only the partner's own, with earnings so far, potential earnings and the partner's QR code. (4) Partners cannot see other partners' leads.
 
 **Test criteria.** Permission tests, and an end to end test of registering a lead.
 

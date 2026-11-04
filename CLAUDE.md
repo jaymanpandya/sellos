@@ -13,7 +13,7 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 1. One Frappe site and one database per company, at a subdomain of sellos.interactivesoftwares.com, plus a separate control site for the Platform Admin. A company never shares a database with another company.
 2. Frappe 16.x without ERPNext. Pin the version.
 3. DocTypes, hooks and patches live in the app repositories as code. Never create DocTypes through the Desk.
-4. Customers never use the Frappe desk. Every customer feature is built in the SellOS web app, which follows the BuildOS frontend stack, structure and tooling once P0.01 is approved.
+4. Customers never use the Frappe desk. Every customer feature is built in the SellOS web app, which follows the BuildOS frontend stack, structure and tooling once P0.01 is approved. Only the Platform Admin may open /desk, and only to operate the control site. No customer role (Company Admin, Agent, Client or Channel Partner) ever gets it. Decided by Jayman at Checkpoint A.
 5. Every API method is whitelisted, declares its allowed roles, and is covered by the permission test matrix. A method with no declaration is denied.
 6. Five roles: Platform Admin, Company Admin, Agent, Client and Channel Partner.
 7. A consent check runs before every dial. It has no override for any role.
@@ -49,7 +49,7 @@ Run these from the app folder (`apps/sellos` in the bench). Never start, stop or
 ## Frappe 16 conventions
 
 * Python 3.14, tabs for indentation, double quotes, line length 110 (see `pyproject.toml` and `.editorconfig`).
-* Code is grouped in subpackages of `sellos/`: `access`, `telephony`, `intel`, `inventory`, `reports`, `scraper`, `whatsapp` and `billing`. Tests are named `test_*.py` and sit beside the code.
+* Code is grouped in subpackages of `sellos/`: `access`, `crm`, `telephony`, `intel`, `inventory`, `reports`, `scraper`, `whatsapp` and `billing`. Tests are named `test_*.py` and sit beside the code.
 * Each DocType has its own folder under `sellos/sellos/doctype/<name>/` with its JSON, Python file and test.
 * Comments cite story IDs such as P1.04, not other ticket schemes.
 * The BuildOS conventions are in `docs/buildos-conventions.md`.
@@ -57,6 +57,15 @@ Run these from the app folder (`apps/sellos` in the bench). Never start, stop or
 ## Role model
 
 Platform Admin, Company Admin, Agent, Client and Channel Partner. In code the role names are `SellOS Platform Admin`, `SellOS Company Admin`, `SellOS Agent`, `SellOS Client` and `SellOS Channel Partner`. The web app maps them to areas in `frontend/src/personas.js`. Any change to roles or permissions needs Jayman's approval first.
+
+## CRM data rules (decided by Jayman, P1.06)
+
+* Nothing is deleted. Every CRM record is archived, and `on_trash` refuses a delete for every role.
+* Every field of the CRM DocTypes is change tracked.
+* The Platform Admin sees no company CRM data by role. Support access is a time limited grant (P1.13, 4 hours).
+* Only the Platform Admin may bulk export. No other role has the `export` permission.
+* Agents and partners see masked phone numbers. Only a Company Admin sees full numbers (permission level 1 on `phone` and `overseas_phone`).
+* A Channel Partner sees only their own leads and those leads' records, read only. They log nothing.
 
 ## Secrets
 
