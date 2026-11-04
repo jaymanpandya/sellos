@@ -1,11 +1,12 @@
-// Design tokens for SellOS. Colours are CSS variables so each company can set its own brand at
-// runtime from the setup wizard (see applyCompanyTheme in session.js). The defaults below are
-// placeholders until the SellOS product brand is chosen.
+// Design tokens for SellOS (approved by Jayman, SOS-P1-06A). Colours are CSS variables so each
+// company can set its own brand at runtime (see applyCompanyTheme in session.js). The defaults
+// below are the approved SellOS brand: green #0f4c35, amber #e8954a, Syne headings, DM Sans body.
 const defaults = {
-	"--sos-brand": "#1d4e5f",
-	"--sos-brand-dark": "#143945",
-	"--sos-brand-light": "#e6eff2",
-	"--sos-accent": "#c98a2b",
+	"--sos-brand": "#0f4c35",
+	"--sos-brand-dark": "#0a3626",
+	"--sos-brand-mid": "#2a7a5a",
+	"--sos-brand-light": "#e3f0ea",
+	"--sos-accent": "#e8954a",
 	"--sos-surface": "#ffffff",
 	"--sos-surface-muted": "#f6f7f8",
 	"--sos-ink": "#1b1f23",
@@ -17,6 +18,7 @@ export const colors = {
 	brand: {
 		DEFAULT: "var(--sos-brand)",
 		dark: "var(--sos-brand-dark)",
+		mid: "var(--sos-brand-mid)",
 		light: "var(--sos-brand-light)",
 	},
 	accent: "var(--sos-accent)",
@@ -32,7 +34,8 @@ export const colors = {
 };
 
 export const fontFamily = {
-	sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+	sans: ['"DM Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+	heading: ["Syne", "ui-sans-serif", "system-ui", "sans-serif"],
 };
 
 export const radius = {

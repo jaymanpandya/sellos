@@ -1,6 +1,7 @@
 import { apiRequest } from "../api";
 
-// The CRM API (P1.06). Each call is one whitelisted method that checks the user's role.
+// The CRM API (P1.06). Each call is one whitelisted method that checks the user's role. The request
+// helper returns the method's own return value, not the {message: ...} wrapper (SOS-P1-06A).
 const call = (method, params = {}) =>
 	apiRequest({ url: `/api/method/sellos.crm.api.${method}`, method: "POST", params });
 
@@ -20,3 +21,17 @@ export const crmApi = {
 
 export const CLIENT_TYPES = ["Buyer", "Seller", "Investor", "NRI"];
 export const ACTIVITY_TYPES = ["Call", "WhatsApp", "Email", "Meeting", "Note"];
+
+// The message the server sent for a failed call, or the fallback. The request helper puts the
+// server's messages in error.messages as plain text. The product framework name is never shown.
+export function serverMessage(error, fallback) {
+	const messages = (error?.messages || []).map((m) =>
+		String(m)
+			.replace(/<[^>]*>/g, "")
+			.trim()
+	);
+	const text = messages.find((m) => m && m !== "Internal Server Error" && !/frappe/i.test(m));
+	if (text) return text;
+	if (error?.response?.status === 403) return "You do not have permission to do this.";
+	return fallback;
+}

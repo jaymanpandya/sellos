@@ -1,10 +1,12 @@
 import os
+import re
 
 import frappe
 from frappe import _
 from frappe.website.page_renderers.base_renderer import BaseRenderer
 
 SPA_ROUTE = "sellos"
+TAB_ICONS = re.compile(r"(<!-- tab-icons -->).*?(<!-- /tab-icons -->)", re.DOTALL)
 
 
 class SellOSPage(BaseRenderer):
@@ -34,8 +36,18 @@ def get_html():
 	with open(path, encoding="utf-8") as f:  # fixed path inside the app, no user input  # nosemgrep
 		source = f.read()
 
+	source = set_tab_icon(source, get_company_branding()["logo"])
+
 	# The source is the built app page from this repository, not user input.
 	return frappe.render_template(source, {"boot": get_boot()}, safe_render=False)  # nosemgrep
+
+
+def set_tab_icon(source: str, logo: str) -> str:
+	"""Put the company logo in the tab icon. With no logo the built page keeps the SellOS icon."""
+	if not logo:
+		return source
+	link = f'<link rel="icon" href="{frappe.utils.escape_html(logo)}" />'
+	return TAB_ICONS.sub(lambda m: f"{m.group(1)}\n\t\t{link}\n\t\t{m.group(2)}", source, count=1)
 
 
 def get_boot():
@@ -59,7 +71,7 @@ def get_company_branding():
 	# Read straight from the single doctype: the branding is public to every signed in user.
 	settings = frappe.get_cached_doc("SellOS Settings")
 	return {
-		"name": settings.company_name or frappe.local.site,
+		"name": settings.company_name or "",
 		"logo": settings.logo or "",
 		"brand_color": settings.brand_color or "",
 	}

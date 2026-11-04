@@ -13,19 +13,20 @@ export function createAppRouter() {
 		history: createWebHistory(base),
 		routes: [
 			{ path: "/", name: "home", component: HomePage, meta: { area: "home" } },
-			{ path: "/crm/leads", name: "leads", component: LeadsPage, meta: { area: "crm" } },
-			{ path: "/crm/leads/:name", name: "lead", component: LeadPage, meta: { area: "crm" } },
+			// A lead opens beside the list, so the list stays on screen (SOS-P1-06A).
+			{
+				path: "/crm/leads",
+				name: "leads",
+				component: LeadsPage,
+				meta: { area: "crm" },
+				children: [{ path: ":name", name: "lead", component: LeadPage }],
+			},
 			{
 				path: "/partner/leads",
 				name: "partner-leads",
 				component: LeadsPage,
 				meta: { area: "partner" },
-			},
-			{
-				path: "/partner/leads/:name",
-				name: "partner-lead",
-				component: LeadPage,
-				meta: { area: "partner" },
+				children: [{ path: ":name", name: "partner-lead", component: LeadPage }],
 			},
 			{
 				path: "/no-access",

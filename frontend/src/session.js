@@ -18,6 +18,7 @@ export function applyCompanyTheme(company) {
 	root.style.setProperty("--sos-brand", company.brandColor);
 	// The dark and light shades are derived from the company colour in a later story.
 	root.style.setProperty("--sos-brand-dark", company.brandColor);
+	root.style.setProperty("--sos-brand-mid", company.brandColor);
 }
 
 export async function loadSession() {
@@ -57,7 +58,11 @@ export async function sessionExpired(fetchFn = fetch) {
 }
 
 // Checks for expiry when the tab comes back and every five minutes (P0.10).
-export function watchSession({ fetchFn = fetch, onExpired = goToLogin, every = 300000 } = {}) {
+export function watchSession({
+	fetchFn = fetch,
+	onExpired = () => signOut({ fetchFn }),
+	every = 300000,
+} = {}) {
 	const check = async () => {
 		if (session.user && (await sessionExpired(fetchFn))) {
 			session.user = null;

@@ -170,7 +170,7 @@ const visit = reactive({ project_name: "", visit_datetime: "" });
 
 async function load() {
 	try {
-		detail.value = (await crmApi.getLead(route.params.name)).message;
+		detail.value = await crmApi.getLead(route.params.name);
 	} catch (e) {
 		error.value = "This lead could not be opened.";
 	}

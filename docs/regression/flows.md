@@ -27,3 +27,10 @@ FLOW SOS-P0-10-7 | agent | /sellos/partner/leads | Sign in, then type the partne
 FLOW SOS-P0-10-8 | agent | /sellos | Click the sign out button. Then open /sellos again. | The person is taken to the login page both times, and the session is gone.
 FLOW SOS-P0-10-9 | agent | /sellos | Make the window phone width (about 390 px). | The side navigation is replaced by a bottom navigation and a top bar with a sign out button. Nothing scrolls sideways.
 FLOW SOS-P0-10-10 | company_admin | /desk | Sign in, then open /desk in the address bar. | The desk does not open. The person sees a refusal or is sent back to the app, never the Frappe desk.
+
+## SOS-P1-06A: the CRM works on a fresh company site
+
+FLOW SOS-P1-06A-1 | company_admin | /sellos/crm/leads | Sign in. Open Leads. Click New lead, type a client name and a phone number, save. | The form closes and the new lead appears in the Leads list. No error is shown.
+FLOW SOS-P1-06A-2 | agent | /sellos/crm/leads | Sign in as an agent. Open Leads. | Only the agent's own leads are listed. The page shows the company name, not the web address, in the navigation.
+FLOW SOS-P1-06A-3 | client | /sellos/crm/leads | Sign in as a client and type the Leads address. | The no access page opens and no lead is shown.
+FLOW SOS-P1-06A-4 | agent | /sellos | Look at the browser tab. | The tab shows the company logo when the company has one, otherwise the SellOS icon. Headings use Syne, text uses DM Sans, and buttons are green (#0f4c35) with amber (#e8954a) for warnings.

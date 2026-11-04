@@ -75,7 +75,13 @@
 			class="field mt-4"
 			@input="load"
 		/>
-		<p v-if="!leads.length" data-testid="sellos-leads-empty" class="mt-4 text-ink-muted">
+		<p v-if="loadError" data-testid="sellos-leads-error" role="alert" class="mt-4 text-accent">
+			{{ loadError }}
+		</p>
+		<p v-else-if="loading" data-testid="sellos-leads-loading" class="mt-4 text-ink-muted">
+			Loading leads.
+		</p>
+		<p v-else-if="!leads.length" data-testid="sellos-leads-empty" class="mt-4 text-ink-muted">
 			No leads yet.
 		</p>
 		<ul class="mt-4 divide-y divide-line rounded-input border border-line bg-surface">
@@ -100,6 +106,7 @@
 				</router-link>
 			</li>
 		</ul>
+		<router-view />
 	</div>
 </template>
 
@@ -107,17 +114,19 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { CLIENT_TYPES, crmApi } from "../crm/crmApi";
+import { CLIENT_TYPES, crmApi, serverMessage } from "../crm/crmApi";
 
 const route = useRoute();
 const router = useRouter();
 const partner = computed(() => route.meta.area === "partner");
 const basePath = computed(() => (partner.value ? "/partner/leads" : "/crm/leads"));
-const canCreate = true; // agents, partners and company admins may all create leads
+const canCreate = computed(() => !partner.value); // a channel partner logs nothing (CLAUDE.md)
 const leads = ref([]);
 const search = ref("");
 const creating = ref(false);
 const error = ref("");
+const loadError = ref("");
+const loading = ref(true);
 const form = reactive({
 	client_name: "",
 	client_type: "Buyer",
@@ -129,18 +138,31 @@ const form = reactive({
 });
 
 async function load() {
-	leads.value = (await crmApi.listLeads(search.value)).message || [];
+	loading.value = true;
+	loadError.value = "";
+	try {
+		leads.value = (await crmApi.listLeads(search.value)) || [];
+	} catch (e) {
+		leads.value = [];
+		loadError.value = serverMessage(e, "The leads could not be loaded.");
+		console.error("list_leads failed", e);
+	} finally {
+		loading.value = false;
+	}
 }
 
 async function create() {
 	error.value = "";
 	try {
 		const { source, ...clientValues } = form;
-		const client = (await crmApi.saveClient(clientValues)).message;
-		const lead = (await crmApi.saveLead({ client: client.name, source })).message;
-		router.push(`${basePath.value}/${lead.lead.name}`);
+		const client = await crmApi.saveClient(clientValues);
+		const saved = await crmApi.saveLead({ client: client.name, source });
+		creating.value = false;
+		Object.assign(form, { client_name: "", phone: "", email: "", source: "" });
+		await load();
+		router.push(`${basePath.value}/${saved.lead.name}`);
 	} catch (e) {
-		error.value = "The lead could not be saved.";
+		error.value = serverMessage(e, "The lead could not be saved.");
 	}
 }
 

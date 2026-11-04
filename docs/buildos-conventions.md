@@ -56,7 +56,7 @@ The `frontend/` folder delivered with this summary copies sections 2 and 4: the 
 
 * The route is `/sellos`, the build goes to `sellos/public/frontend`, and `index.html` goes to `sellos/www/sellos.html`.
 * The five SellOS roles replace BuildOS's personas.
-* Colours are placeholder CSS variables, so each company can set its own brand.
+* Colours are CSS variables, so each company can set its own brand. SellOS defaults: #0f4c35 brand, #2a7a5a brand-mid, #e8954a accent, Syne headings, DM Sans body.
 * Dexie, `pdfjs-dist`, the offline outbox and the tab icon plugin are left out until a story needs them.
 
 ## 7. Differences recommended for SellOS

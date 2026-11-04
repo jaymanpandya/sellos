@@ -10,6 +10,7 @@ from contextlib import contextmanager
 import frappe
 from frappe.utils import add_days, add_to_date, now_datetime, today
 
+from sellos.config.company_site import configure_company_site
 from sellos.testing.users import PASSWORD, TEST_USERS, _ensure_user, ensure_test_users
 from sellos.tests import phones
 
@@ -48,12 +49,23 @@ def prepare_clean_site():
 def _configure_company_site():
 	"""Set the site up the way provisioning sets up a real company site.
 
-	On a fresh site every CRM call is refused for every user. The code that decides this is in
-	sellos.access, so the setup that lifts it belongs there too (the company profile or the
-	site type the guard checks). Call it here, and make it the same code provisioning calls, so
-	the test site cannot drift from a real one.
+	It calls sellos.config.company_site.configure_company_site, the code provisioning uses, so the
+	test site cannot drift from a real one. (The refusal of every CRM call on a fresh site was not
+	a missing setup: the API guard in sellos.access.registry refused declared methods in a process
+	that had not imported their module. See load_declared_modules.)
 	"""
-	raise NotImplementedError("Call the provisioning code that makes this a company site. See the docstring.")
+	configure_company_site()
+
+
+def set_company_branding(company_name="", logo=""):
+	"""Set or clear the company name and logo in SellOS Settings, for the favicon spec."""
+	settings = frappe.get_doc("SellOS Settings")
+	settings.company_name = company_name or settings.company_name
+	settings.logo = logo
+	settings.save(ignore_permissions=True)
+	frappe.clear_document_cache("SellOS Settings", "SellOS Settings")
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"company_name": settings.company_name, "logo": settings.logo or ""}
 
 
 def seed_agent_leads():
@@ -61,8 +73,26 @@ def seed_agent_leads():
 
 	Create them through the same functions the app uses (sellos.crm.api), as the company admin,
 	never by inserting rows, so the permissions, the change history and the masking all run.
+	The names returned are the client names, which is the text a lead row shows. Each run makes
+	new ones, so a spec never finds a lead left by an earlier run.
 	"""
-	raise NotImplementedError("Implement with the CRM API. See the docstring.")
+	from sellos.crm import api as crm
+
+	ensure_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	tag = frappe.generate_hash(length=6)
+	made = {}
+	with _as_user(admin):
+		for key, owner, seed in (("own", agent, 31), ("other_one", admin, 32), ("other_two", admin, 33)):
+			client_name = f"Gate {key.replace('_', ' ').title()} {tag}"
+			client = crm.save_client(
+				values={"client_name": client_name, "client_type": "Buyer", "phone": phones.in_mobile(seed)}
+			)
+			crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": owner})
+			made[key] = client_name
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"own": made["own"], "others": [made["other_one"], made["other_two"]]}
 
 
 def seed_client_with_phone(seed=21):
@@ -73,7 +103,56 @@ def seed_client_with_phone(seed=21):
 	{"client": name, "client_name": title, "lead": name, "phone_forms": [...]}, where phone_forms is
 	sellos.tests.phones.forms(new number) plus forms(old number), new number first.
 	"""
-	raise NotImplementedError("Implement with the CRM API. See the docstring.")
+	from sellos.crm import api as crm
+
+	ensure_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	seed = int(seed)
+	old_number = phones.in_mobile(seed)
+	new_number = phones.near_in_mobile(seed)
+	client_name = f"Gate Phone {frappe.generate_hash(length=6)}"
+	with _as_user(admin):
+		client = crm.save_client(
+			values={"client_name": client_name, "client_type": "Buyer", "phone": old_number}
+		)
+		lead = crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": agent})
+		crm.save_client(name=client["name"], values={"phone": new_number})
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {
+		"client": client["name"],
+		"client_name": client_name,
+		"lead": lead["lead"]["name"],
+		"phone_forms": [*phones.forms(new_number), *phones.forms(old_number)],
+	}
+
+
+def remove_seeded_leads():
+	"""Remove what seed_agent_leads and seed_client_with_phone committed (tests only, P1.06A).
+
+	The CRM refuses a delete through the app, so this goes to the tables, and only for the clients
+	these two fixtures name. Other tests then see the agent's list as they left it.
+	"""
+	clients = frappe.get_all(
+		"Client",
+		or_filters=[
+			["client_name", "like", "Gate Own %"],
+			["client_name", "like", "Gate Other %"],
+			["client_name", "like", "Gate Phone %"],
+		],
+		pluck="name",
+	)
+	if not clients:
+		return
+	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name")
+	for doctype in ("Lead Activity", "Lead Task", "Site Visit"):
+		if leads and frappe.get_meta(doctype).has_field("lead"):
+			frappe.db.delete(doctype, {"lead": ["in", leads]})
+	for doctype, names in (("Lead", leads), ("Client", clients)):
+		if names:
+			frappe.db.delete("Version", {"ref_doctype": doctype, "docname": ["in", names]})
+			frappe.db.delete(doctype, {"name": ["in", names]})
+	frappe.db.commit()  # nosemgrep
 
 
 # --- The regression dataset (docs/regression/README.md) -------------------------------------------

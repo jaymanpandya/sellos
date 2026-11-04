@@ -8,6 +8,7 @@ everywhere in Frappe.)
 """
 
 import functools
+import importlib
 import re
 
 import frappe
@@ -64,8 +65,33 @@ def method_from_path(path: str) -> str | None:
 	return match.group("method") if match else None
 
 
+_loaded = False
+
+
+def load_declared_modules():
+	"""Import every module that holds a sellos API method, so `_REGISTRY` is complete (P1.06A).
+
+	`_REGISTRY` is filled by importing a module that uses `@sellos_api`, and a fresh server process
+	has imported none of them when its first request arrives. The guard runs before Frappe imports
+	the method, so without this every declared method was refused until something else imported its
+	module, and the refused call never did. The module list is the permission matrix, which a test
+	keeps equal to the declarations. A method that is in no listed module is still not in the
+	registry, so it is still refused: this adds no method and lifts no refusal.
+	"""
+	global _loaded
+	if _loaded:
+		return
+	from sellos.access.matrix import MATRIX
+
+	for module in sorted({path.rsplit(".", 1)[0] for path in MATRIX}):
+		importlib.import_module(module)
+	_loaded = True
+
+
 def is_refused(method: str | None) -> bool:
 	"""True for a sellos method that has no declared roles."""
+	if method and method.startswith(PREFIX):
+		load_declared_modules()
 	return bool(method) and method.startswith(PREFIX) and method not in _REGISTRY
 
 

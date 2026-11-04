@@ -1,14 +1,26 @@
+@import "@fontsource/syne/600.css";
+@import "@fontsource/syne/700.css";
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
+@import "@fontsource/dm-sans/700.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-	@apply bg-surface text-ink antialiased;
+	@apply bg-surface font-sans text-ink antialiased;
+}
+
+h1,
+h2,
+h3 {
+	@apply font-heading;
 }
 
 @layer components {
 	.btn {
-		@apply rounded-input bg-brand px-3 py-2 text-sm font-medium text-white;
+		@apply rounded-input bg-brand hover:bg-brand-mid px-3 py-2 text-sm font-medium text-white;
 	}
 	.field {
 		@apply block w-full rounded-input border border-line bg-surface px-3 py-2 text-sm text-ink;

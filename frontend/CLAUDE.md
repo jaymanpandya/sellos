@@ -14,7 +14,7 @@ Run from this folder, with Node 24:
 
 ## Where things live
 
-* Tokens (colours, fonts, spacing, radii): `src/theme/tokens.js`, wired into `tailwind.config.js`. Colours are placeholder CSS variables so each company can set its brand. Do not hard code colours in components.
+* Tokens (colours, fonts, spacing, radii): `src/theme/tokens.js`, wired into `tailwind.config.js`. Colours are CSS variables so each company can set its brand. The approved SellOS defaults (SOS-P1-06A) are brand #0f4c35, `--sos-brand-mid` #2a7a5a, accent #e8954a, Syne headings and DM Sans body text (served from the `@fontsource` packages). Do not hard code colours in components.
 * Personas and roles: `src/personas.js`. It lists the five roles, their areas and their navigation, with `personaFor`, `routeArea` and `inAreas`.
 * Routes: `src/router.js`. Pages are lazy loaded from `src/pages/`, and each route declares its `meta.area`, which `personas.js` checks.
 * Start up: `src/main.js`. API calls: `src/api.js`. Session: `src/session.js`.
