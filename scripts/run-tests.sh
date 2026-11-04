@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
-# Order: new files marked intent-to-add, preflight (CI parity, a snapshot of the bench's sites), lint and Semgrep, the task guards, put the clean baseline back, build the web
+# Order: new files marked intent-to-add, preflight (CI parity, a snapshot of the bench's sites and databases), lint and Semgrep, the task guards, put the clean baseline back, build the web
 # app, migrate, prepare_clean_site (code, every run), the test files the task changed first (a failure stops the gate at once), the
-# whole backend suite, the whole Cypress suite, then a check that no other site was touched. A failed UI spec is rerun once, alone. The
+# whole backend suite, the whole Cypress suite, then a check that no other site or database was touched and
+# that the provisioner's password is in no log (SOS-SETUP-18). A failed UI spec is rerun once, alone. The
 # gate passes only if every rerun passes, each spec that needed a rerun is logged as FLAKY, and a
 # spec that is FLAKY three times is a failure until it is fixed. More than 5 failed specs, or
 # failures that cannot be identified, fail at once.
@@ -48,6 +49,13 @@ rm -f "$SELLOS_ENV_EXIT_FILE"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=lib/sellos_server.sh
 source "$REPO_DIR/scripts/lib/sellos_server.sh"
+# SOS-SETUP-18: the provisioner account's values are redacted from everything the gate writes, and
+# the end of the run fails if the password is in any log, the repository or a tenant site.
+# shellcheck source=lib/db_secrets.sh
+source "$REPO_DIR/scripts/lib/db_secrets.sh"
+GATE_START="$(date +%s)"
+# Claude Code keeps the agent's session transcripts here, named after the folder it ran in.
+CLAUDE_TRANSCRIPTS="$HOME/.claude/projects/$(printf '%s' "$REPO_DIR" | sed 's/[^A-Za-z0-9]/-/g')"
 cd "$BENCH_DIR"
 
 set +e
@@ -86,8 +94,13 @@ fi
 # SOS-SETUP-17: other apps' sites share this bench. Record every site now, and at the end fail if a
 # site other than sellos_test.localhost or sellos_tenant_<id>.localhost was touched, or a tenant site
 # this run made was left behind.
+# SOS-SETUP-18: with the provisioner's password set it records the databases too, and an account
+# that cannot list them is an environment problem (exit 3).
 SITES_SNAPSHOT="$LOG_DIR/sites-$STAMP.json"
-python3 "$REPO_DIR/scripts/check_site_set.py" snapshot "$BENCH_DIR" "$SITES_SNAPSHOT"
+SNAPSHOT_STATUS=0
+python3 "$REPO_DIR/scripts/check_site_set.py" snapshot "$BENCH_DIR" "$SITES_SNAPSHOT" || SNAPSHOT_STATUS=$?
+if [ "$SNAPSHOT_STATUS" -eq 3 ]; then sellos_env_exit 3; fi
+if [ "$SNAPSHOT_STATUS" -ne 0 ]; then exit 1; fi
 # The baseline is what makes every run start from the same data. Running without it is how a test
 # passes today and fails tomorrow, so it is an error unless a human says otherwise.
 if [ ! -f "$BASELINE" ] && [ -z "${SELLOS_ALLOW_NO_BASELINE:-}" ]; then
@@ -194,7 +207,7 @@ bench --site "$SITE" run-tests --app "$APP"
 
 echo "--- UI tests: $APP ---"
 set +e
-bench --site "$SITE" run-ui-tests "$APP" --headless 2>&1 | tee "$UI_LOG"
+bench --site "$SITE" run-ui-tests "$APP" --headless 2>&1 | sellos_redact | tee "$UI_LOG"
 UI_STATUS="${PIPESTATUS[0]}"
 set -e
 
@@ -233,8 +246,16 @@ if [ -f "$FLAKY_LOG" ]; then
 fi
 echo "--- Sites this run touched ---"
 python3 "$REPO_DIR/scripts/check_site_set.py" compare "$BENCH_DIR" "$SITES_SNAPSHOT"
+# SOS-SETUP-18: since the task started (the loop sets SELLOS_TASK_STARTED), or since this run started.
+# The bench CLI writes every command line it runs to logs/bench.log, so a password given to
+# "bench new-site" ends up there. The tenant site folders are searched whatever their age.
+echo "--- The provisioner's password is in no log ---"
+python3 "$REPO_DIR/scripts/check_no_secret_leak.py" --since "${SELLOS_TASK_STARTED:-$GATE_START}" \
+  "$LOG_DIR" "$BENCH_DIR/logs" "$BENCH_DIR/sites/common_site_config.json" "$BENCH_DIR/sites/archived_sites" \
+  "$REPO_DIR" "$CLAUDE_TRANSCRIPTS"
+python3 "$REPO_DIR/scripts/check_no_secret_leak.py" "$BENCH_DIR"/sites/sellos_tenant_*
 echo "--- GATE PASSED ---"
-} 2>&1 | tee "$LOG_FILE"
+} 2>&1 | sellos_redact | tee "$LOG_FILE"
 
 STATUS="${PIPESTATUS[0]}"
 if [[ "$STATUS" -eq 2 || "$STATUS" -eq 3 ]] && [ "$(cat "$SELLOS_ENV_EXIT_FILE" 2>/dev/null)" != "$STATUS" ]; then

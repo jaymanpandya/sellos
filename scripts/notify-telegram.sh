@@ -16,6 +16,17 @@ set -uo pipefail
 
 MESSAGE="${1:?Usage: notify-telegram.sh \"<message>\"}"
 
+# SOS-SETUP-18: the MariaDB provisioner account's user name and password never reach a notification
+# or the loop log. Without the redaction library nothing is printed or sent.
+LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/db_secrets.sh"
+if [ ! -f "$LIB" ]; then
+  echo "NOTIFY: withheld, $LIB is missing, so the message cannot be redacted." >&2
+  exit 0
+fi
+# shellcheck source=lib/db_secrets.sh
+source "$LIB"
+MESSAGE="$(sellos_redact_text "$MESSAGE")"
+
 printf 'NOTIFY: %s\n' "$MESSAGE"
 
 if [ -z "${SELLOS_TELEGRAM_BOT_TOKEN:-}" ] || [ -z "${SELLOS_TELEGRAM_CHAT_ID:-}" ]; then

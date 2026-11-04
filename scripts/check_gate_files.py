@@ -30,6 +30,8 @@ PROTECTED = [
 	"scripts/check_no_stale_skips.py",
 	"scripts/check_ci_parity.py",
 	"scripts/check_site_set.py",
+	"scripts/check_no_secret_leak.py",
+	"scripts/lib/db_secrets.sh",
 	"cypress.config.js",
 	"cypress/support/e2e.js",
 	".pre-commit-config.yaml",

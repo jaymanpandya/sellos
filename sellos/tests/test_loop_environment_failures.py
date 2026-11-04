@@ -13,6 +13,10 @@ as 1, so only the preflight can report an environment problem.
 
 The only change to the copied scripts is SELLOS_PORT in lib/sellos_server.sh, set to the fake
 server's port, because the real 8004 belongs to the running SellOS server.
+
+SOS-SETUP-18: the agent gets SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD and no
+other credential variable, and their values reach no log: not the loop's output, a saved reply, the
+gate output the loop keeps, a notification, a commit message, or the real gate's own log.
 """
 
 import json
@@ -61,6 +65,27 @@ FAKE_NOTIFY = """#!/usr/bin/env bash
 printf '%s\\n----\\n' "$1" >>"$FAKE_DIR/notifications"
 """
 FAKE_GH = "#!/usr/bin/env bash\nexit 0\n"
+# A fake agent that records which variables it got, and then leaks the provisioner's values every
+# way it can: in its reply, on stderr, and in the summary that becomes a commit message.
+LEAKY_CLAUDE = """#!/usr/bin/env bash
+echo call >>"$FAKE_DIR/claude_calls"
+env | cut -d= -f1 | sort >"$FAKE_DIR/agent_env_names"
+printf '%s' "${SELLOS_DB_PROVISIONER_PASSWORD:-}" >"$FAKE_DIR/agent_password"
+printf '%s' "${SELLOS_DB_PROVISIONER_USER:-}" >"$FAKE_DIR/agent_user"
+echo "work $(wc -l <"$FAKE_DIR/claude_calls" | tr -d ' ')" >>sellos/work.py
+echo "the password is $SELLOS_DB_PROVISIONER_PASSWORD" >&2
+echo "IMPLEMENTATION_READY: used $SELLOS_DB_PROVISIONER_USER with $SELLOS_DB_PROVISIONER_PASSWORD"
+"""
+PROVISIONER_USER = "prov-user-5f2c9a"
+PROVISIONER_PASSWORD = "prov-pass-8d41e7b0"
+OTHER_SECRETS = {
+	"MYSQL_PWD": "other-1",
+	"MARIADB_ROOT_PASSWORD": "other-2",
+	"SOME_DB_ROOT_PASSWORD": "other-3",
+	"SELLOS_TELEGRAM_BOT_TOKEN": "other-4",
+	"GH_TOKEN": "other-5",
+	"BUILDOS_TELEGRAM_BOT_TOKEN": "other-6",
+}
 ENV_HEADLINE = "Environment problem, not the task"
 REFUSED_OUTPUT = """  1) smoke app shell loads:
      CypressError: `cy.visit()` failed trying to load:
@@ -170,7 +195,8 @@ class LoopEnvironmentFailures(Sandbox):
 		super().setUp()
 		for name in ("build-loop.sh", "select-next-task.sh", "set-task-status.sh", "limit_wait.py"):
 			shutil.copy2(SCRIPTS / name, self.repo / "scripts" / name)
-		shutil.copy2(SCRIPTS / "lib" / "tasks.py", self.repo / "scripts" / "lib" / "tasks.py")
+		for name in ("tasks.py", "db_secrets.sh"):
+			shutil.copy2(SCRIPTS / "lib" / name, self.repo / "scripts" / "lib" / name)
 		self.write(self.repo / "scripts/run-tests.sh", FAKE_GATE, 0o755)
 		self.write(self.repo / "scripts/notify-telegram.sh", FAKE_NOTIFY, 0o755)
 		self.write(self.bin / "claude", FAKE_CLAUDE, 0o755)
@@ -199,10 +225,12 @@ class LoopEnvironmentFailures(Sandbox):
 			env={**os.environ, **GIT_ENV},
 		).stdout.strip()
 
-	def run_loop(self, codes, output="--- a gate run ---\nAssertionError: 1 != 2\n", max_runs=2):
+	def run_loop(
+		self, codes, output="--- a gate run ---\nAssertionError: 1 != 2\n", max_runs=2, extra_env=None
+	):
 		self.write(self.fake / "codes.txt", "".join(f"{c}\n" for c in codes))
 		self.write(self.fake / "out.txt", output)
-		env = {**self.env(), "SELLOS_MAX_GATE_RUNS": str(max_runs)}
+		env = {**self.env(), "SELLOS_MAX_GATE_RUNS": str(max_runs), **(extra_env or {})}
 		result = subprocess.run(
 			["bash", str(self.repo / "scripts/build-loop.sh")],
 			cwd=self.repo,
@@ -284,6 +312,50 @@ class LoopEnvironmentFailures(Sandbox):
 		code = self.run_loop([1, 0], output=REFUSED_OUTPUT.format(port=self.port))
 		self.assert_stopped_for_environment(code, "connection error", "ECONNREFUSED")
 
+	def test_agent_gets_only_the_provisioner_variables_and_no_value_reaches_a_log(self):
+		self.serve(302)
+		self.write(self.bin / "claude", LEAKY_CLAUDE, 0o755)
+		# The real notifier, committed, because the loop's failure path resets the working tree.
+		self.write(
+			self.repo / "scripts/notify-telegram.sh", (SCRIPTS / "notify-telegram.sh").read_text(), 0o755
+		)
+		self.git("commit", "-q", "-am", "SOS-X-0 the real notifier")
+		self.git("push", "-q", "origin", "1.0")
+		secrets = {
+			"SELLOS_DB_PROVISIONER_USER": PROVISIONER_USER,
+			"SELLOS_DB_PROVISIONER_PASSWORD": PROVISIONER_PASSWORD,
+			**OTHER_SECRETS,
+		}
+		gate_output = f"--- a gate run ---\nAssertionError: login {PROVISIONER_USER} {PROVISIONER_PASSWORD}\n"
+		code = self.run_loop([1, 1], output=gate_output, extra_env=secrets)
+		self.assertEqual(code, 0, self.out)
+		self.assertEqual(self.calls("claude_calls"), 2, self.out)
+
+		names = set(self.read("agent_env_names").split())
+		self.assertIn("SELLOS_DB_PROVISIONER_USER", names)
+		self.assertIn("SELLOS_DB_PROVISIONER_PASSWORD", names)
+		self.assertIn("PATH", names)
+		self.assertIn("FAKE_DIR", names)
+		for name in OTHER_SECRETS:
+			self.assertNotIn(name, names, f"the agent got {name}")
+		self.assertEqual(self.read("agent_password"), PROVISIONER_PASSWORD)
+		self.assertEqual(self.read("agent_user"), PROVISIONER_USER)
+
+		# The notifier is the real one: it prints NOTIFY lines into the loop's output.
+		self.assertIn("NOTIFY: SellOS loop:", self.out)
+		self.assertIn("[provisioner password]", self.out)
+		places = {"the loop's output": self.out}
+		for path in self.logs.rglob("*"):
+			# latest.log is written by the fake gate itself. The real gate's log is tested in GateExitCodes.
+			if path.is_file() and path.name != "latest.log":
+				places[str(path)] = path.read_text(encoding="utf-8", errors="replace")
+		places["commit messages"] = self.git("log", "--all", "--format=%B")
+		self.assertIn(f"{self.logs}/loop-gate-output.txt", places)
+		self.assertTrue(any("claude-reply-" in p for p in places), places.keys())
+		for place, text in places.items():
+			for value in (PROVISIONER_PASSWORD, PROVISIONER_USER):
+				self.assertNotIn(value, text, f"a provisioner value is in {place}")
+
 	def test_only_connection_errors_with_a_live_server_is_repaired(self):
 		self.serve(302)
 		code = self.run_loop([1, 1], output=REFUSED_OUTPUT.format(port=self.port))
@@ -303,7 +375,9 @@ class GateExitCodes(Sandbox):
 		# check, a backlog and a spec folder with no skips, so it passes and the restore still runs.
 		shutil.copy2(SCRIPTS / "check_no_stale_skips.py", self.repo / "scripts" / "check_no_stale_skips.py")
 		(self.repo / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-		shutil.copy2(SCRIPTS / "lib" / "tasks.py", self.repo / "scripts" / "lib" / "tasks.py")
+		for name in ("tasks.py", "db_secrets.sh"):
+			shutil.copy2(SCRIPTS / "lib" / name, self.repo / "scripts" / "lib" / name)
+		shutil.copy2(SCRIPTS / "check_no_secret_leak.py", self.repo / "scripts" / "check_no_secret_leak.py")
 		self.write(self.repo / "TASKS.md", "### SOS-X-1: a task\n- **Status:** In Progress\n")
 		(self.repo / "cypress" / "integration").mkdir(parents=True, exist_ok=True)
 		# SOS-SETUP-17: the preflight compares this bench with CI. Give it CI's workflow, a Frappe
@@ -329,11 +403,12 @@ class GateExitCodes(Sandbox):
 		# The first bench command after the preflight is the baseline restore. This bench fails it with 2.
 		self.write(self.bin / "bench", "#!/usr/bin/env bash\necho fake bench failed >&2\nexit 2\n", 0o755)
 
-	def run_gate(self):
+	def run_gate(self, extra_env=None):
 		env = {
 			**self.env(),
 			"SELLOS_TEST_SITE": "sellos_test.localhost",
 			"SELLOS_BASELINE_DIR": str(self.baseline),
+			**(extra_env or {}),
 		}
 		# The gate refuses any site but sellos_test, so the fake server is reached by that name.
 		site = self.bench / "sites" / "sellos_test.localhost"
@@ -378,6 +453,31 @@ class GateExitCodes(Sandbox):
 		self.assertEqual(self.run_gate(), 1, self.out)
 		self.assertIn("fake bench failed", self.out)
 		self.assertIn("Reporting it as a test failure (1)", self.out)
+
+	def test_the_gate_log_never_holds_the_provisioner_values(self):
+		self.serve(302)
+		self.resolves()
+		self.write(
+			self.bin / "bench",
+			f"#!/usr/bin/env bash\necho login {PROVISIONER_USER} {PROVISIONER_PASSWORD}\nexit 1\n",
+			0o755,
+		)
+		dbs = self.root / "databases.txt"
+		self.write(dbs, "information_schema\nsellos_test\n")
+		code = self.run_gate(
+			{
+				"SELLOS_DB_PROVISIONER_USER": PROVISIONER_USER,
+				"SELLOS_DB_PROVISIONER_PASSWORD": PROVISIONER_PASSWORD,
+				"SELLOS_CHECK_DATABASES_FILE": str(dbs),
+			}
+		)
+		self.assertEqual(code, 1, self.out)
+		self.assertIn("login [provisioner user] [provisioner password]", self.out)
+		logs = [p for p in self.logs.glob("run-*.log")]
+		self.assertTrue(logs, "the gate wrote no log")
+		for text in [self.out] + [p.read_text(encoding="utf-8") for p in logs]:
+			self.assertNotIn(PROVISIONER_PASSWORD, text)
+			self.assertNotIn(PROVISIONER_USER, text)
 
 	def test_a_frappe_branch_ci_does_not_build_makes_the_gate_exit_3(self):
 		self.serve(302)

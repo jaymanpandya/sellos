@@ -14,6 +14,10 @@
 #      fails after a failed gate run. Notify and stop, leaving the task In Progress and the
 #      working tree untouched: no repair run, no reset, no salvage, not Blocked. Restarting the
 #      loop resumes the task.
+#   8. SOS-SETUP-18: the agent runs with every credential variable removed from its environment
+#      except SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD (scripts/lib/db_secrets.sh).
+#      Everything this script prints, every reply it saves and every notification is redacted, so
+#      their values never reach the loop log, NOTIFY, Telegram or a gate log.
 #
 # The loop stops itself on any blocked/needs-input/no-work state. It is
 # not designed to grind through failures unattended — that's deliberate,
@@ -59,6 +63,17 @@ LOCK_FILE="${SELLOS_LOOP_LOCK:-/tmp/sellos-build-loop.lock}"
 LOG_DIR="${SELLOS_LOG_DIR:-/tmp/sellos-test-logs}"
 TASK_BLOCK_PATH="${SELLOS_TASK_BLOCK_PATH:-/tmp/sellos-task-block.md}"
 BRANCH="${SELLOS_BRANCH:-1.0}"
+
+# SOS-SETUP-18: the provisioner account's values never reach the loop's log. Everything this script
+# and its children print goes through the redaction filter from here on.
+# shellcheck source=lib/db_secrets.sh
+source "$SCRIPT_DIR/lib/db_secrets.sh"
+exec > >(sellos_redact) 2>&1
+if [[ -n "${SELLOS_DB_PROVISIONER_PASSWORD:-}" ]]; then
+  echo "The agent gets the MariaDB provisioner account (SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD are set)."
+else
+  echo "SELLOS_DB_PROVISIONER_PASSWORD is not set. A task that creates or drops a tenant site will ask for it."
+fi
 
 # Both loops restore databases and clear the cache on the same bench, so they must not overlap.
 if pgrep -f "buildos/scripts/(run-tests|build-loop)\.sh" >/dev/null 2>&1; then
@@ -301,6 +316,8 @@ $WAITING_LINES"
   fi
 
   IP_SHA="$(git rev-parse HEAD)"
+  # The gate's secret leak check searches every file changed since this moment.
+  export SELLOS_TASK_STARTED="$(date +%s)"
 
   PROMPT="You are implementing one task from SellOS's TASKS.md inside the
 sellos Frappe v16 app. Never run the full test suite or the whole browser suite, and never run anything in the background. Never start, stop or touch the servers on port 8000 (BuildOS) or 8002 (Pamaa); SellOS runs only on port 8004, on the server Jayman starts with cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004. You may, and should, run the single backend test module and the single browser spec that you add or change, one at a time and in the foreground: for a module, from ~/iespl-bench, bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>; for a spec, from ~/iespl-bench, bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Fix whatever fails before you reply. The loop then runs scripts/run-tests.sh separately and blocks on its real result. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. A task whose block says Browser spec: required also adds its flows to docs/regression/flows.md, one line each in the form FLOW <task id>-<n> | role | start path | steps | expected result (see that file). Add flows, never remove or change one, and if the task adds data a person sees, add it to seed_regression_data in sellos/tests/ui_fixtures.py through the production API and update its docstring.
@@ -314,6 +331,15 @@ and transactional purposes only, and a promotional call purpose is
 refused. The word 'Frappe' must never appear in any user facing label,
 screen, or error message.
 
+MariaDB: never use the MariaDB root account or any root password. A task
+that creates or drops a tenant site uses only the provisioner account,
+whose name and password are in SELLOS_DB_PROVISIONER_USER and
+SELLOS_DB_PROVISIONER_PASSWORD in your environment. Check only whether they
+are set, never print, echo, log or write their values, and never put them
+in a file, a fixture, an exception message or a bench command (the bench
+CLI logs its whole command line). If the password is not set, reply
+NEEDS_INPUT and say that SELLOS_DB_PROVISIONER_PASSWORD is not set.
+
 Respond with either of the following as the literal first characters
 of your response, nothing before it:
 IMPLEMENTATION_READY: <plain English summary of what you built>
@@ -323,8 +349,9 @@ Task:
 $TASK_BLOCK"
 
   set +e
-  RESPONSE="$(claude -p "$PROMPT" --dangerously-skip-permissions)"
+  RESPONSE="$(sellos_agent_env claude -p "$PROMPT" --dangerously-skip-permissions)"
   CLAUDE_EXIT=$?
+  RESPONSE="$(sellos_redact_text "$RESPONSE")"
   set -e
 
   # Claude must not commit. If it did, take the commits back and keep the files in the working tree.
@@ -406,7 +433,7 @@ $TASK_BLOCK"
   while true; do
     set +e
     mkdir -p "$LOG_DIR"
-    "$SCRIPT_DIR/run-tests.sh" 2>&1 | tee "$GATE_OUT"
+    "$SCRIPT_DIR/run-tests.sh" 2>&1 | sellos_redact | tee "$GATE_OUT"
     TEST_EXIT="${PIPESTATUS[0]}"
     set -e
     if [[ "$TEST_EXIT" -eq 0 ]]; then break; fi
@@ -430,7 +457,7 @@ $PREFLIGHT_OUT"
     echo "The gate failed. Asking Claude to repair it from the failure output (gate run $GATE_RUN of $MAX_GATE_RUNS)."
     FAILCTX="$(failure_context)"
     REPAIR_PROMPT="The test gate for the task below failed. Your changes are still in the working tree, uncommitted, and nothing has been reset. Read the failure output at the end, find the cause in the code, and fix it. This is gate run $GATE_RUN of $MAX_GATE_RUNS.
-Rules. Fix the product code or the test you added, and never delete or weaken an assertion to make a test pass. A failing test is fixed in the code, not in the test, unless the task block says otherwise. Never edit a gate file: scripts/run-tests.sh, scripts/build-loop.sh, scripts/watchdog.sh, scripts/select-next-task.sh, scripts/set-task-status.sh, scripts/make-baseline.sh, scripts/prepare-regression.sh, anything under scripts/lib, scripts/check_*.py, cypress.config.js, cypress/support/e2e.js, .pre-commit-config.yaml, .semgrepignore, .eslintrc, .github/workflows, docs/DEV_STRATEGY.md, docs/TESTING.md or docs/regression/README.md, and never change the [tool.ruff] tables in pyproject.toml (adding a dependency there is fine). Never remove an assertion and never delete a test file. If a failing test is in a file this task did not change, follow the policy below. Read the whole failing test first, because the first failing assertion hides every later one: check every assertion against the code before you reply, and fix all of them in this pass. You may run the single backend test module or the single browser spec that you changed, one at a time and in the foreground, from ~/iespl-bench: bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>, or bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Never run the full suite, and never run anything in the background. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. The word Frappe must never appear in any user facing label, screen, or error message.
+Rules. Fix the product code or the test you added, and never delete or weaken an assertion to make a test pass. A failing test is fixed in the code, not in the test, unless the task block says otherwise. Never use the MariaDB root account or a root password: only the provisioner account in SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD, whose values you never print, log or write. Never edit a gate file: scripts/run-tests.sh, scripts/build-loop.sh, scripts/watchdog.sh, scripts/select-next-task.sh, scripts/set-task-status.sh, scripts/make-baseline.sh, scripts/prepare-regression.sh, anything under scripts/lib, scripts/check_*.py, cypress.config.js, cypress/support/e2e.js, .pre-commit-config.yaml, .semgrepignore, .eslintrc, .github/workflows, docs/DEV_STRATEGY.md, docs/TESTING.md or docs/regression/README.md, and never change the [tool.ruff] tables in pyproject.toml (adding a dependency there is fine). Never remove an assertion and never delete a test file. If a failing test is in a file this task did not change, follow the policy below. Read the whole failing test first, because the first failing assertion hides every later one: check every assertion against the code before you reply, and fix all of them in this pass. You may run the single backend test module or the single browser spec that you changed, one at a time and in the foreground, from ~/iespl-bench: bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>, or bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Never run the full suite, and never run anything in the background. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. The word Frappe must never appear in any user facing label, screen, or error message.
 Respond with either of the following as the literal first characters of your response, nothing before it:
 Policy, because nobody can answer questions during a run, so never ask one. If a failing test is outside this task, you may fix that test file or the shared fixtures it uses when the cause is test data, test order or a hard coded assumption, and you must say what you changed. If a test deletes or empties shared data, make it restore what it removed, even when it fails. Never change product code that this task did not touch just to make a test pass, and never weaken or delete an assertion. If you truly cannot fix it, still reply with IMPLEMENTATION_READY and a plain account of what is failing and why.
 Respond with this as the literal first characters of your response, nothing before it:
@@ -442,12 +469,14 @@ $TASK_BLOCK
 Failure output:
 $FAILCTX"
     set +e
-    REPAIR_RESPONSE="$(claude -p "$REPAIR_PROMPT" --dangerously-skip-permissions)"
+    REPAIR_RESPONSE="$(sellos_agent_env claude -p "$REPAIR_PROMPT" --dangerously-skip-permissions)"
     REPAIR_EXIT=$?
+    REPAIR_RESPONSE="$(sellos_redact_text "$REPAIR_RESPONSE")"
     while is_limit "$REPAIR_RESPONSE"; do
       wait_for_limit "$REPAIR_RESPONSE"
-      REPAIR_RESPONSE="$(claude -p "$REPAIR_PROMPT" --dangerously-skip-permissions)"
+      REPAIR_RESPONSE="$(sellos_agent_env claude -p "$REPAIR_PROMPT" --dangerously-skip-permissions)"
       REPAIR_EXIT=$?
+      REPAIR_RESPONSE="$(sellos_redact_text "$REPAIR_RESPONSE")"
     done
     set -e
     mkdir -p "$LOG_DIR"
@@ -457,13 +486,14 @@ $FAILCTX"
       echo "The repair step asked a question. Nobody can answer during a run, so it is told to decide for itself."
       QUESTION="$(printf '%s\n' "$REPAIR_RESPONSE" | head -c 3000)"
       set +e
-      REPAIR_RESPONSE="$(claude -p "$REPAIR_PROMPT
+      REPAIR_RESPONSE="$(sellos_agent_env claude -p "$REPAIR_PROMPT
 
 Your previous reply was a question, and nobody can answer it during a run:
 $QUESTION
 
 Decide for yourself, following the policy above, and fix it now. Do not ask again." --dangerously-skip-permissions)"
       REPAIR_EXIT=$?
+      REPAIR_RESPONSE="$(sellos_redact_text "$REPAIR_RESPONSE")"
       set -e
       printf '%s\n' "$REPAIR_RESPONSE" > "$LOG_DIR/claude-repair2-${TASK_ID}-$(date +%Y%m%d-%H%M%S).txt"
       REPAIR_MARKER="$(printf '%s\n' "$REPAIR_RESPONSE" | grep -m1 -E '^IMPLEMENTATION_READY:' || true)"
