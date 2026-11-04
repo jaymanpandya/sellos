@@ -10,9 +10,11 @@ from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, PLATFORM_
 from sellos.crm import api
 from sellos.crm.base import is_overdue, mask_phone
 from sellos.testing.users import PASSWORD, TEST_USERS, create_test_users
+from sellos.tests.phones import in_mobile
 
 DOCTYPES = ("Client", "Lead", "Lead Activity", "Lead Task", "Site Visit")
-PHONE = "+91 98200 12345"
+PHONE = in_mobile(11)
+PHONE_MIDDLE = PHONE[3:8]
 
 
 def as_user(key):
@@ -43,7 +45,7 @@ class CrmCase(IntegrationTestCase):
 
 class TestPureRules(IntegrationTestCase):
 	def test_masking_keeps_the_last_three_digits(self):
-		self.assertEqual(mask_phone(PHONE), "*********345")
+		self.assertEqual(mask_phone(PHONE), "*" * 9 + PHONE[-3:])
 		self.assertEqual(mask_phone(""), "")
 		self.assertEqual(mask_phone(None), "")
 
@@ -294,10 +296,10 @@ class TestOverHttp(CrmCase):
 		self.assertEqual(act.status_code, 200, act.get_data(as_text=True))
 		detail = http.get(f"/api/method/sellos.crm.api.get_lead?name={lead_name}", headers=headers)
 		self.assertEqual(detail.json["message"]["timeline"][0]["title"], "Call")
-		self.assertNotIn("98200", detail.get_data(as_text=True))
+		self.assertNotIn(PHONE_MIDDLE, detail.get_data(as_text=True))
 		# the REST resource route must not hand an agent the full phone either
 		rest = http.get(f"/api/resource/Client/{client_name}", headers=headers)
-		self.assertNotIn("98200", rest.get_data(as_text=True))
+		self.assertNotIn(PHONE_MIDDLE, rest.get_data(as_text=True))
 		# and a partner cannot read this agent's lead
 		other = HttpClient(application, Response)
 		other.post(

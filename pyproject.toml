@@ -59,6 +59,11 @@ ignore = [
 ]
 typing-modules = ["frappe.types.DF"]
 
+[tool.ruff.lint.per-file-ignores]
+# Copied unchanged from BuildOS, so its one-line style stays.
+"scripts/limit_wait.py" = ["E701", "E702"]
+"scripts/lib/tasks.py" = ["UP015"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "tab"
