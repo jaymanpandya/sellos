@@ -1,6 +1,6 @@
 # SellOS Kickoff
 
-Use this with Tasks.md. Tasks.md is the backlog, and this file is how the first week starts.
+Use this with TASKS.md. TASKS.md is the backlog, and this file is how the first week starts.
 
 ## Your first three actions
 
@@ -19,7 +19,7 @@ You are building SellOS, a multitenant real estate platform on Frappe 16.x,
 hosted on DigitalOcean at one subdomain per company under
 sellos.interactivesoftwares.com. Jayman reviews every pull request.
 
-Read Tasks.md in full, especially "Rules for Claude Code". Then do story
+Read TASKS.md in full, especially "Rules for Claude Code". Then do story
 P0.01 only: read this BuildOS repository and write a summary of its
 structure, tooling, build process, frontend stack, testing approach and
 styling, and list any change that Frappe 16 or SellOS needs.
@@ -45,5 +45,5 @@ approval, which is the gate for P0.02 and P0.10.
 ## Standing rules
 
 * Calls placed from the 022 number are service or transactional only. The system refuses a promotional purpose.
-* The Tata DLT and 140 series stories are parked in Tasks.md and are not worked on.
+* The Tata DLT and 140 series stories are parked in TASKS.md and are not worked on.
 * No override on the consent check, no captcha solving, no secrets in repositories.

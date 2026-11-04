@@ -1,6 +1,6 @@
 # SellOS progress
 
-Updated in every commit. Read CLAUDE.md, Tasks.md and this file at the start of each session.
+Updated in every commit. Read CLAUDE.md, TASKS.md and this file at the start of each session.
 
 ## Done
 
