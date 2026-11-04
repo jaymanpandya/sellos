@@ -77,8 +77,9 @@ echo "--- Lint and Semgrep (the same checks CI runs) ---"
   cd "$REPO_DIR"
   # The first pass may rewrite files (ruff format). The second must come back clean.
   pre-commit run --all-files || pre-commit run --all-files
-  "$BASELINE_DIR/semgrep-venv/bin/semgrep" --metrics=off --error --quiet \
-    --config "$BASELINE_DIR/semgrep-rules/rules" --exclude node_modules --exclude cypress .
+  # Exactly CI's command (.github/workflows/linter.yml), reading the same .semgrepignore.
+  "$BASELINE_DIR/semgrep-venv/bin/semgrep" ci \
+    --config "$BASELINE_DIR/semgrep-rules/rules" --config r/python.lang.correctness
 )
 
 if [ -n "${SELLOS_TASK_ID:-}" ]; then

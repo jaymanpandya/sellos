@@ -1,0 +1,26 @@
+# Read by Semgrep in CI (.github/workflows/linter.yml) and by the gate (scripts/run-tests.sh).
+# A .semgrepignore replaces Semgrep's built in ignore list, so that list is repeated below
+# to keep everything else scanned exactly as before.
+
+# scripts/lib/ holds BuildOS's loop scripts, copied from BuildOS. SellOS has adapted only the
+# task IDs, priorities and the waiting report. The open() calls Semgrep flags are BuildOS's own,
+# reading and writing TASKS.md. This is build tooling, not app code, so the Frappe app rules do
+# not apply to it.
+scripts/lib/
+
+# Semgrep's built in defaults.
+node_modules/
+build/
+dist/
+vendor/
+.env/
+.venv/
+.tox/
+*.min.js
+.npm/
+.yarn/
+test/
+tests/
+*_test.go
+.semgrep
+.semgrep_logs/

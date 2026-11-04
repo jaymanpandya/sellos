@@ -72,6 +72,13 @@ trap 'rm -f "$LOCK_FILE"' EXIT
 
 cd "$PROJECT_DIR"
 
+# Nobody is at the keyboard: git must fail at once instead of waiting for a password or a host key.
+export GIT_TERMINAL_PROMPT=0
+ORIGIN_URL="$(git remote get-url origin 2>/dev/null || true)"
+if [[ "$ORIGIN_URL" == ssh://* || "$ORIGIN_URL" =~ ^[^/:]+@[^/:]+: ]]; then
+  export GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=15"
+fi
+
 # What went wrong in the last gate run: the unit test failures, the browser test failures, and the end of the log.
 failure_context() {
   local log="/tmp/sellos-test-logs/latest.log"
@@ -113,6 +120,84 @@ ci_green() {
   done
   return $rc
 }
+
+# Push the branch. A failed try is retried after 10, 30 and 90 seconds. GitHub's own
+# "fatal error in commit_refs" is a server fault, so it is retried like a network error,
+# never treated as a rejection. A real rejection stops at once, because retrying cannot fix it.
+# On failure PUSH_ERROR holds git's exact output. Nothing here ever resets a commit.
+PUSH_ERROR=""
+push_with_retry() {
+  local waits=(10 30 90) attempt=0 out
+  PUSH_ERROR=""
+  while true; do
+    if out="$(git push origin "$BRANCH" 2>&1)"; then
+      printf '%s\n' "$out"
+      return 0
+    fi
+    printf '%s\n' "$out"
+    PUSH_ERROR="$out"
+    if printf '%s\n' "$out" | grep -q "fatal error in commit_refs"; then
+      echo "The push failed with \"fatal error in commit_refs\". That is an error on GitHub's side, not a rejected push. Retrying."
+    elif printf '%s\n' "$out" | grep -q -E "\[rejected\]|\[remote rejected\]|non-fast-forward|fetch first"; then
+      echo "The remote rejected the push. Retrying will not fix that."
+      return 1
+    fi
+    if [[ $attempt -ge ${#waits[@]} ]]; then return 1; fi
+    echo "Push failed. Trying again in ${waits[$attempt]} seconds."
+    sleep "${waits[$attempt]}"
+    attempt=$((attempt + 1))
+  done
+}
+
+# Before any task starts: the remote must answer, and anything committed but not pushed goes up first.
+if ! LS_REMOTE_OUT="$(git ls-remote --exit-code origin HEAD 2>&1)"; then
+  echo "git cannot reach the remote (origin). Stopping before any task starts."
+  printf '%s\n' "$LS_REMOTE_OUT"
+  "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: git cannot reach the remote (origin). Stopping before any task starts. git said:
+$(printf '%s' "$LS_REMOTE_OUT" | head -c 3000)" || true
+  exit 1
+fi
+if ! FETCH_OUT="$(git fetch origin "$BRANCH" 2>&1)"; then
+  printf '%s\n' "$FETCH_OUT"
+  "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: could not fetch $BRANCH from origin. Stopping before any task starts. git said:
+$(printf '%s' "$FETCH_OUT" | head -c 3000)" || true
+  exit 1
+fi
+# The loop waits for CI after every push, so gh must be signed in before anything starts.
+if ! GH_AUTH_OUT="$(gh auth status 2>&1)"; then
+  echo "gh is not signed in, so the loop cannot watch CI. Stopping before any task starts."
+  printf '%s\n' "$GH_AUTH_OUT"
+  "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: gh auth status failed, so CI cannot be watched. Stopping before any task starts. gh said:
+$(printf '%s' "$GH_AUTH_OUT" | head -c 3000)" || true
+  exit 1
+fi
+AHEAD="$(git rev-list --count "origin/$BRANCH..$BRANCH" 2>/dev/null || echo 0)"
+if [[ "$AHEAD" -gt 0 ]]; then
+  AHEAD_LIST="$(git log --reverse --format='%h %s' "origin/$BRANCH..$BRANCH" | cut -c1-160)"
+  BAD_LIST="$(git log --format='%h %s' "origin/$BRANCH..$BRANCH" | awk '$2 !~ /^SOS-/' | cut -c1-160)"
+  if [[ -n "$BAD_LIST" ]]; then
+    echo "$BRANCH has unpushed commits whose message does not start with SOS-. Not pushing them."
+    printf '%s\n' "$BAD_LIST"
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $BRANCH is $AHEAD commit(s) ahead of origin, and these do not start with SOS-, so nothing was pushed. Stopping before any task starts:
+$BAD_LIST" || true
+    exit 1
+  fi
+  echo "$BRANCH is $AHEAD commit(s) ahead of origin. Pushing them before any task starts:"
+  printf '%s\n' "$AHEAD_LIST"
+  if ! push_with_retry; then
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $BRANCH is $AHEAD commit(s) ahead of origin and the push failed. Stopping before any task starts. The commits are kept:
+$AHEAD_LIST
+git said:
+$(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
+    exit 1
+  fi
+  "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: pushed $AHEAD commit(s) that were ahead of origin. Waiting for CI before picking a task:
+$AHEAD_LIST" || true
+  if ! ci_green "$(git rev-parse HEAD)"; then
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the pushed head $(git rev-parse --short HEAD). Stopping, nothing new started." || true
+    exit 1
+  fi
+fi
 
 while true; do
   TASK_ID="$("$SCRIPT_DIR/select-next-task.sh" "$TASKS_FILE")"
@@ -312,7 +397,11 @@ Decide for yourself, following the policy above, and fix it now. Do not ask agai
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Complete" "$TASKS_FILE"
     git add -A
     git commit -m "$TASK_ID: $SUMMARY"
-    git push origin "$BRANCH"
+    if ! push_with_retry; then
+      "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID passed the gate and is committed, but the push failed after every retry. The commit is kept and nothing was reset. The next start pushes it first. Stopping. git said:
+$(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
+      break
+    fi
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID complete. $SUMMARY"
     if ! ci_green "$(git rev-parse HEAD)"; then
       "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the commit for $TASK_ID. Stopping, nothing new started."
