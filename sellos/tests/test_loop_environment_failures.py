@@ -309,6 +309,7 @@ class GateExitCodes(Sandbox):
 		# SOS-SETUP-17: the preflight compares this bench with CI. Give it CI's workflow, a Frappe
 		# checkout on CI's branch, and a Python and Node at CI's versions, so the preflight passes.
 		shutil.copy2(SCRIPTS / "check_ci_parity.py", self.repo / "scripts" / "check_ci_parity.py")
+		shutil.copy2(SCRIPTS / "check_site_set.py", self.repo / "scripts" / "check_site_set.py")
 		(self.repo / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
 		shutil.copy2(REPO_ROOT / ".github/workflows/ci.yml", self.repo / ".github/workflows/ci.yml")
 		self.frappe = self.bench / "apps" / "frappe"

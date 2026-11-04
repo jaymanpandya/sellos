@@ -316,6 +316,25 @@ The regression milestones are tasks in this file (SOS-REG-0 to SOS-REG-6, and SO
 - **Dependencies:** SOS-P0-02
 - **Status:** Complete
 
+### SOS-P0-06L: Multitenancy on the local bench
+- **Epic:** Platform foundations and DevOps
+- **Description:** The local half of SOS-P0-06, so that building does not wait for deployment. SOS-P0-06 (DNS multitenancy and nginx on staging) waits for SOS-N18 and is not changed. This task sets up and tests, on the local bench `~/iespl-bench`, the multitenant way SellOS needs: several company sites served by one SellOS server on port 8004, each request pinned to its site by the site name in its host name. Today the SellOS server is started as `bench --site sellos_test.localhost serve --port 8004`, and a server started with `--site` answers every host name with that one site (`frappe/app.py`: `site = _site or request.headers.get("X-Frappe-Site-Name") or get_site_name(request.host)`), while `bench serve` without `--site` falls back to `default_site`, which on this bench is BuildOS's `test_site`. So SellOS gets its own launcher for the 8004 server (decided by Jayman, 4 November 2026).
+- **Acceptance Criteria:**
+  - Site names: every test tenant site is named `sellos_tenant_<id>.localhost`, matching `^sellos_tenant_[a-z0-9_]+\.localhost$` (the pattern `scripts/check_site_set.py` uses). One function in the app validates a tenant site name, and every code path, test and script that creates, drops, migrates or otherwise touches a tenant site calls it before it runs anything, and refuses any other name. A test shows it refuses at least `test_site`, `dev_site`, `pamaa_test.localhost`, `sellos.localhost`, `sellos_test.localhost`, `sellos_tenant_A.localhost`, `sellos_tenant_a.localhost.evil` and `../sellos_tenant_a.localhost`.
+  - Nothing else is touched: tenant code touches only `sellos_tenant_<id>.localhost` sites. The gate's own `sellos_test.localhost` is handled by the gate as before. No code path, test or script creates, drops, migrates or touches any other site on this bench (BuildOS's and Pamaa's sites live here too). The gate checks this with `scripts/check_site_set.py`, which also fails a run that leaves a tenant site behind.
+  - Launcher: a SellOS launcher (for example `scripts/sellos-serve.sh`, run from `~/iespl-bench`) starts the one SellOS server on port 8004. It serves `sellos_test.localhost` and every existing `sellos_tenant_<id>.localhost` site, chosen by the request's host name, and answers any other host name with 404 before Frappe sees the request, so `default_site` can never be served. It never runs `bench serve` without `--site`, refuses any port but 8004, refuses to start when 8004 is already in use, and never starts, stops or touches the servers on 8000 and 8002.
+  - Isolation: two tenant sites made by the code above hold different data, and a request for each host name gets only its own site's data. A request with the host name of a BuildOS or Pamaa site (`test_site`, `dev_site`, `pamaa_test.localhost`) gets 404. Test this against the launcher's application in the test process (for example a Werkzeug test client), not against the running 8004 server, which Jayman restarts with the launcher after this task.
+  - Cleanup: every tenant site a test makes is dropped by the same validated code, its database included, and dropping a name that is not allowed is refused before any command runs.
+  - Database root password: Creating and dropping a site needs the MariaDB root password. Read it only from the environment variable `SELLOS_DB_ROOT_PASSWORD`, and pass it to Frappe in the process (for example to the site installer's `db_root_password` argument), never on a command line, in `site_config.json`, `common_site_config.json`, a log, the repository or a test fixture. If it is not set when this task needs it, reply NEEDS_INPUT and say that `SELLOS_DB_ROOT_PASSWORD` is not set. A test checks that, after a create and a drop, the password's value appears in no file under the repository, the tenant site folders or the gate's log folder.
+  - Docs: a section in `docs/` and a line in CLAUDE.md "Working rules" explain how this relates to the port rule (BuildOS 8000, Pamaa 8002, SellOS 8004): every SellOS site, the test site and every tenant, is served by the one SellOS server on 8004, a tenant never gets a port of its own, and the sites of BuildOS and Pamaa are never served on 8004. Give the new start command for the 8004 server.
+- **Test Criteria:** Backend tests for the name check, the launcher's host routing and refusals, two tenant sites isolated from each other, cleanup, and the password never written. The gate's site check passes.
+- **Notes:** Do not change protected files (`scripts/lib/sellos_server.sh`, `scripts/prepare-regression.sh`, `docs/TESTING.md` and the rest listed in `scripts/check_gate_files.py`). Say in your reply which of them name the old start command, so a human changes them after restarting the 8004 server with the launcher. Until then the running server stays pinned to `sellos_test.localhost` and the gate works as before. The deployment tasks SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-08 and SOS-P0-12 wait for SOS-N18 and are not part of this task.
+- **Owner:** Claude Code
+- **Priority:** P0
+- **Story Points:** 5
+- **Dependencies:** none
+- **Status:** Not Started
+
 ### SOS-P0-08: Write the deployment scripts
 - **Epic:** Platform foundations and DevOps
 - **Description:** As the platform team, I want scripted deployment and rolling upgrades, so that a release reaches every company site safely. Write one command to deploy a tagged release to staging, another to promote it to production, and a rolling upgrade that runs migrations site by site and stops on the first failure.
@@ -503,10 +522,11 @@ The regression milestones are tasks in this file (SOS-REG-0 to SOS-REG-6, and SO
   - It runs in an agreed time.
   - Cleanup removes the site fully.
 - **Test Criteria:** Run it twice in a row and confirm both runs succeed.
+- **Notes:** Depends on SOS-P0-06L (the local bench) instead of SOS-P0-06 (staging, after SOS-N18), changed by SOS-SETUP-17. The script makes only `sellos_tenant_<id>.localhost` sites, through SOS-P0-06L's name check. Creating and dropping a site needs the MariaDB root password. Read it only from the environment variable `SELLOS_DB_ROOT_PASSWORD`, and pass it to Frappe in the process (for example to the site installer's `db_root_password` argument), never on a command line, in `site_config.json`, `common_site_config.json`, a log, the repository or a test fixture. If it is not set when this task needs it, reply NEEDS_INPUT and say that `SELLOS_DB_ROOT_PASSWORD` is not set.
 - **Owner:** Claude Code
 - **Priority:** P0
 - **Story Points:** 3
-- **Dependencies:** SOS-P0-06
+- **Dependencies:** SOS-P0-06L
 - **Status:** Not Started
 
 ### SOS-P1-01: Build the control site
@@ -520,7 +540,7 @@ The regression milestones are tasks in this file (SOS-REG-0 to SOS-REG-6, and SO
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 5
-- **Dependencies:** SOS-P0-06, SOS-REG-0
+- **Dependencies:** SOS-P0-06L, SOS-REG-0
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -532,7 +552,9 @@ The regression milestones are tasks in this file (SOS-REG-0 to SOS-REG-6, and SO
   - Failures retry, then mark the job failed with a log.
   - The web process has no shell access.
   - The admin receives a login email.
+  - The MariaDB root password is read only from `SELLOS_DB_ROOT_PASSWORD` and is never written to a file, a log, the repository or a test fixture.
 - **Test Criteria:** Provision five tenants in sequence, kill the worker during a job and confirm it recovers, and confirm a failed job is visible.
+- **Notes:** Creating and dropping a site needs the MariaDB root password. Read it only from the environment variable `SELLOS_DB_ROOT_PASSWORD`, and pass it to Frappe in the process (for example to the site installer's `db_root_password` argument), never on a command line, in `site_config.json`, `common_site_config.json`, a log, the repository or a test fixture. If it is not set when this task needs it, reply NEEDS_INPUT and say that `SELLOS_DB_ROOT_PASSWORD` is not set. On the local bench the worker makes only `sellos_tenant_<id>.localhost` sites, through SOS-P0-06L's name check.
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Story Points:** 8
@@ -1594,6 +1616,7 @@ The regression milestones are tasks in this file (SOS-REG-0 to SOS-REG-6, and SO
 - **Acceptance Criteria:**
   - A report exists at docs/regression/reg-1.md with "Result: PASS".
   - No SOS-FIX task is open.
+- **Notes:** Checked by SOS-SETUP-17 on 4 November 2026, with SOS-P0-11 and SOS-P1-01 depending on SOS-P0-06L. "Phase 1 is finished" for this milestone means the tasks above and everything they depend on are Complete. SOS-P1-09, SOS-P1-10, SOS-P1-11 and SOS-P1-14 are not required, directly or through another task. SOS-P1-02 is required: this milestone depends on SOS-P1-03, and SOS-P1-03 depends on SOS-P1-02, so the provisioning worker must be Complete first. Through them it also needs SOS-P0-11 and SOS-P0-06L, and SOS-REG-0. It does not need SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-08, SOS-P0-12 or SOS-N18. Phase 2 tasks depend on this milestone, so SOS-P1-09, SOS-P1-10, SOS-P1-11 and SOS-P1-14 may still be open when Phase 2 starts.
 - **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P1
 - **Dependencies:** SOS-P1-06A, SOS-P1-06B, SOS-P1-13, SOS-P1-01, SOS-P1-03, SOS-P1-07, SOS-P1-08, SOS-P1-12

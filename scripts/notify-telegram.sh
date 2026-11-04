@@ -8,16 +8,27 @@
 #   SELLOS_TELEGRAM_CHAT_ID
 # Set these in your shell profile, or export them before launching
 # build-loop.sh, so the token never lands in this file or in git.
-set -euo pipefail
+#
+# SOS-SETUP-17: every message is also printed, so it is in the loop's log whether or not Telegram is
+# set up. A missing token or a failed send is reported and never fails the caller: build-loop.sh
+# calls this after a task completes, and an exit 1 here used to stop the loop after every task.
+set -uo pipefail
 
 MESSAGE="${1:?Usage: notify-telegram.sh \"<message>\"}"
 
-: "${SELLOS_TELEGRAM_BOT_TOKEN:?Set SELLOS_TELEGRAM_BOT_TOKEN in your environment}"
-: "${SELLOS_TELEGRAM_CHAT_ID:?Set SELLOS_TELEGRAM_CHAT_ID in your environment}"
+printf 'NOTIFY: %s\n' "$MESSAGE"
 
-curl -sS -X POST \
+if [ -z "${SELLOS_TELEGRAM_BOT_TOKEN:-}" ] || [ -z "${SELLOS_TELEGRAM_CHAT_ID:-}" ]; then
+  echo "NOTIFY: not sent to Telegram, SELLOS_TELEGRAM_BOT_TOKEN or SELLOS_TELEGRAM_CHAT_ID is not set." >&2
+  exit 0
+fi
+
+if ! curl -sS --max-time 20 -X POST \
   "https://api.telegram.org/bot${SELLOS_TELEGRAM_BOT_TOKEN}/sendMessage" \
   -d "chat_id=${SELLOS_TELEGRAM_CHAT_ID}" \
   --data-urlencode "text=${MESSAGE}" \
   -d "parse_mode=HTML" \
-  > /dev/null
+  > /dev/null 2>&1; then
+  echo "NOTIFY: the Telegram send failed. The message is above." >&2
+fi
+exit 0

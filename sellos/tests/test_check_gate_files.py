@@ -19,6 +19,8 @@ NEWLY_PROTECTED = [
 	".eslintrc",
 	"scripts/check_no_stale_skips.py",
 	"scripts/check_ci_parity.py",
+	"scripts/check_site_set.py",
+	"scripts/notify-telegram.sh",
 ]
 ALLOWED_BLOCK = "### SOS-X-1: a task\n- **Status:** In Progress\n- **Gate files:** allowed\n"
 PLAIN_BLOCK = "### SOS-X-1: a task\n- **Status:** In Progress\n"

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
-# Order: new files marked intent-to-add, preflight, lint and Semgrep, the task guards, put the clean baseline back, build the web
+# Order: new files marked intent-to-add, preflight (CI parity, a snapshot of the bench's sites), lint and Semgrep, the task guards, put the clean baseline back, build the web
 # app, migrate, prepare_clean_site (code, every run), the test files the task changed first (a failure stops the gate at once), the
-# whole backend suite, then the whole Cypress suite. A failed UI spec is rerun once, alone. The
+# whole backend suite, the whole Cypress suite, then a check that no other site was touched. A failed UI spec is rerun once, alone. The
 # gate passes only if every rerun passes, each spec that needed a rerun is logged as FLAKY, and a
 # spec that is FLAKY three times is a failure until it is fixed. More than 5 failed specs, or
 # failures that cannot be identified, fail at once.
@@ -83,6 +83,11 @@ if ! python3 "$REPO_DIR/scripts/check_ci_parity.py" "$BENCH_DIR" "$REPO_DIR/.git
   echo "Make the local bench and .github/workflows/ci.yml agree, then run this again." >&2
   sellos_env_exit 3
 fi
+# SOS-SETUP-17: other apps' sites share this bench. Record every site now, and at the end fail if a
+# site other than sellos_test.localhost or sellos_tenant_<id>.localhost was touched, or a tenant site
+# this run made was left behind.
+SITES_SNAPSHOT="$LOG_DIR/sites-$STAMP.json"
+python3 "$REPO_DIR/scripts/check_site_set.py" snapshot "$BENCH_DIR" "$SITES_SNAPSHOT"
 # The baseline is what makes every run start from the same data. Running without it is how a test
 # passes today and fails tomorrow, so it is an error unless a human says otherwise.
 if [ ! -f "$BASELINE" ] && [ -z "${SELLOS_ALLOW_NO_BASELINE:-}" ]; then
@@ -226,6 +231,8 @@ if [ -f "$FLAKY_LOG" ]; then
     exit 1
   fi
 fi
+echo "--- Sites this run touched ---"
+python3 "$REPO_DIR/scripts/check_site_set.py" compare "$BENCH_DIR" "$SITES_SNAPSHOT"
 echo "--- GATE PASSED ---"
 } 2>&1 | tee "$LOG_FILE"
 
