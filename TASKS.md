@@ -372,7 +372,7 @@ The regression milestones are tasks in this file (SOS-REG-0 to SOS-REG-6, and SO
 - **Priority:** P1
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-04
-- **Status:** Not Started
+- **Status:** In Progress
 - **Browser spec:** required
 
 ### SOS-P1-06B: Phone numbers do not leak
