@@ -316,7 +316,7 @@ Goal: a reproducible Frappe 16 platform on DigitalOcean with continuous integrat
 
 ## P0.09 Keep secrets out of repositories
 
-* [ ] **P0.09** · Points 2 · Owner Claude Code · Depends on P0.02 · Status not started
+* [x] **P0.09** · Points 2 · Owner Claude Code · Depends on P0.02 · Status done
 
 **Story.** As Jayman, I want secrets kept out of repositories, so that keys are never exposed.
 

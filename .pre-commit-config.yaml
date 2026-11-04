@@ -4,6 +4,12 @@ fail_fast: false
 
 
 repos:
+  # P0.09 secret scan, runs before commits and in CI through the Linters workflow
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
