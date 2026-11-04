@@ -103,6 +103,7 @@ jobs:
         working-directory: ${{ github.workspace }}/frontend
         run: |
           yarn install --frozen-lockfile
+          yarn test
           yarn build
 
       - name: Run Tests

@@ -5,31 +5,31 @@ export const PERSONAS = [
 		key: "platform_admin",
 		role: "SellOS Platform Admin",
 		areas: ["platform", "home", "profile"],
-		nav: [{ key: "home", label: "Home", to: "/" }],
+		nav: [{ key: "home", label: "Home", to: "/", area: "home" }],
 	},
 	{
 		key: "company_admin",
 		role: "SellOS Company Admin",
 		areas: ["company", "crm", "reports", "home", "profile"],
-		nav: [{ key: "home", label: "Home", to: "/" }],
+		nav: [{ key: "home", label: "Home", to: "/", area: "home" }],
 	},
 	{
 		key: "agent",
 		role: "SellOS Agent",
 		areas: ["crm", "home", "profile"],
-		nav: [{ key: "home", label: "Home", to: "/" }],
+		nav: [{ key: "home", label: "Home", to: "/", area: "home" }],
 	},
 	{
 		key: "channel_partner",
 		role: "SellOS Channel Partner",
 		areas: ["partner", "home", "profile"],
-		nav: [{ key: "home", label: "Home", to: "/" }],
+		nav: [{ key: "home", label: "Home", to: "/", area: "home" }],
 	},
 	{
 		key: "client",
 		role: "SellOS Client",
 		areas: ["client", "home", "profile"],
-		nav: [{ key: "home", label: "Home", to: "/" }],
+		nav: [{ key: "home", label: "Home", to: "/", area: "home" }],
 	},
 ];
 
@@ -47,4 +47,9 @@ export function inAreas(persona, area) {
 
 export function navLabel(persona, key) {
 	return persona?.nav.find((item) => item.key === key)?.label || key;
+}
+
+// The navigation a persona may use. An item shows only when its area is one of the persona's areas.
+export function navFor(persona) {
+	return (persona?.nav || []).filter((item) => inAreas(persona, item.area));
 }

@@ -70,9 +70,14 @@ app_license = "mit"
 # home_page = "login"
 
 # website user home page (by Role)
-# role_home_page = {
-# 	"Role": "home_page"
-# }
+# P0.10 every SellOS role lands in the web app after sign in
+role_home_page = {
+	"SellOS Platform Admin": "sellos",
+	"SellOS Company Admin": "sellos",
+	"SellOS Agent": "sellos",
+	"SellOS Client": "sellos",
+	"SellOS Channel Partner": "sellos",
+}
 
 # Generators
 # ----------
@@ -226,7 +231,8 @@ app_license = "mit"
 
 # Request Events
 # ----------------
-# before_request = ["sellos.utils.before_request"]
+# P0.10 customer roles never see the desk
+before_request = ["sellos.access.desk_guard.block_desk"]
 # after_request = ["sellos.utils.after_request"]
 
 # Job Events

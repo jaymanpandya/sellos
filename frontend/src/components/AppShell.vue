@@ -1,10 +1,20 @@
 <template>
-	<div class="flex min-h-screen bg-surface-muted">
-		<aside class="hidden w-56 shrink-0 border-r border-line bg-surface p-4 sm:block">
-			<div class="mb-6 text-lg font-semibold text-brand">
-				{{ session.company.name || "SellOS" }}
-			</div>
-			<nav class="space-y-1">
+	<div class="flex min-h-screen flex-col bg-surface-muted sm:flex-row">
+		<header
+			class="flex items-center justify-between border-b border-line bg-surface px-4 py-3 sm:hidden"
+		>
+			<CompanyBrand />
+			<button
+				type="button"
+				class="rounded-input px-3 py-1 text-sm text-ink-muted hover:bg-brand-light"
+				@click="signOut()"
+			>
+				Sign out
+			</button>
+		</header>
+		<aside class="hidden w-56 shrink-0 flex-col border-r border-line bg-surface p-4 sm:flex">
+			<div class="mb-6"><CompanyBrand /></div>
+			<nav class="flex-1 space-y-1" aria-label="Main">
 				<router-link
 					v-for="item in nav"
 					:key="item.key"
@@ -14,18 +24,39 @@
 					{{ item.label }}
 				</router-link>
 			</nav>
+			<button
+				type="button"
+				class="rounded-input px-3 py-2 text-left text-sm text-ink-muted hover:bg-brand-light"
+				@click="signOut()"
+			>
+				Sign out
+			</button>
 		</aside>
-		<main class="min-w-0 flex-1 p-4 sm:p-8">
+		<main class="min-w-0 flex-1 p-4 pb-20 sm:p-8">
 			<slot />
 		</main>
+		<nav
+			class="fixed inset-x-0 bottom-0 flex border-t border-line bg-surface sm:hidden"
+			aria-label="Main (phone)"
+		>
+			<router-link
+				v-for="item in nav"
+				:key="item.key"
+				:to="item.to"
+				class="flex-1 px-2 py-3 text-center text-sm text-ink"
+			>
+				{{ item.label }}
+			</router-link>
+		</nav>
 	</div>
 </template>
 
 <script setup>
 import { computed } from "vue";
 
-import { session } from "../session";
-import { personaFor } from "../personas";
+import CompanyBrand from "./CompanyBrand.vue";
+import { session, signOut } from "../session";
+import { navFor, personaFor } from "../personas";
 
-const nav = computed(() => personaFor(session.roles)?.nav || []);
+const nav = computed(() => navFor(personaFor(session.roles)));
 </script>

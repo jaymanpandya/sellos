@@ -49,7 +49,17 @@ def get_boot():
 			"user": frappe.session.user,
 			"full_name": user.full_name,
 			"roles": frappe.get_roles(),
-			# Filled from the company profile once the setup wizard story (P1.03) exists.
-			"company": {"name": frappe.local.site, "brand_color": ""},
+			"company": get_company_branding(),
 		},
+	}
+
+
+def get_company_branding():
+	"""Company name, logo and colour from SellOS Settings (P0.10). The wizard fills them in (P1.03)."""
+	# Read straight from the single doctype: the branding is public to every signed in user.
+	settings = frappe.get_cached_doc("SellOS Settings")
+	return {
+		"name": settings.company_name or frappe.local.site,
+		"logo": settings.logo or "",
+		"brand_color": settings.brand_color or "",
 	}

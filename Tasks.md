@@ -368,7 +368,7 @@ Goal: the custom SellOS app and a permission model that tests prove. It totals 3
 
 ## P0.10 Build the web app shell
 
-* [ ] **P0.10** · Points 8 · Owner Claude Code · Depends on P0.01 · Status not started
+* [x] **P0.10** · Points 8 · Owner Claude Code · Depends on P0.01 · Status done
 
 **Story.** As any user, I want to sign in to a SellOS app that shows the right screens for my role, so that I never need the Frappe desk.
 
