@@ -46,3 +46,12 @@ The SellOS server stays pinned to `sellos_test.localhost` on port 8004:
 without `--site`, because it falls back to `default_site`, which is BuildOS's. Serving several company
 sites from one server by host name is production routing. It belongs to SOS-P0-08 and cannot be
 tested on this bench.
+
+## The test site script (SOS-P0-11)
+
+`scripts/test-site.sh up <id> | down <id> | run <id>` (module `sellos.provisioning.site_script`) makes
+`sellos_tenant_<id>.localhost` from nothing: it creates the site with `tenant_sites.create`, runs
+`install-app sellos`, seeds the Company Admin test user from `sellos.testing.users` and reads the site
+back (database, apps, admin and role). `down` drops the site and database. `run` does both and drops
+the site even when `up` fails. The agreed time for a run is 180 seconds (two runs took about 45 each on
+this bench); over it the script exits 4. Exit 2 is a bad id and 3 a missing provisioner password.
