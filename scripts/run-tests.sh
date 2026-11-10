@@ -3,7 +3,8 @@
 #
 # Order: new files marked intent-to-add, preflight (CI parity, a snapshot of the bench's sites and databases), lint and Semgrep, the task guards, put the clean baseline back, build the web
 # app, migrate, prepare_clean_site (code, every run), the test files the task changed first (a failure stops the gate at once), the
-# whole backend suite, the whole Cypress suite, then a check that no other site or database was touched and
+# whole backend suite (a module that failed on a MariaDB 1020 or deadlock is rerun once, alone, and
+# a second database conflict exits 3, SOS-SETUP-25), the whole Cypress suite, then a check that no other site or database was touched and
 # that the provisioner's password is in no log (SOS-SETUP-18). A failed UI spec is rerun once, alone. The
 # gate passes only if every rerun passes, each spec that needed a rerun is logged as FLAKY, and a
 # spec that is FLAKY three times is a failure until it is fixed. More than 5 failed specs, or
@@ -190,6 +191,12 @@ bench --site "$SITE" clear-cache
 
 echo "--- Changed tests first: $APP ---"
 REPORT_TEST_EXIT="apps/$APP/scripts/lib/report_test_exit.sh"
+DB_CONFLICT="apps/$APP/scripts/lib/db_conflict.py"
+DB_CONFLICT_LOG="$BASELINE_DIR/sellos-db-conflict.log"
+# SOS-SETUP-25: run_backend reruns a module that failed on a MariaDB 1020 or deadlock once, alone,
+# and exits 3 if the rerun hits one again (scripts/lib/db_conflict.sh).
+# shellcheck source=lib/db_conflict.sh
+source "$REPO_DIR/scripts/lib/db_conflict.sh"
 CHANGED="$(git -C "apps/$APP" status --porcelain -uall | { grep -v -E '^(.D|D.) ' || true; } | sed -E 's/^.{2} //; s/.* -> //')"
 CHANGED_PY="$(printf '%s\n' "$CHANGED" | grep -E '(^|/)test_[^/]*\.py$' || true)"
 CHANGED_SPECS="$(printf '%s\n' "$CHANGED" | grep -E '^cypress/integration/.*\.cy\.js$' || true)"
@@ -205,7 +212,7 @@ for f in $CHANGED_PY; do
   [ -f "apps/$APP/$f" ] || { echo "--- skipping $f: the task deleted it ---"; continue; }
   mod="$(printf '%s' "${f%.py}" | tr '/' '.')"
   echo "--- changed test module: $mod ---"
-  "$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP" --module "$mod" || { echo "CHANGED TEST FAILED: $mod"; exit 1; }
+  run_backend "$LOG_DIR/backend-$STAMP-$mod.log" --module "$mod" || { echo "CHANGED TEST FAILED: $mod"; exit 1; }
 done
 for f in $CHANGED_SPECS; do
   [ -f "apps/$APP/$f" ] || { echo "--- skipping $f: the task deleted it ---"; continue; }
@@ -223,7 +230,7 @@ done
 echo "--- Backend unit tests: $APP ---"
 # The runner prints one summary per batch, and the last one can say OK while an earlier one failed.
 # The wrapper prints every batch and the exit code, and the exit code decides (SOS-SETUP-24).
-"$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP"
+run_backend "$LOG_DIR/backend-$STAMP-all.log" || { echo "BACKEND TESTS FAILED"; exit 1; }
 
 echo "--- UI tests: $APP ---"
 set +e

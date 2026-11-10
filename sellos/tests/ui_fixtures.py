@@ -11,8 +11,27 @@ import frappe
 from frappe.utils import add_days, add_to_date, now_datetime, today
 
 from sellos.config.company_site import configure_company_site
-from sellos.testing.users import PASSWORD, TEST_USERS, _ensure_user, ensure_test_users
+from sellos.testing.users import (
+	PASSWORD,
+	TEST_USERS,
+	_ensure_user,
+	create_test_users,
+	ensure_test_users,
+)
 from sellos.tests import phones
+
+
+def _test_users():
+	"""Make the role users the way the caller's process allows (SOS-SETUP-25).
+
+	Inside the test runner (frappe.in_test) only create_test_users(), which never commits and queues
+	no Contact job (Frappe runs it at once while tests run), so an IntegrationTestCase and every test
+	that calls seed_agent_leads or seed_client_with_phone keeps its own transaction. Through bench execute (cy.bench, the gate's
+	prepare_clean_site) ensure_test_users(), which commits for the browser's separate process.
+	"""
+	if frappe.in_test:
+		return create_test_users()
+	return ensure_test_users()
 
 
 def ensure_role_user(role):
@@ -23,7 +42,7 @@ def ensure_role_user(role):
 	"""
 	if role not in TEST_USERS:
 		raise ValueError(f"Unknown role {role}. Choose one of {', '.join(TEST_USERS)}.")
-	ensure_test_users()
+	_test_users()
 	spec = TEST_USERS[role]
 	return {"user": spec["email"], "password": PASSWORD, "full_name": spec["first_name"]}
 
@@ -41,7 +60,7 @@ def prepare_clean_site():
 	migrated install, so this state is always made by code.
 	"""
 	_configure_company_site()
-	ensure_test_users()
+	_test_users()
 	# A baseline must be saved, and bench execute is not a request.
 	frappe.db.commit()  # nosemgrep
 
@@ -78,7 +97,7 @@ def seed_agent_leads():
 	"""
 	from sellos.crm import api as crm
 
-	ensure_test_users()
+	_test_users()
 	admin = TEST_USERS["company_admin"]["email"]
 	agent = TEST_USERS["agent"]["email"]
 	tag = frappe.generate_hash(length=6)
@@ -105,7 +124,7 @@ def seed_client_with_phone(seed=21):
 	"""
 	from sellos.crm import api as crm
 
-	ensure_test_users()
+	_test_users()
 	admin = TEST_USERS["company_admin"]["email"]
 	agent = TEST_USERS["agent"]["email"]
 	seed = int(seed)
@@ -210,7 +229,7 @@ def seed_regression_data():
 	admin = TEST_USERS["company_admin"]["email"]
 	agent_one = TEST_USERS["agent"]["email"]
 	partner = TEST_USERS["channel_partner"]["email"]
-	ensure_test_users()
+	_test_users()
 	agent_two, agent_three = _ensure_regression_agents()
 	existing = frappe.db.get_value("Client", {"client_name": f"{REGRESSION_PREFIX}Buyer One"}, "name")
 	if existing:
