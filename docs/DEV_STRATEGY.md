@@ -68,9 +68,13 @@ and fails a run that made or dropped any database but a `sellos_tenant_<id>` one
 
 `scripts/build-loop.sh` runs one task at a time. For each task it:
 
-1. Picks the next task from TASKS.md (`select-next-task.sh` and `lib/tasks.py`): resume an In
-   Progress one, else the first Not Started task of the highest priority whose dependencies are
-   all Complete. If anything is Blocked, nothing new starts.
+1. Checks for the regression pause file `/tmp/sellos-loop.pause` (section 8). If it exists, it picks
+   nothing, notifies "Paused for regression" and stops. Otherwise it picks the next task from
+   TASKS.md (`select-next-task.sh` and `lib/tasks.py`): resume an In Progress one, else, among the Not
+   Started tasks whose dependencies are all satisfied (Complete or Not Needed), the one in the
+   earliest Launch tier (Dec 20, then Jan 1), and within a tier the first in file order. Priority no
+   longer orders the pick (SOS-SETUP-19). A Not Needed task is never picked or reported. If anything
+   is Blocked, nothing new starts.
 2. Marks it In Progress and commits that, and records the commit it started from.
 3. Calls `claude -p` once with the task in the prompt. The agent edits files and runs only its own
    single test module and single spec, in the foreground. It never commits, pushes, resets,
@@ -82,7 +86,7 @@ and fails a run that made or dropped any database but a `sellos_tenant_<id>` one
    repair: saves the attempt on a `failed/<task>-<time>` branch, hard resets the branch to the
    commit it started from, marks the task Blocked, notifies, and stops. No broken code ever stays
    on the main branch.
-7. Stops on Blocked, NEEDS_INPUT (a question the agent cannot settle, never a milestone), a crashed agent or no eligible task. A Blocked task is never
+7. Stops on Blocked, NEEDS_INPUT (a question the agent cannot settle, never a milestone), a crashed agent, a regression pause or no eligible task. A Blocked task is never
    resumed by itself. A human finds the cause, checks it by hand in a browser, and resets it to
    Not Started.
 
@@ -92,7 +96,9 @@ behaviour.
 
 * `lib/tasks.py`: the task ID pattern is the same as BuildOS's. What differs is the SellOS name in
   the docstring, priorities that run P0 to P6 (BuildOS stops at P2), an `Owner` field that is read
-  from each task, and the `waiting` command, a report of the Waiting tasks that hold up Not
+  from each task, the `Launch` tier that orders the pick, the `Not Needed` status that satisfies a
+  dependency and is never picked or reported, the `order` command that lists the pick order, and the
+  `waiting` command, a report of the Waiting tasks that hold up Not
   Started work, which the loop sends when nothing is eligible.
 * `set-task-status.sh`: a SellOS task ID in the usage example.
 * `limit_wait.py`: `SELLOS_LIMIT_WAIT_OVERRIDE` in place of `BUILDOS_LIMIT_WAIT_OVERRIDE`.
@@ -111,6 +117,7 @@ TASKS.md holds one block per task, in the BuildOS format that `lib/tasks.py` rea
 - **Acceptance Criteria:**
   - ...
 - **Priority:** P1
+- **Launch:** Dec 20
 - **Dependencies:** SOS-P1-04, SOS-P1-05
 - **Status:** Not Started
 - **Browser spec:** required
@@ -141,7 +148,7 @@ leads yet", and the whole gate was green.
 | 2 | A spec passes if its own assertions pass | An API call that answered 403 or 500, or a console error, never fails anything | After every test, any `/api/` answer of 400 or more, and any console error, fails the test unless the spec declared it with `cy.expectApiStatus` or `cy.expectConsoleError` | `cypress/support/e2e.js` |
 | 3 | If the clean baseline file is missing the gate warns and carries on with whatever data is there | A result that cannot be repeated | Missing baseline stops the gate (exit 3). A human may allow one run with `SELLOS_ALLOW_NO_BASELINE` | `scripts/run-tests.sh` |
 | 4 | The UI tests need `bench start` and the site at its own address, and say nothing if they are not there | Cypress times out with an unhelpful message | A preflight asks the site to answer first and says what is missing. The site's `webserver_port` (site config first, shared config second, as `frappe.get_conf` reads it) must be 8004 or the gate exits 2 | `scripts/run-tests.sh`, `scripts/prepare-regression.sh`, `scripts/lib/sellos_server.sh` |
-| 5 | The agent can edit the gate, the Cypress config, the support file or CI in the same task | A failing test is "fixed" by changing what judges it | Those files are protected: `scripts/run-tests.sh`, `build-loop.sh`, `notify-telegram.sh`, `watchdog.sh`, `select-next-task.sh`, `set-task-status.sh`, `make-baseline.sh`, `prepare-regression.sh`, `scripts/lib/*`, `scripts/check_*.py`, `cypress.config.js`, `cypress/support/e2e.js`, `.pre-commit-config.yaml`, `.semgrepignore`, `.eslintrc`, `.github/workflows/*`, `docs/DEV_STRATEGY.md`, `docs/TESTING.md` and `docs/regression/README.md`. `pyproject.toml` is not protected as a whole, because tasks add dependencies to it, but any change to its `[tool.ruff]` tables fails. `docs/regression/flows.md` is append only. A task changes any of these only if its block says `Gate files: allowed`, which only a human writes | `scripts/check_gate_files.py` |
+| 5 | The agent can edit the gate, the Cypress config, the support file or CI in the same task | A failing test is "fixed" by changing what judges it | Those files are protected: `scripts/run-tests.sh`, `build-loop.sh`, `notify-telegram.sh`, `watchdog.sh`, `select-next-task.sh`, `set-task-status.sh`, `make-baseline.sh`, `prepare-regression.sh`, `pause-loop.sh`, `resume-loop.sh`, `scripts/lib/*`, `scripts/check_*.py`, `cypress.config.js`, `cypress/support/e2e.js`, `.pre-commit-config.yaml`, `.semgrepignore`, `.eslintrc`, `.github/workflows/*`, `docs/DEV_STRATEGY.md`, `docs/TESTING.md` and `docs/regression/README.md`. `pyproject.toml` is not protected as a whole, because tasks add dependencies to it, but any change to its `[tool.ruff]` tables fails. `docs/regression/flows.md` is append only. A task changes any of these only if its block says `Gate files: allowed`, which only a human writes | `scripts/check_gate_files.py` |
 | 6 | "Never weaken an assertion" is one sentence in a prompt | Nothing stops it | The number of assertions in every changed test file may not fall, and a test file may not be deleted | `scripts/check_assertion_ratchet.py` |
 | 7 | A task can be marked Complete with no test that names it | Acceptance criteria nobody tests | A new or changed test that names the task ID and holds assertions is required. A task marked `Browser spec: required` also needs a Cypress spec | `scripts/check_task_evidence.py` |
 | 8 | Lint and Semgrep are not in the gate, only in CI after the push | The commit lands, CI goes red afterwards. It happened three times on SellOS (ruff on PR 1, Semgrep twice on P0.07) | Pre-commit and Semgrep with the Frappe rules run inside the gate | `scripts/run-tests.sh` |
@@ -155,7 +162,7 @@ leads yet", and the whole gate was green.
 | 15 | Personal data leaks are found one at a time by a person | The change history held old and new values in BuildOS (BOS-282) | Every path in `cy.genericReads` is tried as every role for every DocType that holds personal data, for the current value and the replaced one. Reuse `buildos.security.field_history` | `cy.genericReads`, the security specs |
 | 16 | After a push the loop starts the next task without looking at CI | A red CI sits unnoticed while new work piles on | After each push the loop waits for CI on that commit. If it is red the loop stops and notifies, and starts nothing new | `scripts/build-loop.sh` |
 | 17 | Test data is made by hand | An invalid or real phone number breaks a test or leaks into the repository | `sellos.tests.phones` makes valid numbers, and a test fails on any hand written one. The allowed list starts empty and stays empty | `sellos/tests/test_no_raw_phone_numbers.py` |
-| 18 | A human walks through the product by hand | Skipped when time is short | Each milestone is a Waiting task, SOS-REG-0 to SOS-REG-6 and SOS-REG-2B, that the next phase depends on. Claude in chat walks every flow in `docs/regression/flows.md` in a browser and writes a report. A task marked `Browser spec: required` fails the gate unless it adds its flows (section 8) | `TASKS.md`, `scripts/check_task_evidence.py`, `docs/regression/` |
+| 18 | A human walks through the product by hand | Skipped when time is short | Regression is a scheduled pause, not a gate (SOS-SETUP-19). SOS-REG-A, B, C and L are Waiting tasks on fixed dates. `scripts/pause-loop.sh` stops the loop before its next pick, Claude in chat walks every flow in `docs/regression/flows.md` in a browser and writes a report, and `scripts/resume-loop.sh` lets it go on. A task marked `Browser spec: required` fails the gate unless it adds its flows (section 8) | `TASKS.md`, `scripts/build-loop.sh`, `scripts/pause-loop.sh`, `scripts/resume-loop.sh`, `scripts/check_task_evidence.py`, `docs/regression/` |
 | 19 | The loop runs one `git push` after a task passes and assumes it worked | A loop that cannot push leaves finished work unpushed, and the next tasks pile up on top of it | At start the loop checks `git ls-remote --exit-code origin HEAD` and stops before any task if the remote does not answer, and pushes first if the branch is ahead of origin. After a passing task the push is retried after 10, 30 and 90 seconds, and GitHub's "fatal error in commit_refs" is retried, not taken as a rejection. If every try fails the commit is kept, never reset, the exact git error is sent, and the loop stops. At start the loop also stops if `gh auth status` fails, and before pushing commits that are ahead it lists them, refuses any whose message does not start with `SOS-`, and waits for CI on the pushed head before picking a task. Git never prompts (`GIT_TERMINAL_PROMPT=0`, and SSH in batch mode with a 15 second timeout when origin is an SSH remote) | `scripts/build-loop.sh` |
 | 20 | The gate ran its own Semgrep command: only the Frappe rules, with its own `--exclude` list, on every file in the folder | The gate can pass while CI fails, because the two scan different files with different rules. On 6b0fade the Linters run went red on three `open()` calls in `scripts/lib/tasks.py` | The gate runs exactly CI's command, `semgrep ci --config <frappe rules> --config r/python.lang.correctness`, and both read the same `.semgrepignore` at the repo root. Any new CI check is added to the gate in the same change | `scripts/run-tests.sh`, `.semgrepignore`, `.github/workflows/linter.yml` |
 | 21 | The gate lints the files git tracks, and a task's new files are untracked until the loop commits them | CI checks every file in the commit, so a new file the gate never looked at fails CI after the push. On 8d9389a a new test file passed the local pre-commit run and failed ruff-format in the Linters run | Before anything else the gate runs `git ls-files --others --exclude-standard -z \| xargs -0 git add --intent-to-add`, so pre-commit, Semgrep, the three guards and the changed tests step all see new files, without staging their content. The loop's failure path still removes them | `scripts/run-tests.sh`, `sellos/tests/test_gate_untracked_files.py` |
@@ -163,7 +170,7 @@ leads yet", and the whole gate was green.
 | 23 | Every failed gate run is handed to the agent to repair, and the last one Blocks the task | A server that is down, on the wrong port or serving the wrong app fails every spec. The loop spends its repair runs having the agent "fix" code that is not broken, then resets the work and Blocks the task, so a dead server costs the task | An environment failure must never consume repair runs or Block a task. The gate exits 2 or 3 only from its preflight (a command that fails with its own 2 or 3 is reported as 1). On 2 or 3 the loop does not repair, reset, salvage or Block: the task stays In Progress, the working tree is left as it is, it notifies "Environment problem, not the task" with the gate's message, and stops. After every exit 1 it runs the gate's server preflight again (port, ping, guest `/sellos` redirect) before any repair run or Block, and when the failures were nothing but connection errors to the site it says so. A failed preflight is handled the same way. Restarting the loop resumes the task | `scripts/build-loop.sh`, `scripts/run-tests.sh`, `scripts/lib/sellos_server.sh` |
 | 24 | The gate runs the whole Cypress suite, and a spec can be written before the task it checks | A contract spec for a later task fails every gate until then, so the task in front of it cannot pass. On 4 November 2026 `phone_masking_leaks.cy.js`, SOS-P1-06B's contract, failed SOS-P1-06A's gate | A contract spec for a future task is skipped (`context.skip`) with its task ID in a comment above the skip, and that task removes the skip and makes the spec pass. The gate fails a skip that names no task, a task that is Complete, or the task the gate is running for | `scripts/check_no_stale_skips.py` in `scripts/run-tests.sh` |
 | 25 | The gate runs on the developer's bench, and CI builds its own bench from the workflow | The two drift apart and nothing says so. On 4 November 2026 every UI spec failed in CI in 0 ms and passed locally: CI's `bench init` named no Frappe branch and got Frappe develop, which has no `cypress/support`, so `cypress/support/e2e.js` could not import Frappe's commands. The local bench is on version-16 | Every `bench init` in `ci.yml` names `--frappe-branch version-16`. The gate's preflight compares the local bench with `ci.yml` (the Frappe branch, the Python minor version and the Node major version) and exits 3 on any difference, before any test runs | `scripts/check_ci_parity.py` in `scripts/run-tests.sh`, `.github/workflows/ci.yml` |
-| 26 | The loop builds and deploys from one task graph | A deployment decision that is not made (SOS-N18, the DigitalOcean region and sizes) blocks every local task after it: SOS-P0-11 waited on SOS-P0-06, which waited on SOS-P0-04 and SOS-N18 | Building and deploying are separate tasks. SOS-P0-06L sets up multitenancy on the local bench, and SOS-P0-11 and SOS-P1-01 depend on it. SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-08 and SOS-P0-12 wait for SOS-N18. Test tenant sites are named `sellos_tenant_<id>.localhost`, and the gate fails a run that touched any other site of the bench or left a tenant site behind | `TASKS.md`, `scripts/check_site_set.py` in `scripts/run-tests.sh` |
+| 26 | The loop builds and deploys from one task graph | A deployment decision that is not made (SOS-N18, the DigitalOcean region and sizes) blocks every local task after it: SOS-P0-11 waited on SOS-P0-06, which waited on SOS-P0-04 and SOS-N18 | Building and deploying are separate tasks. SOS-P0-06L sets up multitenancy on the local bench, and SOS-P0-11 and SOS-P1-01 depend on it. SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-08 and SOS-P0-12 wait for SOS-N18. Since SOS-SETUP-19 SOS-N18 is Not Needed (the region is DigitalOcean Bangalore), and SOS-P0-04 and SOS-P0-12 are AMP Labs work and Waiting, so SOS-P0-05, SOS-P0-06 and SOS-P0-08 wait for SOS-P0-04. Test tenant sites are named `sellos_tenant_<id>.localhost`, and the gate fails a run that touched any other site of the bench or left a tenant site behind | `TASKS.md`, `scripts/check_site_set.py` in `scripts/run-tests.sh` |
 | 27 | A task needs a database secret that is not in the agent's environment, and the plan asks for root | On 4 November 2026 SOS-P0-06L stopped with NEEDS_INPUT: the root password variable it was told to read was not set in the shell that started the loop. The loop does not empty the environment and Claude Code does not drop variables by name, so the variable never existed there. Root would also let a test drop any company's database on this bench | Tenant sites are made with a narrow MariaDB account (`CREATE USER`, `RELOAD`, `SHOW DATABASES`, and everything on `sellos\_tenant\_%` only), never root. The loop hands the agent exactly `SELLOS_DB_PROVISIONER_USER` and `SELLOS_DB_PROVISIONER_PASSWORD` and strips every other credential variable. Their values are redacted from the loop's output, replies, notifications and gate logs, and the gate fails a run whose files hold the password or that touched a database outside `sellos_tenant_<id>` | `scripts/lib/db_secrets.sh` in `scripts/build-loop.sh`, `scripts/run-tests.sh` and `scripts/notify-telegram.sh`, `scripts/check_no_secret_leak.py`, `scripts/check_site_set.py` |
 
 **A job that is expected to be red.** A red job proves nothing unless it is red for the right
@@ -185,8 +192,9 @@ Copy BuildOS's `scripts/build-loop.sh` and change only these things. Do not rety
 2. Paths in both prompts: `bench --site sellos_test.localhost run-tests --app sellos --module ...` and
    `bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/...`.
 3. The locked architecture paragraph: no ERPNext, the web app never uses the Frappe desk, five roles,
-   isolation by site, the consent check has no override, calling on the 022 number is for service
-   and transactional purposes only, and the word Frappe never appears in a user facing label.
+   isolation by site, consent never blocks (section 9), the 022 number is for service and
+   transactional calls, the product is called SellOS with no company or suite brand, and the word
+   Frappe never appears in a user facing label. The prompt also carries the rebuild rule (section 9).
 4. Before calling the gate, write the task block to `/tmp/sellos-task-block.md` and export
    `SELLOS_TASK_ID`, `SELLOS_BASE_SHA` (the commit the task started from) and
    `SELLOS_TASK_BLOCK_FILE`. The gate uses them to run the three guards. Unset them for the repair
@@ -223,28 +231,73 @@ before its task is done:
   (`cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`). Restarting it while the gate runs breaks the run. The servers on 8000
   (BuildOS) and 8002 (Pamaa) are never touched.
 
-## 8. Waiting tasks and the regression milestones
+## 8. Waiting tasks and the regression pauses
 
 A Waiting task is never picked by the loop. It belongs to a person (Jayman, AMP Labs, Counsel, the
-Accountant) or, for a SOS-REG milestone, to Claude in chat. Dependants stay Not Started until it is
+Accountant) or, for a SOS-REG task, to Claude in chat. Dependants stay Not Started until it is
 Complete, so when nothing else is eligible the loop stops. Its notification lists each Waiting task
-that still holds up a Not Started task, what it waits on, and what it holds up.
+that still holds up a Not Started task, what it waits on, and what it holds up. A Not Needed task
+counts as satisfied for its dependants, and is never picked or reported.
 
 To finish a Waiting task by hand, do the work, then:
 
 ```
 scripts/set-task-status.sh <ID> Complete TASKS.md
-git add TASKS.md            # and the report or evidence, for a regression milestone
+git add TASKS.md            # and the report or evidence, for a regression
 git commit -m "<ID> <what was done>"
 git push origin 1.0
 ```
 
 and start the loop again. A Waiting task stays Waiting until then, so the loop never reaches past it.
 
-The regression milestones are Waiting tasks with the owner "Claude in chat, clickthrough regression".
-Each depends on every task of its phase that a person sees or uses, and every task of the next phase
-depends on it. SOS-REG-2B is a checkpoint inside Phase 2, after click to call. Their support files are
-gate files: `docs/regression/README.md`, `scripts/prepare-regression.sh` and the evidence check that
-needs each browser task's flows in `docs/regression/flows.md` (a task may add flows, never remove one).
-`seed_regression_data` in `sellos/tests/ui_fixtures.py` builds the dataset through the production API and
-its docstring lists the data, which each task that adds data updates.
+**Regression is a scheduled pause, not a gate (Jayman, 10 November 2026, SOS-SETUP-19).** No task
+depends on a regression task except the last one. The regression tasks are Waiting, owned by "Claude
+in chat, clickthrough regression":
+
+| Task | About | Covers |
+| --- | --- | --- |
+| SOS-REG-A | 24 November 2026 | every task Complete by then |
+| SOS-REG-B | 12 December 2026 | every task Complete by then |
+| SOS-REG-C | 18 December 2026 | every task Complete by then, before the Dec 20 launch tier closes |
+| SOS-REG-L | 29 December 2026 | the launch regression; it depends on every other task that is not Not Needed or Parked |
+
+The pause works through one file, `/tmp/sellos-loop.pause` (`SELLOS_PAUSE_FILE` overrides the path, for
+the tests only):
+
+1. `scripts/pause-loop.sh` creates the file.
+2. Before picking each task, `scripts/build-loop.sh` checks for it. If it exists the loop picks nothing,
+   changes no status, notifies "Paused for regression" and stops. A task already running finishes
+   first, gate and push included.
+3. Claude in chat follows `docs/regression/README.md`: it walks every flow, writes the report, and
+   makes every defect an SOS-FIX task in the Dec 20 tier, above the first Not Started task.
+4. `scripts/resume-loop.sh` removes the file. Start the loop again; it picks the fixes first.
+
+Both scripts are gate files. Their support files are gate files too: `docs/regression/README.md`,
+`scripts/prepare-regression.sh` and the evidence check that needs each browser task's flows in
+`docs/regression/flows.md` (a task may add flows, never remove one). `seed_regression_data` in
+`sellos/tests/ui_fixtures.py` builds the dataset through the production API and its docstring lists the
+data, which each task that adds data updates. The old milestones SOS-REG-0 to SOS-REG-6 and SOS-REG-2B
+are Not Needed, and their blocks are kept.
+
+## 9. Jayman's decisions of 10 November 2026 (SOS-SETUP-19)
+
+* **Rebuild from scratch.** The commit before the rebuild is tagged `legacy/before-rebuild`. Every task
+  was set back to Not Started, the finished ones included, and is rebuilt from its own text. The agent
+  must not assume existing code is right. It reads it, replaces what is weak, keeps what passes review,
+  and every task adds or refreshes tests that name it. The tree is not deleted first. The rule is in the
+  loop prompt and in CLAUDE.md.
+* **Launch tiers.** Everything is launch scope. Every task has a `Launch` line: Dec 20 or Jan 1, or
+  `none` for a Not Needed or Parked task. The loop chooses by tier first, then dependencies, then file
+  order.
+* **Not Needed.** International calling is dropped, with the other enablers that are no longer needed.
+  A Not Needed dependency counts as satisfied.
+* **Consent never blocks.** A lead's consent status (Consented, Unknown, Opted out, Registered DND when
+  known) is recorded and shown as a warning on the lead, the caller queue and the call log. It never
+  prevents a call, an SMS or a WhatsApp message, in code or in the screens. Enforcement lives in one
+  function (SOS-P2-04) behind the company setting "Consent enforcement", which is Off by default. An
+  explicit stop request is recorded as Opted out with a red warning, and does not block. Calling hours
+  stay a configurable setting. Tests show that calls and messages proceed in every consent state and
+  that the warning is recorded. The earlier rules "the consent check has no override" and "the system
+  refuses a promotional purpose" are withdrawn.
+* **Name.** The product is called SellOS everywhere, exactly as BuildOS is called BuildOS, with no
+  company or suite brand.

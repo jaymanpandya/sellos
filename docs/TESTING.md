@@ -67,7 +67,8 @@ These decide whether a task passes, so a task may not change them unless its blo
 `watchdog.sh`, `select-next-task.sh`, `set-task-status.sh`, `make-baseline.sh`, `scripts/lib/*`,
 `scripts/check_*.py`, `cypress.config.js`, `cypress/support/e2e.js`, `.pre-commit-config.yaml`,
 `.semgrepignore`, `.eslintrc`, `.github/workflows/*`, `docs/DEV_STRATEGY.md`,
-`scripts/prepare-regression.sh`, `docs/regression/README.md` and this file. `docs/regression/flows.md`
+`scripts/prepare-regression.sh`, `scripts/pause-loop.sh`, `scripts/resume-loop.sh`,
+`docs/regression/README.md` and this file. `docs/regression/flows.md`
 is append only: a task adds its flows and may never remove one.
 
 `pyproject.toml` is not protected as a whole, because tasks add dependencies to it. The guard loads it

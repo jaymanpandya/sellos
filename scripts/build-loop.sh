@@ -277,7 +277,17 @@ $AHEAD_LIST" || true
   fi
 fi
 
+# A scheduled regression pause (SOS-SETUP-19): scripts/pause-loop.sh creates this file and
+# scripts/resume-loop.sh removes it. It is checked before every pick, so a running task finishes first.
+PAUSE_FILE="${SELLOS_PAUSE_FILE:-/tmp/sellos-loop.pause}"
+
 while true; do
+  if [[ -e "$PAUSE_FILE" ]]; then
+    echo "Paused for regression: $PAUSE_FILE exists. Nothing picked. Run scripts/resume-loop.sh, then start the loop again."
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: Paused for regression. Nothing picked. Run scripts/resume-loop.sh after the regression, then start the loop again." || true
+    break
+  fi
+
   TASK_ID="$("$SCRIPT_DIR/select-next-task.sh" "$TASKS_FILE")"
 
   if [[ "$TASK_ID" == "NONE_ELIGIBLE" ]]; then
@@ -325,11 +335,21 @@ Follow SellOS's locked architecture: no ERPNext. The web app never uses
 the Frappe desk, and every customer feature is built in the SellOS web
 app. There are five roles: Platform Admin, Company Admin, Agent, Client
 and Channel Partner. Every company is its own site and database, so
-isolation is by site. The consent check runs before every dial and has no
-override for any role. Calls placed from the 022 number are for service
-and transactional purposes only, and a promotional call purpose is
-refused. The word 'Frappe' must never appear in any user facing label,
-screen, or error message.
+isolation is by site. Consent never blocks: a lead's consent status
+(Consented, Unknown, Opted out, Registered DND when known) is recorded and
+shown as a warning on the lead, the caller queue and the call log, and never
+prevents a call, an SMS or a WhatsApp message, in code or in the screens.
+Enforcement lives in one function behind the company setting Consent
+enforcement, which is Off by default. The 022 number is for service and
+transactional calls. The product is called SellOS everywhere, with no
+company or suite brand. The word 'Frappe' must never appear in any user
+facing label, screen, or error message.
+
+Rebuild from scratch (Jayman, 10 November 2026): build this task from its
+own text. Do not assume the existing code is right. Read what is there,
+replace what is weak, and keep what passes review against the task block.
+Do not delete the tree first. Every task adds or refreshes tests that name
+its task ID, even where code for it already exists.
 
 MariaDB: never use the MariaDB root account or any root password. A task
 that creates or drops a tenant site uses only the provisioner account,
@@ -457,7 +477,7 @@ $PREFLIGHT_OUT"
     echo "The gate failed. Asking Claude to repair it from the failure output (gate run $GATE_RUN of $MAX_GATE_RUNS)."
     FAILCTX="$(failure_context)"
     REPAIR_PROMPT="The test gate for the task below failed. Your changes are still in the working tree, uncommitted, and nothing has been reset. Read the failure output at the end, find the cause in the code, and fix it. This is gate run $GATE_RUN of $MAX_GATE_RUNS.
-Rules. Fix the product code or the test you added, and never delete or weaken an assertion to make a test pass. A failing test is fixed in the code, not in the test, unless the task block says otherwise. Never use the MariaDB root account or a root password: only the provisioner account in SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD, whose values you never print, log or write. Never edit a gate file: scripts/run-tests.sh, scripts/build-loop.sh, scripts/watchdog.sh, scripts/select-next-task.sh, scripts/set-task-status.sh, scripts/make-baseline.sh, scripts/prepare-regression.sh, anything under scripts/lib, scripts/check_*.py, cypress.config.js, cypress/support/e2e.js, .pre-commit-config.yaml, .semgrepignore, .eslintrc, .github/workflows, docs/DEV_STRATEGY.md, docs/TESTING.md or docs/regression/README.md, and never change the [tool.ruff] tables in pyproject.toml (adding a dependency there is fine). Never remove an assertion and never delete a test file. If a failing test is in a file this task did not change, follow the policy below. Read the whole failing test first, because the first failing assertion hides every later one: check every assertion against the code before you reply, and fix all of them in this pass. You may run the single backend test module or the single browser spec that you changed, one at a time and in the foreground, from ~/iespl-bench: bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>, or bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Never run the full suite, and never run anything in the background. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. The word Frappe must never appear in any user facing label, screen, or error message.
+Rules. Fix the product code or the test you added, and never delete or weaken an assertion to make a test pass. A failing test is fixed in the code, not in the test, unless the task block says otherwise. Never use the MariaDB root account or a root password: only the provisioner account in SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD, whose values you never print, log or write. Never edit a gate file: scripts/run-tests.sh, scripts/build-loop.sh, scripts/watchdog.sh, scripts/select-next-task.sh, scripts/set-task-status.sh, scripts/make-baseline.sh, scripts/prepare-regression.sh, scripts/pause-loop.sh, scripts/resume-loop.sh, anything under scripts/lib, scripts/check_*.py, cypress.config.js, cypress/support/e2e.js, .pre-commit-config.yaml, .semgrepignore, .eslintrc, .github/workflows, docs/DEV_STRATEGY.md, docs/TESTING.md or docs/regression/README.md, and never change the [tool.ruff] tables in pyproject.toml (adding a dependency there is fine). Never remove an assertion and never delete a test file. If a failing test is in a file this task did not change, follow the policy below. Read the whole failing test first, because the first failing assertion hides every later one: check every assertion against the code before you reply, and fix all of them in this pass. You may run the single backend test module or the single browser spec that you changed, one at a time and in the foreground, from ~/iespl-bench: bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>, or bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Never run the full suite, and never run anything in the background. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. The word Frappe must never appear in any user facing label, screen, or error message.
 Respond with either of the following as the literal first characters of your response, nothing before it:
 Policy, because nobody can answer questions during a run, so never ask one. If a failing test is outside this task, you may fix that test file or the shared fixtures it uses when the cause is test data, test order or a hard coded assumption, and you must say what you changed. If a test deletes or empties shared data, make it restore what it removed, even when it fails. Never change product code that this task did not touch just to make a test pass, and never weaken or delete an assertion. If you truly cannot fix it, still reply with IMPLEMENTATION_READY and a plain account of what is failing and why.
 Respond with this as the literal first characters of your response, nothing before it:

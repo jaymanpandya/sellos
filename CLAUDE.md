@@ -16,8 +16,8 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 4. Customers never use the Frappe desk. Every customer feature is built in the SellOS web app, which follows the BuildOS frontend stack, structure and tooling once P0.01 is approved. Only the Platform Admin may open /desk, and only to operate the control site. No customer role (Company Admin, Agent, Client or Channel Partner) ever gets it. Decided by Jayman at Checkpoint A.
 5. Every API method is whitelisted, declares its allowed roles, and is covered by the permission test matrix. A method with no declaration is denied.
 6. Five roles: Platform Admin, Company Admin, Agent, Client and Channel Partner.
-7. A consent check runs before every dial. It has no override for any role.
-8. Calls placed from the 022 number are service or transactional only. A promotional call purpose is refused.
+7. Consent never blocks (Jayman, 10 November 2026). A lead's consent status (Consented, Unknown, Opted out, Registered DND when known) is recorded and shown as a warning on the lead, the caller queue and the call log. It never prevents a call, an SMS or a WhatsApp message, in code or in the screens. Enforcement lives in one function behind the company setting "Consent enforcement", which is Off by default. An explicit stop request is recorded as Opted out with a red warning, and does not block. Calling hours stay a configurable setting.
+8. The 022 number is for service and transactional calls. Each call records its purpose.
 9. Secrets live in encrypted settings or environment variables, never in a repository.
 10. Never build captcha solving or any bypass of an access control.
 
@@ -27,7 +27,10 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 * The build loop makes one commit per task on the 1.0 branch, with the task ID at the start of the message, and pushes to 1.0 after the gate passes. The agent leaves its work uncommitted. Do not open pull requests, and never force push.
 * Write the tests named in the story's Test criteria with the code. Continuous integration must pass.
 * The loop sets a task's status in TASKS.md (In Progress, Complete, Blocked). The agent never changes one.
-* Do not start a task whose dependencies are not Complete, and do not work on Parked tasks.
+* Do not start a task whose dependencies are not Complete or Not Needed, and do not work on Parked or Not Needed tasks.
+* Rebuild from scratch (Jayman, 10 November 2026). Every task is rebuilt from its own text. Do not assume existing code is right: read it, replace what is weak, keep what passes review, and add or refresh tests that name the task, even where code for it already exists. Do not delete the tree first. The commit before the rebuild is tagged `legacy/before-rebuild`.
+* The product is called SellOS everywhere, exactly as BuildOS is called BuildOS, with no company or suite brand.
+* Regression is a scheduled pause, not a gate: `scripts/pause-loop.sh` stops the loop before its next pick and `scripts/resume-loop.sh` lets it go on (see `docs/DEV_STRATEGY.md` section 8).
 
 ## Stop and ask Jayman when
 

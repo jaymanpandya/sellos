@@ -181,6 +181,8 @@ class Sandbox(unittest.TestCase):
 			"SELLOS_LOG_DIR": str(self.logs),
 			"SELLOS_LOOP_LOCK": str(self.root / "loop.lock"),
 			"SELLOS_TASK_BLOCK_PATH": str(self.root / "task-block.md"),
+			# Never the real /tmp pause file, so a real regression pause cannot change these tests.
+			"SELLOS_PAUSE_FILE": str(self.root / "loop.pause"),
 			**GIT_ENV,
 		}
 		return env
@@ -190,7 +192,10 @@ class Sandbox(unittest.TestCase):
 		return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
-class LoopEnvironmentFailures(Sandbox):
+class LoopSandbox(Sandbox):
+	"""The real build loop in a throwaway bench and repository, with fakes. It holds no tests, so
+	other modules subclass it (test_loop_pause.py, SOS-SETUP-19)."""
+
 	def setUp(self):
 		super().setUp()
 		for name in ("build-loop.sh", "select-next-task.sh", "set-task-status.sh", "limit_wait.py"):
@@ -249,6 +254,8 @@ class LoopEnvironmentFailures(Sandbox):
 	def calls(self, name):
 		return len(self.read(name).splitlines())
 
+
+class LoopEnvironmentFailures(LoopSandbox):
 	def assert_stopped_for_environment(self, code, *expected_text):
 		self.assertEqual(code, 3, self.out)
 		self.assertEqual(self.status(), "In Progress", self.out)

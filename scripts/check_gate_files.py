@@ -42,6 +42,9 @@ PROTECTED = [
 	"docs/TESTING.md",
 	"scripts/prepare-regression.sh",
 	"docs/regression/README.md",
+	# The regression pause switches (SOS-SETUP-19).
+	"scripts/pause-loop.sh",
+	"scripts/resume-loop.sh",
 ]
 
 # A task adds its flows here, so the file is not protected from a change. A flow already in it may
