@@ -2,7 +2,8 @@
 
 * Company Admin and System Manager see every record of the site.
 * The Platform Admin sees no company CRM data. Support gets in through a time limited grant
-  (a later story), never by role. (Decided by Jayman, P1.06.)
+  (P1.13), never by role: while the grant is active the user reads every record, and may change
+  nothing. (Decided by Jayman, P1.06.)
 * An Agent or Channel Partner sees only the leads they own or are assigned, plus leads shared with
   them through Frappe's normal share.
 * Activities, tasks and site visits follow their lead. A client record follows the leads that use
@@ -12,13 +13,16 @@
 
 import frappe
 
-from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
+from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, PLATFORM_ADMIN
+from sellos.access.support import has_support_access
 
 SEES_ALL = frozenset({COMPANY_ADMIN, "System Manager"})
 SEES_OWN = frozenset({AGENT, CHANNEL_PARTNER})
 DOCTYPE = "Lead"
 CLIENT_DOCTYPE = "Client"
 LEAD_CHILDREN = ("Lead Activity", "Lead Task", "Site Visit")
+# What a support grant allows (P1.13). A missing permission type means read.
+SUPPORT_PTYPES = frozenset({"read", "select", "print", "report"})
 
 
 def scope_for(roles) -> str:
@@ -49,8 +53,8 @@ def _conditions(user, build):
 	user = user or frappe.session.user
 	if user == "Administrator":
 		return ""
-	scope = scope_for(frappe.get_roles(user))
-	if scope == "all":
+	scope = _user_scope(user)
+	if scope in ("all", "support"):
 		return ""
 	if scope == "none":
 		return "1=0"
@@ -104,13 +108,29 @@ def _scope(user):
 	user = user or frappe.session.user
 	if user == "Administrator":
 		return user, "all"
-	return user, scope_for(frappe.get_roles(user))
+	return user, _user_scope(user)
+
+
+def _user_scope(user) -> str:
+	"""'all', 'own', 'none', or 'support' for a Platform Admin with an active grant (P1.13)."""
+	roles = frappe.get_roles(user)
+	scope = scope_for(roles)
+	if scope == "none" and PLATFORM_ADMIN in roles and has_support_access(user, roles):
+		return "support"
+	return scope
+
+
+def _without_own(scope, ptype) -> bool:
+	"""The answer for a scope that is not 'own'. A support grant reads and does nothing else."""
+	if scope == "support":
+		return (ptype or "read") in SUPPORT_PTYPES
+	return scope == "all"
 
 
 def has_permission(doc, ptype=None, user=None, **kwargs):
 	user, scope = _scope(user)
 	if scope != "own":
-		return scope == "all"
+		return _without_own(scope, ptype)
 	if ptype == "create":
 		return True  # a new lead has no owner yet, the doctype's role rows decide who may create
 	if user in (doc.get("owner"), doc.get("assigned_to")):
@@ -127,7 +147,7 @@ def has_child_permission(doc, ptype=None, user=None, **kwargs):
 	"""An activity, task or site visit is allowed when its lead is."""
 	user, scope = _scope(user)
 	if scope != "own":
-		return scope == "all"
+		return _without_own(scope, ptype)
 	lead = doc.get("lead")
 	if not lead:
 		return False
@@ -137,7 +157,7 @@ def has_child_permission(doc, ptype=None, user=None, **kwargs):
 def has_client_permission(doc, ptype=None, user=None, **kwargs):
 	user, scope = _scope(user)
 	if scope != "own":
-		return scope == "all"
+		return _without_own(scope, ptype)
 	if ptype == "create" or user == doc.get("owner"):
 		return True
 	leads = frappe.get_all("Lead", filters={"client": doc.name}, pluck="name")

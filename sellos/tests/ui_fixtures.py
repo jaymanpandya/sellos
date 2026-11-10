@@ -176,6 +176,42 @@ def remove_seeded_leads():
 	return {"clients": len(clients), "leads": len(leads)}
 
 
+def end_support_grant_now(minutes_ago=5):
+	"""Make the newest support grant of the test platform admin run out, as time passing would (P1.13).
+
+	It moves the grant's start and expiry into the past and leaves its status Active, so the spec shows
+	that access ends at expiry without the scheduler. Tests only: the app never edits a grant.
+	"""
+	support_user = TEST_USERS["platform_admin"]["email"]
+	name = frappe.db.get_value(
+		"Support Grant", {"support_user": support_user}, "name", order_by="creation desc"
+	)
+	if not name:
+		raise ValueError("There is no support grant to end.")
+	start = add_to_date(now_datetime(), minutes=-(int(minutes_ago) + 60))
+	frappe.db.set_value(
+		"Support Grant",
+		name,
+		{"starts_at": start, "expires_at": add_to_date(start, minutes=60)},
+		update_modified=False,
+	)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"grant": name}
+
+
+def remove_support_grants():
+	"""Remove every support grant and log line on the test site (tests only, P1.13).
+
+	The app never deletes them, so this goes to the tables. A spec that grants access runs it in its
+	after hook, so a grant never stays active for the backend tests that run next (SOS-SETUP-24).
+	"""
+	frappe.db.delete("Support Access Log")
+	frappe.db.delete("Version", {"ref_doctype": "Support Grant"})
+	frappe.db.delete("Support Grant")
+	frappe.db.commit()  # nosemgrep
+	return {"removed": True}
+
+
 # --- The regression dataset (docs/regression/README.md) -------------------------------------------
 
 REGRESSION_PREFIX = "Regression "
@@ -220,6 +256,8 @@ def seed_regression_data():
 	  (scheduled, done and cancelled).
 	* One client whose phone number changed once, so the change history holds the old and the new.
 	* One NRI client with an overseas phone number.
+	* Two support grants (SOS-P1-13) for the gate platform admin: one the Company Admin ended early
+	  and one still active for 2 hours, each with its Granted (and Revoked) line in the access log.
 
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
@@ -335,9 +373,22 @@ def seed_regression_data():
 		# The phone number changes once, so the change history holds the old and the new number.
 		crm.save_client(name=client_one, values={"phone": phones.near_in_mobile(101)})
 
+	_seed_support_grants(admin)
+
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
 	return _regression_summary()
+
+
+def _seed_support_grants(admin):
+	"""Two support grants, through the production API (SOS-P1-13): one ended early, one still active."""
+	from sellos.access import support
+
+	support_user = TEST_USERS["platform_admin"]["email"]
+	with _as_user(admin):
+		ended = support.grant_support_access(support_user, 60, "Regression help with an import")
+		support.revoke_support_access(ended["name"])
+		support.grant_support_access(support_user, 120, "Regression walkthrough of the leads report")
 
 
 def _regression_summary():

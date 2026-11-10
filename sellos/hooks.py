@@ -185,6 +185,10 @@ has_permission = {
 # Scheduled Tasks
 # ---------------
 
+# P1.13 mark ended support grants as Expired. Access ends at expiry without it.
+scheduler_events = {
+	"all": ["sellos.access.support.expire_due_grants"],
+}
 # scheduler_events = {
 # 	"all": [
 # 		"sellos.tasks.all"
@@ -244,7 +248,12 @@ override_whitelisted_methods = {
 # Request Events
 # ----------------
 # P0.10 customer roles never see the desk
-before_request = ["sellos.access.desk_guard.block_desk", "sellos.access.registry.guard_api"]
+# P1.13 a Platform Admin with a support grant has every request logged
+before_request = [
+	"sellos.access.desk_guard.block_desk",
+	"sellos.access.registry.guard_api",
+	"sellos.access.support.log_support_request",
+]
 # after_request = ["sellos.utils.after_request"]
 
 # Job Events

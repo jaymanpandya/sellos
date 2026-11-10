@@ -22,7 +22,7 @@ has a Frappe share on, plus the records that follow those leads. "None" is nothi
 
 | Data | Platform Admin | Company Admin | Agent | Channel Partner | Client |
 | --- | --- | --- | --- | --- | --- |
-| Lead | None (support grant only, P1.13) | All, edit, reassign, archive | Own, edit own | Own, create and edit own | None |
+| Lead | None, or read only while a support grant is active (P1.13) | All, edit, reassign, archive | Own, edit own | Own, create and edit own | None |
 | Client (record) | None | All, full phone | Created by them, or on a lead they can see. Masked phone | Same as Agent | None |
 | Activity, Task, Site Visit | None | All, create and edit | Follow the lead, create and edit | Follow the lead, read only | None |
 | Delete | Nobody. Records are archived | | | | |
@@ -50,6 +50,7 @@ on a company site, because the data scope above is "none".
 | --- | --- |
 | `sellos.crm.api.list_clients`, `save_client`, `list_leads`, `get_lead`, `save_lead`, `set_archived` | Company Admin, Agent, Channel Partner |
 | `sellos.crm.api.add_activity`, `save_task`, `save_site_visit` | Company Admin, Agent |
+| `sellos.access.support.list_support_users`, `grant_support_access`, `revoke_support_access`, `list_support_grants`, `support_access_log` (P1.13) | Company Admin |
 | `sellos.access.field_history.getdoc`, `get_docinfo` (P1.06B: the record loader, with the history of fields the reader may not read left out) | Every role |
 
 Each story that adds a method adds a row here.
@@ -66,3 +67,20 @@ against one company's seeded records. It fails the build when a refused caller i
 caller other than the Company Admin gets the company's record or a full phone number, when a method has no
 matrix entry or no sample arguments, or when a sellos method is whitelisted with no declaration. It runs
 in continuous integration with the rest of the backend tests (`bench run-tests --app sellos`).
+
+## Support access grants (P1.13)
+
+The Platform Admin sees no company data by role. A Company Admin gives one support user read access for a
+chosen time, from 1 minute to 4 hours (`/sellos/company/support` in the web app, `sellos/access/support.py`).
+
+* While the grant is active the user may read the five CRM DocTypes and nothing else: no write, create,
+  share, delete or per record export. `lead_permissions` decides this from the grant, on every call.
+  The user keeps the level 1 phone rows the Platform Admin role has, so a support user sees full phone numbers
+  while a grant is active. Every request is logged.
+* The end is checked on every use: a grant lasts to its expiry, and never more than 4 hours after it started,
+  whether or not the scheduler has run. The scheduler (`expire_due_grants`, every tick) marks it Expired.
+* Every request the user makes, and each grant, revoke and expiry, is a line in the Support Access Log with the
+  user, the time, the method and the path. Grants and log lines are never edited or deleted. A grant's holder and
+  length can not change: revoke it and make a new one.
+* The Company Admin may read grants and the log (`Support Grant`, `Support Access Log`) and change them only
+  through the methods above.

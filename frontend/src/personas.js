@@ -14,6 +14,7 @@ export const PERSONAS = [
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
 			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
+			{ key: "support", label: "Support access", to: "/company/support", area: "company" },
 		],
 	},
 	{

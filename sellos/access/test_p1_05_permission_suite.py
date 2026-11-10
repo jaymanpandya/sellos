@@ -13,6 +13,7 @@ import frappe
 from frappe.tests import IntegrationTestCase
 from frappe.utils import now_datetime
 
+from sellos.access import support
 from sellos.access.matrix import MATRIX
 from sellos.access.registry import (
 	declared_methods,
@@ -64,6 +65,15 @@ SAMPLE_CALLS = {
 		"values": {"lead": "{lead}", "project_name": "P105 Tower", "visit_datetime": "2030-01-01 10:00:00"}
 	},
 	"sellos.crm.api.set_archived": {"doctype": "Lead", "name": "{lead}", "archived": 0},
+	"sellos.access.support.list_support_users": {},
+	"sellos.access.support.grant_support_access": {
+		"support_user": "{support_user}",
+		"duration_minutes": 60,
+		"reason": "p105 check",
+	},
+	"sellos.access.support.revoke_support_access": {"grant": "{grant}"},
+	"sellos.access.support.list_support_grants": {},
+	"sellos.access.support.support_access_log": {"grant": "{grant}"},
 	"sellos.access.field_history.getdoc": {"doctype": "Client", "name": "{client}"},
 	"sellos.access.field_history.get_docinfo": {"doctype": "Client", "name": "{client}"},
 }
@@ -153,7 +163,16 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"notes": ACTIVITY_NOTE,
 			}
 		).insert()
-		self.names = {"client": client.name, "lead": lead.name}
+		# P1.13: a grant that has already ended, so the support user reads nothing in these tests.
+		support_user = TEST_USERS["platform_admin"]["email"]
+		grant = support.grant_support_access(support_user, 60)
+		support.revoke_support_access(grant["name"])
+		self.names = {
+			"client": client.name,
+			"lead": lead.name,
+			"support_user": support_user,
+			"grant": grant["name"],
+		}
 		frappe.set_user("Administrator")
 
 	def tearDown(self):

@@ -36,3 +36,10 @@ FLOW SOS-P1-06A-3 | client | /sellos/crm/leads | Sign in as a client and type th
 FLOW SOS-P1-06A-4 | agent | /sellos | Look at the browser tab. | The tab shows the company logo when the company has one, otherwise the SellOS icon. Headings use Syne, text uses DM Sans, and buttons are green (#0f4c35) with amber (#e8954a) for warnings.
 FLOW SOS-P1-06B-1 | agent | /sellos/crm/leads | Sign in as an agent. Open a lead whose client has a phone number. | The phone shows masked (stars and the last three digits). The full number is nowhere on the page.
 FLOW SOS-P1-06B-2 | company_admin | /sellos/crm/leads | Sign in as a company admin. Open the same lead. | The full phone number shows. The number is in the history of changes for no one else.
+
+## SOS-P1-13: support access grants
+
+FLOW SOS-P1-13-1 | company_admin | /sellos/company/support | Sign in. Open Support access. The seeded list shows an active grant for the support user and an ended one. Choose the support user, pick 1 hour, type a reason, click Give access. | A new grant appears at the top with status Active and an end time 1 hour away. The longest choice offered is 4 hours.
+FLOW SOS-P1-13-2 | company_admin | /sellos/company/support | Click Show log on a grant. | Each line shows the time, the user and what was done: Granted, then Revoked or Expired, and each request the support user made, with its method and path.
+FLOW SOS-P1-13-3 | company_admin | /sellos/company/support | Click End now on an active grant. | The status changes to Revoked at once, the End now button goes, and the log gains a Revoked line.
+FLOW SOS-P1-13-4 | agent | /sellos/company/support | Sign in as an agent and type the Support access address. | The no access page opens. No grant is shown.
