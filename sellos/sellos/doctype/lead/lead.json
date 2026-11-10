@@ -10,6 +10,12 @@
   "source",
   "assigned_to",
   "notes",
+  "section_consent",
+  "consent_status",
+  "opted_out_on",
+  "opted_out_source",
+  "dnd_registered",
+  "dnd_checked_on",
   "section_archive",
   "archived",
   "archived_on",
@@ -49,6 +55,48 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "section_consent",
+   "fieldtype": "Section Break",
+   "label": "Consent",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "consent_status",
+   "fieldtype": "Select",
+   "label": "Consent status",
+   "options": "Unknown\nConsented\nOpted out\nRegistered DND",
+   "default": "Unknown",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "description": "Recorded and shown as a warning. It never stops a call, an SMS or a WhatsApp message."
+  },
+  {
+   "fieldname": "opted_out_on",
+   "fieldtype": "Datetime",
+   "label": "Opted out on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "opted_out_source",
+   "fieldtype": "Select",
+   "label": "Opted out through",
+   "options": "\nPhone call\nWhatsApp\nSMS\nEmail\nIn person\nWebsite\nOther",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dnd_registered",
+   "fieldtype": "Check",
+   "label": "Registered on the do not call list",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dnd_checked_on",
+   "fieldtype": "Datetime",
+   "label": "Do not call result known on",
+   "read_only": 1
   },
   {
    "fieldname": "section_archive",

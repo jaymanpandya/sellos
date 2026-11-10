@@ -1,0 +1,145 @@
+{
+ "actions": [],
+ "autoname": "format:CNS-{#######}",
+ "creation": "2026-11-11 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "lead",
+  "basis",
+  "recorded_on",
+  "evidence_link",
+  "expires_on",
+  "renews",
+  "renewal_count",
+  "section_archive",
+  "archived",
+  "archived_on",
+  "archived_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "label": "Lead",
+   "options": "Lead",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "basis",
+   "fieldtype": "Select",
+   "label": "Basis",
+   "options": "Consent\nInquiry\nApplication",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "recorded_on",
+   "fieldtype": "Datetime",
+   "label": "Recorded on",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "evidence_link",
+   "fieldtype": "Data",
+   "label": "Evidence link",
+   "reqd": 1,
+   "description": "A web link, or a file kept in the company's files, that shows the lead gave this basis."
+  },
+  {
+   "fieldname": "expires_on",
+   "fieldtype": "Datetime",
+   "label": "Expires on",
+   "read_only": 1,
+   "description": "Set from the basis: an inquiry lasts 7 days, an application 3 months. Consent has no expiry."
+  },
+  {
+   "fieldname": "renews",
+   "fieldtype": "Link",
+   "label": "Renews",
+   "options": "Consent Record",
+   "read_only": 1
+  },
+  {
+   "fieldname": "renewal_count",
+   "fieldtype": "Int",
+   "label": "Renewals so far",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "section_archive",
+   "fieldtype": "Section Break",
+   "label": "Archive",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "archived",
+   "fieldtype": "Check",
+   "label": "Archived",
+   "default": "0",
+   "read_only": 1,
+   "description": "Records are archived, never deleted."
+  },
+  {
+   "fieldname": "archived_on",
+   "fieldtype": "Datetime",
+   "label": "Archived on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "archived_by",
+   "fieldtype": "Link",
+   "label": "Archived by",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Consent Record",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1
+  },
+  {
+   "role": "SellOS Agent",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1
+  },
+  {
+   "role": "SellOS Platform Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "export": 1
+  },
+  {
+   "role": "SellOS Channel Partner",
+   "permlevel": 0,
+   "read": 1
+  }
+ ],
+ "search_fields": "lead,basis",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "basis",
+ "track_changes": 1
+}

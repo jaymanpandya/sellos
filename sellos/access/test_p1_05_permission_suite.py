@@ -65,6 +65,13 @@ SAMPLE_CALLS = {
 		"values": {"lead": "{lead}", "project_name": "P105 Tower", "visit_datetime": "2030-01-01 10:00:00"}
 	},
 	"sellos.crm.api.set_archived": {"doctype": "Lead", "name": "{lead}", "archived": 0},
+	"sellos.crm.api.record_consent": {
+		"lead": "{lead}",
+		"basis": "Inquiry",
+		"evidence_link": "https://example.com/p108-evidence",
+	},
+	"sellos.crm.api.record_opt_out": {"lead": "{lead}", "source": "Phone call"},
+	"sellos.crm.api.record_dnd_result": {"lead": "{lead}", "registered": 1},
 	"sellos.access.support.list_support_users": {},
 	"sellos.access.support.grant_support_access": {
 		"support_user": "{support_user}",

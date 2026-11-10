@@ -146,6 +146,42 @@ def seed_client_with_phone(seed=21):
 	}
 
 
+def seed_consent_leads():
+	"""Make one lead the test agent owns for each consent status (SOS-P1-08).
+
+	Built through sellos.crm.api as the company admin, so the records, the status and the change
+	history all come from the production code. Returns {status: lead name} for Consented, Unknown,
+	Opted out and Registered DND. Each run makes new ones. remove_seeded_leads removes them.
+	"""
+	from sellos.crm import api as crm
+
+	_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	tag = frappe.generate_hash(length=6)
+	made = {}
+	with _as_user(admin):
+		for seed, status in enumerate(("Consented", "Unknown", "Opted out", "Registered DND"), start=41):
+			client = crm.save_client(
+				values={
+					"client_name": f"Gate Consent {status} {tag}",
+					"client_type": "Buyer",
+					"phone": phones.in_mobile(seed),
+				}
+			)
+			lead = crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": agent})
+			name = lead["lead"]["name"]
+			if status == "Consented":
+				crm.record_consent(name, "Consent", "https://example.com/evidence/form-41")
+			elif status == "Opted out":
+				crm.record_opt_out(name, "WhatsApp")
+			elif status == "Registered DND":
+				crm.record_dnd_result(name, 1)
+			made[status] = name
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return made
+
+
 def remove_seeded_leads():
 	"""Remove what seed_agent_leads and seed_client_with_phone committed (tests only, P1.06A).
 
@@ -159,13 +195,14 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Own %"],
 			["client_name", "like", "Gate Other %"],
 			["client_name", "like", "Gate Phone %"],
+			["client_name", "like", "Gate Consent %"],
 		],
 		pluck="name",
 	)
 	if not clients:
 		return {"clients": 0, "leads": 0}
 	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name")
-	for doctype in ("Lead Activity", "Lead Task", "Site Visit"):
+	for doctype in ("Lead Activity", "Lead Task", "Site Visit", "Consent Record"):
 		if leads and frappe.get_meta(doctype).has_field("lead"):
 			frappe.db.delete(doctype, {"lead": ["in", leads]})
 	for doctype, names in (("Lead", leads), ("Client", clients)):
@@ -321,6 +358,10 @@ def seed_regression_data():
 	* Two support grants (SOS-P1-13) for the gate platform admin: one the Company Admin ended early
 	  and one still active for 2 hours, each with its Granted (and Revoked) line in the access log.
 
+	* Consent (SOS-P1-08): Buyer One has a Consent record, Buyer Two a live Inquiry, NRI Five a live
+	  Application, Buyer Three is Opted out (phone call), Investor Four is Registered DND, and the
+	  other leads are Unknown.
+
 	* The company setup wizard (SOS-P1-03) left half way: profile, colours and the default pipeline
 	  stages saved, the users step still to do, so it opens on that step.
 
@@ -436,6 +477,15 @@ def seed_regression_data():
 			}
 		)
 		crm.set_archived("Lead", lead_six)
+	# Consent (SOS-P1-08): every status, set through the consent API as the lead's own agent.
+	with _as_user(agent_one):
+		crm.record_consent(lead_one, "Consent", "https://example.com/regression/consent-form-1")
+		crm.record_consent(lead_two, "Inquiry", "https://example.com/regression/website-inquiry-2")
+	with _as_user(agent_two):
+		crm.record_opt_out(lead_three, "Phone call")
+		crm.record_dnd_result(lead_four, 1)
+	with _as_user(agent_three):
+		crm.record_consent(lead_five, "Application", "https://example.com/regression/application-5")
 	with _as_user(admin):
 		crm.add_activity(lead_seven, "Call", "Owner wants to list a 3 BHK")
 		# The phone number changes once, so the change history holds the old and the new number.

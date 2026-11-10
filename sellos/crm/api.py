@@ -12,6 +12,7 @@ from frappe.utils import cint, now_datetime
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
+from sellos.crm import consent
 from sellos.crm.base import is_overdue
 
 READERS = (AGENT, CHANNEL_PARTNER, COMPANY_ADMIN)
@@ -146,6 +147,8 @@ def list_leads(search=None, include_archived=0):
 		tasks = frappe.get_all(
 			"Lead Task", filters={"lead": lead.name, "archived": 0, "status": "Open"}, fields=["due_date"]
 		)
+		lead["consent_status"] = consent.compute_status(lead.name)
+		lead["consent_warning"] = consent.WARNINGS[lead["consent_status"]][0]
 		lead["open_tasks"] = len(tasks)
 		lead["overdue_tasks"] = sum(is_overdue(t.due_date, "Open") for t in tasks)
 	return leads
@@ -166,6 +169,7 @@ def get_lead(name):
 		"lead": lead.as_dict(no_nulls=True),
 		"client": client_view(frappe.get_doc("Client", lead.client)),
 		"timeline": _timeline(name),
+		"consent": consent.consent_view(name),
 	}
 
 
@@ -213,6 +217,42 @@ def save_task(name=None, values=None):
 @sellos_api(*LOGGERS)
 def save_site_visit(name=None, values=None):
 	return _save("Site Visit", name, values, VISIT_FIELDS).as_dict()
+
+
+def _writable_lead(lead):
+	doc = frappe.get_doc("Lead", lead)
+	doc.check_permission("write")
+	return doc
+
+
+@sellos_api(*LOGGERS)
+def record_consent(lead, basis, evidence_link=None):
+	"""Record a lawful basis for a lead (P1.08). A record with no evidence link is refused. The time
+	is now, and the expiry is set from the basis. Recording again for the same basis renews it."""
+	_writable_lead(lead)
+	doc = frappe.get_doc(
+		{"doctype": "Consent Record", "lead": lead, "basis": basis, "evidence_link": evidence_link}
+	)
+	doc.check_permission("create")
+	doc.flags.ignore_permissions = True
+	doc.insert()
+	return consent.consent_view(lead)
+
+
+@sellos_api(*LOGGERS)
+def record_opt_out(lead, source):
+	"""An explicit stop request: Opted out, with its time and source. It blocks nothing (P1.08)."""
+	_writable_lead(lead)
+	consent.record_opt_out(lead, source)
+	return consent.consent_view(lead)
+
+
+@sellos_api(*LOGGERS)
+def record_dnd_result(lead, registered=1):
+	"""A do not call result is known for the lead's number. Registered shows an amber warning."""
+	_writable_lead(lead)
+	consent.record_dnd_result(lead, cint(registered))
+	return consent.consent_view(lead)
 
 
 @sellos_api(*READERS)

@@ -161,6 +161,7 @@ permission_query_conditions = {
 	"Lead Activity": f"{_LEAD_PERMS}.get_child_query_conditions",
 	"Lead Task": f"{_LEAD_PERMS}.get_child_query_conditions",
 	"Site Visit": f"{_LEAD_PERMS}.get_child_query_conditions",
+	"Consent Record": f"{_LEAD_PERMS}.get_child_query_conditions",
 }
 has_permission = {
 	"Lead": f"{_LEAD_PERMS}.has_permission",
@@ -168,6 +169,7 @@ has_permission = {
 	"Lead Activity": f"{_LEAD_PERMS}.has_child_permission",
 	"Lead Task": f"{_LEAD_PERMS}.has_child_permission",
 	"Site Visit": f"{_LEAD_PERMS}.has_child_permission",
+	"Consent Record": f"{_LEAD_PERMS}.has_child_permission",
 }
 
 # Document Events
@@ -188,6 +190,7 @@ has_permission = {
 # P1.13 mark ended support grants as Expired. Access ends at expiry without it.
 scheduler_events = {
 	"all": ["sellos.access.support.expire_due_grants"],
+	"hourly": ["sellos.crm.consent.expire_due_records"],
 }
 # scheduler_events = {
 # 	"all": [

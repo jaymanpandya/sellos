@@ -59,3 +59,12 @@ FLOW SOS-P1-03-2 | company_admin | /sellos/company/setup | On First users type a
 FLOW SOS-P1-03-3 | company_admin | /sellos/company/setup | Click Logo and colours, choose a PNG logo, pick a brand colour and click Save and continue. Finish the setup and open Home. | The logo and company name show at the top of every screen, buttons use the new colour, and the Finish setting up banner is gone.
 FLOW SOS-P1-03-4 | company_admin | /sellos/company/setup | Click Pipeline stages, remove every Won stage and click Save and continue. | The stages are not saved and a clear message says the pipeline needs one Won and one Lost stage.
 FLOW SOS-P1-03-5 | agent | /sellos/company/setup | Sign in as an agent and type the setup address. | The no access page opens. No setup data is shown.
+
+## SOS-P1-08: the Consent Record
+
+FLOW SOS-P1-08-1 | agent | /sellos/crm/leads | Sign in as the first Regression agent. Open Regression Buyer One, then Regression Buyer Two. | Buyer One shows the status Consented with one Consent record and no warning. Buyer Two shows Consented with an Inquiry that expires 7 days after it was recorded.
+FLOW SOS-P1-08-2 | company_admin | /sellos/crm/leads | Sign in. Open Regression Seller Seven, which has the status Unknown. Choose Application, type a web link as evidence and click Record basis. | An amber Unknown warning shows before, and after saving the status is Consented, the warning goes and the record shows an expiry 3 months away.
+FLOW SOS-P1-08-3 | company_admin | /sellos/crm/leads | On Regression Seller Seven, with no records, click Record basis with the evidence box holding only spaces. | The record is refused with a clear message, no record is added and the status stays Unknown.
+FLOW SOS-P1-08-4 | agent | /sellos/crm/leads | Sign in as the second Regression agent. Open Regression Buyer Three, then Regression Investor Four. | Buyer Three shows a red Opted out warning with the time and Phone call. Investor Four shows an amber Registered DND warning. Both still let you add a Call activity.
+FLOW SOS-P1-08-5 | agent | /sellos/crm/leads | On a Consented lead choose WhatsApp and click Record stop request. | The status becomes Opted out with a red warning naming WhatsApp, and the timeline still accepts a Call, a WhatsApp and an Email.
+FLOW SOS-P1-08-6 | channel_partner | /sellos/partner/leads | Sign in as the channel partner and open one of their leads. | The consent status and any warning show, and no Record basis, stop request or DND buttons are offered.

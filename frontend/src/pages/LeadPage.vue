@@ -30,6 +30,124 @@
 		</div>
 
 		<section
+			v-if="detail.consent"
+			data-testid="sellos-lead-consent"
+			:data-status="detail.consent.status"
+			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
+		>
+			<div class="flex flex-wrap items-center justify-between gap-2">
+				<h2 class="font-medium text-ink">Consent</h2>
+				<span data-testid="sellos-lead-consent-status" class="text-sm text-ink-muted">{{
+					detail.consent.status
+				}}</span>
+			</div>
+			<p
+				v-if="detail.consent.warning"
+				role="alert"
+				data-testid="sellos-lead-consent-warning"
+				:data-level="detail.consent.warning"
+				class="rounded-input border px-3 py-2 text-sm"
+				:class="
+					detail.consent.warning === 'red'
+						? 'border-[#c0392b] bg-[#fdecea] text-[#8e1f14]'
+						: 'border-[#e8954a] bg-[#fdf1e3] text-[#7a4a10]'
+				"
+			>
+				{{ detail.consent.message }} You can still call and message this lead.
+			</p>
+			<ul v-if="detail.consent.records.length" data-testid="sellos-lead-consent-records">
+				<li
+					v-for="record in detail.consent.records"
+					:key="record.name"
+					data-testid="sellos-lead-consent-record"
+					class="text-sm text-ink-muted"
+				>
+					{{ record.basis }}, {{ String(record.recorded_on).slice(0, 16) }},
+					{{
+						record.expires_on
+							? (record.live ? "expires " : "expired ") +
+							  String(record.expires_on).slice(0, 16)
+							: "no expiry"
+					}}
+					<span v-if="record.renewal_count">, renewal {{ record.renewal_count }}</span>
+					<a
+						:href="record.evidence_link"
+						target="_blank"
+						rel="noopener"
+						class="ml-1 underline"
+						>Evidence</a
+					>
+				</li>
+			</ul>
+			<template v-if="canLog">
+				<form
+					class="flex flex-wrap gap-2"
+					data-testid="sellos-lead-consent-form"
+					@submit.prevent="addConsent"
+				>
+					<select
+						v-model="consentForm.basis"
+						data-testid="sellos-lead-consent-basis"
+						class="field w-auto"
+					>
+						<option v-for="b in CONSENT_BASES" :key="b">{{ b }}</option>
+					</select>
+					<input
+						v-model="consentForm.evidence"
+						data-testid="sellos-lead-consent-evidence"
+						required
+						placeholder="Evidence link"
+						class="field flex-1"
+					/>
+					<button type="submit" class="btn" data-testid="sellos-lead-consent-save">
+						Record basis
+					</button>
+				</form>
+				<p
+					v-if="consentError"
+					data-testid="sellos-lead-consent-error"
+					class="text-sm text-accent"
+				>
+					{{ consentError }}
+				</p>
+				<div class="flex flex-wrap gap-2">
+					<select
+						v-model="stopSource"
+						data-testid="sellos-lead-optout-source"
+						class="field w-auto"
+					>
+						<option v-for="s in STOP_SOURCES" :key="s">{{ s }}</option>
+					</select>
+					<button
+						type="button"
+						class="btn"
+						data-testid="sellos-lead-optout"
+						@click="optOut"
+					>
+						Record stop request
+					</button>
+					<button
+						type="button"
+						class="btn"
+						data-testid="sellos-lead-dnd"
+						@click="setDnd(1)"
+					>
+						Number is on the DND list
+					</button>
+					<button
+						v-if="detail.consent.status === 'Registered DND'"
+						type="button"
+						class="btn"
+						data-testid="sellos-lead-dnd-clear"
+						@click="setDnd(0)"
+					>
+						Number is not on the DND list
+					</button>
+				</div>
+			</template>
+		</section>
+
+		<section
 			v-if="canLog"
 			data-testid="sellos-lead-log"
 			class="mt-6 space-y-3 rounded-input border border-line bg-surface p-4"
@@ -155,7 +273,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { ACTIVITY_TYPES, crmApi } from "../crm/crmApi";
+import { ACTIVITY_TYPES, CONSENT_BASES, STOP_SOURCES, crmApi, serverMessage } from "../crm/crmApi";
 
 const route = useRoute();
 const router = useRouter();
@@ -174,6 +292,31 @@ async function load() {
 	} catch (e) {
 		error.value = "This lead could not be opened.";
 	}
+}
+
+const consentForm = reactive({ basis: "Inquiry", evidence: "" });
+const consentError = ref("");
+const stopSource = ref("Phone call");
+
+async function addConsent() {
+	consentError.value = "";
+	try {
+		await crmApi.recordConsent(route.params.name, consentForm.basis, consentForm.evidence);
+		consentForm.evidence = "";
+		await load();
+	} catch (e) {
+		consentError.value = serverMessage(e, "The consent record could not be saved.");
+	}
+}
+
+async function optOut() {
+	await crmApi.recordOptOut(route.params.name, stopSource.value);
+	await load();
+}
+
+async function setDnd(registered) {
+	await crmApi.recordDndResult(route.params.name, registered);
+	await load();
 }
 
 async function logActivity() {
