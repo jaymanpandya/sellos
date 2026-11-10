@@ -384,7 +384,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 5
 - **Dependencies:** none
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-P0-08: Write the deployment scripts
 - **Epic:** Platform foundations and DevOps
