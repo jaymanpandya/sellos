@@ -13,8 +13,10 @@ or C. The old milestones SOS-REG-0 to SOS-REG-6 and SOS-REG-2B are Not Needed.
 1. Run `scripts/pause-loop.sh`. It creates `/tmp/sellos-loop.pause`. Before picking each task the loop
    checks for that file, so it finishes the task it is on, then picks nothing, notifies "Paused for
    regression" and stops. Wait for it to stop. The milestone itself is Waiting.
-2. Run `scripts/prepare-regression.sh`. It refuses while the build loop, a gate run or a BuildOS gate is
-   running. It restores the clean baseline over `sellos_test.localhost`, builds the front end, migrates,
+2. Run `scripts/prepare-regression.sh`. It refuses while the SellOS build loop, a SellOS gate run or a
+   SellOS Cypress run is going; BuildOS may run beside it. It builds the front end, then takes the
+   bench gate lock only for the restore of the clean baseline over `sellos_test.localhost` and the
+   migrate, never for the browser session. It
    runs `prepare_clean_site` and `seed_regression_data`, checks `/sellos` answers, and prints the URL
    and the six test users. It never starts or stops a server, so the SellOS server must already be running on port 8004:
    `cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004`. It refuses any other port, and stops if that server is not SellOS.

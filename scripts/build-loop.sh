@@ -75,11 +75,8 @@ else
   echo "SELLOS_DB_PROVISIONER_PASSWORD is not set. A task that creates or drops a tenant site will ask for it."
 fi
 
-# Both loops restore databases and clear the cache on the same bench, so they must not overlap.
-if pgrep -f "buildos/scripts/(run-tests|build-loop)\.sh" >/dev/null 2>&1; then
-  echo "The BuildOS loop or gate is running on this bench. Wait for it to finish, then start this again."
-  exit 1
-fi
+# SOS-SETUP-20: the BuildOS loop runs at the same time. The two gates share only the heavy segment,
+# through the bench gate lock in scripts/run-tests.sh. Nothing else is serialised.
 
 if [[ -f "$LOCK_FILE" ]]; then
   OLD_PID="$(cat "$LOCK_FILE" 2>/dev/null || true)"
@@ -344,6 +341,9 @@ enforcement, which is Off by default. The 022 number is for service and
 transactional calls. The product is called SellOS everywhere, with no
 company or suite brand. The word 'Frappe' must never appear in any user
 facing label, screen, or error message.
+
+Shared bench (SOS-SETUP-20): the BuildOS loop runs on this bench at the
+same time. Never change the shared environment: no pip install, no npm install -g, no bench update, no bench setup, no bench get-app, and no install-app on any site except sellos_test.localhost and sellos_tenant_*.localhost. Never read or edit anything under apps/buildos. The bench server on port 8000 and the sites pamaa and awh are not yours.
 
 Rebuild from scratch (Jayman, 10 November 2026): build this task from its
 own text. Do not assume the existing code is right. Read what is there,

@@ -264,7 +264,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Every point cites a BuildOS file or script.
   - Jayman approves it in writing.
 - **Test Criteria:** Spot check five claims against the repository. Jayman's approval is the gate.
-- **Notes:** SOS-SETUP-19: SOS-N16 is no longer a dependency (Jayman, 10 November 2026). Claude Code already has the access it needs to build. N16 stays Waiting for the DigitalOcean token.
+- **Notes:** SOS-SETUP-19: SOS-N16 is no longer a dependency (Jayman, 10 November 2026). Claude Code already has the access it needs to build. N16 stays Waiting for the DigitalOcean token. SOS-SETUP-20: the loop agent never reads or edits anything under apps/buildos, because the BuildOS loop runs on the same bench at the same time. Work from `docs/buildos-conventions.md`, the summary already in this repository with its BuildOS citations: review it against this task, fill gaps from SellOS's own files, and list for Jayman, in the summary, every point that can only be checked in BuildOS. Do not open apps/buildos, and do not fetch BuildOS another way.
 - **Owner:** Claude Code
 - **Priority:** P0
 - **Launch:** Dec 20

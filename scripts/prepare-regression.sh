@@ -3,8 +3,10 @@
 #
 #   scripts/prepare-regression.sh
 #
-# It refuses to run while the build loop, a gate run or a BuildOS gate is running, because it wipes the
-# test site. Then it restores the clean baseline over sellos_test.localhost, clears the cache, builds the
+# It refuses to run while the SellOS build loop, a SellOS gate run or a SellOS Cypress run is going,
+# because it wipes the test site. BuildOS runs beside it (SOS-SETUP-20). It builds the front end, then
+# takes the bench gate lock (~/iespl-baseline/bench-gate-lock.sh) only for the restore and the migrate,
+# never for the browser session that follows. It restores the clean baseline over sellos_test.localhost, clears the cache, builds the
 # front end, migrates, runs prepare_clean_site and seed_regression_data, checks that the site answers at
 # /sellos, and prints the URL and the six test users. It never starts or stops a server. The SellOS
 # server must already be running on port 8004, pinned to the site:
@@ -26,11 +28,18 @@ if ! [[ "$SITE" =~ ^sellos_test(\.localhost)?$ ]]; then
 fi
 
 echo "--- Preflight ---"
-if pgrep -f "scripts/(run-tests|build-loop)\.sh|run-ui-tests" >/dev/null 2>&1; then
-  echo "The build loop, a gate run (SellOS or BuildOS) or a Cypress run is in progress. Wait for it to end, then run this again." >&2
-  pgrep -fl "scripts/(run-tests|build-loop)\.sh|run-ui-tests" >&2 || true
+if pgrep -f "sellos/scripts/(run-tests|build-loop)\.sh|run-ui-tests sellos" >/dev/null 2>&1; then
+  echo "The SellOS build loop, a SellOS gate run or a SellOS Cypress run is in progress. Wait for it to end, then run this again." >&2
+  pgrep -fl "sellos/scripts/(run-tests|build-loop)\.sh|run-ui-tests sellos" >&2 || true
   exit 3
 fi
+GATE_LOCK_HELPER="${SELLOS_GATE_LOCK_HELPER:-$BASELINE_DIR/bench-gate-lock.sh}"
+if [ ! -f "$GATE_LOCK_HELPER" ]; then
+  echo "The bench gate lock helper is missing at $GATE_LOCK_HELPER (SOS-SETUP-20)." >&2
+  exit 3
+fi
+# shellcheck source=/dev/null
+source "$GATE_LOCK_HELPER"
 if [ ! -f "$BASELINE" ]; then
   echo "No clean baseline at $BASELINE. Create it with scripts/make-baseline.sh." >&2
   exit 3
@@ -43,11 +52,6 @@ cd "$BENCH_DIR"
 sellos_require_port "$BENCH_DIR" "$SITE"
 sellos_preflight "$SITE" "$PORT"
 
-echo "--- Restoring the clean baseline over $SITE ---"
-gunzip -c "$BASELINE" | bench --site "$SITE" mariadb
-bench --site "$SITE" clear-cache
-bench --site "$SITE" clear-website-cache
-
 echo "--- Building the web app ---"
 (
   cd "apps/$APP/frontend"
@@ -57,9 +61,19 @@ echo "--- Building the web app ---"
   npm run build
 )
 
+echo "--- Bench gate lock (restore and migrate only) ---"
+bench_gate_acquire "SellOS prepare-regression" "${SELLOS_GATE_LOCK_MAX_WAIT:-5400}"
+echo "Bench gate lock wait: ${BENCH_GATE_WAITED}s"
+
+echo "--- Restoring the clean baseline over $SITE ---"
+gunzip -c "$BASELINE" | bench --site "$SITE" mariadb
+bench --site "$SITE" clear-cache
+bench --site "$SITE" clear-website-cache
+
 echo "--- Migrating $SITE ---"
 bench --site "$SITE" migrate
 bench --site "$SITE" clear-cache
+bench_gate_release
 
 echo "--- Preparing the clean site and seeding the regression data ---"
 bench --site "$SITE" execute "$APP.tests.ui_fixtures.prepare_clean_site"

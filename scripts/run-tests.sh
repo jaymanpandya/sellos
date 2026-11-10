@@ -73,12 +73,17 @@ echo "=== SellOS test run: $(date) ==="
 )
 
 echo "--- Preflight ---"
-# The BuildOS gate uses the same bench. Two gates at once restore databases and clear the cache
-# under each other, so wait for it rather than corrupt both runs.
-if pgrep -f "buildos/scripts/(run-tests|build-loop)\.sh" >/dev/null 2>&1; then
-  echo "A BuildOS gate or loop is running on this bench. Wait for it, then run this again." >&2
+# SOS-SETUP-20: the BuildOS and SellOS loops run at the same time. Their sites do not collide (Redis
+# keys are namespaced per site, bench clear-cache is per site), so nothing waits for BuildOS here.
+# Only the heavy segment, from the baseline restore to the end of the Cypress run, takes the bench
+# gate lock that every gate on this bench shares (~/iespl-baseline/bench-gate-lock.sh).
+GATE_LOCK_HELPER="${SELLOS_GATE_LOCK_HELPER:-$BASELINE_DIR/bench-gate-lock.sh}"
+if [ ! -f "$GATE_LOCK_HELPER" ]; then
+  echo "The bench gate lock helper is missing at $GATE_LOCK_HELPER. It lives outside the repositories (SOS-SETUP-20)." >&2
   sellos_env_exit 3
 fi
+# shellcheck source=/dev/null
+source "$GATE_LOCK_HELPER"
 # SellOS runs only on port 8004, on its own server pinned to this site (scripts/lib/sellos_server.sh).
 # The port comes from the site's config the way run-ui-tests reads it, anything else is refused
 # (exit 2), and the server must prove it is SellOS, not only that it answers (exit 3). CI is not
@@ -143,6 +148,24 @@ else
   echo "--- Task guards skipped: no task is set (a hand run) ---"
 fi
 
+echo "--- Building web app: $APP/frontend ---"
+(
+  cd "apps/$APP/frontend"
+  if [ ! -f node_modules/.package-lock.json ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
+    npm ci --no-audit --no-fund
+  fi
+  npm run build
+)
+
+# The heavy segment starts here and ends after the Cypress run. A wait past SELLOS_GATE_LOCK_MAX_WAIT
+# (default 90 minutes) exits 3 inside the helper, recorded beforehand as an environment problem.
+echo "--- Bench gate lock (restore to the end of Cypress) ---"
+echo 3 >"$SELLOS_ENV_EXIT_FILE"
+export BENCH_GATE_NOTIFY="$REPO_DIR/scripts/notify-telegram.sh"
+bench_gate_acquire "SellOS gate${SELLOS_TASK_ID:+ $SELLOS_TASK_ID}" "${SELLOS_GATE_LOCK_MAX_WAIT:-5400}"
+rm -f "$SELLOS_ENV_EXIT_FILE"
+echo "Bench gate lock wait: ${BENCH_GATE_WAITED}s"
+
 # every gate run starts from the same clean data: put the saved snapshot back before anything else
 if [ -f "$BASELINE" ]; then
   echo "--- Restoring the clean test site baseline ---"
@@ -152,15 +175,6 @@ if [ -f "$BASELINE" ]; then
 else
   echo "--- NO BASELINE (allowed by a human): running on the existing test site data ---"
 fi
-
-echo "--- Building web app: $APP/frontend ---"
-(
-  cd "apps/$APP/frontend"
-  if [ ! -f node_modules/.package-lock.json ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
-    npm ci --no-audit --no-fund
-  fi
-  npm run build
-)
 
 echo "--- Migrating $SITE ---"
 bench --site "$SITE" migrate
@@ -235,6 +249,8 @@ if [ "$UI_STATUS" -ne 0 ]; then
   done
   [ "$STILL_FAILING" -eq 0 ] || exit 1
 fi
+# The end of the heavy segment. A failure above releases the lock through the helper's EXIT trap.
+bench_gate_release
 
 # A spec that keeps needing a rerun is hiding a real fault. Three strikes and the gate stops.
 if [ -f "$FLAKY_LOG" ]; then

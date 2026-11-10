@@ -9,7 +9,7 @@ disagree, the rule wins. Gate files (see below) may only be changed by a human.
 
 | Thing | BuildOS | SellOS |
 | --- | --- | --- |
-| Bench | `~/iespl-bench` | the same bench |
+| Bench | `~/iespl-bench` | the same bench, shared at the same time: the BuildOS and SellOS loops run together, and their gates take one lock only around the heavy segment (SOS-SETUP-20) |
 | Runtime | Python 3.14, Node 24, MariaDB 11.8, two Redis | the same |
 | Test site | `test_site` | `sellos_test.localhost`, its own site on the same bench |
 | Clean snapshot | `~/iespl-baseline/test_site_clean.sql.gz` | `~/iespl-baseline/sellos_test_clean.sql.gz` |
@@ -156,7 +156,7 @@ leads yet", and the whole gate was green.
 | 9 | A spec that fails and then passes alone is logged FLAKY and counts as a pass | A real race stays in the suite for good | The same spec flaky three times fails the gate until it is fixed | `scripts/run-tests.sh` |
 | 10 | CI runs only the server tests | Browser behaviour is never checked on a clean machine | CI gets a UI job that provisions a fresh site and runs the Cypress suite (section 5) | `.github/workflows/ci.yml` |
 | 11 | The gate migrates a long lived site | A fresh install is never exercised in a browser | The baseline is only a clean migrated install. The state a provisioned company site is in, and the role users, are made by code on every run: `run-tests.sh` runs `prepare_clean_site` right after the migrate and cache clear, before the changed tests, and CI builds a fresh site the same way | `scripts/run-tests.sh`, `sellos/tests/ui_fixtures.py` |
-| 12 | The BuildOS gate and the SellOS gate share one bench | Two gates restore databases and clear the cache under each other | The SellOS gate refuses to start while a BuildOS gate or loop is running | `scripts/run-tests.sh` |
+| 12 | The BuildOS gate and the SellOS gate share one bench | Two baseline restores, migrations and Cypress runs at once starve each other. Their data does not collide: Redis keys are namespaced per site and `bench clear-cache` is per site | Two loops share the heavy segment of the gate through one lock and are not serialised otherwise (SOS-SETUP-20). `~/iespl-baseline/bench-gate-lock.sh`, outside both repositories, holds the directory `/tmp/iespl-bench-heavy.lock.d` (owner, pid, start). The SellOS gate takes it from the baseline restore to the end of the Cypress run; lint, Semgrep, the task guards and the npm build stay outside it, and the wait is in the gate log. `prepare-regression.sh` takes it only for the restore and migrate. A waiter polls every 5 seconds, notifies once past 30 minutes and exits 3 after 90; a holder that is dead or older than 2 hours is stolen with a warning; release runs on EXIT, INT and TERM. The BuildOS gate takes the lock only once its own `run-tests.sh` sources the helper | `scripts/run-tests.sh`, `scripts/prepare-regression.sh`, `~/iespl-baseline/bench-gate-lock.sh`, `sellos/tests/test_bench_gate_lock.py` |
 | 13 | The gate restores a baseline over its site | A wrong site name wipes real work | Only `sellos_test` and `sellos_test.localhost` are accepted | `scripts/run-tests.sh`, `scripts/make-baseline.sh` |
 | 14 | Permission specs can pass because the user cannot read the record at all | A leak check that has nothing to find | A leak spec must first show the user can read the record on at least one path | `cypress/integration/security/` |
 | 15 | Personal data leaks are found one at a time by a person | The change history held old and new values in BuildOS (BOS-282) | Every path in `cy.genericReads` is tried as every role for every DocType that holds personal data, for the current value and the replaced one. Reuse `buildos.security.field_history` | `cy.genericReads`, the security specs |
@@ -203,7 +203,7 @@ Copy BuildOS's `scripts/build-loop.sh` and change only these things. Do not rety
    failing test is fixed in the code unless the task block says otherwise.
 6. After `git push`, run `gh run watch` for the run on that commit. If it ends red, notify and stop
    the loop without starting a new task.
-7. Refuse to start while the BuildOS loop or gate is running.
+7. Run beside the BuildOS loop (SOS-SETUP-20). Nothing in the loop waits for BuildOS; only the gate's heavy segment takes the shared bench gate lock. The agent prompt says the shared environment is not the agent's to change: no pip install, no npm install -g, no bench update, no bench setup, no bench get-app, no install-app on any site but `sellos_test.localhost` and `sellos_tenant_*.localhost`, nothing under `apps/buildos` read or edited, and the server on 8000 and the sites pamaa and awh left alone.
 
 ## 6. Personal data
 

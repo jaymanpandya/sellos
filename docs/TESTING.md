@@ -9,17 +9,21 @@ The agent never commits. Git hooks are not used.
 
 1. New files are marked intent-to-add (`git ls-files --others --exclude-standard -z | xargs -0 git add
    --intent-to-add`), so every check below sees them as CI does. No content is staged.
-2. Preflight: no BuildOS gate or loop is running, the bench serves `sellos_test.localhost`, the clean
-   baseline and Semgrep exist.
+2. Preflight: the bench gate lock helper (`~/iespl-baseline/bench-gate-lock.sh`) exists, the bench
+   serves `sellos_test.localhost`, the clean baseline and Semgrep exist. A BuildOS gate or loop may be
+   running at the same time (SOS-SETUP-20).
 3. Lint (`pre-commit run --all-files`) and Semgrep, CI's exact command (`semgrep ci` with the Frappe
    rules and `r/python.lang.correctness`).
 4. The task guards (only when the loop sets the task): gate files untouched, no assertion removed, and
    a test that names the task.
-5. Restore the clean baseline (a clean migrated install) over `sellos_test.localhost`.
-6. Build the web app (`npm ci`, `npm run build`), migrate, then `prepare_clean_site` (code, on every run).
+5. Build the web app (`npm ci`, `npm run build`).
+6. Take the bench gate lock (waiting for any other gate's heavy segment, and recording the wait in the
+   gate log), restore the clean baseline (a clean migrated install) over `sellos_test.localhost`,
+   migrate, then `prepare_clean_site` (code, on every run).
 7. The test files the task changed, first. A failure stops the gate.
 8. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
-   that needed a rerun is logged FLAKY, and one that is FLAKY three times fails the gate.
+   that needed a rerun is logged FLAKY, and one that is FLAKY three times fails the gate. The bench
+   gate lock is released at the end of the Cypress run, or when the gate fails or is killed.
 
 The gate uses only `sellos_test` and `sellos_test.localhost`. Create the site and the baseline once
 with `scripts/make-baseline.sh --create`.

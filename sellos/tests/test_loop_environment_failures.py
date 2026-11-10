@@ -130,8 +130,6 @@ class Sandbox(unittest.TestCase):
 	"""A throwaway bench with the SellOS scripts copied in, and a fake server."""
 
 	def setUp(self):
-		if subprocess.run(["pgrep", "-f", r"buildos/scripts/(run-tests|build-loop)\.sh"]).returncode == 0:
-			self.skipTest("a BuildOS gate or loop is running, and the scripts refuse to start beside it")
 		self.root = Path(tempfile.mkdtemp(prefix="sellos-loop-env-"))
 		self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
 		self.bench = self.root / "bench"
@@ -183,6 +181,9 @@ class Sandbox(unittest.TestCase):
 			"SELLOS_TASK_BLOCK_PATH": str(self.root / "task-block.md"),
 			# Never the real /tmp pause file, so a real regression pause cannot change these tests.
 			"SELLOS_PAUSE_FILE": str(self.root / "loop.pause"),
+			# Never the real bench gate lock (SOS-SETUP-20).
+			"BENCH_GATE_LOCK_DIR": str(self.root / "bench-gate.lock.d"),
+			"BENCH_GATE_POLL": "1",
 			**GIT_ENV,
 		}
 		return env
@@ -372,8 +373,16 @@ class LoopEnvironmentFailures(LoopSandbox):
 		self.assertEqual(self.status(), "Blocked")
 
 
-class GateExitCodes(Sandbox):
-	"""The real run-tests.sh: only its preflight may exit 2 or 3."""
+# A bench gate lock helper that takes no lock, for the exit code tests. The real helper lives outside
+# the repositories (~/iespl-baseline/bench-gate-lock.sh) and is tested in test_bench_gate_lock.py.
+STUB_GATE_LOCK = """BENCH_GATE_WAITED=0
+bench_gate_acquire() { echo "stub lock taken by $1"; }
+bench_gate_release() { :; }
+"""
+
+
+class GateSandbox(Sandbox):
+	"""The real run-tests.sh in a throwaway bench. It holds no tests, so other modules subclass it."""
 
 	def setUp(self):
 		super().setUp()
@@ -409,12 +418,21 @@ class GateExitCodes(Sandbox):
 		self.write(self.bin / "pre-commit", "#!/usr/bin/env bash\nexit 0\n", 0o755)
 		# The first bench command after the preflight is the baseline restore. This bench fails it with 2.
 		self.write(self.bin / "bench", "#!/usr/bin/env bash\necho fake bench failed >&2\nexit 2\n", 0o755)
+		# SOS-SETUP-20: the web app is built before the lock and the restore, so give it a front end.
+		self.write(self.bin / "npm", "#!/usr/bin/env bash\nexit 0\n", 0o755)
+		self.write(self.repo / "frontend/package-lock.json", "{}\n")
+		self.write(self.repo / "frontend/node_modules/.package-lock.json", "{}\n")
+		later = self.repo / "frontend/node_modules/.package-lock.json"
+		os.utime(later, (later.stat().st_atime + 60, later.stat().st_mtime + 60))
+		self.gate_lock_helper = self.root / "stub-gate-lock.sh"
+		self.write(self.gate_lock_helper, STUB_GATE_LOCK)
 
 	def run_gate(self, extra_env=None):
 		env = {
 			**self.env(),
 			"SELLOS_TEST_SITE": "sellos_test.localhost",
 			"SELLOS_BASELINE_DIR": str(self.baseline),
+			"SELLOS_GATE_LOCK_HELPER": str(self.gate_lock_helper),
 			**(extra_env or {}),
 		}
 		# The gate refuses any site but sellos_test, so the fake server is reached by that name.
@@ -446,6 +464,10 @@ class GateExitCodes(Sandbox):
 		)
 		if probe.returncode != 0:
 			self.skipTest("sellos_test.localhost does not resolve to this machine here")
+
+
+class GateExitCodes(GateSandbox):
+	"""The real run-tests.sh: only its preflight may exit 2 or 3."""
 
 	def test_server_that_404s_sellos_makes_the_gate_exit_3(self):
 		self.serve(404)
