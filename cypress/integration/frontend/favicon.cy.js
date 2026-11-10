@@ -20,6 +20,6 @@ context("SOS-P1-06A: tab icon", () => {
 		});
 		cy.signInFresh("agent");
 		cy.visit("/sellos");
-		iconHref().should("eq", "/files/company-logo-spec.svg");
+		iconHref().should("eq", "/files/company-logo-spec.svg").and("not.eq", "data:,");
 	});
 });

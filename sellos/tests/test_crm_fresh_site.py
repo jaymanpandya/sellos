@@ -31,7 +31,7 @@ print("ok")
 
 
 class TestGuardInAFreshProcess(IntegrationTestCase):
-	"""The registry is complete in a process that imported no API module (the cause of the 403s)."""
+	"""SOS-P1-06A: the registry is complete in a process that imported no API module (the cause of the 403s)."""
 
 	def test_a_declared_method_is_not_refused_and_an_undeclared_one_is(self):
 		result = subprocess.run(
@@ -52,7 +52,7 @@ class TestGuardInAFreshProcess(IntegrationTestCase):
 
 
 class TestCrmOverHttp(IntegrationTestCase):
-	"""Real requests, as the permission matrix says: Company Admin and Agent in, the others refused."""
+	"""SOS-P1-06A: real requests, as the permission matrix says: Company Admin and Agent in, the others refused."""
 
 	@classmethod
 	def setUpClass(cls):
@@ -88,6 +88,8 @@ class TestCrmOverHttp(IntegrationTestCase):
 
 
 class TestCompanySiteSetup(IntegrationTestCase):
+	"""SOS-P1-06A: a fresh company site is configured by the same code provisioning uses."""
+
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -105,6 +107,8 @@ class TestCompanySiteSetup(IntegrationTestCase):
 
 
 class TestFixtures(IntegrationTestCase):
+	"""SOS-P1-06A: the agent leads and client fixtures read back as their docstrings say."""
+
 	def setUp(self):
 		frappe.set_user("Administrator")
 		ui_fixtures.remove_seeded_leads()
