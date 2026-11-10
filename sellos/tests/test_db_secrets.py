@@ -56,7 +56,9 @@ class TestAgentEnvironment(unittest.TestCase):
 		result = bash("sellos_agent_env env | cut -d= -f1 | sort", env)
 		self.assertEqual(result.returncode, 0, result.stderr)
 		names = set(result.stdout.split())
-		self.assertLessEqual({"SELLOS_DB_PROVISIONER_USER", "SELLOS_DB_PROVISIONER_PASSWORD", "PATH"}, names)
+		self.assertLessEqual({"SELLOS_DB_PROVISIONER_USER", "PATH"}, names)
+		# SOS-SETUP-22: the password is stripped too. The agent's code reads it from the Keychain.
+		self.assertNotIn("SELLOS_DB_PROVISIONER_PASSWORD", names)
 		self.assertIn("PLAIN_SETTING", names)
 		for gone in (
 			"MYSQL_PWD",
@@ -70,12 +72,12 @@ class TestAgentEnvironment(unittest.TestCase):
 		):
 			self.assertNotIn(gone, names)
 
-	def test_the_password_is_inherited_not_put_on_the_command_line(self):
+	def test_the_password_never_reaches_the_agent_nor_its_command_line(self):
 		env = base_env(SELLOS_DB_PROVISIONER_PASSWORD=PASSWORD)
 		result = bash(
 			'sellos_agent_env bash -c \'printf "%s|" "$SELLOS_DB_PROVISIONER_PASSWORD" "$@"\' x a b', env
 		)
-		self.assertEqual(result.stdout, f"{PASSWORD}|a|b|")
+		self.assertEqual(result.stdout, "|a|b|")
 		# sellos_agent_env runs env with -u options and the command: the value is never an argument.
 		trace = bash("set -x; sellos_agent_env true", env)
 		self.assertNotIn(PASSWORD, trace.stderr)

@@ -46,18 +46,28 @@ production routing. It belongs to SOS-P0-08 and cannot be tested on this bench.
 narrow account, never with root, and no SellOS script, task or test uses a MariaDB root password.
 The account has `CREATE USER`, `RELOAD` and `SHOW DATABASES` globally, and
 `ALL PRIVILEGES ... WITH GRANT OPTION` on `` `sellos\_tenant\_%`.* `` only. Its name is in
-`SELLOS_DB_PROVISIONER_USER` (default `sellos_provisioner`) and its password in
-`SELLOS_DB_PROVISIONER_PASSWORD`, exported in the shell that starts `scripts/build-loop.sh`. A site
-is made with Frappe's `new-site <site> --db-name <name> --db-root-username <user> --db-root-password
-<password>`, run as `../env/bin/python -m frappe.utils.bench_helper frappe new-site ...` from
-`~/iespl-bench/sites`, never through the `bench` wrapper, because the wrapper writes its whole
-command line to `~/iespl-bench/logs/bench.log`. A password on a command line can still be seen in
-`ps` by another user of this machine while the command runs. CI makes the same account in its own
-MariaDB service with a CI-only password.
+`SELLOS_DB_PROVISIONER_USER` (default `sellos_provisioner`). Its password (SOS-SETUP-22) comes only
+from `get_provisioner_password()` in `sellos/provisioning/credentials.py`: the variable
+`SELLOS_DB_PROVISIONER_PASSWORD` if set, otherwise the macOS login Keychain item `sellos_provisioner`,
+stored once with `security add-generic-password -a "$USER" -s sellos_provisioner -w`. Tenant sites
+are created, dropped, listed and probed only by `sellos/provisioning/tenant_sites.py` and its wrapper
+`scripts/tenant-site.sh` (create <id>, drop <id>, list, probe; `<id>` is `[a-z0-9]+`, anything else
+exits 2). They run Frappe's own command entry, `python -m frappe.utils.bench_helper frappe new-site
+<site> --db-name <name> --db-root-username <user>`, from `~/iespl-bench/sites`, never the `bench`
+wrapper, through a short launcher that takes the password from its environment and adds
+`--db-root-password` to its own argument list in memory. So the password reaches bench only through
+the child process's environment, never a visible command line (`ps`, `logs/bench.log`). CI makes the
+same account in its own MariaDB service with a CI-only password in the variable.
 
 The loop runs the agent through `sellos_agent_env` (`scripts/lib/db_secrets.sh`): every exported
-variable whose name looks like a credential is removed, except the two provisioner variables and
-the ones `claude` needs to sign in. The loop's output, every saved reply, every notification and
+variable whose name looks like a credential is removed, except `SELLOS_DB_PROVISIONER_USER` and the
+ones `claude` needs to sign in. The password is removed too: the agent did not see it even when it
+was passed (SOS-P0-06L stopped on 10 November 2026), so its code reads the Keychain instead, and the
+agent is told never to run `security find-generic-password -w` or print the password. At its start
+the loop checks for the Keychain item without reading it (`security find-generic-password -s
+sellos_provisioner`, no `-w`) and exits 3 with the store command when neither it nor the variable
+exists. It then loads the value into its own environment (and the gate does the same on a hand run),
+before its output filter starts, so that `sellos_redact` and the leak check know it. The loop's output, every saved reply, every notification and
 the gate's logs go through `sellos_redact`, which replaces both values. At the end of every gate run
 `scripts/check_no_secret_leak.py` fails the run if the password is in the gate's log folder, the
 bench's logs, `common_site_config.json`, a tenant or archived site folder, the repository or the
@@ -82,7 +92,9 @@ and fails a run that made or dropped any database but a `sellos_tenant_<id>` one
 4. Runs the real gate, `scripts/run-tests.sh`.
 5. If the gate fails, hands the failure output back to the agent to repair, up to 3 gate runs in all
    (`SELLOS_MAX_GATE_RUNS`). The repair rules forbid deleting or weakening an assertion.
-6. If the gate passes: marks the task Complete, commits, pushes. If it still fails after the last
+6. If the gate passes: marks the task Complete, commits with the subject `<TASK ID>: <task title>`
+   and the agent's summary as the body (at most 20 lines, SOS-SETUP-22), pushes, and notifies
+   `<TASK ID> complete: <title>`. If it still fails after the last
    repair: saves the attempt on a `failed/<task>-<time>` branch, hard resets the branch to the
    commit it started from, marks the task Blocked, notifies, and stops. No broken code ever stays
    on the main branch.
@@ -171,7 +183,7 @@ leads yet", and the whole gate was green.
 | 24 | The gate runs the whole Cypress suite, and a spec can be written before the task it checks | A contract spec for a later task fails every gate until then, so the task in front of it cannot pass. On 4 November 2026 `phone_masking_leaks.cy.js`, SOS-P1-06B's contract, failed SOS-P1-06A's gate | A contract spec for a future task is skipped (`context.skip`) with its task ID in a comment above the skip, and that task removes the skip and makes the spec pass. The gate fails a skip that names no task, a task that is Complete, or the task the gate is running for | `scripts/check_no_stale_skips.py` in `scripts/run-tests.sh` |
 | 25 | The gate runs on the developer's bench, and CI builds its own bench from the workflow | The two drift apart and nothing says so. On 4 November 2026 every UI spec failed in CI in 0 ms and passed locally: CI's `bench init` named no Frappe branch and got Frappe develop, which has no `cypress/support`, so `cypress/support/e2e.js` could not import Frappe's commands. The local bench is on version-16 | Every `bench init` in `ci.yml` names `--frappe-branch version-16`. The gate's preflight compares the local bench with `ci.yml` (the Frappe branch, the Python minor version and the Node major version) and exits 3 on any difference, before any test runs | `scripts/check_ci_parity.py` in `scripts/run-tests.sh`, `.github/workflows/ci.yml` |
 | 26 | The loop builds and deploys from one task graph | A deployment decision that is not made (SOS-N18, the DigitalOcean region and sizes) blocks every local task after it: SOS-P0-11 waited on SOS-P0-06, which waited on SOS-P0-04 and SOS-N18 | Building and deploying are separate tasks. SOS-P0-06L sets up multitenancy on the local bench, and SOS-P0-11 and SOS-P1-01 depend on it. SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-08 and SOS-P0-12 wait for SOS-N18. Since SOS-SETUP-19 SOS-N18 is Not Needed (the region is DigitalOcean Bangalore), and SOS-P0-04 and SOS-P0-12 are AMP Labs work and Waiting, so SOS-P0-05, SOS-P0-06 and SOS-P0-08 wait for SOS-P0-04. Test tenant sites are named `sellos_tenant_<id>.localhost`, and the gate fails a run that touched any other site of the bench or left a tenant site behind | `TASKS.md`, `scripts/check_site_set.py` in `scripts/run-tests.sh` |
-| 27 | A task needs a database secret that is not in the agent's environment, and the plan asks for root | On 4 November 2026 SOS-P0-06L stopped with NEEDS_INPUT: the root password variable it was told to read was not set in the shell that started the loop. The loop does not empty the environment and Claude Code does not drop variables by name, so the variable never existed there. Root would also let a test drop any company's database on this bench | Tenant sites are made with a narrow MariaDB account (`CREATE USER`, `RELOAD`, `SHOW DATABASES`, and everything on `sellos\_tenant\_%` only), never root. The loop hands the agent exactly `SELLOS_DB_PROVISIONER_USER` and `SELLOS_DB_PROVISIONER_PASSWORD` and strips every other credential variable. Their values are redacted from the loop's output, replies, notifications and gate logs, and the gate fails a run whose files hold the password or that touched a database outside `sellos_tenant_<id>` | `scripts/lib/db_secrets.sh` in `scripts/build-loop.sh`, `scripts/run-tests.sh` and `scripts/notify-telegram.sh`, `scripts/check_no_secret_leak.py`, `scripts/check_site_set.py` |
+| 27 | A task needs a database secret that is not in the agent's environment, and the plan asks for root | On 4 November 2026 SOS-P0-06L stopped with NEEDS_INPUT: the root password variable it was told to read was not set in the shell that started the loop. The loop does not empty the environment and Claude Code does not drop variables by name, so the variable never existed there. Root would also let a test drop any company's database on this bench | Tenant sites are made with a narrow MariaDB account (`CREATE USER`, `RELOAD`, `SHOW DATABASES`, and everything on `sellos\_tenant\_%` only), never root. The loop hands the agent only `SELLOS_DB_PROVISIONER_USER` and strips every other credential variable; the password comes from `get_provisioner_password()` (the variable, else the Keychain) and reaches Frappe only through a child process's environment (SOS-SETUP-22). Their values are redacted from the loop's output, replies, notifications and gate logs, and the gate fails a run whose files hold the password or that touched a database outside `sellos_tenant_<id>` | `scripts/lib/db_secrets.sh` in `scripts/build-loop.sh`, `scripts/run-tests.sh` and `scripts/notify-telegram.sh`, `sellos/provisioning/`, `scripts/tenant-site.sh`, `scripts/check_no_secret_leak.py`, `scripts/check_site_set.py` |
 
 **A job that is expected to be red.** A red job proves nothing unless it is red for the right
 reason. Whenever a job is allowed to stay red (the CI UI job until SOS-P1-06A, for one), write down

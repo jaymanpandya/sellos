@@ -68,12 +68,18 @@ BRANCH="${SELLOS_BRANCH:-1.0}"
 # and its children print goes through the redaction filter from here on.
 # shellcheck source=lib/db_secrets.sh
 source "$SCRIPT_DIR/lib/db_secrets.sh"
-exec > >(sellos_redact) 2>&1
-if [[ -n "${SELLOS_DB_PROVISIONER_PASSWORD:-}" ]]; then
-  echo "The agent gets the MariaDB provisioner account (SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD are set)."
-else
-  echo "SELLOS_DB_PROVISIONER_PASSWORD is not set. A task that creates or drops a tenant site will ask for it."
+# SOS-SETUP-22: the provisioner password is in the variable or in the macOS Keychain item
+# sellos_provisioner. The check below never reads the value (no -w). It is then loaded into the
+# loop's own environment, before the output filter starts, so the filter and the gate's leak check
+# know it. The agent never gets it: its code reads the Keychain through get_provisioner_password().
+if ! sellos_provisioner_available; then
+  echo "The MariaDB provisioner password is not in SELLOS_DB_PROVISIONER_PASSWORD and the Keychain item sellos_provisioner is missing. Store it once with: $SELLOS_STORE_COMMAND"
+  "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: the provisioner password is missing. Store it once with: $SELLOS_STORE_COMMAND" >/dev/null 2>&1 || true
+  exit 3
 fi
+sellos_load_provisioner_password || true
+exec > >(sellos_redact) 2>&1
+echo "The provisioner password is available (variable or Keychain). The agent gets only SELLOS_DB_PROVISIONER_USER."
 
 # SOS-SETUP-20: the BuildOS loop runs at the same time. The two gates share only the heavy segment,
 # through the bench gate lock in scripts/run-tests.sh. Nothing else is serialised.
@@ -333,6 +339,7 @@ $WAITING_LINES"
     printing { print }
   ' "$TASKS_FILE")"
 
+  TASK_TITLE="$(printf '%s\n' "$TASK_BLOCK" | head -n 1 | sed -E 's/^### [^:]+: *//')"
   CURRENT_STATUS="$(printf '%s\n' "$TASK_BLOCK" | grep -m1 '\*\*Status:\*\*' | sed -E 's/.*\*\*Status:\*\* *//')"
 
   if [[ "$CURRENT_STATUS" == "Not Started" ]]; then
@@ -370,14 +377,19 @@ replace what is weak, and keep what passes review against the task block.
 Do not delete the tree first. Every task adds or refreshes tests that name
 its task ID, even where code for it already exists.
 
-MariaDB: never use the MariaDB root account or any root password. A task
-that creates or drops a tenant site uses only the provisioner account,
-whose name and password are in SELLOS_DB_PROVISIONER_USER and
-SELLOS_DB_PROVISIONER_PASSWORD in your environment. Check only whether they
-are set, never print, echo, log or write their values, and never put them
-in a file, a fixture, an exception message or a bench command (the bench
-CLI logs its whole command line). If the password is not set, reply
-NEEDS_INPUT and say that SELLOS_DB_PROVISIONER_PASSWORD is not set.
+MariaDB: never use the MariaDB root account or any root password. Tenant
+sites are created, dropped, listed and probed only with
+scripts/tenant-site.sh (create <id>, drop <id>, list, probe) or the
+sellos.provisioning.tenant_sites module it runs, and code that needs the
+provisioner password gets it only from
+sellos.provisioning.credentials.get_provisioner_password(), which reads
+the Keychain and hands the value to bench only through a child process's
+environment. The account's name is in SELLOS_DB_PROVISIONER_USER. You do
+not have the password and must never look for it: never run security
+find-generic-password with -w (or any security command that prints a
+secret), never print, echo, log or write the password, and never put it in
+a file, a fixture, an exception message or a command line. If
+get_provisioner_password() raises, reply NEEDS_INPUT with its message.
 
 Respond with either of the following as the literal first characters
 of your response, nothing before it:
@@ -544,13 +556,21 @@ Decide for yourself, following the policy above, and fix it now. Do not ask agai
   if [[ "$TEST_EXIT" -eq 0 ]]; then
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Complete" "$TASKS_FILE"
     git add -A
-    git commit -m "$TASK_ID: $SUMMARY"
+    # SOS-SETUP-22: the subject is "<TASK ID>: <task title>" and the agent's summary is the body, at
+    # most 20 lines, wrapped at 100 characters.
+    COMMIT_MSG_FILE="$LOG_DIR/commit-msg-$TASK_ID.txt"
+    {
+      printf '%s: %s\n\n' "$TASK_ID" "$TASK_TITLE"
+      printf '%s\n' "$SUMMARY" | fold -s -w 100 | head -n 20
+    } >"$COMMIT_MSG_FILE"
+    git commit -F "$COMMIT_MSG_FILE"
+    rm -f "$COMMIT_MSG_FILE"
     if ! push_with_retry; then
       "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID passed the gate and is committed, but the push failed after every retry. The commit is kept and nothing was reset. The next start pushes it first. Stopping. git said:
 $(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
       break
     fi
-    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID complete. $SUMMARY"
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID complete: $TASK_TITLE"
     if ! ci_green "$(git rev-parse HEAD)"; then
       "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the commit for $TASK_ID. Stopping, nothing new started."
       break

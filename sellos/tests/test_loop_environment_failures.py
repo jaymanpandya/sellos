@@ -65,6 +65,22 @@ FAKE_NOTIFY = """#!/usr/bin/env bash
 printf '%s\\n----\\n' "$1" >>"$FAKE_DIR/notifications"
 """
 FAKE_GH = "#!/usr/bin/env bash\nexit 0\n"
+# SOS-SETUP-22: a fake macOS security command. It records its arguments, and finds the Keychain item
+# sellos_provisioner only while $FAKE_DIR/keychain exists. Only -w prints the value.
+FAKE_SECURITY = """#!/usr/bin/env bash
+printf '%s\\n' "$*" >>"$FAKE_DIR/security_calls"
+[ "$1" = find-generic-password ] || exit 1
+case " $* " in *" -s sellos_provisioner "*) ;; *) exit 44 ;; esac
+if [ ! -f "$FAKE_DIR/keychain" ]; then
+  echo "security: SecKeychainSearchCopyNext: The specified item could not be found in the keychain." >&2
+  exit 44
+fi
+case " $* " in
+  *" -w "*) cat "$FAKE_DIR/keychain" ;;
+  *) printf 'keychain: "login.keychain-db"\\nattributes:\\n    "svce"<blob>="sellos_provisioner"\\n' ;;
+esac
+"""
+KEYCHAIN_PASSWORD = "keychain-pass-3e9f71"
 # A fake agent that records which variables it got, and then leaks the provisioner's values every
 # way it can: in its reply, on stderr, and in the summary that becomes a commit message.
 LEAKY_CLAUDE = """#!/usr/bin/env bash
@@ -143,6 +159,9 @@ class Sandbox(unittest.TestCase):
 		(self.repo / "sellos").mkdir(parents=True)
 		(self.repo / "scripts" / "lib").mkdir(parents=True)
 		self.port = None
+		# SOS-SETUP-22: the loop and the gate look for the provisioner password in the Keychain.
+		self.write(self.bin / "security", FAKE_SECURITY, 0o755)
+		self.write(self.fake / "keychain", KEYCHAIN_PASSWORD)
 
 	def serve(self, sellos_status):
 		handler = type("H", (Handler,), {"sellos_status": sellos_status})
@@ -359,12 +378,13 @@ class LoopEnvironmentFailures(LoopSandbox):
 
 		names = set(self.read("agent_env_names").split())
 		self.assertIn("SELLOS_DB_PROVISIONER_USER", names)
-		self.assertIn("SELLOS_DB_PROVISIONER_PASSWORD", names)
+		# SOS-SETUP-22: the agent never gets the password; its code reads the Keychain instead.
+		self.assertNotIn("SELLOS_DB_PROVISIONER_PASSWORD", names)
 		self.assertIn("PATH", names)
 		self.assertIn("FAKE_DIR", names)
 		for name in OTHER_SECRETS:
 			self.assertNotIn(name, names, f"the agent got {name}")
-		self.assertEqual(self.read("agent_password"), PROVISIONER_PASSWORD)
+		self.assertEqual(self.read("agent_password"), "")
 		self.assertEqual(self.read("agent_user"), PROVISIONER_USER)
 
 		# The notifier is the real one: it prints NOTIFY lines into the loop's output.
@@ -443,6 +463,8 @@ class GateSandbox(Sandbox):
 		later = self.repo / "frontend/node_modules/.package-lock.json"
 		os.utime(later, (later.stat().st_atime + 60, later.stat().st_mtime + 60))
 		self.gate_lock_helper = self.root / "stub-gate-lock.sh"
+		# No Keychain item: with a password the gate would list the real bench's databases with it.
+		(self.fake / "keychain").unlink()
 		self.write(self.gate_lock_helper, STUB_GATE_LOCK)
 
 	def run_gate(self, extra_env=None):

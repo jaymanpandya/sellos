@@ -89,8 +89,13 @@ def main(argv):
 		print("Secret leak check FAILED. The provisioner's MariaDB password is written in:")
 		for line in found:
 			print(f"  {line}")
-		print("Remove it from those files. Read it from the environment and hand it only to Frappe's")
-		print("new-site and drop-site, never through the bench wrapper (it logs its command line), a")
+		print(
+			"Remove it from those files. Get it with get_provisioner_password() and hand it only to Frappe's"
+		)
+		print(
+			"new-site and drop-site through a child process's environment (sellos.provisioning.tenant_sites),"
+		)
+		print("never on a command line, never through the bench wrapper (it logs its command line), a")
 		print("print, a log, an exception message, a config file or a test fixture.")
 		return 1
 	print("Secret leak check: the provisioner's password is in none of the searched files.")

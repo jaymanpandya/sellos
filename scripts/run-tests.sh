@@ -53,6 +53,9 @@ source "$REPO_DIR/scripts/lib/sellos_server.sh"
 # the end of the run fails if the password is in any log, the repository or a tenant site.
 # shellcheck source=lib/db_secrets.sh
 source "$REPO_DIR/scripts/lib/db_secrets.sh"
+# SOS-SETUP-22: on a hand run the password may be only in the Keychain. Load it (never shown) so the
+# redaction and the leak check below know it. Nothing fails when it is not available.
+sellos_load_provisioner_password || true
 GATE_START="$(date +%s)"
 # Claude Code keeps the agent's session transcripts here, named after the folder it ran in.
 CLAUDE_TRANSCRIPTS="$HOME/.claude/projects/$(printf '%s' "$REPO_DIR" | sed 's/[^A-Za-z0-9]/-/g')"
