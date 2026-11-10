@@ -363,7 +363,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 3
 - **Dependencies:** SOS-P0-02
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-P0-06L: Multitenancy on the local bench
 - **Epic:** Platform foundations and DevOps
