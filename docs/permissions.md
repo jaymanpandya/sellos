@@ -57,3 +57,12 @@ Each story that adds a method adds a row here.
 ## API method matrix
 
 `sellos/access/matrix.py` lists the roles for every method. The build fails when the list and the `@sellos_api` declarations disagree, or when a sellos method is whitelisted without a declaration (P1.05).
+
+## The permission test suite (P1.05)
+
+`sellos/access/test_p1_05_permission_suite.py` calls every method in the matrix as each of the five roles,
+as a user from another company (on a company's own site, a signed-in user with no role) and as a guest,
+against one company's seeded records. It fails the build when a refused caller is not refused, when any
+caller other than the Company Admin gets the company's record or a full phone number, when a method has no
+matrix entry or no sample arguments, or when a sellos method is whitelisted with no declaration. It runs
+in continuous integration with the rest of the backend tests (`bench run-tests --app sellos`).
