@@ -62,4 +62,31 @@ The control site is one more site of the same app, kept by the Platform Admin. I
 `"sellos_control_site": 1`. It holds the Tenant, Plan and Provisioning Job records, and nothing of any
 company's data. The statuses and the allowed order are in `sellos/provisioning/status.py`, and who may open
 the site is in `sellos/provisioning/control.py` (see `docs/permissions.md`). Creating a Tenant also creates its
-Requested Provisioning Job, which the worker of SOS-P1-02 picks up.
+Requested Provisioning Job, which the worker of SOS-P1-02 picks up (see below).
+
+## The provisioning worker (SOS-P1-02)
+
+`scripts/provisioning-worker.sh <control site> [--once]` (module `sellos.provisioning.worker`) is its own
+process. The web process has no shell access: it only writes a Tenant and its Requested Provisioning Job, no
+method of the worker is whitelisted, and no code outside `sellos/provisioning` imports `subprocess`
+(`test_p1_02_worker.py` checks all three). The worker, on the control site:
+
+1. claims a job: a Requested one, a Failed one with attempts left (after 30 seconds), or a Provisioning one
+   whose worker died (no write for 10 minutes). The claim is one conditional update, so two workers never
+   take the same job;
+2. creates the site and database with `tenant_sites.create` (provisioner account, never root, name checked
+   by `names` first) and installs SellOS with `site_script`;
+3. runs `tenant_setup.configure` on the new site: roles, company name, the Company Admin user, and the
+   plan limits in the site's `site_config.json` under `sellos_limits` (`plan`, `max_users`; the tiers
+   themselves arrive with P6.02);
+4. runs `tenant_setup.make_login_link` and queues the admin's email from the control site: the site
+   address and a one time link to set a password. The control site therefore needs a default outgoing
+   email account. The address comes from `sellos_tenant_url_template` in the control site's
+   `site_config.json` (default `http://{site}:8004`, production `https://{tenant_id}.sellos.interactivesoftwares.com`);
+5. marks the job and the tenant Active.
+
+The job's `step` records how far it got and each write to the job is committed, which is the heartbeat. A
+retry of a site that is only missing its email sends only the email. Any other retry drops the half made
+site first. After 3 attempts the job stays Failed with its log, which the Platform Admin reads on the
+Provisioning Job. The log holds messages only: the provisioner password is removed from every child's
+output before the worker sees it, and the worker never reads it.

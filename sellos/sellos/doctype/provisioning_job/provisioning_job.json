@@ -8,6 +8,7 @@
   "tenant",
   "status",
   "attempts",
+  "step",
   "section_times",
   "started_at",
   "finished_at",
@@ -41,6 +42,13 @@
    "read_only": 1,
    "default": "0",
    "in_list_view": 1
+  },
+  {
+   "fieldname": "step",
+   "fieldtype": "Data",
+   "label": "Last step done",
+   "read_only": 1,
+   "description": "Where the worker got to (P1.02): site created, app installed, configured, emailed. A retry starts from here."
   },
   {
    "fieldname": "section_times",
