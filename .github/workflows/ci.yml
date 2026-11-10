@@ -119,13 +119,20 @@ jobs:
         # sellos_tenant_% only, the same two grants the local provisioner has. Frappe's new-site runs
         # GRANT ALL ON sellos_tenant_<id>.*, and MariaDB refuses it when the grant option comes only
         # from the escaped pattern: new-site then fails with 1044 (run 42843324685,
-        # SOS-SETUP-24). The password is a throwaway for this job's own database service.
+        # SOS-SETUP-24). The password is made fresh for this job, masked in the log, and passed to
+        # later steps through GITHUB_ENV. It is never written in the repository, where the tenant
+        # leak test (check_no_secret_leak.py over the app folder) would rightly find it. The SQL goes
+        # in on stdin, so the password is not on a command line.
         run: |
-          mariadb -h 127.0.0.1 -u root -proot -e "
-            CREATE USER 'sellos_provisioner'@'%' IDENTIFIED BY 'ci_provisioner';
+          pw="$(openssl rand -hex 24)"
+          echo "::add-mask::$pw"
+          echo "SELLOS_DB_PROVISIONER_PASSWORD=$pw" >> "$GITHUB_ENV"
+          mariadb -h 127.0.0.1 -u root -proot <<SQL
+            CREATE USER 'sellos_provisioner'@'%' IDENTIFIED BY '$pw';
             GRANT CREATE USER, RELOAD, SHOW DATABASES ON *.* TO 'sellos_provisioner'@'%';
             GRANT ALL PRIVILEGES ON \`sellos\\_tenant\\_%\`.* TO 'sellos_provisioner'@'%' WITH GRANT OPTION;
-            GRANT ALL PRIVILEGES ON \`sellos_tenant_%\`.* TO 'sellos_provisioner'@'%' WITH GRANT OPTION;"
+            GRANT ALL PRIVILEGES ON \`sellos_tenant_%\`.* TO 'sellos_provisioner'@'%' WITH GRANT OPTION;
+          SQL
 
       - name: Run Tests
         # The wrapper prints every batch's summary and the exit code, and says which batch failed.
@@ -138,7 +145,7 @@ jobs:
         env:
           TYPE: server
           SELLOS_DB_PROVISIONER_USER: sellos_provisioner
-          SELLOS_DB_PROVISIONER_PASSWORD: ci_provisioner
+          # SELLOS_DB_PROVISIONER_PASSWORD comes from GITHUB_ENV, set when the account is made.
 
       - name: Report run time (P0.07)
         if: always()

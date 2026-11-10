@@ -41,6 +41,15 @@ class TestCiWorkflows(unittest.TestCase):
 			self.ci,
 		)
 
+	def test_the_provisioner_password_is_made_per_run_and_never_written_here(self):
+		"""SOS-SETUP-24: the tenant leak test scans the app folder, ci.yml included."""
+		self.assertNotIn("ci_provisioner", self.ci)
+		self.assertNotRegex(self.ci, r"SELLOS_DB_PROVISIONER_PASSWORD:\s*\S")
+		self.assertIn('pw="$(openssl rand -hex 24)"', self.ci)
+		self.assertIn('echo "::add-mask::$pw"', self.ci)
+		self.assertIn('echo "SELLOS_DB_PROVISIONER_PASSWORD=$pw" >> "$GITHUB_ENV"', self.ci)
+		self.assertIn("IDENTIFIED BY '$pw';", self.ci)
+
 	def test_run_time_reporting_documented(self):
 		doc = (ROOT / "docs/CI.md").read_text()
 		self.assertIn("run time", doc)
