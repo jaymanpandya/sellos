@@ -45,7 +45,8 @@ production routing. It belongs to SOS-P0-08 and cannot be tested on this bench.
 **The MariaDB provisioner account (SOS-SETUP-18).** Tenant sites are created and dropped with a
 narrow account, never with root, and no SellOS script, task or test uses a MariaDB root password.
 The account has `CREATE USER`, `RELOAD` and `SHOW DATABASES` globally, and
-`ALL PRIVILEGES ... WITH GRANT OPTION` on `` `sellos\_tenant\_%`.* `` only. Its name is in
+`ALL PRIVILEGES ... WITH GRANT OPTION` on `` `sellos\_tenant\_%`.* `` and on `` `sellos_tenant_%`.* `` only.
+Both are needed: Frappe's new-site runs `GRANT ALL ON sellos_tenant_<id>.*`, and MariaDB refuses it (1044) when the grant option comes only from the escaped pattern, while `CREATE DATABASE` still works (tested 10 November 2026, SOS-SETUP-24). Its name is in
 `SELLOS_DB_PROVISIONER_USER` (default `sellos_provisioner`). Its password (SOS-SETUP-22) comes only
 from `get_provisioner_password()` in `sellos/provisioning/credentials.py`: the variable
 `SELLOS_DB_PROVISIONER_PASSWORD` if set, otherwise the macOS login Keychain item `sellos_provisioner`,

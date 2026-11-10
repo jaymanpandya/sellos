@@ -8,7 +8,7 @@
 # Keychain item sellos_provisioner) and hands it to bench only through a child process's environment.
 # The loop and the gate load it into their own environment (sellos_load_provisioner_password) so the
 # redaction filter and the leak check know the value; sellos_agent_env strips it again. It has CREATE USER, RELOAD and SHOW DATABASES globally, and ALL PRIVILEGES WITH
-# GRANT OPTION on `sellos\_tenant\_%`.* only. Its name and password come from the environment the
+# GRANT OPTION on `sellos\_tenant\_%`.* and `sellos_tenant_%`.* only (Frappe's new-site needs the plain one). Its name and password come from the environment the
 # loop is started in:
 #   SELLOS_DB_PROVISIONER_USER      default sellos_provisioner
 #   SELLOS_DB_PROVISIONER_PASSWORD  no default

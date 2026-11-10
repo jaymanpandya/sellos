@@ -14,7 +14,7 @@ suite makes company sites, proves that two companies' data never mix, and drops 
 * **Account.** Sites are made with the MariaDB provisioner account, never with root. Its name is in
   `SELLOS_DB_PROVISIONER_USER` (default `sellos_provisioner`). It has `CREATE USER`, `RELOAD` and
   `SHOW DATABASES` globally and `ALL PRIVILEGES ... WITH GRANT OPTION` on `` `sellos\_tenant\_%`.* ``
-  only. Its password comes only from `get_provisioner_password()` in
+  and on `` `sellos_tenant_%`.* `` only. Frappe's new-site runs `GRANT ALL ON sellos_tenant_<id>.*`, and MariaDB refuses it (1044) when the grant option comes only from the escaped pattern, while `CREATE DATABASE` still works (tested 10 November 2026, SOS-SETUP-24). Its password comes only from `get_provisioner_password()` in
   `sellos/provisioning/credentials.py` and reaches Frappe only through a child process's environment.
 * **Command.** `scripts/tenant-site.sh create <id> | drop <id> | list | probe` (or the same functions in
   `sellos/provisioning/tenant_sites.py`) run Frappe's own command entry from `~/iespl-bench/sites`:

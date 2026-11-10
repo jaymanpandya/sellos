@@ -30,6 +30,17 @@ class TestCiWorkflows(unittest.TestCase):
 		for name in ("Frontend", "Server", "UI"):
 			self.assertRegex(self.ci, rf"(?m)^    name: {name}\s*$")
 
+	def test_the_provisioner_gets_the_plain_tenant_grant_that_new_site_needs(self):
+		"""SOS-SETUP-24: with only `sellos\\_tenant\\_%` MariaDB refuses new-site's GRANT (1044)."""
+		self.assertIn(
+			"GRANT ALL PRIVILEGES ON \\`sellos_tenant_%\\`.* TO 'sellos_provisioner'@'%' WITH GRANT OPTION;",
+			self.ci,
+		)
+		self.assertIn(
+			"GRANT ALL PRIVILEGES ON \\`sellos\\\\_tenant\\\\_%\\`.* TO 'sellos_provisioner'@'%' WITH GRANT OPTION;",
+			self.ci,
+		)
+
 	def test_run_time_reporting_documented(self):
 		doc = (ROOT / "docs/CI.md").read_text()
 		self.assertIn("run time", doc)

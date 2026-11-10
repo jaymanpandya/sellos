@@ -115,13 +115,17 @@ jobs:
 
       - name: Create the tenant provisioner account (SOS-SETUP-18)
         # The narrow account tenant tests create and drop sites with, as on the local bench: CREATE
-        # USER, RELOAD and SHOW DATABASES globally, and everything on sellos\_tenant\_% only. The
-        # password is a throwaway for this job's own database service.
+        # USER, RELOAD and SHOW DATABASES globally, and everything on sellos\_tenant\_% and
+        # sellos_tenant_% only, the same two grants the local provisioner has. Frappe's new-site runs
+        # GRANT ALL ON sellos_tenant_<id>.*, and MariaDB refuses it when the grant option comes only
+        # from the escaped pattern: new-site then fails with 1044 (run 42843324685,
+        # SOS-SETUP-24). The password is a throwaway for this job's own database service.
         run: |
           mariadb -h 127.0.0.1 -u root -proot -e "
             CREATE USER 'sellos_provisioner'@'%' IDENTIFIED BY 'ci_provisioner';
             GRANT CREATE USER, RELOAD, SHOW DATABASES ON *.* TO 'sellos_provisioner'@'%';
-            GRANT ALL PRIVILEGES ON \`sellos\\_tenant\\_%\`.* TO 'sellos_provisioner'@'%' WITH GRANT OPTION;"
+            GRANT ALL PRIVILEGES ON \`sellos\\_tenant\\_%\`.* TO 'sellos_provisioner'@'%' WITH GRANT OPTION;
+            GRANT ALL PRIVILEGES ON \`sellos_tenant_%\`.* TO 'sellos_provisioner'@'%' WITH GRANT OPTION;"
 
       - name: Run Tests
         # The wrapper prints every batch's summary and the exit code, and says which batch failed.
