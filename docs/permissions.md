@@ -51,6 +51,7 @@ on a company site, because the data scope above is "none".
 | `sellos.crm.api.list_clients`, `save_client`, `list_leads`, `get_lead`, `save_lead`, `set_archived` | Company Admin, Agent, Channel Partner |
 | `sellos.crm.api.add_activity`, `save_task`, `save_site_visit` | Company Admin, Agent |
 | `sellos.access.support.list_support_users`, `grant_support_access`, `revoke_support_access`, `list_support_grants`, `support_access_log` (P1.13) | Company Admin |
+| `sellos.config.setup_wizard.get_setup_state`, `save_profile`, `save_branding`, `save_stages`, `add_user`, `finish_setup` (P1.03, the setup wizard) | Company Admin |
 | `sellos.access.field_history.getdoc`, `get_docinfo` (P1.06B: the record loader, with the history of fields the reader may not read left out) | Every role |
 
 Each story that adds a method adds a row here.

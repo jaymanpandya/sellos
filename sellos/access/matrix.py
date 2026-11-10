@@ -35,6 +35,12 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.access.support.revoke_support_access": _ADMIN_ONLY,
 	"sellos.access.support.list_support_grants": _ADMIN_ONLY,
 	"sellos.access.support.support_access_log": _ADMIN_ONLY,
+	"sellos.config.setup_wizard.get_setup_state": _ADMIN_ONLY,
+	"sellos.config.setup_wizard.save_profile": _ADMIN_ONLY,
+	"sellos.config.setup_wizard.save_branding": _ADMIN_ONLY,
+	"sellos.config.setup_wizard.save_stages": _ADMIN_ONLY,
+	"sellos.config.setup_wizard.add_user": _ADMIN_ONLY,
+	"sellos.config.setup_wizard.finish_setup": _ADMIN_ONLY,
 	"sellos.access.field_history.getdoc": _OPENERS,
 	"sellos.access.field_history.get_docinfo": _OPENERS,
 }

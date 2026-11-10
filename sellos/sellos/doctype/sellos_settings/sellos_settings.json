@@ -6,7 +6,13 @@
  "field_order": [
   "company_name",
   "logo",
-  "brand_color"
+  "brand_color",
+  "contact_phone",
+  "contact_email",
+  "city",
+  "address",
+  "setup_steps_done",
+  "setup_complete"
  ],
  "fields": [
   {
@@ -23,6 +29,40 @@
    "fieldname": "brand_color",
    "fieldtype": "Color",
    "label": "Brand colour"
+  },
+  {
+   "fieldname": "contact_phone",
+   "fieldtype": "Data",
+   "label": "Company phone"
+  },
+  {
+   "fieldname": "contact_email",
+   "fieldtype": "Data",
+   "label": "Company email"
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Data",
+   "label": "City"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "setup_steps_done",
+   "fieldtype": "Data",
+   "label": "Setup steps done",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "setup_complete",
+   "fieldtype": "Check",
+   "label": "Setup complete",
+   "read_only": 1,
+   "hidden": 1
   }
  ],
  "index_web_pages_for_search": 0,

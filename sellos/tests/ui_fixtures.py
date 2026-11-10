@@ -176,6 +176,55 @@ def remove_seeded_leads():
 	return {"clients": len(clients), "leads": len(leads)}
 
 
+WIZARD_USER_PREFIX = "wizard_spec_"
+
+
+def reset_setup_wizard(company_name="Pandya Realtors"):
+	"""Put the setup wizard back to not started, for the P1.03 spec (and to clean up after it).
+
+	It clears the wizard's progress, the brand colour and logo, the pipeline stages and any user the
+	spec made (email starting wizard_spec_), and puts the company name back. Tests only: the app
+	itself never deletes a user or a stage this way.
+	"""
+	settings = frappe.get_doc("SellOS Settings")
+	settings.update(
+		{
+			"company_name": company_name,
+			"setup_steps_done": "",
+			"setup_complete": 0,
+			"brand_color": "",
+			"logo": "",
+			"contact_phone": "",
+			"contact_email": "",
+			"city": "",
+			"address": "",
+		}
+	)
+	settings.save(ignore_permissions=True)
+	frappe.db.delete("Pipeline Stage")
+	frappe.db.delete("File", {"attached_to_doctype": "SellOS Settings"})
+	for email in frappe.get_all("User", filters={"name": ["like", f"{WIZARD_USER_PREFIX}%"]}, pluck="name"):
+		frappe.delete_doc("User", email, force=True, ignore_permissions=True)
+	frappe.clear_document_cache("SellOS Settings", "SellOS Settings")
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"reset": True}
+
+
+def setup_wizard_result():
+	"""Read back what the wizard saved, for the P1.03 spec."""
+	settings = frappe.get_doc("SellOS Settings")
+	email = frappe.get_all("User", filters={"name": ["like", f"{WIZARD_USER_PREFIX}%"]}, pluck="name")
+	return {
+		"company_name": settings.company_name,
+		"city": settings.city,
+		"brand_color": settings.brand_color,
+		"logo": settings.logo or "",
+		"complete": bool(settings.setup_complete),
+		"stages": frappe.get_all("Pipeline Stage", pluck="name", order_by="position asc"),
+		"users": {e: sorted(frappe.get_roles(e)) for e in email},
+	}
+
+
 def end_support_grant_now(minutes_ago=5):
 	"""Make the newest support grant of the test platform admin run out, as time passing would (P1.13).
 
@@ -271,6 +320,9 @@ def seed_regression_data():
 	* One NRI client with an overseas phone number.
 	* Two support grants (SOS-P1-13) for the gate platform admin: one the Company Admin ended early
 	  and one still active for 2 hours, each with its Granted (and Revoked) line in the access log.
+
+	* The company setup wizard (SOS-P1-03) left half way: profile, colours and the default pipeline
+	  stages saved, the users step still to do, so it opens on that step.
 
 	* One plan and four tenants on the control site (SOS-P1-01), regressionone to regressionfour, one
 	  Requested, one Provisioning, one Active and one Failed, each with its Provisioning Job.
@@ -391,6 +443,7 @@ def seed_regression_data():
 
 	_seed_support_grants(admin)
 	_seed_control_site()
+	_seed_setup_wizard(admin)
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -408,6 +461,23 @@ def _seed_support_grants(admin):
 		support.grant_support_access(support_user, 120, "Regression walkthrough of the leads report")
 
 
+def _seed_setup_wizard(admin):
+	"""A setup wizard left half way (SOS-P1-03): profile, colours and stages saved, users not yet.
+
+	Run through the production API as the Company Admin, so the wizard opens on its last step. It keeps
+	the company's own name and the SellOS brand colour, so the rest of the app looks the same.
+	"""
+	from sellos.config import setup_wizard
+
+	if frappe.db.count("Pipeline Stage") or setup_wizard.is_setup_complete():
+		return
+	with _as_user(admin):
+		name = frappe.db.get_single_value("SellOS Settings", "company_name")
+		setup_wizard.save_profile({"company_name": name, "city": "Mumbai"})
+		setup_wizard.save_branding(setup_wizard.DEFAULT_BRAND_COLOR)
+		setup_wizard.save_stages(setup_wizard.DEFAULT_STAGES)
+
+
 def _seed_control_site():
 	"""One plan and four tenants, one in each status, as the Platform Admin (SOS-P1-01).
 
@@ -416,6 +486,7 @@ def _seed_control_site():
 	"""
 	platform_admin = TEST_USERS["platform_admin"]["email"]
 	if frappe.db.exists("Tenant", "regressionone"):
+		_settle_seed_jobs(platform_admin)
 		return
 	with _as_user(platform_admin):
 		frappe.get_doc(
@@ -440,6 +511,27 @@ def _seed_control_site():
 			for step in steps:
 				tenant.status = step
 				tenant.save()
+	_settle_seed_jobs(platform_admin)
+
+
+def _settle_seed_jobs(platform_admin):
+	"""Move each seeded tenant's job to its tenant's status, so no job is left waiting to be worked.
+
+	The provisioning worker (SOS-P1-02) takes the oldest Requested job. A job left Requested for a tenant
+	that is already Active or Failed would be picked up, and fail the status order. Safe to run again.
+	"""
+	with _as_user(platform_admin):
+		for tenant_id in ("regressiontwo", "regressionthree", "regressionfour"):
+			tenant_status = frappe.db.get_value("Tenant", tenant_id, "status")
+			for job_name in frappe.get_all(
+				"Provisioning Job", filters={"tenant": tenant_id, "status": "Requested"}, pluck="name"
+			):
+				job = frappe.get_doc("Provisioning Job", job_name)
+				job.flags.ignore_permissions = True
+				for step in ("Provisioning", tenant_status):
+					if job.status != step:
+						job.status = step
+						job.save()
 
 
 def _regression_summary():

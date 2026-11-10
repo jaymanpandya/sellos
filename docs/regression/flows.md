@@ -51,3 +51,11 @@ FLOW SOS-P1-01-2 | platform_admin | /sellos/control/tenants | On the new company
 FLOW SOS-P1-01-3 | platform_admin | /sellos/control/tenants | Type a tenant ID with a capital letter or a space and click Create company. | The company is not created and a clear message says the ID is lower case letters and digits only.
 FLOW SOS-P1-01-4 | company_admin | /sellos/control/tenants | Sign in as a company admin and type the Companies address. | The no access page opens. No company is shown and Companies is not in the navigation.
 FLOW SOS-P1-01-5 | agent | /sellos/control/tenants | Sign in as an agent and type the Companies address. | The no access page opens. No company is shown.
+
+## SOS-P1-03: the setup wizard
+
+FLOW SOS-P1-03-1 | company_admin | /sellos/company/setup | Sign in. Open Set up your company. The seeded wizard is half done, so it opens on First users and shows the profile, colours and stages steps ticked. Click Pipeline stages. | The seven default stages (New to Lost) are listed with their kinds, Booked is Won and Lost is Lost.
+FLOW SOS-P1-03-2 | company_admin | /sellos/company/setup | On First users type a first name, an email and the role Agent, click Add person, then click Finish setup. | The person appears in the list with the role Agent, then the page says the company is set up.
+FLOW SOS-P1-03-3 | company_admin | /sellos/company/setup | Click Logo and colours, choose a PNG logo, pick a brand colour and click Save and continue. Finish the setup and open Home. | The logo and company name show at the top of every screen, buttons use the new colour, and the Finish setting up banner is gone.
+FLOW SOS-P1-03-4 | company_admin | /sellos/company/setup | Click Pipeline stages, remove every Won stage and click Save and continue. | The stages are not saved and a clear message says the pipeline needs one Won and one Lost stage.
+FLOW SOS-P1-03-5 | agent | /sellos/company/setup | Sign in as an agent and type the setup address. | The no access page opens. No setup data is shown.

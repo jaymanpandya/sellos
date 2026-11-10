@@ -9,6 +9,7 @@ export const session = reactive({
 	fullName: "",
 	roles: [],
 	company: { name: "", logo: "", brandColor: "" },
+	setupComplete: true,
 	loaded: false,
 });
 
@@ -32,6 +33,7 @@ export async function loadSession() {
 			logo: boot.company?.logo || "",
 			brandColor: boot.company?.brand_color || "",
 		};
+		session.setupComplete = boot.setup_complete !== false;
 		applyCompanyTheme(session.company);
 	}
 	session.loaded = true;

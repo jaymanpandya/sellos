@@ -5,6 +5,8 @@ import frappe
 from frappe import _
 from frappe.website.page_renderers.base_renderer import BaseRenderer
 
+from sellos.config.setup_wizard import is_setup_complete
+
 SPA_ROUTE = "sellos"
 TAB_ICONS = re.compile(r"(<!-- tab-icons -->).*?(<!-- /tab-icons -->)", re.DOTALL)
 
@@ -62,6 +64,7 @@ def get_boot():
 			"full_name": user.full_name,
 			"roles": frappe.get_roles(),
 			"company": get_company_branding(),
+			"setup_complete": is_setup_complete(),
 		},
 	}
 

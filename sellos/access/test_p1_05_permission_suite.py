@@ -74,6 +74,21 @@ SAMPLE_CALLS = {
 	"sellos.access.support.revoke_support_access": {"grant": "{grant}"},
 	"sellos.access.support.list_support_grants": {},
 	"sellos.access.support.support_access_log": {"grant": "{grant}"},
+	"sellos.config.setup_wizard.get_setup_state": {},
+	"sellos.config.setup_wizard.save_profile": {"values": {"company_name": "P105 Realty"}},
+	"sellos.config.setup_wizard.save_branding": {"brand_color": "#0f4c35"},
+	"sellos.config.setup_wizard.save_stages": {
+		"stages": [
+			{"stage_name": "P105 Open", "stage_type": "Won"},
+			{"stage_name": "P105 Lost", "stage_type": "Lost"},
+		]
+	},
+	"sellos.config.setup_wizard.add_user": {
+		"email": "p105_wizard_user@example.com",
+		"first_name": "P105",
+		"role": "SellOS Agent",
+	},
+	"sellos.config.setup_wizard.finish_setup": {},
 	"sellos.access.field_history.getdoc": {"doctype": "Client", "name": "{client}"},
 	"sellos.access.field_history.get_docinfo": {"doctype": "Client", "name": "{client}"},
 }
