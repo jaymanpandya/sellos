@@ -4,7 +4,8 @@
   it once with only the MariaDB provisioner account.
 * The name check refuses every site that is not sellos_tenant_<id>.localhost before a command runs.
 * Two tenant sites, each with its own data, are switched to with frappe.init and frappe.connect and
-  never see each other's records. The suite goes back to sellos_test.localhost in a finally block.
+  never see each other's records. The suite goes back to the site it started on (sellos_test.localhost
+  in the gate, test_site in CI) in a finally block.
 * Every tenant site a test makes is dropped by the same code, even when the test fails.
 * The provisioner password is in no file under the repository, the tenant site folders, the bench
   logs or the gate's log folder after a create and a drop.
@@ -28,7 +29,6 @@ from sellos.provisioning.credentials import PASSWORD_ENV, get_provisioner_passwo
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LEAK_CHECK = REPO_ROOT / "scripts" / "check_no_secret_leak.py"
-GATE_SITE = "sellos_test.localhost"
 TOO_LONG = "x" * 51  # sellos_tenant_ + 51 is 65 characters, one over MariaDB's limit
 
 
@@ -117,6 +117,9 @@ class TestTenantIsolation(IntegrationTestCase):
 
 	def test_each_site_sees_only_its_own_records(self):
 		self.sites_path = frappe.local.sites_path
+		# Go back to the site the run started on, not a fixed name: CI runs on test_site (SOS-SETUP-24).
+		start_site = frappe.local.site
+		self.assertFalse(start_site.startswith(tenant_sites.PREFIX), start_site)
 		try:
 			for tenant_id in self.IDS:
 				site, db_name = tenant_sites.names(tenant_id)
@@ -135,8 +138,8 @@ class TestTenantIsolation(IntegrationTestCase):
 				other = next(i for i in self.IDS if i != tenant_id)
 				self.assertFalse(frappe.db.exists("Note", {"title": self.TITLES[other]}))
 		finally:
-			self.switch(GATE_SITE)
-		self.assertEqual(frappe.local.site, GATE_SITE)
+			self.switch(start_site)
+		self.assertEqual(frappe.local.site, start_site)
 		self.assertNotIn(self.TITLES["isoa"], self.titles())
 		self.assertNotIn(self.TITLES["isob"], self.titles())
 
