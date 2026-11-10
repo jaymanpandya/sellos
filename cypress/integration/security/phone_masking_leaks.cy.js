@@ -15,6 +15,11 @@ context.skip("SOS-P1-06B: phone numbers do not leak", () => {
 		});
 	});
 
+	// The fixture commits, so remove what it made (SOS-SETUP-24).
+	after(() => {
+		cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads");
+	});
+
 	const mustNotSeeTheNumber = ["agent", "channel_partner", "client", "platform_admin"];
 
 	mustNotSeeTheNumber.forEach((role) => {

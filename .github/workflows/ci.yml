@@ -124,10 +124,13 @@ jobs:
             GRANT ALL PRIVILEGES ON \`sellos\\_tenant\\_%\`.* TO 'sellos_provisioner'@'%' WITH GRANT OPTION;"
 
       - name: Run Tests
+        # The wrapper prints every batch's summary and the exit code, and says which batch failed.
+        # Frappe runs integration tests and the rest as two batches, and the last "OK" can follow a
+        # FAILED one (run 42830839891). The exit code decides, not a summary line (SOS-SETUP-24).
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
-          bench --site test_site run-tests --app sellos
+          bash "$GITHUB_WORKSPACE/scripts/lib/report_test_exit.sh" bench --site test_site run-tests --app sellos
         env:
           TYPE: server
           SELLOS_DB_PROVISIONER_USER: sellos_provisioner

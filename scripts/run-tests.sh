@@ -189,6 +189,7 @@ bench --site "$SITE" execute "$APP.tests.ui_fixtures.prepare_clean_site"
 bench --site "$SITE" clear-cache
 
 echo "--- Changed tests first: $APP ---"
+REPORT_TEST_EXIT="apps/$APP/scripts/lib/report_test_exit.sh"
 CHANGED="$(git -C "apps/$APP" status --porcelain -uall | { grep -v -E '^(.D|D.) ' || true; } | sed -E 's/^.{2} //; s/.* -> //')"
 CHANGED_PY="$(printf '%s\n' "$CHANGED" | grep -E '(^|/)test_[^/]*\.py$' || true)"
 CHANGED_SPECS="$(printf '%s\n' "$CHANGED" | grep -E '^cypress/integration/.*\.cy\.js$' || true)"
@@ -204,7 +205,7 @@ for f in $CHANGED_PY; do
   [ -f "apps/$APP/$f" ] || { echo "--- skipping $f: the task deleted it ---"; continue; }
   mod="$(printf '%s' "${f%.py}" | tr '/' '.')"
   echo "--- changed test module: $mod ---"
-  bench --site "$SITE" run-tests --app "$APP" --module "$mod" || { echo "CHANGED TEST FAILED: $mod"; exit 1; }
+  "$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP" --module "$mod" || { echo "CHANGED TEST FAILED: $mod"; exit 1; }
 done
 for f in $CHANGED_SPECS; do
   [ -f "apps/$APP/$f" ] || { echo "--- skipping $f: the task deleted it ---"; continue; }
@@ -220,7 +221,9 @@ for f in $CHANGED_SPECS; do
 done
 
 echo "--- Backend unit tests: $APP ---"
-bench --site "$SITE" run-tests --app "$APP"
+# The runner prints one summary per batch, and the last one can say OK while an earlier one failed.
+# The wrapper prints every batch and the exit code, and the exit code decides (SOS-SETUP-24).
+"$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP"
 
 echo "--- UI tests: $APP ---"
 set +e

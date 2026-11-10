@@ -131,7 +131,8 @@ def remove_seeded_leads():
 	"""Remove what seed_agent_leads and seed_client_with_phone committed (tests only, P1.06A).
 
 	The CRM refuses a delete through the app, so this goes to the tables, and only for the clients
-	these two fixtures name. Other tests then see the agent's list as they left it.
+	these two fixtures name. Other tests then see the agent's list as they left it. The specs that seed
+	run it in their after hook (SOS-SETUP-24), so it returns what it removed for cy.bench to read.
 	"""
 	clients = frappe.get_all(
 		"Client",
@@ -143,7 +144,7 @@ def remove_seeded_leads():
 		pluck="name",
 	)
 	if not clients:
-		return
+		return {"clients": 0, "leads": 0}
 	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name")
 	for doctype in ("Lead Activity", "Lead Task", "Site Visit"):
 		if leads and frappe.get_meta(doctype).has_field("lead"):
@@ -153,6 +154,7 @@ def remove_seeded_leads():
 			frappe.db.delete("Version", {"ref_doctype": doctype, "docname": ["in", names]})
 			frappe.db.delete(doctype, {"name": ["in", names]})
 	frappe.db.commit()  # nosemgrep
+	return {"clients": len(clients), "leads": len(leads)}
 
 
 # --- The regression dataset (docs/regression/README.md) -------------------------------------------

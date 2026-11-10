@@ -3,6 +3,12 @@
 context("SOS-P1-06A: leads by role", () => {
 	const unique = (label) => `${label} ${Date.now()}`;
 
+	// seed_agent_leads commits its leads, so a rollback never removes them. Left behind, they sit in
+	// the agent's list and the backend tests that expect only their own leads fail (SOS-SETUP-24).
+	after(() => {
+		cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads");
+	});
+
 	it("the company admin creates a lead and sees it in the list", () => {
 		const name = unique("Gate Buyer");
 		cy.signInFresh("company_admin");

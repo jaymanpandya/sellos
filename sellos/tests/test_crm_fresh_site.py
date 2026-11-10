@@ -125,6 +125,17 @@ class TestFixtures(IntegrationTestCase):
 		for other in seeded["others"]:
 			self.assertNotIn(other, seen)
 
+	def test_remove_seeded_leads_removes_everything_the_seeds_made_and_says_so(self):
+		"""SOS-SETUP-24: the specs that seed call this in their after hook, and cy.bench reads its JSON."""
+		ui_fixtures.seed_agent_leads()
+		ui_fixtures.seed_client_with_phone(seed=21)
+		self.assertEqual(ui_fixtures.remove_seeded_leads(), {"clients": 4, "leads": 4})
+		self.assertEqual(ui_fixtures.remove_seeded_leads(), {"clients": 0, "leads": 0})
+		frappe.set_user(TEST_USERS["agent"]["email"])
+		from sellos.crm import api
+
+		self.assertFalse([r for r in api.list_leads() if r["client_name"].startswith("Gate ")])
+
 	def test_seed_client_with_phone_keeps_the_old_and_new_number_in_the_history(self):
 		# Frappe skips change history while tests run, so run the fixture the way bench execute does.
 		in_test, frappe.in_test = frappe.in_test, False

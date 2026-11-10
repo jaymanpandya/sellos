@@ -429,7 +429,7 @@ class GateSandbox(Sandbox):
 		# check, a backlog and a spec folder with no skips, so it passes and the restore still runs.
 		shutil.copy2(SCRIPTS / "check_no_stale_skips.py", self.repo / "scripts" / "check_no_stale_skips.py")
 		(self.repo / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-		for name in ("tasks.py", "db_secrets.sh"):
+		for name in ("tasks.py", "db_secrets.sh", "report_test_exit.sh"):
 			shutil.copy2(SCRIPTS / "lib" / name, self.repo / "scripts" / "lib" / name)
 		shutil.copy2(SCRIPTS / "check_no_secret_leak.py", self.repo / "scripts" / "check_no_secret_leak.py")
 		self.write(self.repo / "TASKS.md", "### SOS-X-1: a task\n- **Status:** In Progress\n")

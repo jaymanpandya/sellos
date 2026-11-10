@@ -329,6 +329,80 @@ class Launcher(Fakes):
 		self.assertNotIn(SECRET, " ".join(visible))
 
 
+class BenchAndTraceback(Fakes):
+	"""SOS-SETUP-24: tenant sites are made on the bench this process runs in, and a failure shows
+	no secret even when every frame's local variables are printed, as Frappe's test runner does.
+
+	CI run 42830839891 failed because the bench was assumed to be ~/iespl-bench; CI's is
+	~/frappe-bench. Its traceback printed the provisioner password and the new site's admin password.
+	"""
+
+	ADMIN = "adm-secret-3f9a1c"
+
+	def in_process(self, **env):
+		base = {
+			k: v for k, v in os.environ.items() if k not in ("SELLOS_BENCH_DIR", credentials.PASSWORD_ENV)
+		}
+		return mock.patch.dict(os.environ, {**base, **env}, clear=True)
+
+	def failure_text(self, call):
+		with (
+			mock.patch.object(tenant_sites.secrets, "token_urlsafe", return_value=self.ADMIN),
+			mock.patch("builtins.print"),
+		):
+			# Not assertRaises: it clears the frames, and their locals are what this checks.
+			try:
+				call()
+			except tenant_sites.TenantSiteError as error:
+				text = "".join(
+					traceback.TracebackException(
+						type(error), error, error.__traceback__, capture_locals=True
+					).format()
+				)
+				return str(error), text
+		self.fail("no TenantSiteError was raised")
+
+	def test_without_the_variable_the_bench_is_the_one_frappe_was_imported_from(self):
+		import frappe
+		from frappe.utils import get_bench_path
+
+		with self.in_process():
+			bench = tenant_sites.bench_dir()
+		self.assertEqual(bench, Path(get_bench_path()))
+		self.assertTrue(Path(frappe.__file__).resolve().is_relative_to(bench.resolve()))
+		self.assertTrue((bench / "sites").is_dir())
+		self.assertTrue((bench / "env" / "bin" / "python").exists())
+
+	def test_the_variable_names_another_bench(self):
+		with self.in_process(SELLOS_BENCH_DIR=str(self.bench)):
+			self.assertEqual(tenant_sites.bench_dir(), self.bench)
+
+	def test_a_missing_bench_names_the_path_and_no_frame_holds_a_secret(self):
+		nowhere = self.root / "no-bench-here"
+		with self.in_process(SELLOS_BENCH_DIR=str(nowhere), SELLOS_DB_PROVISIONER_PASSWORD=SECRET):
+			message, text = self.failure_text(lambda: tenant_sites.create("abc1"))
+		self.assertIn("new-site sellos_tenant_abc1.localhost could not be started", message)
+		self.assertIn(str(nowhere / "env" / "bin" / "python"), message)
+		self.assertIn("SELLOS_BENCH_DIR", message)
+		self.assertIn("tenant_id = 'abc1'", text, "the traceback was not printed with its locals")
+		self.assertNotIn(SECRET, text)
+		self.assertNotIn(self.ADMIN, text)
+
+	def test_a_failing_command_leaves_no_secret_in_any_frame(self):
+		self.write(self.fake / "bench_exit", "1")
+		with self.in_process(
+			SELLOS_BENCH_DIR=str(self.bench), SELLOS_DB_PROVISIONER_PASSWORD=SECRET, FAKE_DIR=str(self.fake)
+		):
+			message, text = self.failure_text(lambda: tenant_sites.create("abc1"))
+			_, drop_text = self.failure_text(lambda: tenant_sites.drop("abc1"))
+		self.assertEqual(message, "new-site sellos_tenant_abc1.localhost failed with exit code 1.")
+		self.assertEqual(len(self.bench_calls()), 2, "the fake bench Python did not run")
+		for shown in (text, drop_text):
+			self.assertIn("site = 'sellos_tenant_abc1.localhost'", shown)
+			self.assertNotIn(SECRET, shown)
+			self.assertNotIn(self.ADMIN, shown)
+
+
 class LoopStartCheck(loop_env.LoopSandbox):
 	"""The real build loop: the provisioner check at its start."""
 

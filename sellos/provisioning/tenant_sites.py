@@ -68,11 +68,32 @@ def names(tenant_id):
 
 
 def bench_dir():
-	return Path(os.environ.get("SELLOS_BENCH_DIR") or Path.home() / "iespl-bench")
+	"""The bench this process runs in: SELLOS_BENCH_DIR if set, else the one Frappe was imported from.
+
+	SOS-SETUP-24: this was ~/iespl-bench, which is only Jayman's machine. CI's bench is
+	~/frappe-bench, so every tenant test there failed with "could not be started".
+	"""
+	if os.environ.get("SELLOS_BENCH_DIR"):
+		return Path(os.environ["SELLOS_BENCH_DIR"])
+	from frappe.utils import get_bench_path
+
+	return Path(get_bench_path())
 
 
 def _run_frappe(args, extra_env=None):
-	"""Run a Frappe site command with the provisioner password in the child's environment only."""
+	"""Run a Frappe site command with the provisioner password in the child's environment only.
+
+	Frappe's test runner prints every frame's local variables under a traceback, and so may any
+	error report. So the frame that raises holds no secret: the password and the admin password live
+	only in _run_frappe_once, which returns an error message instead of raising (SOS-SETUP-24).
+	"""
+	error = _run_frappe_once(args, extra_env)
+	del extra_env
+	if error:
+		raise TenantSiteError(error)
+
+
+def _run_frappe_once(args, extra_env):
 	password = get_provisioner_password()
 	env = child_env(password)
 	env.update(extra_env or {})
@@ -82,8 +103,11 @@ def _run_frappe(args, extra_env=None):
 		result = subprocess.run(
 			command, cwd=bench / "sites", env=env, capture_output=True, text=True, check=False
 		)
-	except OSError:
-		raise TenantSiteError(f"Frappe's command for {args[0]} {args[1]} could not be started.") from None
+	except OSError as e:
+		return (
+			f"Frappe's command for {args[0]} {args[1]} could not be started: {e.strerror} "
+			f"({bench / 'env' / 'bin' / 'python'} in {bench / 'sites'}). Set SELLOS_BENCH_DIR to the bench."
+		)
 	output = (result.stdout + result.stderr).replace(password, "[provisioner password]")
 	for value in (extra_env or {}).values():
 		if value:
@@ -91,15 +115,16 @@ def _run_frappe(args, extra_env=None):
 	if output.strip():
 		print(output.rstrip("\n"))
 	if result.returncode != 0:
-		raise TenantSiteError(f"{args[0]} {args[1]} failed with exit code {result.returncode}.")
+		return f"{args[0]} {args[1]} failed with exit code {result.returncode}."
+	return None
 
 
 def create(tenant_id):
 	site, db_name = names(tenant_id)
-	admin = secrets.token_urlsafe(24)
+	# The admin password is made inline, so no frame a traceback shows holds it.
 	_run_frappe(
 		["new-site", site, "--db-name", db_name, "--db-root-username", provisioner_user()],
-		{ADMIN_ENV: admin},
+		{ADMIN_ENV: secrets.token_urlsafe(24)},
 	)
 	return site
 
