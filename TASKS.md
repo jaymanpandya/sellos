@@ -609,7 +609,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 5
 - **Dependencies:** SOS-P0-06L
-- **Status:** In Progress
+- **Status:** Complete
 - **Browser spec:** required
 
 ### SOS-P1-02: Build the provisioning worker

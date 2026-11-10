@@ -43,3 +43,11 @@ FLOW SOS-P1-13-1 | company_admin | /sellos/company/support | Sign in. Open Suppo
 FLOW SOS-P1-13-2 | company_admin | /sellos/company/support | Click Show log on a grant. | Each line shows the time, the user and what was done: Granted, then Revoked or Expired, and each request the support user made, with its method and path.
 FLOW SOS-P1-13-3 | company_admin | /sellos/company/support | Click End now on an active grant. | The status changes to Revoked at once, the End now button goes, and the log gains a Revoked line.
 FLOW SOS-P1-13-4 | agent | /sellos/company/support | Sign in as an agent and type the Support access address. | The no access page opens. No grant is shown.
+
+## SOS-P1-01: the control site
+
+FLOW SOS-P1-01-1 | platform_admin | /sellos/control/tenants | Sign in. Open Companies. The seeded list shows four companies, one each Requested, Provisioning, Active and Failed. Type a tenant ID in lower case letters, a company name and an admin email, then click Create company. | The new company appears at the top with status Requested and its own site name. No error is shown.
+FLOW SOS-P1-01-2 | platform_admin | /sellos/control/tenants | On the new company click Move to Provisioning, then Move to Active. | The status shows Provisioning, then Active. An Active company has no Move to button. A Failed company offers only Move to Provisioning.
+FLOW SOS-P1-01-3 | platform_admin | /sellos/control/tenants | Type a tenant ID with a capital letter or a space and click Create company. | The company is not created and a clear message says the ID is lower case letters and digits only.
+FLOW SOS-P1-01-4 | company_admin | /sellos/control/tenants | Sign in as a company admin and type the Companies address. | The no access page opens. No company is shown and Companies is not in the navigation.
+FLOW SOS-P1-01-5 | agent | /sellos/control/tenants | Sign in as an agent and type the Companies address. | The no access page opens. No company is shown.

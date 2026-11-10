@@ -212,6 +212,19 @@ def remove_support_grants():
 	return {"removed": True}
 
 
+def remove_control_records():
+	"""Remove every Tenant, Plan and Provisioning Job on the test site (tests only, P1.01).
+
+	The app never deletes them, so this goes to the tables. A spec that creates tenants runs it in its
+	before and after hooks, so no tenant stays behind for the backend tests that run next.
+	"""
+	for doctype in ("Provisioning Job", "Tenant", "Plan"):
+		frappe.db.delete("Version", {"ref_doctype": doctype})
+		frappe.db.delete(doctype)
+	frappe.db.commit()  # nosemgrep
+	return {"removed": True}
+
+
 # --- The regression dataset (docs/regression/README.md) -------------------------------------------
 
 REGRESSION_PREFIX = "Regression "
@@ -258,6 +271,9 @@ def seed_regression_data():
 	* One NRI client with an overseas phone number.
 	* Two support grants (SOS-P1-13) for the gate platform admin: one the Company Admin ended early
 	  and one still active for 2 hours, each with its Granted (and Revoked) line in the access log.
+
+	* One plan and four tenants on the control site (SOS-P1-01), regressionone to regressionfour, one
+	  Requested, one Provisioning, one Active and one Failed, each with its Provisioning Job.
 
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
@@ -374,6 +390,7 @@ def seed_regression_data():
 		crm.save_client(name=client_one, values={"phone": phones.near_in_mobile(101)})
 
 	_seed_support_grants(admin)
+	_seed_control_site()
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -389,6 +406,40 @@ def _seed_support_grants(admin):
 		ended = support.grant_support_access(support_user, 60, "Regression help with an import")
 		support.revoke_support_access(ended["name"])
 		support.grant_support_access(support_user, 120, "Regression walkthrough of the leads report")
+
+
+def _seed_control_site():
+	"""One plan and four tenants, one in each status, as the Platform Admin (SOS-P1-01).
+
+	The tenants are made and moved through the Document API with the Platform Admin's own
+	permissions, so the status order and the permission rules ran while it was made.
+	"""
+	platform_admin = TEST_USERS["platform_admin"]["email"]
+	if frappe.db.exists("Tenant", "regressionone"):
+		return
+	with _as_user(platform_admin):
+		frappe.get_doc(
+			{"doctype": "Plan", "plan_name": f"{REGRESSION_PREFIX}Starter", "max_users": 5}
+		).insert()
+		path = {
+			"regressionone": [],
+			"regressiontwo": ["Provisioning"],
+			"regressionthree": ["Provisioning", "Active"],
+			"regressionfour": ["Provisioning", "Failed"],
+		}
+		for tenant_id, steps in path.items():
+			tenant = frappe.get_doc(
+				{
+					"doctype": "Tenant",
+					"tenant_id": tenant_id,
+					"company_name": f"{REGRESSION_PREFIX}{tenant_id[10:].title()} Realty",
+					"admin_email": f"{tenant_id}@example.com",
+					"plan": f"{REGRESSION_PREFIX}Starter",
+				}
+			).insert()
+			for step in steps:
+				tenant.status = step
+				tenant.save()
 
 
 def _regression_summary():

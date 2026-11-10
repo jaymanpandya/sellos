@@ -55,3 +55,11 @@ tested on this bench.
 back (database, apps, admin and role). `down` drops the site and database. `run` does both and drops
 the site even when `up` fails. The agreed time for a run is 180 seconds (two runs took about 45 each on
 this bench); over it the script exits 4. Exit 2 is a bad id and 3 a missing provisioner password.
+
+## The control site (SOS-P1-01)
+
+The control site is one more site of the same app, kept by the Platform Admin. Its `site_config.json` has
+`"sellos_control_site": 1`. It holds the Tenant, Plan and Provisioning Job records, and nothing of any
+company's data. The statuses and the allowed order are in `sellos/provisioning/status.py`, and who may open
+the site is in `sellos/provisioning/control.py` (see `docs/permissions.md`). Creating a Tenant also creates its
+Requested Provisioning Job, which the worker of SOS-P1-02 picks up.

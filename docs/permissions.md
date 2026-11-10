@@ -84,3 +84,21 @@ chosen time, from 1 minute to 4 hours (`/sellos/company/support` in the web app,
   length can not change: revoke it and make a new one.
 * The Company Admin may read grants and the log (`Support Grant`, `Support Access Log`) and change them only
   through the methods above.
+
+## The control site (P1.01)
+
+The control site is the Platform Admin's own site. It holds three DocTypes, made from code like every other:
+Tenant (one company, with its site and database names), Plan (a stub: name, switch, user limit; the tiers
+come with P6.02) and Provisioning Job (one request to make a site). Their statuses are Requested,
+Provisioning, Active and Failed, and `sellos/provisioning/status.py` is the one list of the order they may
+change in: Requested to Provisioning, Provisioning to Active or Failed, Failed back to Provisioning. Active
+is final. The DocType controllers enforce it on every save, whoever saves.
+
+* Only the Platform Admin (and System Manager, read only) holds permission on the three DocTypes. No company
+  role has any, so a company user's read, create, write, delete and export are all refused.
+* Nothing is deleted: `on_trash` refuses it for every role.
+* The web app page is `/sellos/control/tenants` (area `platform`, the Platform Admin only). It uses the
+  framework's document methods, which check the DocType permission, so it adds no `sellos` API method.
+* A site with `sellos_control_site` set to 1 in its `site_config.json` is a control site. There the
+  `guard_control_site` request hook (`sellos/provisioning/control.py`) refuses every signed in user who is
+  not a Platform Admin, apart from sign out. Company sites never have the setting.

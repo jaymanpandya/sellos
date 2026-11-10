@@ -7,6 +7,7 @@ const HomePage = () => import("./pages/HomePage.vue");
 const LeadsPage = () => import("./pages/LeadsPage.vue");
 const LeadPage = () => import("./pages/LeadPage.vue");
 const SupportPage = () => import("./pages/SupportPage.vue");
+const TenantsPage = () => import("./pages/TenantsPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
 
 export function createAppRouter() {
@@ -34,6 +35,12 @@ export function createAppRouter() {
 				name: "support-access",
 				component: SupportPage,
 				meta: { area: "company" },
+			},
+			{
+				path: "/control/tenants",
+				name: "tenants",
+				component: TenantsPage,
+				meta: { area: "platform" },
 			},
 			{
 				path: "/no-access",

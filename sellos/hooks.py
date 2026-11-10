@@ -249,7 +249,9 @@ override_whitelisted_methods = {
 # ----------------
 # P0.10 customer roles never see the desk
 # P1.13 a Platform Admin with a support grant has every request logged
+# P1.01 the control site opens for a Platform Admin only
 before_request = [
+	"sellos.provisioning.control.guard_control_site",
 	"sellos.access.desk_guard.block_desk",
 	"sellos.access.registry.guard_api",
 	"sellos.access.support.log_support_request",

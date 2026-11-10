@@ -5,7 +5,10 @@ export const PERSONAS = [
 		key: "platform_admin",
 		role: "SellOS Platform Admin",
 		areas: ["platform", "home", "profile"],
-		nav: [{ key: "home", label: "Home", to: "/", area: "home" }],
+		nav: [
+			{ key: "home", label: "Home", to: "/", area: "home" },
+			{ key: "tenants", label: "Companies", to: "/control/tenants", area: "platform" },
+		],
 	},
 	{
 		key: "company_admin",
