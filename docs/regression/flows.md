@@ -34,3 +34,5 @@ FLOW SOS-P1-06A-1 | company_admin | /sellos/crm/leads | Sign in. Open Leads. Cli
 FLOW SOS-P1-06A-2 | agent | /sellos/crm/leads | Sign in as an agent. Open Leads. | Only the agent's own leads are listed. The page shows the company name, not the web address, in the navigation.
 FLOW SOS-P1-06A-3 | client | /sellos/crm/leads | Sign in as a client and type the Leads address. | The no access page opens and no lead is shown.
 FLOW SOS-P1-06A-4 | agent | /sellos | Look at the browser tab. | The tab shows the company logo when the company has one, otherwise the SellOS icon. Headings use Syne, text uses DM Sans, and buttons are green (#0f4c35) with amber (#e8954a) for warnings.
+FLOW SOS-P1-06B-1 | agent | /sellos/crm/leads | Sign in as an agent. Open a lead whose client has a phone number. | The phone shows masked (stars and the last three digits). The full number is nowhere on the page.
+FLOW SOS-P1-06B-2 | company_admin | /sellos/crm/leads | Sign in as a company admin. Open the same lead. | The full phone number shows. The number is in the history of changes for no one else.

@@ -219,9 +219,11 @@ has_permission = {
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "sellos.event.get_events"
-# }
+# P1.06B: the record loader leaves out the history of fields the reader may not read.
+override_whitelisted_methods = {
+	"frappe.desk.form.load.getdoc": "sellos.access.field_history.getdoc",
+	"frappe.desk.form.load.get_docinfo": "sellos.access.field_history.get_docinfo",
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,

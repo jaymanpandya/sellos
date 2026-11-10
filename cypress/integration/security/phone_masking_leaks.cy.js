@@ -2,9 +2,7 @@
 // record: the form loader, the document info, the generic client and resource calls, the report
 // view and the search. BuildOS found a leak this way (the change history held the old and new
 // values), so every path is tried as every role, for the current number and the one it replaced.
-// SOS-P1-06B removes this skip. The spec is its contract, and the gate runs the whole suite, so it
-// stays skipped until SOS-P1-06B is worked (scripts/check_no_stale_skips.py checks this).
-context.skip("SOS-P1-06B: phone numbers do not leak", () => {
+context("SOS-P1-06B: phone numbers do not leak", () => {
 	let seeded;
 
 	before(() => {

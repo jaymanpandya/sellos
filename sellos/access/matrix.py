@@ -12,10 +12,11 @@ every method here as every role, as an outsider and as a guest, and fails the bu
 Add one line per method, in the same commit that adds the method.
 """
 
-from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
+from sellos.access.roles import AGENT, CHANNEL_PARTNER, CLIENT, COMPANY_ADMIN, PLATFORM_ADMIN
 
 _READERS = frozenset({AGENT, CHANNEL_PARTNER, COMPANY_ADMIN})
 _LOGGERS = frozenset({AGENT, COMPANY_ADMIN})
+_OPENERS = frozenset({PLATFORM_ADMIN, COMPANY_ADMIN, AGENT, CLIENT, CHANNEL_PARTNER})
 
 # dotted method path -> the roles that may call it.
 MATRIX: dict[str, frozenset[str]] = {
@@ -28,4 +29,6 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.save_task": _LOGGERS,
 	"sellos.crm.api.save_site_visit": _LOGGERS,
 	"sellos.crm.api.set_archived": _READERS,
+	"sellos.access.field_history.getdoc": _OPENERS,
+	"sellos.access.field_history.get_docinfo": _OPENERS,
 }

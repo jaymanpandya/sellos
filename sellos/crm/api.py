@@ -59,8 +59,32 @@ def _save(doctype, name, values, allowed):
 	return doc
 
 
-def client_view(doc) -> dict:
-	"""A client as the current user may see it. Only a Company Admin gets the full phone numbers."""
+def log_full_number_shown(names) -> None:
+	"""Record that the current user was shown the full phone numbers of these clients (P1.06B).
+
+	One Access Log row per call, so a list of 100 clients writes one row. It holds who, when and
+	which clients, never a number."""
+	names = sorted(set(names))
+	if not names:
+		return
+	frappe.get_doc(
+		{
+			"doctype": "Access Log",
+			"export_from": "Client",
+			"user": frappe.session.user,
+			"method": "Full phone number shown",
+			"reference_document": names[0],
+			"filters": frappe.as_json(names),
+			"timestamp": now_datetime(),
+		}
+	).insert(ignore_permissions=True)
+
+
+def client_view(doc, log=True) -> dict:
+	"""A client as the current user may see it. Only a Company Admin gets the full phone numbers.
+
+	A full number shown is logged (P1.06B). A caller that shows many clients passes log=False and
+	calls log_full_number_shown once for all of them."""
 	view = {
 		"name": doc.name,
 		"client_name": doc.client_name,
@@ -75,6 +99,8 @@ def client_view(doc) -> dict:
 	if _sees_phone():
 		view["phone"] = doc.phone
 		view["overseas_phone"] = doc.overseas_phone
+		if log and (doc.phone or doc.overseas_phone):
+			log_full_number_shown([doc.name])
 	return view
 
 
@@ -93,7 +119,10 @@ def list_clients(search=None, include_archived=0):
 		order_by="modified desc",
 		limit_page_length=100,
 	)
-	return [client_view(frappe.get_doc("Client", name)) for name in names]
+	docs = [frappe.get_doc("Client", name) for name in names]
+	if _sees_phone():
+		log_full_number_shown([d.name for d in docs if d.phone or d.overseas_phone])
+	return [client_view(doc, log=False) for doc in docs]
 
 
 @sellos_api(*READERS)
