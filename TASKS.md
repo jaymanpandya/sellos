@@ -258,13 +258,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 
 ### SOS-P0-01: Summarise the BuildOS conventions
 - **Epic:** Platform foundations and DevOps
-- **Description:** As Jayman, I want a written summary of BuildOS's structure, tooling, build process and frontend, so that SellOS replicates them. Claude Code reads the BuildOS repository and documents the repository layout, app structure, bench and deployment setup, continuous integration, frontend stack, testing approach and styling, then lists any change that Frappe 16 or SellOS needs.
+- **Description:** As Jayman, I want a written summary of BuildOS's structure, tooling, build process and frontend, so that SellOS replicates them. Claude Code reads the BuildOS source in the read only reference copy at `~/iespl-baseline/buildos-reference` and documents the repository layout, app structure, bench and deployment setup, continuous integration, frontend stack, testing approach and styling, then lists any change that Frappe 16 or SellOS needs.
 - **Acceptance Criteria:**
   - The summary covers structure, tooling, build, frontend and tests.
   - Every point cites a BuildOS file or script.
   - Jayman approves it in writing.
 - **Test Criteria:** Spot check five claims against the repository. Jayman's approval is the gate.
-- **Notes:** SOS-SETUP-19: SOS-N16 is no longer a dependency (Jayman, 10 November 2026). Claude Code already has the access it needs to build. N16 stays Waiting for the DigitalOcean token. SOS-SETUP-20: the loop agent never reads or edits anything under apps/buildos, because the BuildOS loop runs on the same bench at the same time. Work from `docs/buildos-conventions.md`, the summary already in this repository with its BuildOS citations: review it against this task, fill gaps from SellOS's own files, and list for Jayman, in the summary, every point that can only be checked in BuildOS. Do not open apps/buildos, and do not fetch BuildOS another way.
+- **Notes:** SOS-SETUP-19: SOS-N16 is no longer a dependency (Jayman, 10 November 2026). Claude Code already has the access it needs to build. N16 stays Waiting for the DigitalOcean token. SOS-SETUP-21: read BuildOS code only in the read only reference copy at `~/iespl-baseline/buildos-reference`, with ls, cat, grep and find, and never write into it. Never read, list or run anything under `apps/buildos`. Cite each point by its path in the reference copy, which is the BuildOS path.
 - **Owner:** Claude Code
 - **Priority:** P0
 - **Launch:** Dec 20
@@ -280,6 +280,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Each installs on the staging bench.
   - Branch protection requires a reviewed pull request.
 - **Test Criteria:** Continuous integration is green on the empty skeletons, and a direct push to the main branch is rejected.
+- **Notes:** SOS-SETUP-21: read BuildOS code only in the read only reference copy at `~/iespl-baseline/buildos-reference`, with ls, cat, grep and find, and never write into it. Never read, list or run anything under `apps/buildos`.
 - **Owner:** Claude Code
 - **Priority:** P0
 - **Launch:** Dec 20
@@ -454,10 +455,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Description:** Closes the personal data checks for the CRM records (docs/DEV_STRATEGY.md section 6). Agents and partners see masked phone numbers and only a Company Admin sees full numbers (CLAUDE.md, "CRM data rules"). The change history, the form loader and the generic Frappe read paths must not show a full number to a role that may not see it.
 - **Acceptance Criteria:**
   - Remove the `context.skip` from cypress/integration/security/phone_masking_leaks.cy.js (and the comment above it that says SOS-P1-06B removes it), and make the spec pass as written. `scripts/check_no_stale_skips.py` fails this task's gate while the skip is there.
-  - A backend test for the masking and the permission rules. Reuse the approach of buildos.security.field_history so the change history never shows a full number to a role that may not see it (read BuildOS's version first).
+  - A backend test for the masking and the permission rules. Reuse the approach of buildos.security.field_history so the change history never shows a full number to a role that may not see it (read BuildOS's version first, at `~/iespl-baseline/buildos-reference/buildos/security/field_history.py`).
   - Showing a full number to a Company Admin is logged, or this task says which later task logs it.
 - **Test Criteria:** The backend test and the leak spec pass in the gate, and the spec first shows that the agent can read the client on at least one path.
-- **Notes:** buildos/buildos/security/field_history.py wraps frappe.desk.form.load.getdoc and get_docinfo through override_whitelisted_methods in hooks.py, and takes the changes to fields the reader may not read (permission level above their access) out of each Version row. The phone and overseas_phone fields are at permission level 1 here, so the same approach applies. Changing permissions, masking or personal data needs Jayman's approval, so reply NEEDS_INPUT if the approach has to change.
+- **Notes:** SOS-SETUP-21: read BuildOS code only in the read only reference copy at `~/iespl-baseline/buildos-reference`, with ls, cat, grep and find, and never write into it. Never read, list or run anything under `apps/buildos`. BuildOS's `buildos/security/field_history.py` (in the reference copy) wraps frappe.desk.form.load.getdoc and get_docinfo through override_whitelisted_methods in hooks.py, and takes the changes to fields the reader may not read (permission level above their access) out of each Version row. The phone and overseas_phone fields are at permission level 1 here, so the same approach applies. Changing permissions, masking or personal data needs Jayman's approval, so reply NEEDS_INPUT if the approach has to change.
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Launch:** Dec 20
@@ -506,6 +507,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The layout works at phone width.
   - The Frappe desk is blocked for customer roles.
 - **Test Criteria:** End to end tests for sign in and navigation per role, a manual check on a phone, and a test that customer roles are redirected away from the desk.
+- **Notes:** SOS-SETUP-21: read BuildOS code only in the read only reference copy at `~/iespl-baseline/buildos-reference`, with ls, cat, grep and find, and never write into it. Never read, list or run anything under `apps/buildos`.
 - **Owner:** Claude Code
 - **Priority:** P0
 - **Launch:** Dec 20
@@ -635,6 +637,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - It can be resumed if left.
   - The branding shows in the app after completion.
 - **Test Criteria:** An end to end test completes the wizard and checks the result.
+- **Notes:** SOS-SETUP-21: read BuildOS code only in the read only reference copy at `~/iespl-baseline/buildos-reference`, with ls, cat, grep and find, and never write into it. Never read, list or run anything under `apps/buildos`.
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Launch:** Dec 20
@@ -1497,12 +1500,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 
 ### SOS-P6-02: Define the plan tiers
 - **Epic:** Billing and subscriptions
-- **Description:** As Jayman, I want sensible plan tiers, so that pricing is clear. Claude Code reads how BuildOS structures its plans and proposes SellOS tiers in the same shape. Jayman approves the limits and prices.
+- **Description:** As Jayman, I want sensible plan tiers, so that pricing is clear. Claude Code reads how BuildOS structures its plans, in the read only reference copy at `~/iespl-baseline/buildos-reference`, and proposes SellOS tiers in the same shape. Jayman approves the limits and prices.
 - **Acceptance Criteria:**
   - A proposal is delivered.
   - Limits and prices are approved in writing.
   - The approved tiers are loaded as plans.
 - **Test Criteria:** Verified by the written approval and the loaded plan records. Limit enforcement is tested in SOS-P6-04.
+- **Notes:** SOS-SETUP-21: read BuildOS code only in the read only reference copy at `~/iespl-baseline/buildos-reference`, with ls, cat, grep and find, and never write into it. Never read, list or run anything under `apps/buildos`.
 - **Owner:** Claude Code, Jayman
 - **Priority:** P6
 - **Launch:** Jan 1

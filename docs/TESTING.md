@@ -9,7 +9,8 @@ The agent never commits. Git hooks are not used.
 
 1. New files are marked intent-to-add (`git ls-files --others --exclude-standard -z | xargs -0 git add
    --intent-to-add`), so every check below sees them as CI does. No content is staged.
-2. Preflight: the bench gate lock helper (`~/iespl-baseline/bench-gate-lock.sh`) exists, the bench
+2. Preflight: the bench gate lock helper (`~/iespl-baseline/bench-gate-lock.sh`, installed from
+   `scripts/shared/bench-gate-lock.sh`) exists, the bench
    serves `sellos_test.localhost`, the clean baseline and Semgrep exist. A BuildOS gate or loop may be
    running at the same time (SOS-SETUP-20).
 3. Lint (`pre-commit run --all-files`) and Semgrep, CI's exact command (`semgrep ci` with the Frappe
@@ -72,6 +73,7 @@ These decide whether a task passes, so a task may not change them unless its blo
 `scripts/check_*.py`, `cypress.config.js`, `cypress/support/e2e.js`, `.pre-commit-config.yaml`,
 `.semgrepignore`, `.eslintrc`, `.github/workflows/*`, `docs/DEV_STRATEGY.md`,
 `scripts/prepare-regression.sh`, `scripts/pause-loop.sh`, `scripts/resume-loop.sh`,
+`scripts/refresh-buildos-reference.sh`, `scripts/install-shared-helpers.sh`, `scripts/shared/*`,
 `docs/regression/README.md` and this file. `docs/regression/flows.md`
 is append only: a task adds its flows and may never remove one.
 

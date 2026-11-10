@@ -132,6 +132,8 @@ class Sandbox(unittest.TestCase):
 	def setUp(self):
 		self.root = Path(tempfile.mkdtemp(prefix="sellos-loop-env-"))
 		self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
+		# The BuildOS reference copy is read only (SOS-SETUP-21): make it writable before removal.
+		self.addCleanup(subprocess.run, ["chmod", "-R", "u+w", str(self.root)], check=False)
 		self.bench = self.root / "bench"
 		self.repo = self.bench / "apps" / "sellos"
 		self.fake = self.root / "fake"
@@ -184,6 +186,8 @@ class Sandbox(unittest.TestCase):
 			# Never the real bench gate lock (SOS-SETUP-20).
 			"BENCH_GATE_LOCK_DIR": str(self.root / "bench-gate.lock.d"),
 			"BENCH_GATE_POLL": "1",
+			# Never the real BuildOS reference copy (SOS-SETUP-21).
+			"SELLOS_BUILDOS_REFERENCE": str(self.root / "buildos-reference"),
 			**GIT_ENV,
 		}
 		return env
@@ -199,8 +203,22 @@ class LoopSandbox(Sandbox):
 
 	def setUp(self):
 		super().setUp()
-		for name in ("build-loop.sh", "select-next-task.sh", "set-task-status.sh", "limit_wait.py"):
+		for name in (
+			"build-loop.sh",
+			"select-next-task.sh",
+			"set-task-status.sh",
+			"limit_wait.py",
+			"refresh-buildos-reference.sh",
+			"install-shared-helpers.sh",
+		):
 			shutil.copy2(SCRIPTS / name, self.repo / "scripts" / name)
+		# SOS-SETUP-21: at its start the loop installs the shared lock helper and refreshes the BuildOS
+		# reference copy from bench/apps/buildos, so the sandbox has both.
+		self.write(
+			self.repo / "scripts/shared/bench-gate-lock.sh",
+			(SCRIPTS / "shared/bench-gate-lock.sh").read_text(),
+		)
+		self.write(self.bench / "apps/buildos/buildos/hooks.py", "app_name = 'buildos'\n")
 		for name in ("tasks.py", "db_secrets.sh"):
 			shutil.copy2(SCRIPTS / "lib" / name, self.repo / "scripts" / "lib" / name)
 		self.write(self.repo / "scripts/run-tests.sh", FAKE_GATE, 0o755)

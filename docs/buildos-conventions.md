@@ -41,7 +41,7 @@ This summary comes from a snapshot of the BuildOS repository: the first 400 file
 
 ## 5. Platform features already in BuildOS
 
-The file list shows BuildOS already has working versions of things SellOS needs. These are candidates to read and reuse in the matching stories, and none has been inspected yet:
+The file list shows BuildOS already has working versions of things SellOS needs. These are candidates to read and reuse in the matching stories (read them only in the read only copy `~/iespl-baseline/buildos-reference`, never under `apps/buildos`; SOS-SETUP-21), and none has been inspected yet:
 
 * **Access control** (`buildos/access/`): a registry, a guard, an audit module, a retired role module, and tests per role group. This is the model for the permission matrix in P1.04 and P1.05.
 * **Platform administration:** `Platform Settings`, `Platform Billing Setting` and `Platform Coupon` DocTypes, and the platform pages above. These relate to E12 and the control site in E4.

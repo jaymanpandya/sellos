@@ -45,6 +45,10 @@ PROTECTED = [
 	# The regression pause switches (SOS-SETUP-19).
 	"scripts/pause-loop.sh",
 	"scripts/resume-loop.sh",
+	# The BuildOS reference copy and the shared bench helpers (SOS-SETUP-21).
+	"scripts/refresh-buildos-reference.sh",
+	"scripts/install-shared-helpers.sh",
+	"scripts/shared/*",
 ]
 
 # A task adds its flows here, so the file is not protected from a change. A flow already in it may

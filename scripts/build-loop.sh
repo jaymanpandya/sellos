@@ -92,6 +92,25 @@ trap 'rm -f "$LOCK_FILE"' EXIT
 
 cd "$PROJECT_DIR"
 
+# SOS-SETUP-21, once per loop start, not per task. The bench gate lock helper every gate sources must
+# be the copy this repository keeps (scripts/shared). A missing or different copy is reinstalled.
+INSTALLED_HELPER="${SELLOS_BASELINE_DIR:-$HOME/iespl-baseline}/bench-gate-lock.sh"
+if ! cmp -s "$SCRIPT_DIR/shared/bench-gate-lock.sh" "$INSTALLED_HELPER"; then
+  echo "WARNING: $INSTALLED_HELPER is missing or differs from scripts/shared/bench-gate-lock.sh. Reinstalling it."
+  if ! "$SCRIPT_DIR/install-shared-helpers.sh"; then
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: could not install the bench gate lock helper at $INSTALLED_HELPER. Stopping before any task starts." || true
+    exit 3
+  fi
+fi
+# The agent reads BuildOS only in this read only copy, never under apps/buildos.
+if ! REFERENCE_OUT="$("$SCRIPT_DIR/refresh-buildos-reference.sh" 2>&1)"; then
+  echo "$REFERENCE_OUT"
+  "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: Environment problem, not the task. The BuildOS reference copy could not be refreshed. Stopping before any task starts:
+$REFERENCE_OUT" || true
+  exit 3
+fi
+echo "$REFERENCE_OUT"
+
 # Nobody is at the keyboard: git must fail at once instead of waiting for a password or a host key.
 export GIT_TERMINAL_PROMPT=0
 ORIGIN_URL="$(git remote get-url origin 2>/dev/null || true)"
@@ -343,7 +362,7 @@ company or suite brand. The word 'Frappe' must never appear in any user
 facing label, screen, or error message.
 
 Shared bench (SOS-SETUP-20): the BuildOS loop runs on this bench at the
-same time. Never change the shared environment: no pip install, no npm install -g, no bench update, no bench setup, no bench get-app, and no install-app on any site except sellos_test.localhost and sellos_tenant_*.localhost. Never read or edit anything under apps/buildos. The bench server on port 8000 and the sites pamaa and awh are not yours.
+same time. Never change the shared environment: no pip install, no npm install -g, no bench update, no bench setup, no bench get-app, and no install-app on any site except sellos_test.localhost and sellos_tenant_*.localhost. Never read, list or run anything under apps/buildos (~/iespl-bench/apps/buildos). To read BuildOS code, use only the read only reference copy at ~/iespl-baseline/buildos-reference, with ls, cat, grep and find, and never write, chmod, move or delete anything in it. The bench server on port 8000 and the sites pamaa and awh are not yours.
 
 Rebuild from scratch (Jayman, 10 November 2026): build this task from its
 own text. Do not assume the existing code is right. Read what is there,
@@ -477,7 +496,7 @@ $PREFLIGHT_OUT"
     echo "The gate failed. Asking Claude to repair it from the failure output (gate run $GATE_RUN of $MAX_GATE_RUNS)."
     FAILCTX="$(failure_context)"
     REPAIR_PROMPT="The test gate for the task below failed. Your changes are still in the working tree, uncommitted, and nothing has been reset. Read the failure output at the end, find the cause in the code, and fix it. This is gate run $GATE_RUN of $MAX_GATE_RUNS.
-Rules. Fix the product code or the test you added, and never delete or weaken an assertion to make a test pass. A failing test is fixed in the code, not in the test, unless the task block says otherwise. Never use the MariaDB root account or a root password: only the provisioner account in SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD, whose values you never print, log or write. Never edit a gate file: scripts/run-tests.sh, scripts/build-loop.sh, scripts/watchdog.sh, scripts/select-next-task.sh, scripts/set-task-status.sh, scripts/make-baseline.sh, scripts/prepare-regression.sh, scripts/pause-loop.sh, scripts/resume-loop.sh, anything under scripts/lib, scripts/check_*.py, cypress.config.js, cypress/support/e2e.js, .pre-commit-config.yaml, .semgrepignore, .eslintrc, .github/workflows, docs/DEV_STRATEGY.md, docs/TESTING.md or docs/regression/README.md, and never change the [tool.ruff] tables in pyproject.toml (adding a dependency there is fine). Never remove an assertion and never delete a test file. If a failing test is in a file this task did not change, follow the policy below. Read the whole failing test first, because the first failing assertion hides every later one: check every assertion against the code before you reply, and fix all of them in this pass. You may run the single backend test module or the single browser spec that you changed, one at a time and in the foreground, from ~/iespl-bench: bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>, or bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Never run the full suite, and never run anything in the background. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. The word Frappe must never appear in any user facing label, screen, or error message.
+Rules. Fix the product code or the test you added, and never delete or weaken an assertion to make a test pass. A failing test is fixed in the code, not in the test, unless the task block says otherwise. Never use the MariaDB root account or a root password: only the provisioner account in SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD, whose values you never print, log or write. Never edit a gate file: scripts/run-tests.sh, scripts/build-loop.sh, scripts/watchdog.sh, scripts/select-next-task.sh, scripts/set-task-status.sh, scripts/make-baseline.sh, scripts/prepare-regression.sh, scripts/pause-loop.sh, scripts/resume-loop.sh, scripts/refresh-buildos-reference.sh, scripts/install-shared-helpers.sh, anything under scripts/shared, anything under scripts/lib, scripts/check_*.py, cypress.config.js, cypress/support/e2e.js, .pre-commit-config.yaml, .semgrepignore, .eslintrc, .github/workflows, docs/DEV_STRATEGY.md, docs/TESTING.md or docs/regression/README.md, and never change the [tool.ruff] tables in pyproject.toml (adding a dependency there is fine). Never remove an assertion and never delete a test file. If a failing test is in a file this task did not change, follow the policy below. Read the whole failing test first, because the first failing assertion hides every later one: check every assertion against the code before you reply, and fix all of them in this pass. You may run the single backend test module or the single browser spec that you changed, one at a time and in the foreground, from ~/iespl-bench: bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>, or bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Never run the full suite, and never run anything in the background. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. The word Frappe must never appear in any user facing label, screen, or error message.
 Respond with either of the following as the literal first characters of your response, nothing before it:
 Policy, because nobody can answer questions during a run, so never ask one. If a failing test is outside this task, you may fix that test file or the shared fixtures it uses when the cause is test data, test order or a hard coded assumption, and you must say what you changed. If a test deletes or empties shared data, make it restore what it removed, even when it fails. Never change product code that this task did not touch just to make a test pass, and never weaken or delete an assertion. If you truly cannot fix it, still reply with IMPLEMENTATION_READY and a plain account of what is failing and why.
 Respond with this as the literal first characters of your response, nothing before it:

@@ -30,7 +30,8 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 * Do not start a task whose dependencies are not Complete or Not Needed, and do not work on Parked or Not Needed tasks.
 * Rebuild from scratch (Jayman, 10 November 2026). Every task is rebuilt from its own text. Do not assume existing code is right: read it, replace what is weak, keep what passes review, and add or refresh tests that name the task, even where code for it already exists. Do not delete the tree first. The commit before the rebuild is tagged `legacy/before-rebuild`.
 * The product is called SellOS everywhere, exactly as BuildOS is called BuildOS, with no company or suite brand.
-* Shared bench (SOS-SETUP-20). The BuildOS and SellOS loops run at the same time on `~/iespl-bench`. Never change the shared environment: no pip install, no npm install -g, no bench update, no bench setup, no bench get-app, and no install-app on any site except sellos_test.localhost and sellos_tenant_*.localhost. Never read or edit anything under apps/buildos. The bench server on port 8000 and the sites pamaa and awh are not yours. The two gates share only their heavy segment, through the bench gate lock (`~/iespl-baseline/bench-gate-lock.sh`).
+* Shared bench (SOS-SETUP-20). The BuildOS and SellOS loops run at the same time on `~/iespl-bench`. Never change the shared environment: no pip install, no npm install -g, no bench update, no bench setup, no bench get-app, and no install-app on any site except sellos_test.localhost and sellos_tenant_*.localhost. Never read, list or run anything under apps/buildos. The bench server on port 8000 and the sites pamaa and awh are not yours. The two gates share only their heavy segment, through the bench gate lock (`~/iespl-baseline/bench-gate-lock.sh`).
+* BuildOS reference (SOS-SETUP-21). To read BuildOS code, use only the read only reference copy at `~/iespl-baseline/buildos-reference`, with ls, cat, grep and find. Never write, chmod, move or delete anything in it. Never read, list or run anything under `apps/buildos`, where the BuildOS loop is working. The loop refreshes the copy once at its start (`scripts/refresh-buildos-reference.sh`, SOS-SETUP-21).
 * Regression is a scheduled pause, not a gate: `scripts/pause-loop.sh` stops the loop before its next pick and `scripts/resume-loop.sh` lets it go on (see `docs/DEV_STRATEGY.md` section 8).
 
 ## Stop and ask Jayman when
@@ -56,7 +57,7 @@ Run these from the app folder (`apps/sellos` in the bench). Never start, stop or
 * Code is grouped in subpackages of `sellos/`: `access`, `crm`, `telephony`, `intel`, `inventory`, `reports`, `scraper`, `whatsapp` and `billing`. Tests are named `test_*.py` and sit beside the code.
 * Each DocType has its own folder under `sellos/sellos/doctype/<name>/` with its JSON, Python file and test.
 * Comments cite story IDs such as P1.04, not other ticket schemes.
-* The BuildOS conventions are in `docs/buildos-conventions.md`.
+* The BuildOS conventions are in `docs/buildos-conventions.md`. BuildOS code itself is read only in `~/iespl-baseline/buildos-reference`, never under `apps/buildos`.
 
 ## Role model
 
