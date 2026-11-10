@@ -101,13 +101,22 @@ class TheGateAndCiUseIt(unittest.TestCase):
 		self.assertEqual(len(re.findall(r"^\s*bench --site \S+ run-tests\b", ci, re.M)), 0)
 
 	def test_the_gate_runs_every_backend_test_command_through_the_wrapper(self):
+		"""Rewritten on purpose by SOS-SETUP-25: the gate's backend commands moved into run_backend
+		(scripts/lib/db_conflict.sh), which reruns a module after a database conflict. Every one of
+		them, the first run and the rerun, still goes through the wrapper."""
 		gate = (REPO_ROOT / "scripts/run-tests.sh").read_text(encoding="utf-8")
+		lib = (REPO_ROOT / "scripts/lib/db_conflict.sh").read_text(encoding="utf-8")
 		self.assertIn('REPORT_TEST_EXIT="apps/$APP/scripts/lib/report_test_exit.sh"', gate)
-		self.assertIn('"$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP"\n', gate)
-		self.assertIn('"$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP" --module "$mod"', gate)
+		self.assertIn('source "$REPO_DIR/scripts/lib/db_conflict.sh"', gate)
+		# The whole suite and each changed module run through run_backend.
+		self.assertIn('run_backend "$LOG_DIR/backend-$STAMP-all.log" ||', gate)
+		self.assertIn('run_backend "$LOG_DIR/backend-$STAMP-$mod.log" --module "$mod" ||', gate)
+		# run_backend runs the wrapper for the first run and for the rerun of a failing module.
+		self.assertIn('"$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP" "$@"', lib)
+		self.assertIn('"$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP" --module "$mod"', lib)
 		bare = [
 			line
-			for line in gate.splitlines()
+			for line in (gate + "\n" + lib).splitlines()
 			if re.search(r"\bbench --site \S+ run-tests\b", line) and "REPORT_TEST_EXIT" not in line
 		]
 		self.assertEqual(bare, [])
