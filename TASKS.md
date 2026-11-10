@@ -448,7 +448,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-04
-- **Status:** Not Started
+- **Status:** Blocked
 - **Browser spec:** required
 
 ### SOS-P1-06B: Phone numbers do not leak
