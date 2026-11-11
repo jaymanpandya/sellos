@@ -36,7 +36,7 @@ This file is the backlog for building SellOS, in the BuildOS block format that `
 
 ## Epics
 
-* E1 Compliance, procurement and access: 11 active stories, 22 active points. Starts in week 1.
+* E1 Compliance, procurement and access: 12 active stories, 27 active points. Starts in week 1. SOS-N21A (the voice bake-off harness) is the one built by Claude Code.
 * E2 Platform foundations and DevOps: 12 stories, 49 points. Phases 0, 1 and 6.
 * E3 Web app, roles and security: 5 stories, 32 points. Phases 0, 1 and 5.
 * E4 Multitenancy and provisioning: 5 stories, 27 points. Phases 0 and 1.
@@ -241,21 +241,68 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Dependencies:** none
 - **Status:** Not Needed
 
-### SOS-N21: Choose the voice AI providers, call languages and disclosure line
+### SOS-N21: Choose the Hinglish voice AI providers and disclosure line
 - **Epic:** Compliance, procurement and access
-- **Description:** As Jayman, I want the building blocks of the voice agent chosen, so that SOS-P5-07 is built on settled choices. Choose the speech to text, language model and text to speech providers, the languages the agent calls in, and the AI disclosure line it says at the start of every call. Added (Jayman, 10 November 2026).
+- **Description:** As Jayman, I want the building blocks of the voice agent chosen, so that SOS-P5-07 is built on settled choices. The agent calls in Hinglish: spoken Hindi with English words, on phone lines at 8 kHz (Jayman, 11 November 2026). Choose the speech to text, language model and text to speech providers, and write the AI disclosure line in Roman Hinglish. The choice is made from the bake-off results in `docs/bakeoff/results.md`, which SOS-N21A's harness writes from our own recordings, not from vendor claims (`docs/DEV_STRATEGY.md` row 33).
 - **Acceptance Criteria:**
   - The speech to text, language model and text to speech providers are named, with who holds the account and key for each.
-  - The call languages are listed.
-  - The exact AI disclosure line is written down in each call language.
-- **Test Criteria:** Verified by Jayman.
-- **Notes:** Record the choices here, in this block, for SOS-P5-07 to read.
+  - The speech to text choice cites its numbers in `docs/bakeoff/results.md`: word error rate, entity accuracy for numbers, prices and localities (each scored separately) and time to first result.
+  - The text to speech choice cites its mean rating (1 to 5) from the rating sheet and its latency from `docs/bakeoff/results.md`.
+  - The call language is Hinglish, and transcripts and prompts are in Roman script.
+  - The exact AI disclosure line is written down in Roman Hinglish.
+- **Test Criteria:** Verified by Jayman against `docs/bakeoff/results.md`.
+- **Notes:** Record the choices here, in this block, for SOS-P5-07 to read. Speech to text candidates: Sarvam Saaras V3 and Deepgram Nova-3 (language=multi, with real estate keyterms). Text to speech candidates: Sarvam Bulbul V3 and ElevenLabs. The bake-off does not score the language model; Jayman names it here. Rewritten by SOS-SETUP-30 (Jayman, 11 November 2026): the call languages are now Hinglish only, and the choice waits for the bake-off.
 - **Owner:** Jayman
 - **Priority:** P5
 - **Launch:** Dec 20
 - **Story Points:** 1
-- **Dependencies:** none
+- **Dependencies:** SOS-N21A
 - **Status:** Waiting
+
+### SOS-N21A: Build the Hinglish voice bake-off harness
+- **Epic:** Compliance, procurement and access
+- **Description:** As Jayman, I want a harness I run on my own machine that scores the voice providers on our own Hinglish phone audio, so that SOS-N21 is chosen from measurements, not vendor claims. Build `scripts/bakeoff.sh` and the package `sellos/voice/bakeoff/`. A human runs the harness locally. The agent builds and tests it with fake providers only, and never calls a real provider.
+  Input: `~/iespl-baseline/bakeoff/audio/*.wav` and `~/iespl-baseline/bakeoff/reference.tsv`. The TSV has one row per recording: `file`, `reference` (the transcript in Roman Hinglish), and the key entities in three columns, `numbers`, `prices` and `localities` (each a `;` separated list, empty when there is none). Ship a template `docs/bakeoff/reference.tsv` with the 20 rows below and their entities filled in, and `docs/bakeoff/sentences.md` listing the same 20 lines for Jayman to record, one file each:
+  - `01.wav`: Namaste, mujhe Bandra West mein ek 2 BHK flat dekhna hai, budget teen crore tak hai.
+  - `02.wav`: Carpet area kitna hai aur parking kitni milti hai?
+  - `03.wav`: Possession December 2027 ka hai, lekin RERA number kya hai?
+  - `04.wav`: Andheri East mein ready to move flat chahiye, price do crore pachaas lakh ke andar.
+  - `05.wav`: Main kal shaam chhe baje site visit ke liye aa sakta hoon.
+  - `06.wav`: Maintenance charge har mahine kitna padega?
+  - `07.wav`: Loan approval ke liye mujhe bank ka contact number chahiye.
+  - `08.wav`: Aap WhatsApp pe brochure bhej dijiye, number nau aath saat chhe paanch chaar teen do ek zero hai.
+  - `09.wav`: Sea facing wala flat available hai kya, ya sirf city view?
+  - `10.wav`: Mera naam Rahul Mehta hai, main NRI hoon aur Dubai mein rehta hoon.
+  - `11.wav`: Booking amount kitna hoga, aur payment plan kya hai?
+  - `12.wav`: Resale flat hai ya developer se seedha?
+  - `13.wav`: Floor rise charge alag se lagega kya?
+  - `14.wav`: Mujhe abhi baat nahi karni, kal subah gyarah baje call kijiye.
+  - `15.wav`: Stamp duty aur registration milake total kitna padega?
+  - `16.wav`: Powai ya Goregaon, dono mein se kaunsa better rahega investment ke liye?
+  - `17.wav`: Worli mein ek tower hai jahan mujhe 3 BHK chahiye.
+  - `18.wav`: Kya aap AI ho ya insaan?
+  - `19.wav`: Thoda dheere boliye, line mein awaaz kat rahi hai.
+  - `20.wav`: Rate per square foot kitna chal raha hai is area mein, around 45 hazaar?
+  Speech to text: the candidates are Sarvam (Saaras V3) and Deepgram (Nova-3, `language=multi`, with keyterms for real estate words, read from a list in the package: BHK, carpet area, RERA, possession, maintenance, floor rise, stamp duty, the localities above and the like). The harness sends each recording as 8 kHz mono audio, as a phone line carries it, converting a recording that is not 8 kHz first. For each provider and each file it records the transcript, the word error rate against the reference, entity accuracy for numbers, prices and localities scored separately, and the time to first result. Scoring normalises both sides before comparing: case and punctuation, and spoken Hindi or English numbers against digits, so "teen crore" and "3 crore", "do crore pachaas lakh" and "2.5 crore", and "nau aath saat" and "987" match.
+  Text to speech: write 20 agent replies in Roman Hinglish, the first being a draft of the AI disclosure line (SOS-N21 sets the final one). Generate each at 8 kHz with each provider (Sarvam Bulbul V3 and ElevenLabs), save the audio under `~/iespl-baseline/bakeoff/out/<provider>/`, record the latency (time to first audio and total), and write a rating sheet `docs/bakeoff/rating-sheet.md` with one row per reply and provider and an empty 1 to 5 column for Jayman.
+  Results: write `docs/bakeoff/results.md`: one table per provider with every file's numbers, then a summary table comparing the providers (mean word error rate, entity accuracy per kind, median and slowest time to first result, text to speech latency). Ship it as "Not run yet" until Jayman runs the harness.
+  Keys: they come only from the macOS Keychain items `sellos_sarvam_key`, `sellos_deepgram_key` and `sellos_elevenlabs_key`, through one function `get_secret(name)` in `sellos/voice/bakeoff/`, built like `get_provisioner_password()` in `sellos/provisioning/credentials.py`. It accepts only those three names. A key goes only into the request to its provider: nothing prints, logs or writes one, no exception message or result holds one, and the frame that raises a provider error holds no key (`docs/DEV_STRATEGY.md` row 29). When an item is missing, the error says how to store it (`security add-generic-password -a "$USER" -s <name> -w`) without showing a value.
+- **Acceptance Criteria:**
+  - `scripts/bakeoff.sh --fake` runs the whole harness with fake speech to text and text to speech providers on test recordings, and writes the transcripts, scores, latencies, audio, rating sheet and `results.md` to a folder it is given.
+  - Real providers run only with `scripts/bakeoff.sh --live`, which refuses to start when standard input is not a terminal, so the build loop's agent cannot run it. The agent never runs `--live`.
+  - Word error rate and entity accuracy are correct on hand worked examples, including spoken numbers and prices against digits, and numbers, prices and localities are scored separately.
+  - Time to first result and text to speech latency are measured and recorded per file.
+  - `docs/bakeoff/reference.tsv` holds the 20 rows with their entities, `docs/bakeoff/sentences.md` lists the 20 lines, and `docs/bakeoff/results.md` says "Not run yet".
+  - `get_secret` reads only the three Keychain items, and no key appears in standard output, standard error, a log, a results file or a traceback with its locals.
+  - The speech to text and text to speech candidates sit behind one adapter interface each, so a provider is added by writing one adapter.
+- **Test Criteria:** Backend tests with fake providers: scoring on worked examples, a whole `--fake` run on two short 8 kHz test recordings, `--live` refused without a terminal, `get_secret` refusing an unknown name, and a fake key that never appears in the captured output, the written files or a formatted traceback with locals. The Keychain is never read in a test: the call is replaced.
+- **Notes:** Added by SOS-SETUP-30 (Jayman, 11 November 2026). Never run `security find-generic-password -w` or any command that prints a key. Add no package: the bench is shared (SOS-SETUP-20). Use the standard library and what Frappe already installs; if a provider's streaming API needs a library the bench does not have, measure its HTTP API and say so in `results.md`. The recordings and generated audio stay in `~/iespl-baseline/bakeoff/`, never in the repository.
+- **Owner:** Claude Code
+- **Priority:** P5
+- **Launch:** Dec 20
+- **Story Points:** 5
+- **Dependencies:** none
+- **Status:** Not Started
 
 ### SOS-P0-01: Summarise the BuildOS conventions
 - **Epic:** Platform foundations and DevOps
@@ -1438,15 +1485,20 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 
 ### SOS-P5-07: Build the voice agent service
 - **Epic:** Voice AI pilot
-- **Description:** As Jayman, I want an AI voice agent that can hold a short qualifying call, so that we can test AI calling safely. Build a service that receives call audio from Plivo by audio streaming, uses the speech to text, language model and text to speech providers and the call languages chosen in SOS-N21, reads lead context from SellOS and writes the outcome back. It opens every call with the AI disclosure line chosen in SOS-N21 and hands over to a human on request or confusion.
+- **Description:** As Jayman, I want an AI voice agent that can hold a short qualifying call in Hinglish, so that we can test AI calling safely. Build a service that receives call audio from Plivo by audio streaming, uses the speech to text, language model and text to speech providers chosen in SOS-N21, reads lead context from SellOS and writes the outcome back. The agent speaks Hinglish, and its transcripts and prompts are in Roman script (Jayman, 11 November 2026). It opens every call with the AI disclosure line chosen in SOS-N21, and a caller can ask for a human at any time.
 - **Acceptance Criteria:**
   - A live call connects to the agent over audio streaming.
-  - The agent opens every call with the AI disclosure line from SOS-N21.
-  - It hands over to a human on request or confusion.
+  - The agent speaks Hinglish. Transcripts and prompts are in Roman script.
+  - The AI disclosure line from SOS-N21 opens every call, before anything else is said.
+  - The first audio of each reply starts within about one second of the caller finishing speaking. The time from the end of the caller's speech to the first audio sent is measured for every turn and recorded on the Call Log.
+  - Real estate vocabulary is a per company list of keyterms, which a Company Admin edits, and it is passed to the speech to text provider on every call.
+  - A caller can ask for a human at any time, including during the disclosure line or while the agent is speaking, and the call is handed over to a human. The agent also hands over on confusion.
+  - The speech to text and text to speech adapters each sit behind one replaceable interface, and the provider in use is a setting, so the SOS-N21 choice can change without a rebuild.
   - It writes the outcome and transcript to the Call Log.
   - It runs the consent function of SOS-P2-04 before each call and records the consent status and warning on the Call Log. It never refuses a call on consent while Consent enforcement is Off. Consent never blocks (Jayman, 10 November 2026).
   - It records each call's purpose, and a promotional purpose on the 022 number is recorded as a warning.
-- **Test Criteria:** Scripted test calls covering normal, interruption, silence and handover cases, and a latency measurement against the agreed target.
+- **Test Criteria:** Scripted test calls covering normal, interruption, silence and handover cases, including a request for a human during the disclosure line and mid reply. A latency measurement per turn from the end of caller speech to first audio, reported as median and slowest against the one second target. A test that the disclosure line is the first audio of every call, a test that the company's keyterms reach the speech to text request, and a test that switching the provider setting to a fake adapter changes the provider with no code change.
+- **Notes:** Updated by SOS-SETUP-30 (Jayman, 11 November 2026): Hinglish, Roman script, the one second target, per company keyterms, handover at any time and replaceable adapters.
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Launch:** Dec 20
@@ -1898,7 +1950,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P6
 - **Launch:** Jan 1
-- **Dependencies:** SOS-N12, SOS-N14, SOS-N15, SOS-N16, SOS-N21, SOS-P0-01, SOS-P0-02, SOS-P0-03, SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-07, SOS-P0-06L, SOS-P0-08, SOS-P0-09, SOS-P0-12, SOS-P1-06A, SOS-P1-06B, SOS-P1-14, SOS-P6-12, SOS-P0-10, SOS-P1-04, SOS-P1-05, SOS-P1-13, SOS-P5-10, SOS-P0-11, SOS-P1-01, SOS-P1-02, SOS-P1-03, SOS-P1-11, SOS-P1-07, SOS-P1-08, SOS-P1-09, SOS-P1-10, SOS-P1-12, SOS-P2-01, SOS-P2-02, SOS-P2-03, SOS-P2-04, SOS-P2-05, SOS-P2-06, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-13, SOS-P2-14, SOS-P3-01, SOS-P3-02, SOS-P3-03, SOS-P3-04, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12, SOS-P3-13, SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07, SOS-P4-08, SOS-P4-09, SOS-P4-10, SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06, SOS-P5-07, SOS-P5-08, SOS-P5-09, SOS-P6-01, SOS-P6-02, SOS-P6-03, SOS-P6-15, SOS-P6-04, SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-09, SOS-P6-10, SOS-P6-11, SOS-P6-16, SOS-P6-17, SOS-P6-13, SOS-P6-14, SOS-REG-A, SOS-REG-B, SOS-REG-C, SOS-FIX-1
+- **Dependencies:** SOS-N12, SOS-N14, SOS-N15, SOS-N16, SOS-N21, SOS-N21A, SOS-P0-01, SOS-P0-02, SOS-P0-03, SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-07, SOS-P0-06L, SOS-P0-08, SOS-P0-09, SOS-P0-12, SOS-P1-06A, SOS-P1-06B, SOS-P1-14, SOS-P6-12, SOS-P0-10, SOS-P1-04, SOS-P1-05, SOS-P1-13, SOS-P5-10, SOS-P0-11, SOS-P1-01, SOS-P1-02, SOS-P1-03, SOS-P1-11, SOS-P1-07, SOS-P1-08, SOS-P1-09, SOS-P1-10, SOS-P1-12, SOS-P2-01, SOS-P2-02, SOS-P2-03, SOS-P2-04, SOS-P2-05, SOS-P2-06, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-13, SOS-P2-14, SOS-P3-01, SOS-P3-02, SOS-P3-03, SOS-P3-04, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12, SOS-P3-13, SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07, SOS-P4-08, SOS-P4-09, SOS-P4-10, SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06, SOS-P5-07, SOS-P5-08, SOS-P5-09, SOS-P6-01, SOS-P6-02, SOS-P6-03, SOS-P6-15, SOS-P6-04, SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-09, SOS-P6-10, SOS-P6-11, SOS-P6-16, SOS-P6-17, SOS-P6-13, SOS-P6-14, SOS-REG-A, SOS-REG-B, SOS-REG-C, SOS-FIX-1
 - **Status:** Waiting
 
 ### SOS-FIX-1: An unknown path under /sellos shows a blank page

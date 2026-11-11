@@ -148,6 +148,21 @@ class RealTasksFile(unittest.TestCase):
 		self.assertEqual(self.by_id["SOS-P5-08"]["deps"], ["SOS-P5-07", "SOS-P2-14"])
 		self.assertEqual(self.by_id["SOS-P5-09"]["deps"], ["SOS-P5-08"])
 
+	def test_the_hinglish_bakeoff_blocks_the_voice_choice(self):
+		"""SOS-SETUP-30: SOS-N21 is chosen from SOS-N21A's bake-off on our own Hinglish audio."""
+		n21, n21a = self.by_id["SOS-N21"], self.by_id["SOS-N21A"]
+		self.assertEqual(n21["deps"], ["SOS-N21A"])
+		self.assertEqual(n21["status"], "Waiting")
+		self.assertEqual(n21a["deps"], [])
+		self.assertEqual(n21a["launch"], "Dec 20")
+		self.assertIn("SOS-N21A", self.by_id["SOS-REG-L"]["deps"])
+		block = self.text.split("### SOS-N21A:", 1)[1].split("\n### ", 1)[0]
+		for i in range(1, 21):
+			self.assertIn(f"`{i:02d}.wav`", block)
+		for name in ("sellos_sarvam_key", "sellos_deepgram_key", "sellos_elevenlabs_key", "get_secret(name)"):
+			self.assertIn(name, block)
+		self.assertIn("docs/bakeoff/results.md", self.text.split("### SOS-N21:", 1)[1].split("\n### ", 1)[0])
+
 	def test_the_status_values_line_names_not_needed(self):
 		line = next(x for x in self.text.splitlines() if x.startswith("* Status values:"))
 		self.assertIn("Not Needed", line)
