@@ -116,6 +116,7 @@ jobs:
           path: |
             /home/runner/frappe-bench
             !/home/runner/frappe-bench/apps/sellos
+            !/home/runner/frappe-bench/apps/sellos/**
           key: ${{ env.BENCH_KEY }}
 
       - name: Setup
@@ -129,6 +130,9 @@ jobs:
       - name: Install
         working-directory: /home/runner/frappe-bench
         run: |
+          # The app is never taken from the cache: run 42944801058 restored a copy, and get-app stopped
+          # at its overwrite prompt. Each run gets this commit (SOS-SETUP-28).
+          rm -rf apps/sellos
           bench get-app sellos $GITHUB_WORKSPACE
           bench setup requirements --dev
         env:
@@ -142,6 +146,7 @@ jobs:
           path: |
             /home/runner/frappe-bench
             !/home/runner/frappe-bench/apps/sellos
+            !/home/runner/frappe-bench/apps/sellos/**
           key: ${{ env.BENCH_KEY }}
 
       - name: Create the site
@@ -273,6 +278,7 @@ jobs:
           path: |
             /home/runner/frappe-bench
             !/home/runner/frappe-bench/apps/sellos
+            !/home/runner/frappe-bench/apps/sellos/**
           key: ${{ env.BENCH_KEY }}
 
       - name: Install system packages
@@ -295,6 +301,9 @@ jobs:
       - name: Get the app and install requirements
         working-directory: /home/runner/frappe-bench
         run: |
+          # The app is never taken from the cache: run 42944801058 restored a copy, and get-app stopped
+          # at its overwrite prompt. Each run gets this commit (SOS-SETUP-28).
+          rm -rf apps/sellos
           bench get-app sellos $GITHUB_WORKSPACE
           bench setup requirements --dev
         env:
@@ -307,6 +316,7 @@ jobs:
           path: |
             /home/runner/frappe-bench
             !/home/runner/frappe-bench/apps/sellos
+            !/home/runner/frappe-bench/apps/sellos/**
           key: ${{ env.BENCH_KEY }}
 
       - name: Create the site

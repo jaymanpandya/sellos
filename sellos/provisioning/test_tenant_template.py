@@ -38,11 +38,18 @@ class TemplateOption(unittest.TestCase):
 	def test_without_the_template_a_site_gets_the_full_install(self):
 		self.assertNotIn("--source-sql", self.create_args())
 
+	def dump(self):
+		folder = tempfile.TemporaryDirectory()
+		self.addCleanup(folder.cleanup)
+		path = Path(folder.name) / "template.sql"
+		path.write_text("-- a dump\n", encoding="utf-8")
+		return str(path)
+
 	def test_with_the_template_the_site_is_built_from_the_dump(self):
-		with tempfile.NamedTemporaryFile(suffix=".sql") as dump:
-			os.environ[tenant_sites.TEMPLATE_ENV] = dump.name
-			args = self.create_args()
-		self.assertEqual(args[args.index("--source-sql") + 1], str(Path(dump.name).resolve()))
+		dump = self.dump()
+		os.environ[tenant_sites.TEMPLATE_ENV] = dump
+		args = self.create_args()
+		self.assertEqual(args[args.index("--source-sql") + 1], str(Path(dump).resolve()))
 		self.assertEqual(args[:2], ["new-site", "sellos_tenant_tmpltest.localhost"])
 
 	def test_a_template_that_is_not_a_file_is_refused_before_any_command_runs(self):
@@ -53,12 +60,12 @@ class TemplateOption(unittest.TestCase):
 		run.assert_not_called()
 
 	def test_full_install_turns_the_template_off_and_back_on(self):
-		with tempfile.NamedTemporaryFile(suffix=".sql") as dump:
-			os.environ[tenant_sites.TEMPLATE_ENV] = dump.name
-			with full_install():
-				self.assertNotIn("--source-sql", self.create_args())
-			self.assertEqual(os.environ[tenant_sites.TEMPLATE_ENV], dump.name)
-			self.assertIn("--source-sql", self.create_args())
+		dump = self.dump()
+		os.environ[tenant_sites.TEMPLATE_ENV] = dump
+		with full_install():
+			self.assertNotIn("--source-sql", self.create_args())
+		self.assertEqual(os.environ[tenant_sites.TEMPLATE_ENV], dump)
+		self.assertIn("--source-sql", self.create_args())
 
 	def test_the_launcher_sets_the_admin_password_of_a_site_built_from_a_dump(self):
 		launcher = tenant_sites.LAUNCHER
