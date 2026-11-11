@@ -55,15 +55,21 @@ context("SOS-P1-08: consent warning on the lead screen", () => {
 
 	it("refuses a consent record without an evidence link and accepts one with a link", () => {
 		open("Unknown");
+		// SOS-SETUP-27: the refusal is declared before the submit, and the spec waits on the call
+		// itself. Declared after it, the 417 raced the declaration: CI's Chrome got the answer first
+		// (run 42925739766) and the after each hook counted it as unexpected.
+		cy.intercept("POST", "**/sellos.crm.api.record_consent*").as("recordConsent");
+		cy.expectApiStatus("sellos.crm.api.record_consent", 417);
 		cy.getByTestId("lead-consent-evidence").type("   ");
 		cy.getByTestId("lead-consent-form").submit();
-		cy.expectApiStatus("sellos.crm.api.record_consent", 417);
+		cy.wait("@recordConsent").its("response.statusCode").should("eq", 417);
 		cy.getByTestId("lead-consent-error").should("be.visible");
 		cy.getByTestId("lead-consent").should("have.attr", "data-status", "Unknown");
 		cy.getByTestId("lead-consent-evidence")
 			.clear()
 			.type("https://example.com/evidence/call-1");
 		cy.getByTestId("lead-consent-form").submit();
+		cy.wait("@recordConsent").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("lead-consent").should("have.attr", "data-status", "Consented");
 		cy.getByTestId("lead-consent-warning").should("not.exist");
 	});

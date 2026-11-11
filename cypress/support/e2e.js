@@ -82,6 +82,11 @@ Cypress.on("uncaught:exception", (err) => {
 // Three things fail a test even when its own assertions pass: an API call that answered 4xx or
 // 5xx without the spec saying it expected that, an error written to the console, and a request
 // that never got an answer. cy.expectApiStatus(urlPart, status) declares an expected one.
+//
+// Every 4xx and 5xx answer is recorded as it arrives, and compared with the declarations only after
+// the test, so the order in which the answer and cy.expectApiStatus happen to run cannot decide the
+// result. CI run 42925739766 failed when a 417 arrived before the declaration that came after the
+// submit had run (SOS-SETUP-27). A declaration still covers only its own test.
 beforeEach(() => {
 	Cypress.env("__expectedApi", []);
 	Cypress.env("__expectedConsole", []);
@@ -89,20 +94,17 @@ beforeEach(() => {
 	cy.intercept({ url: "**/api/**" }, (req) => {
 		req.continue((res) => {
 			if (res.statusCode < 400) return;
-			const expected = Cypress.env("__expectedApi") || [];
-			const hit = expected.some(
-				(e) => req.url.includes(e.urlPart) && e.status === res.statusCode
-			);
-			if (!hit) {
-				const failures = Cypress.env("__apiFailures");
-				failures.push(`${req.method} ${req.url} answered ${res.statusCode}`);
-			}
+			const failures = Cypress.env("__apiFailures");
+			failures.push({ method: req.method, url: req.url, status: res.statusCode });
 		});
 	});
 });
 
 afterEach(() => {
-	const failures = Cypress.env("__apiFailures") || [];
+	const expected = Cypress.env("__expectedApi") || [];
+	const failures = (Cypress.env("__apiFailures") || [])
+		.filter((f) => !expected.some((e) => f.url.includes(e.urlPart) && e.status === f.status))
+		.map((f) => `${f.method} ${f.url} answered ${f.status}`);
 	expect(failures, "API calls that failed without being expected").to.deep.equal([]);
 	cy.window({ log: false }).then((win) => {
 		const expected = Cypress.env("__expectedConsole") || [];

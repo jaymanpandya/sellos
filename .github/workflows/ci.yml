@@ -260,9 +260,41 @@ jobs:
           bench --site test_site execute sellos.tests.ui_fixtures.prepare_clean_site
           bench --site test_site clear-cache
 
+      - name: Restore the flaky log (SOS-SETUP-27)
+        # The count of reruns that passed lives across runs in the Actions cache, as the local gate's
+        # lives in ~/iespl-baseline/sellos-flaky.log. Each run saves a new entry and the next run
+        # restores the latest. To clear it after a flaky spec is fixed, delete every cache whose key
+        # starts with sellos-flaky- (gh cache list --key sellos-flaky-, then gh cache delete).
+        uses: actions/cache/restore@v4
+        with:
+          path: /home/runner/sellos-ci/sellos-flaky.log
+          key: sellos-flaky-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            sellos-flaky-
+
       - name: Run the Cypress suite
+        # The same rerun policy as the local gate, from the same script (scripts/lib/ui_flaky.sh): a
+        # failed spec is rerun once, alone; a rerun that passes is FLAKY and the job passes; a spec
+        # FLAKY three times fails the job. The flaky specs go in the job summary. CI run 42925739766
+        # failed on one flake the gate had rerun and passed (DEV_STRATEGY.md section 4, row 31).
+        id: cypress
         working-directory: /home/runner/frappe-bench
-        run: bench --site test_site run-ui-tests sellos --headless
+        env:
+          SITE: test_site
+          APP: sellos
+          SELLOS_MAX_RERUN: 5
+          SELLOS_FLAKY_LIMIT: 3
+          SELLOS_FLAKY_LOG: /home/runner/sellos-ci/sellos-flaky.log
+        run: bash "$GITHUB_WORKSPACE/scripts/lib/ui_flaky.sh" "$RUNNER_TEMP/cypress.log"
+
+      - name: Save the flaky log (SOS-SETUP-27)
+        # Saved whether the suite passed or failed, so a third strike is remembered too. The script
+        # creates the file before Cypress starts, so it exists whenever the suite step ran.
+        if: always() && steps.cypress.outcome != 'skipped'
+        uses: actions/cache/save@v4
+        with:
+          path: /home/runner/sellos-ci/sellos-flaky.log
+          key: sellos-flaky-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload Cypress screenshots
         if: failure()

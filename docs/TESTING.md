@@ -24,7 +24,10 @@ The agent never commits. Git hooks are not used.
 7. The test files the task changed, first. A failure stops the gate.
 8. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
    that needed a rerun is logged FLAKY, and one that is FLAKY three times fails the gate. The bench
-   gate lock is released at the end of the Cypress run, or when the gate fails or is killed.
+   gate lock is released at the end of the Cypress run, or when the gate fails or is killed. The
+   policy is `scripts/lib/ui_flaky.sh`, and CI's UI job runs Cypress through the same script, with
+   its flaky log kept in the Actions cache and the run's flaky specs in the job summary
+   (SOS-SETUP-27).
 
 The gate uses only `sellos_test` and `sellos_test.localhost`. Create the site and the baseline once
 with `scripts/make-baseline.sh --create`.

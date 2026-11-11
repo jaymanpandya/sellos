@@ -8,7 +8,8 @@
 # that the provisioner's password is in no log (SOS-SETUP-18). A failed UI spec is rerun once, alone. The
 # gate passes only if every rerun passes, each spec that needed a rerun is logged as FLAKY, and a
 # spec that is FLAKY three times is a failure until it is fixed. More than 5 failed specs, or
-# failures that cannot be identified, fail at once.
+# failures that cannot be identified, fail at once. That policy lives in scripts/lib/ui_flaky.sh, and
+# CI's UI job runs Cypress through the same script (SOS-SETUP-27).
 #
 # The build loop sets SELLOS_TASK_ID, SELLOS_BASE_SHA and SELLOS_TASK_BLOCK_FILE so the task
 # guards run. A human running the gate by hand leaves them unset and the guards are skipped.
@@ -19,8 +20,9 @@ APP="${SELLOS_APP:-sellos}"
 SITE="${SELLOS_TEST_SITE:-sellos_test.localhost}"
 BASELINE_DIR="${SELLOS_BASELINE_DIR:-$HOME/iespl-baseline}"
 BASELINE="$BASELINE_DIR/sellos_test_clean.sql.gz"
-MAX_RERUN=5
-FLAKY_LIMIT=3
+# The UI rerun policy (scripts/lib/ui_flaky.sh) reads these. CI's UI job uses the same defaults.
+export SELLOS_MAX_RERUN=5
+export SELLOS_FLAKY_LIMIT=3
 
 # The baseline is restored over this site, wiping it. It must never be a site that holds real work.
 if ! [[ "$SITE" =~ ^sellos_test(\.localhost)?$ ]]; then
@@ -38,7 +40,7 @@ mkdir -p "$LOG_DIR"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="$LOG_DIR/run-$STAMP.log"
 UI_LOG="$LOG_DIR/ui-$STAMP.log"
-FLAKY_LOG="$BASELINE_DIR/sellos-flaky.log"
+export SELLOS_FLAKY_LOG="$BASELINE_DIR/sellos-flaky.log"
 rm -f "$LOG_DIR/latest.log"
 # Exit 2 and 3 mean an environment problem, and the build loop never repairs, resets or Blocks a
 # task for one (SOS-SETUP-14). Only the preflight's own exits, recorded by sellos_env_exit, keep a
@@ -197,6 +199,9 @@ DB_CONFLICT_LOG="$BASELINE_DIR/sellos-db-conflict.log"
 # and exits 3 if the rerun hits one again (scripts/lib/db_conflict.sh).
 # shellcheck source=lib/db_conflict.sh
 source "$REPO_DIR/scripts/lib/db_conflict.sh"
+# SOS-SETUP-27: the one rerun policy for Cypress, shared with CI's UI job.
+# shellcheck source=lib/ui_flaky.sh
+source "$REPO_DIR/scripts/lib/ui_flaky.sh"
 CHANGED="$(git -C "apps/$APP" status --porcelain -uall | { grep -v -E '^(.D|D.) ' || true; } | sed -E 's/^.{2} //; s/.* -> //')"
 CHANGED_PY="$(printf '%s\n' "$CHANGED" | grep -E '(^|/)test_[^/]*\.py$' || true)"
 CHANGED_SPECS="$(printf '%s\n' "$CHANGED" | grep -E '^cypress/integration/.*\.cy\.js$' || true)"
@@ -218,13 +223,8 @@ for f in $CHANGED_SPECS; do
   [ -f "apps/$APP/$f" ] || { echo "--- skipping $f: the task deleted it ---"; continue; }
   spec="${f#cypress/integration/}"
   echo "--- changed spec: $spec ---"
-  if ! bench --site "$SITE" run-ui-tests "$APP" --headless --spec "cypress/integration/$spec"; then
-    echo "--- RERUN once, alone: $spec ---"
-    bench --site "$SITE" clear-cache
-    bench --site "$SITE" run-ui-tests "$APP" --headless --spec "cypress/integration/$spec" || { echo "CHANGED SPEC FAILED AGAIN: $spec"; exit 1; }
-    echo "FLAKY (passed on rerun): $spec"
-    echo "$(date +%F) $spec" >>"$FLAKY_LOG"
-  fi
+  sellos_ui_suite "$LOG_DIR/ui-$STAMP-changed-$(printf '%s' "$spec" | tr '/' '_').log" "$spec" \
+    || { echo "CHANGED SPEC FAILED: $spec"; exit 1; }
 done
 
 echo "--- Backend unit tests: $APP ---"
@@ -233,46 +233,11 @@ echo "--- Backend unit tests: $APP ---"
 run_backend "$LOG_DIR/backend-$STAMP-all.log" || { echo "BACKEND TESTS FAILED"; exit 1; }
 
 echo "--- UI tests: $APP ---"
-set +e
-bench --site "$SITE" run-ui-tests "$APP" --headless 2>&1 | sellos_redact | tee "$UI_LOG"
-UI_STATUS="${PIPESTATUS[0]}"
-set -e
-
-if [ "$UI_STATUS" -ne 0 ]; then
-  FAILED_SPECS="$(awk '
-/Failing: +[0-9]+/ { f=$0; gsub(/[^0-9]/, "", f); fail=f+0 }
-/Spec Ran:/ { s=$0; sub(/.*Spec Ran: +/, "", s); sub(/ *│.*/, "", s); if (fail>0) print s; fail=0 }
-' "$UI_LOG")"
-  COUNT="$(printf '%s\n' "$FAILED_SPECS" | grep -c . || true)"
-  if [ -z "$FAILED_SPECS" ] || [ "$COUNT" -gt "$MAX_RERUN" ]; then
-    echo "--- UI tests failed ($COUNT specs identified), not rerunning ---"
-    exit 1
-  fi
-  STILL_FAILING=0
-  for spec in $FAILED_SPECS; do
-    echo "--- RERUN once, alone: $spec ---"
-    bench --site "$SITE" clear-cache
-    if bench --site "$SITE" run-ui-tests "$APP" --headless --spec "cypress/integration/$spec"; then
-      echo "FLAKY (passed on rerun): $spec"
-      echo "$(date +%F) $spec" >>"$FLAKY_LOG"
-    else
-      echo "FAILED AGAIN: $spec"
-      STILL_FAILING=1
-    fi
-  done
-  [ "$STILL_FAILING" -eq 0 ] || exit 1
-fi
+# Rerun once, alone; FLAKY on a passing rerun; three times FLAKY fails (scripts/lib/ui_flaky.sh).
+sellos_ui_suite "$UI_LOG" || { echo "UI TESTS FAILED"; exit 1; }
 # The end of the heavy segment. A failure above releases the lock through the helper's EXIT trap.
 bench_gate_release
 
-# A spec that keeps needing a rerun is hiding a real fault. Three strikes and the gate stops.
-if [ -f "$FLAKY_LOG" ]; then
-  REPEAT="$(awk '{print $2}' "$FLAKY_LOG" | sort | uniq -c | awk -v n="$FLAKY_LIMIT" '$1 >= n {print $2 " (" $1 " times)"}')"
-  if [ -n "$REPEAT" ]; then
-    echo "--- FLAKY too often, fix these specs: $REPEAT ---"
-    exit 1
-  fi
-fi
 echo "--- Sites this run touched ---"
 python3 "$REPO_DIR/scripts/check_site_set.py" compare "$BENCH_DIR" "$SITES_SNAPSHOT"
 # SOS-SETUP-18: since the task started (the loop sets SELLOS_TASK_STARTED), or since this run started.
