@@ -54,7 +54,7 @@ FLOW SOS-P1-01-5 | agent | /sellos/control/tenants | Sign in as an agent and typ
 
 ## SOS-P1-03: the setup wizard
 
-FLOW SOS-P1-03-1 | company_admin | /sellos/company/setup | Sign in. Open Set up your company. The seeded wizard is half done, so it opens on First users and shows the profile, colours and stages steps ticked. Click Pipeline stages. | The seven default stages (New to Lost) are listed with their kinds, Booked is Won and Lost is Lost.
+FLOW SOS-P1-03-1 | company_admin | /sellos/company/setup | Sign in. Open Set up your company. The seeded wizard is half done, so it opens on First users and shows the profile, colours and stages steps ticked. Click Pipeline stages. | The default stages are listed in order with their kinds, with at least one Won and one Lost stage.
 FLOW SOS-P1-03-2 | company_admin | /sellos/company/setup | On First users type a first name, an email and the role Agent, click Add person, then click Finish setup. | The person appears in the list with the role Agent, then the page says the company is set up.
 FLOW SOS-P1-03-3 | company_admin | /sellos/company/setup | Click Logo and colours, choose a PNG logo, pick a brand colour and click Save and continue. Finish the setup and open Home. | The logo and company name show at the top of every screen, buttons use the new colour, and the Finish setting up banner is gone.
 FLOW SOS-P1-03-4 | company_admin | /sellos/company/setup | Click Pipeline stages, remove every Won stage and click Save and continue. | The stages are not saved and a clear message says the pipeline needs one Won and one Lost stage.

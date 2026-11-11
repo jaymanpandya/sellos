@@ -711,13 +711,20 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 
 ### SOS-P1-07: Build the buyer pipeline
 - **Epic:** Core CRM and consent
-- **Description:** As an Agent, I want a buyer pipeline with clear stages, so that I know where every buyer stands. Build the stages New, Consent pending, Contacted, Qualified, Site visit booked, Site visit done, Negotiation, Booking, Closed won, Closed lost and Nurture. A lead may move to any stage whatever its consent status. Consent never blocks (Jayman, 10 November 2026). Moving a lead that is not Consented to Contacted is allowed, and its consent warning is recorded on the stage change.
+- **Description:** As an Agent, I want a buyer pipeline with clear stages, so that I know where every buyer stands. Build the stages New, Consent pending, Contacted, Qualified, Site visit booked, Site visit done, Negotiation, Booking, Closed won, Closed lost and Nurture, in that order. A lead may move to any stage whatever its consent status. Consent never blocks (Jayman, 10 November 2026). Consent pending is a stage like any other: no lead is put in it or held in it because of its consent status. Moving a lead to Contacted without a live Consent Record shows a warning on the lead, writes the warning to the stage change log, and proceeds. It never refuses.
+  This task supersedes the default stage list seeded by SOS-P1-03. Update that seed and its tests to the 11 stages. The number of assertions in each changed test must not fall. (Jayman, 11 November 2026, SOS-SETUP-31.)
+  Existing leads are carried over by a patch that maps Site visit scheduled to Site visit booked, Booked to Booking and Lost to Closed lost, and keeps New, Contacted, Site visit done and Negotiation. The patch can be run again safely, and adds the stages the old list lacked.
+  A Company Admin may rename and reorder stages and add stages within limits (at most `MAX_STAGES` in `sellos/config/setup_wizard.py`, with at least one Won and one Lost stage), but may not delete a stage that has leads.
 - **Acceptance Criteria:**
-  - All stages exist and a Company Admin can configure them within limits.
+  - All 11 stages exist, in the order above, on a fresh company site and on an existing one after the patch. Booking and Closed won are Won stages, Closed lost is a Lost stage, and the rest are Open.
+  - The SOS-P1-03 seed and its tests (`sellos/config/test_p1_03_setup_wizard.py`, `cypress/integration/frontend/setup_wizard.cy.js`) use the 11 stages, and the number of assertions in each changed test does not fall.
+  - The patch moves every lead on Site visit scheduled to Site visit booked, on Booked to Booking and on Lost to Closed lost, keeps the leads on New, Contacted, Site visit done and Negotiation where they are, and run twice changes nothing the second time.
+  - A Company Admin can rename and reorder stages and add stages within the limits. Deleting a stage that has leads is refused with a message that says how many leads are on it. Deleting one with no leads succeeds.
   - A lead in any consent status (Consented, Unknown, Opted out, Registered DND) can be moved to Contacted and to every other stage. Nothing in the code or the screens refuses it.
-  - A move made while the lead is not Consented records the consent warning on the stage change, and the lead shows it.
+  - Moving a lead to Contacted without a live Consent Record shows a warning on the lead, writes the warning to the stage change log, and proceeds.
   - Stage changes are logged.
-- **Test Criteria:** Move a lead in each consent status to Contacted, confirm every move succeeds, and confirm the warning is recorded and shown for each status except Consented.
+- **Test Criteria:** Move a lead in each consent status to Contacted, confirm every move succeeds, and confirm the warning is shown on the lead and written to the stage change log for each status except Consented. A patch test that starts from the seven old stages with a lead on each, runs the patch twice, and checks every lead's stage. A test that a stage with leads cannot be deleted and an empty one can. A Cypress check of the 11 stages and of the warning on the lead.
+- **Notes:** Updated by SOS-SETUP-31 (Jayman, 11 November 2026): the loop stopped with NEEDS_INPUT because SOS-P1-03 already seeds seven stages and its tests lock them. This task supersedes that list. FLOW SOS-P1-03-1 in `docs/regression/flows.md` no longer names the stages, so it holds for either list. Add this task's own flows.
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Launch:** Dec 20

@@ -163,6 +163,19 @@ class RealTasksFile(unittest.TestCase):
 			self.assertIn(name, block)
 		self.assertIn("docs/bakeoff/results.md", self.text.split("### SOS-N21:", 1)[1].split("\n### ", 1)[0])
 
+	def test_the_buyer_pipeline_supersedes_the_wizard_stages(self):
+		"""SOS-SETUP-31: SOS-P1-07 states that it supersedes SOS-P1-03's stages, and consent never blocks."""
+		p107 = self.by_id["SOS-P1-07"]
+		self.assertEqual(p107["status"], "Not Started")
+		block = self.text.split("### SOS-P1-07:", 1)[1].split("\n### ", 1)[0]
+		self.assertIn("This task supersedes the default stage list seeded by SOS-P1-03.", block)
+		self.assertIn("The number of assertions in each changed test must not fall.", block)
+		self.assertIn(
+			"maps Site visit scheduled to Site visit booked, Booked to Booking and Lost to Closed lost", block
+		)
+		self.assertIn("may not delete a stage that has leads", block)
+		self.assertIn("It never refuses.", block)
+
 	def test_the_status_values_line_names_not_needed(self):
 		line = next(x for x in self.text.splitlines() if x.startswith("* Status values:"))
 		self.assertIn("Not Needed", line)
