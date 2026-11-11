@@ -15,7 +15,8 @@
 #      working tree untouched: no repair run, no reset, no salvage, not Blocked. Restarting the
 #      loop resumes the task.
 #   8. SOS-SETUP-18: the agent runs with every credential variable removed from its environment
-#      except SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD (scripts/lib/db_secrets.sh).
+#      except SELLOS_DB_PROVISIONER_USER (scripts/lib/db_secrets.sh). The provisioner password is
+#      removed too (SOS-SETUP-22), and so is every BUILDOS_ variable (SOS-SETUP-29).
 #      Everything this script prints, every reply it saves and every notification is redacted, so
 #      their values never reach the loop log, NOTIFY, Telegram or a gate log.
 #

@@ -5,7 +5,7 @@
 # app, migrate, prepare_clean_site (code, every run), the test files the task changed first (a failure stops the gate at once), the
 # whole backend suite (a module that failed on a MariaDB 1020 or deadlock is rerun once, alone, and
 # a second database conflict exits 3, SOS-SETUP-25), the whole Cypress suite, then a check that no other site or database was touched and
-# that the provisioner's password is in no log (SOS-SETUP-18). A failed UI spec is rerun once, alone. The
+# that no secret is in a log: the provisioner's password (SOS-SETUP-18), the Telegram values and BuildOS's credentials (SOS-SETUP-29). A failed UI spec is rerun once, alone. The
 # gate passes only if every rerun passes, each spec that needed a rerun is logged as FLAKY, and a
 # spec that is FLAKY three times is a failure until it is fixed. More than 5 failed specs, or
 # failures that cannot be identified, fail at once. That policy lives in scripts/lib/ui_flaky.sh, and
@@ -243,7 +243,7 @@ python3 "$REPO_DIR/scripts/check_site_set.py" compare "$BENCH_DIR" "$SITES_SNAPS
 # SOS-SETUP-18: since the task started (the loop sets SELLOS_TASK_STARTED), or since this run started.
 # The bench CLI writes every command line it runs to logs/bench.log, so a password given to
 # "bench new-site" ends up there. The tenant site folders are searched whatever their age.
-echo "--- The provisioner's password is in no log ---"
+echo "--- No secret (provisioner password, Telegram, BuildOS) is in a log ---"
 python3 "$REPO_DIR/scripts/check_no_secret_leak.py" --since "${SELLOS_TASK_STARTED:-$GATE_START}" \
   "$LOG_DIR" "$BENCH_DIR/logs" "$BENCH_DIR/sites/common_site_config.json" "$BENCH_DIR/sites/archived_sites" \
   "$REPO_DIR" "$CLAUDE_TRANSCRIPTS"

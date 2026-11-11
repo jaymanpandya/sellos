@@ -1,5 +1,8 @@
 """SOS-SETUP-18: the provisioner account reaches the agent, and its values reach no log.
 
+SOS-SETUP-29: no Telegram or BUILDOS_ variable reaches the agent, and the leak check also fails a run
+whose files hold the Telegram token or chat ID or a BuildOS Telegram or credential value.
+
 scripts/lib/db_secrets.sh strips every credential variable from the agent's environment except
 SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD, and redacts their values from what
 the loop and the gate write. scripts/check_no_secret_leak.py fails a gate run when the password is
@@ -72,6 +75,30 @@ class TestAgentEnvironment(unittest.TestCase):
 		):
 			self.assertNotIn(gone, names)
 
+	def test_no_telegram_or_buildos_variable_reaches_the_agent(self):
+		# SOS-SETUP-29: the loop's Telegram chat and every BuildOS variable, secret or not.
+		leaked = {
+			"SELLOS_TELEGRAM_BOT_TOKEN": "tg-token-a91c",
+			"SELLOS_TELEGRAM_CHAT_ID": "-100482913",
+			"BUILDOS_TELEGRAM_BOT_TOKEN": "bos-token-77e1",
+			"BUILDOS_TELEGRAM_CHAT_ID": "583920174",
+			"BUILDOS_APP": "bos-app-value",
+			"BUILDOS_BRANCH": "bos-branch-value",
+			"BUILDOS_TEST_SITE": "bos-site-value",
+			"BUILDOS_BENCH_DIR": "/bos/bench/value",
+			"BUILDOS_SOMETHING_ADDED_LATER": "bos-later-value",
+		}
+		env = base_env(SELLOS_DB_PROVISIONER_PASSWORD=PASSWORD, **leaked)
+		result = bash("sellos_agent_env env", env)
+		self.assertEqual(result.returncode, 0, result.stderr)
+		names = {line.split("=", 1)[0] for line in result.stdout.splitlines()}
+		self.assertFalse({n for n in names if n.startswith(("BUILDOS_", "SELLOS_TELEGRAM_"))}, names)
+		for name, value in leaked.items():
+			self.assertNotIn(value, result.stdout, f"the value of {name} reached the agent")
+		trace = bash("set -x; sellos_agent_env true", env)
+		for name, value in leaked.items():
+			self.assertNotIn(value, trace.stderr, f"the value of {name} is on a command line")
+
 	def test_the_password_never_reaches_the_agent_nor_its_command_line(self):
 		env = base_env(SELLOS_DB_PROVISIONER_PASSWORD=PASSWORD)
 		result = bash(
@@ -133,8 +160,8 @@ class TestLeakCheck(unittest.TestCase):
 		self.dir = Path(tempfile.mkdtemp(prefix="sellos-leak-"))
 		self.addCleanup(subprocess.run, ["rm", "-rf", str(self.dir)])
 
-	def leak(self, *args, password=PASSWORD):
-		env = base_env(SELLOS_DB_PROVISIONER_PASSWORD=password)
+	def leak(self, *args, password=PASSWORD, **extra):
+		env = base_env(SELLOS_DB_PROVISIONER_PASSWORD=password, **extra)
 		result = subprocess.run(
 			[sys.executable, str(LEAK), *args], capture_output=True, text=True, env=env, timeout=60
 		)
@@ -171,6 +198,43 @@ class TestLeakCheck(unittest.TestCase):
 		os.utime(old, (past, past))
 		self.assertEqual(self.leak("--since", str(time.time() - 60), str(self.dir))[0], 0)
 		self.assertEqual(self.leak(str(self.dir))[0], 1)
+
+	def test_telegram_and_buildos_secrets_are_found_by_name_never_by_value(self):
+		# SOS-SETUP-29.
+		values = {
+			"SELLOS_TELEGRAM_BOT_TOKEN": "123456:tg-token-a91c",
+			"SELLOS_TELEGRAM_CHAT_ID": "-100482913",
+			"BUILDOS_TELEGRAM_BOT_TOKEN": "654321:bos-token-77e1",
+			"BUILDOS_TELEGRAM_CHAT_ID": "583920174",
+			"BUILDOS_DB_PASSWORD": "bos-db-pass-19",
+		}
+		for name, value in values.items():
+			with self.subTest(name=name):
+				log = self.dir / f"{name}.log"
+				log.write_text(f"clean\nsent to {value}\n", encoding="utf-8")
+				code, out = self.leak(str(log), password="", **{name: value})
+				self.assertEqual(code, 1, out)
+				self.assertIn(f"{log}:2 (the value of {name})", out)
+				self.assertNotIn(value, out)
+				log.unlink()
+
+	def test_every_secret_is_searched_in_one_run(self):
+		log = self.dir / "loop.log"
+		log.write_text(f"a {PASSWORD}\nb\nc -100482913\n", encoding="utf-8")
+		code, out = self.leak(str(log), SELLOS_TELEGRAM_CHAT_ID="-100482913")
+		self.assertEqual(code, 1, out)
+		self.assertIn(f"{log}:1 (the value of SELLOS_DB_PROVISIONER_PASSWORD)", out)
+		self.assertIn(f"{log}:3 (the value of SELLOS_TELEGRAM_CHAT_ID)", out)
+
+	def test_plain_buildos_settings_and_short_values_are_not_searched(self):
+		# BUILDOS_APP=buildos would be found in every log; the agent never gets it (db_secrets.sh).
+		log = self.dir / "x.log"
+		log.write_text("app buildos on branch main, chat 42\n", encoding="utf-8")
+		code, out = self.leak(
+			str(log), password="", BUILDOS_APP="buildos", BUILDOS_BRANCH="main", SELLOS_TELEGRAM_CHAT_ID="42"
+		)
+		self.assertEqual(code, 0, out)
+		self.assertIn("SELLOS_TELEGRAM_CHAT_ID is shorter than 6 characters", out)
 
 	def test_without_a_password_there_is_nothing_to_find(self):
 		(self.dir / "x.log").write_text("anything", encoding="utf-8")

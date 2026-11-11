@@ -14,14 +14,18 @@
 #   SELLOS_DB_PROVISIONER_PASSWORD  no default
 # Their values are never printed, logged, put on a command line here, or sent in a notification.
 # Everything the loop writes goes through sellos_redact, and the gate fails a run whose logs,
-# repository or tenant sites hold the password (scripts/check_no_secret_leak.py).
+# repository or tenant sites hold the password, the Telegram token or chat ID, or a BuildOS
+# Telegram or credential value (scripts/check_no_secret_leak.py).
 
 export SELLOS_DB_PROVISIONER_USER="${SELLOS_DB_PROVISIONER_USER:-sellos_provisioner}"
 
 # Exported names that look like a credential. The agent gets none of them, except the two above and
 # the ones claude itself needs to sign in. That covers any MariaDB root password variable, the
-# Telegram token, GitHub tokens and the other apps' secrets on this machine.
-SELLOS_SECRET_NAME_RE='PASSWORD|PASSWD|SECRET|TOKEN|CREDENTIAL|API_KEY|ACCESS_KEY|PRIVATE_KEY|^MYSQL_PWD$|^MARIADB_|^MYSQL_ROOT|^SELLOS_DB_|^SELLOS_TELEGRAM_'
+# Telegram token and chat ID, GitHub tokens and the other apps' secrets on this machine.
+# SOS-SETUP-29: every BUILDOS_ variable is removed too, secret or not. BuildOS's own loop runs on this
+# machine with its Telegram chat ID, site, branch and bench folder exported, and SellOS's agent has no
+# use for any of them (sellos/tests/test_db_secrets.py).
+SELLOS_SECRET_NAME_RE='PASSWORD|PASSWD|SECRET|TOKEN|CREDENTIAL|API_KEY|ACCESS_KEY|PRIVATE_KEY|^MYSQL_PWD$|^MARIADB_|^MYSQL_ROOT|^SELLOS_DB_|^SELLOS_TELEGRAM_|^BUILDOS_'
 SELLOS_AGENT_KEEP=" SELLOS_DB_PROVISIONER_USER ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN CLAUDE_CODE_OAUTH_TOKEN "
 
 # Run a command (claude -p) with every credential variable removed from its environment except the

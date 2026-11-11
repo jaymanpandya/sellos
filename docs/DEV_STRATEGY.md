@@ -62,7 +62,9 @@ same account in its own MariaDB service with a CI-only password in the variable.
 
 The loop runs the agent through `sellos_agent_env` (`scripts/lib/db_secrets.sh`): every exported
 variable whose name looks like a credential is removed, except `SELLOS_DB_PROVISIONER_USER` and the
-ones `claude` needs to sign in. The password is removed too: the agent did not see it even when it
+ones `claude` needs to sign in. `SELLOS_TELEGRAM_*` and every `BUILDOS_` variable, secret or not, are
+removed too (SOS-SETUP-29), and the gate's leak check (`scripts/check_no_secret_leak.py`) also fails
+a run whose files hold the Telegram token or chat ID or a BuildOS Telegram or credential value. The password is removed too: the agent did not see it even when it
 was passed (SOS-P0-06L stopped on 10 November 2026), so its code reads the Keychain instead, and the
 agent is told never to run `security find-generic-password -w` or print the password. At its start
 the loop checks for the Keychain item without reading it (`security find-generic-password -s

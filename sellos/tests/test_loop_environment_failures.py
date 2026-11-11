@@ -101,6 +101,12 @@ OTHER_SECRETS = {
 	"SELLOS_TELEGRAM_BOT_TOKEN": "other-4",
 	"GH_TOKEN": "other-5",
 	"BUILDOS_TELEGRAM_BOT_TOKEN": "other-6",
+	# SOS-SETUP-29: every BUILDOS_ variable, secret or not. SELLOS_TELEGRAM_CHAT_ID is tested in
+	# test_db_secrets.py: set here beside the token, the real notifier would post to Telegram.
+	"BUILDOS_TELEGRAM_CHAT_ID": "other-8",
+	"BUILDOS_APP": "other-9",
+	"BUILDOS_TEST_SITE": "other-10",
+	"BUILDOS_BENCH_DIR": "other-11",
 }
 ENV_HEADLINE = "Environment problem, not the task"
 REFUSED_OUTPUT = """  1) smoke app shell loads:
