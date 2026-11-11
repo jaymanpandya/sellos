@@ -73,7 +73,15 @@ class Fakes(unittest.TestCase):
 		env = {
 			k: v
 			for k, v in os.environ.items()
-			if k not in (credentials.PASSWORD_ENV, credentials.USER_ENV, "SELLOS_BENCH_DIR")
+			# SOS-SETUP-28: CI's Server job sets the tenant template for its real sites. These tests
+			# run a fake bench and check new-site's exact arguments, so they never inherit it.
+			if k
+			not in (
+				credentials.PASSWORD_ENV,
+				credentials.USER_ENV,
+				"SELLOS_BENCH_DIR",
+				"SELLOS_TENANT_TEMPLATE_SQL",
+			)
 		}
 		env.update(
 			{
