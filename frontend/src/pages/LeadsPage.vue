@@ -115,6 +115,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { CLIENT_TYPES, crmApi, serverMessage } from "../crm/crmApi";
+import { logRequestError } from "../api";
 
 const route = useRoute();
 const router = useRouter();
@@ -145,7 +146,7 @@ async function load() {
 	} catch (e) {
 		leads.value = [];
 		loadError.value = serverMessage(e, "The leads could not be loaded.");
-		console.error("list_leads failed", e);
+		logRequestError("list_leads failed", e);
 	} finally {
 		loading.value = false;
 	}

@@ -9,6 +9,7 @@ are deleted by hand in tearDownClass instead of being rolled back.
 """
 
 import ast
+import contextlib
 import email
 import json
 import os
@@ -24,6 +25,7 @@ from frappe.tests import IntegrationTestCase, UnitTestCase
 
 from sellos.access.roles import ensure_roles
 from sellos.provisioning import site_script, tenant_setup, tenant_sites, worker
+from sellos.tests.tenant_template import full_install, template_in_use
 
 PACKAGE = Path(__file__).resolve().parents[1]
 SENTINEL = "Sentinel-Not-A-Real-Password-9f3a"
@@ -363,6 +365,20 @@ class TestWorkerQueue(WorkerCase):
 		self.assertEqual(worker.main(["--once"]), 2)
 
 
+@contextlib.contextmanager
+def templates_used():
+	"""SOS-SETUP-28: the template each tenant site in the block was built from (None: full install)."""
+	used = []
+	real = tenant_sites.template_sql
+
+	def record():
+		used.append(real())
+		return used[-1]
+
+	with mock.patch.object(tenant_sites, "template_sql", record):
+		yield used
+
+
 class TestRealProvisioning(WorkerCase):
 	"""SOS-P1-02: real sites, made with the provisioner account."""
 
@@ -375,9 +391,12 @@ class TestRealProvisioning(WorkerCase):
 		ids = [f"{PREFIX}seq{n}" for n in range(1, 6)]
 		jobs = [make_tenant(t) for t in ids]
 		for tenant_id, job_name in zip(ids, jobs, strict=True):
-			job = work_until_done(job_name)
+			with templates_used() as used:
+				job = work_until_done(job_name)
 			self.assertEqual(job.status, "Active", job.log)
 			self.assertEqual(job.attempts, 1)
+			if template_in_use():  # SOS-SETUP-28: CI builds these from its template dump
+				self.assertEqual(used, [os.environ[tenant_sites.TEMPLATE_ENV]])
 			site, info = self.read_back(tenant_id)
 			self.assertEqual(info["site"], site)
 			self.assertEqual(info["admin"], f"owner-{tenant_id}@example.com")
@@ -394,11 +413,16 @@ class TestRealProvisioning(WorkerCase):
 		self.assertEqual(len({tenant_sites.names(t)[1] for t in ids}), 5)
 
 	def test_plan_limits_are_applied_on_the_site(self):
+		"""SOS-SETUP-28: the one real provisioning test. Every other test site in CI is built from
+		the template dump, and this one goes through Frappe's full install, so that path is covered on
+		every run. sellos/provisioning/test_tenant_template.py checks there is exactly one."""
 		frappe.get_doc({"doctype": "Plan", "plan_name": "P102 Real", "max_users": 3}).insert()
 		make_tenant("p102plan", plan="P102 Real")
 		frappe.db.commit()  # nosemgrep
-		job = work_until_done(frappe.db.get_value("Provisioning Job", {"tenant": "p102plan"}, "name"))
+		with full_install(), templates_used() as used:
+			job = work_until_done(frappe.db.get_value("Provisioning Job", {"tenant": "p102plan"}, "name"))
 		self.assertEqual(job.status, "Active", job.log)
+		self.assertEqual(used, [None])  # one site, made with Frappe's full install
 		_site, info = self.read_back("p102plan")
 		self.assertEqual(info["limits"], {"plan": "P102 Real", "max_users": 3})
 

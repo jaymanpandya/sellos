@@ -150,8 +150,13 @@ wait_for_limit() {
 }
 
 # After a push, wait for every CI run on that commit. Red, or no run found, means stop.
+# SOS-SETUP-28: a red run whose jobs failed before any step ran is what a spent Actions budget (or a
+# billing problem) looks like. CI_RED_REASON then says so, and the stop notice carries it: the fix
+# is minutes, not code (DEV_STRATEGY.md section 4, row 32).
+CI_RED_REASON=""
 ci_green() {
-  local sha="$1" ids="" i=0 id rc=0
+  local sha="$1" ids="" i=0 id rc=0 unstarted
+  CI_RED_REASON=""
   while [[ $i -lt 12 && -z "$ids" ]]; do
     ids="$(gh run list --branch "$BRANCH" --commit "$sha" --json databaseId --jq '.[].databaseId' 2>/dev/null || true)"
     [[ -z "$ids" ]] && sleep 10
@@ -161,7 +166,15 @@ ci_green() {
   sleep 20
   ids="$(gh run list --branch "$BRANCH" --commit "$sha" --json databaseId --jq '.[].databaseId' 2>/dev/null || echo "$ids")"
   for id in $ids; do
-    gh run watch "$id" --exit-status >/dev/null 2>&1 || { echo "CI run $id failed."; rc=1; }
+    if ! gh run watch "$id" --exit-status >/dev/null 2>&1; then
+      echo "CI run $id failed."
+      rc=1
+      unstarted="$(python3 "$SCRIPT_DIR/lib/ci_minutes.py" never-started "$id" 2>/dev/null || true)"
+      if [[ -n "$unstarted" ]]; then
+        CI_RED_REASON="CI run $id: these jobs never started ($unstarted). The Actions minutes budget may be spent, or billing needs attention. This is not a code failure."
+        echo "$CI_RED_REASON"
+      fi
+    fi
   done
   return $rc
 }
@@ -294,7 +307,7 @@ $(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
   "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: pushed $AHEAD commit(s) that were ahead of origin. Waiting for CI before picking a task:
 $AHEAD_LIST" || true
   if ! ci_green "$(git rev-parse HEAD)"; then
-    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the pushed head $(git rev-parse --short HEAD). Stopping, nothing new started." || true
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the pushed head $(git rev-parse --short HEAD). Stopping, nothing new started.${CI_RED_REASON:+ $CI_RED_REASON}" || true
     exit 1
   fi
 fi
@@ -572,7 +585,7 @@ $(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
     fi
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID complete: $TASK_TITLE"
     if ! ci_green "$(git rev-parse HEAD)"; then
-      "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the commit for $TASK_ID. Stopping, nothing new started."
+      "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the commit for $TASK_ID. Stopping, nothing new started.${CI_RED_REASON:+ $CI_RED_REASON}"
       break
     fi
   else

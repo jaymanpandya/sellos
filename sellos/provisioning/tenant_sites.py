@@ -35,7 +35,16 @@ MAX_DB_NAME = 64
 PROBE_ID = "probe"
 ADMIN_ENV = "SELLOS_TENANT_ADMIN_PASSWORD"
 
+# SOS-SETUP-28: test runs may build a tenant site from a dump of a freshly made one instead of a full
+# install, which saves about 20 seconds a site. Only CI's Server job sets this, to a dump made once per
+# job by sellos.tests.tenant_template, and one real provisioning test per run unsets it
+# (sellos.tests.tenant_template.full_install). Production never sets it.
+TEMPLATE_ENV = "SELLOS_TENANT_TEMPLATE_SQL"
+TEMPLATE_NOTE = "from the test template"
+
 # Runs in the child. The secrets come from its environment and are added to sys.argv in memory only.
+# A site built from a dump (--source-sql) skips Frappe's install, which is what sets the Administrator
+# password, so it would keep the template's. The launcher then sets the site's own one (SOS-SETUP-28).
 LAUNCHER = """
 import os, runpy, sys
 args = sys.argv[1:]
@@ -44,8 +53,24 @@ args += ["--db-root-password", secret]
 admin = os.environ.pop("SELLOS_TENANT_ADMIN_PASSWORD", "")
 if admin:
     args += ["--admin-password", admin]
+from_dump = args[0] == "new-site" and "--source-sql" in args
 sys.argv = ["bench_helper", "frappe", *args]  # argv[0] is replaced by runpy, as python -m does
-runpy.run_module("frappe.utils.bench_helper", run_name="__main__", alter_sys=True)
+code = 0
+try:
+    runpy.run_module("frappe.utils.bench_helper", run_name="__main__", alter_sys=True)
+except SystemExit as e:
+    code = e.code
+if from_dump and code in (0, None):
+    if not admin:
+        sys.exit("A site built from a dump needs its own admin password.")
+    import frappe
+    from frappe.utils.password import update_password
+    frappe.init(site=args[1], sites_path=".")
+    frappe.connect()
+    update_password("Administrator", admin)
+    frappe.db.commit()
+    frappe.destroy()
+sys.exit(code)
 """
 
 
@@ -119,13 +144,26 @@ def _run_frappe_once(args, extra_env):
 	return None
 
 
+def template_sql():
+	"""The template dump this test run builds tenant sites from, or None for a full install."""
+	value = os.environ.get(TEMPLATE_ENV)
+	if not value:
+		return None
+	path = Path(value).resolve()
+	if not path.is_file():
+		raise TenantSiteError(f"{TEMPLATE_ENV} names {value}, which is not a file.")
+	return str(path)
+
+
 def create(tenant_id):
 	site, db_name = names(tenant_id)
+	args = ["new-site", site, "--db-name", db_name, "--db-root-username", provisioner_user()]
+	template = template_sql()
+	if template:
+		print(f"Building {site} {TEMPLATE_NOTE} {template}, not a full install (SOS-SETUP-28).")
+		args += ["--source-sql", template]
 	# The admin password is made inline, so no frame a traceback shows holds it.
-	_run_frappe(
-		["new-site", site, "--db-name", db_name, "--db-root-username", provisioner_user()],
-		{ADMIN_ENV: secrets.token_urlsafe(24)},
-	)
+	_run_frappe(args, {ADMIN_ENV: secrets.token_urlsafe(24)})
 	return site
 
 

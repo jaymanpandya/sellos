@@ -118,6 +118,7 @@
 import { onMounted, reactive, ref } from "vue";
 
 import { serverMessage } from "../crm/crmApi";
+import { logRequestError } from "../api";
 import { NEXT_STATUSES, controlApi } from "../control/controlApi";
 
 const tenants = ref([]);
@@ -136,7 +137,7 @@ async function load() {
 		]);
 	} catch (e) {
 		loadError.value = serverMessage(e, "Companies could not be loaded.");
-		console.error("tenants failed", e);
+		logRequestError("tenants failed", e);
 	} finally {
 		loading.value = false;
 	}

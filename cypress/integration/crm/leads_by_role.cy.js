@@ -25,13 +25,16 @@ context("SOS-P1-06A: leads by role", () => {
 
 	it("shows an error, never an empty list, when the list cannot load", () => {
 		cy.signInFresh("company_admin");
+		// The 500 is this spec's own stub, never a server answer, so it is not declared with
+		// cy.expectApiStatus (SOS-SETUP-28: that declaration never happened). The spec checks the
+		// page was really given the stub instead.
 		cy.intercept("**/sellos.crm.api.list_leads*", {
 			statusCode: 500,
 			body: { exc_type: "ValidationError" },
-		});
-		cy.expectApiStatus("sellos.crm.api.list_leads", 500);
+		}).as("listLeads");
 		cy.expectConsoleError("list_leads");
 		cy.visit("/sellos/crm/leads");
+		cy.wait("@listLeads").its("response.statusCode").should("eq", 500);
 		cy.getByTestId("leads-error").should("be.visible");
 		cy.getByTestId("leads-empty").should("not.exist");
 	});

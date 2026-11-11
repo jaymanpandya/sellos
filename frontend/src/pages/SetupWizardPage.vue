@@ -362,6 +362,7 @@
 import { onMounted, reactive, ref } from "vue";
 
 import { serverMessage } from "../crm/crmApi";
+import { logRequestError } from "../api";
 import { applyCompanyTheme, session } from "../session";
 import { ROLE_LABELS, STEP_LABELS, setupApi } from "../setup/setupApi";
 
@@ -395,7 +396,7 @@ onMounted(async () => {
 		resumed.value = state.value.steps_done.length > 0 && !state.value.complete;
 	} catch (e) {
 		loadError.value = serverMessage(e, "The setup could not be loaded.");
-		console.error("setup failed", e);
+		logRequestError("setup failed", e);
 	}
 });
 

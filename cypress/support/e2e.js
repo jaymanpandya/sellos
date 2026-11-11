@@ -46,14 +46,20 @@ try {
 	// The runner is the same origin as the spec; this only guards an unexpected setup.
 }
 
-// Console errors raised by the app are collected on its window, and checked after every test.
+// Console errors raised by the app are collected for the whole test, across every page it loads, and
+// checked after it. Before SOS-SETUP-28 only the last page's errors were checked, so an error on a
+// page the test had left was never seen, and neither was an expected one that never came.
+let testConsoleErrors = [];
 Cypress.on("window:before:load", (win) => {
 	swallowResizeObserverLoop(win);
 	win.__sellosConsoleErrors = [];
 	const original = win.console.error.bind(win.console);
 	win.console.error = (...args) => {
 		const text = args.map((a) => (a && a.message) || String(a)).join(" ");
-		if (!isResizeObserverLoop(text)) win.__sellosConsoleErrors.push(text);
+		if (!isResizeObserverLoop(text)) {
+			win.__sellosConsoleErrors.push(text);
+			testConsoleErrors.push(text);
+		}
 		original(...args);
 	};
 });
@@ -70,6 +76,7 @@ cy.onUncaughtException = function onUncaughtException(options, ...rest) {
 // apps/frappe/node_modules because the import path lives there.
 import "../../../frappe/cypress/support/commands";
 import "./commands";
+import { assertExpectations } from "./expectations";
 
 // BuildOS ends this file with Cypress.on("uncaught:exception", () => false), which hides every
 // error the app throws. SellOS does not. An uncaught error fails the spec, so a page that breaks
@@ -79,18 +86,24 @@ Cypress.on("uncaught:exception", (err) => {
 	return true;
 });
 
-// Three things fail a test even when its own assertions pass: an API call that answered 4xx or
-// 5xx without the spec saying it expected that, an error written to the console, and a request
-// that never got an answer. cy.expectApiStatus(urlPart, status) declares an expected one.
+// Four things fail a test even when its own assertions pass: an API call that answered 4xx or 5xx
+// without the spec saying it expected that, an error written to the console, a request that never
+// got an answer, and (SOS-SETUP-28) a declaration that never happened. cy.expectApiStatus(urlPart,
+// status) and cy.expectConsoleError(textPart) declare an expected one, and each must be matched at
+// least once during its own test (cypress/support/expectations.js).
 //
 // Every 4xx and 5xx answer is recorded as it arrives, and compared with the declarations only after
 // the test, so the order in which the answer and cy.expectApiStatus happen to run cannot decide the
 // result. CI run 42925739766 failed when a 417 arrived before the declaration that came after the
-// submit had run (SOS-SETUP-27). A declaration still covers only its own test.
+// submit had run (SOS-SETUP-27). A declaration covers only its own test.
+//
+// An answer stubbed by a spec's own cy.intercept never reaches the server, and is not an answer the
+// server gave: a declaration for it never happens. Assert on the stub's effect instead.
 beforeEach(() => {
 	Cypress.env("__expectedApi", []);
 	Cypress.env("__expectedConsole", []);
 	Cypress.env("__apiFailures", []);
+	testConsoleErrors = [];
 	cy.intercept({ url: "**/api/**" }, (req) => {
 		req.continue((res) => {
 			if (res.statusCode < 400) return;
@@ -101,16 +114,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-	const expected = Cypress.env("__expectedApi") || [];
-	const failures = (Cypress.env("__apiFailures") || [])
-		.filter((f) => !expected.some((e) => f.url.includes(e.urlPart) && e.status === f.status))
-		.map((f) => `${f.method} ${f.url} answered ${f.status}`);
-	expect(failures, "API calls that failed without being expected").to.deep.equal([]);
-	cy.window({ log: false }).then((win) => {
-		const expected = Cypress.env("__expectedConsole") || [];
-		const errors = (win.__sellosConsoleErrors || []).filter(
-			(text) => !expected.some((part) => text.includes(part))
-		);
-		expect(errors, "errors written to the browser console").to.deep.equal([]);
+	assertExpectations({
+		expectedApi: Cypress.env("__expectedApi") || [],
+		apiFailures: Cypress.env("__apiFailures") || [],
+		expectedConsole: Cypress.env("__expectedConsole") || [],
+		consoleErrors: testConsoleErrors,
 	});
 });

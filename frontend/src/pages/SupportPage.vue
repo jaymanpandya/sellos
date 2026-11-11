@@ -145,6 +145,7 @@
 import { onMounted, reactive, ref } from "vue";
 
 import { serverMessage } from "../crm/crmApi";
+import { logRequestError } from "../api";
 import { DURATIONS, supportApi } from "../support/supportApi";
 
 const users = ref([]);
@@ -163,7 +164,7 @@ async function load() {
 		if (!form.user && users.value.length) form.user = users.value[0].user;
 	} catch (e) {
 		loadError.value = serverMessage(e, "Support access could not be loaded.");
-		console.error("support access failed", e);
+		logRequestError("support access failed", e);
 	} finally {
 		loading.value = false;
 	}

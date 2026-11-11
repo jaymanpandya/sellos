@@ -115,6 +115,13 @@ class TestTenantIsolation(IntegrationTestCase):
 	def db_name(self):
 		return frappe.db.sql("select database()")[0][0]
 
+	def admin_password_hash(self):
+		rows = frappe.db.sql(
+			"select password from `__Auth` where doctype='User' and name='Administrator' and fieldname='password'"
+		)
+		self.assertEqual(len(rows), 1)
+		return rows[0][0]
+
 	def test_each_site_sees_only_its_own_records(self):
 		self.sites_path = frappe.local.sites_path
 		# Go back to the site the run started on, not a fixed name: CI runs on test_site (SOS-SETUP-24).
@@ -131,12 +138,17 @@ class TestTenantIsolation(IntegrationTestCase):
 				).insert()
 				# The write must reach this tenant's own database before the next site is opened.
 				frappe.db.commit()  # nosemgrep
+			admin_hashes = set()
 			for tenant_id in self.IDS:
 				site, _ = tenant_sites.names(tenant_id)
 				self.switch(site)
 				self.assertEqual(self.titles(), [self.TITLES[tenant_id]])
 				other = next(i for i in self.IDS if i != tenant_id)
 				self.assertFalse(frappe.db.exists("Note", {"title": self.TITLES[other]}))
+				admin_hashes.add(self.admin_password_hash())
+			# SOS-SETUP-28: a site built from the test template keeps the template's Administrator
+			# password unless the launcher sets its own. Each tenant has its own.
+			self.assertEqual(len(admin_hashes), len(self.IDS))
 		finally:
 			self.switch(start_site)
 		self.assertEqual(frappe.local.site, start_site)

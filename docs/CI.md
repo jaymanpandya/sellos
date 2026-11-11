@@ -3,6 +3,17 @@
 Two workflows run on every pull request and on every push to `1.0`.
 
 * `CI` (`.github/workflows/ci.yml`): jobs `Frontend` (npm ci and build), `Server` (bench install, web app build, backend tests) and `UI` (Cypress). GitHub shows each job's run time and the total on the run page.
+* Runner minutes (SOS-SETUP-28). CI minutes are a budget. Each CI job ends with a summary line
+  giving the runner minutes it used (wall time rounded up to whole minutes, as GitHub bills it), and
+  the last job, `Runner minutes`, writes "runner minutes for this push: N" over every workflow run on
+  the commit, Linters included. `scripts/lib/ci_minutes.py` counts them. A red run whose jobs never
+  ran a step (a spent budget or a billing problem) is named as such in the loop's stop notice.
+* Speed (SOS-SETUP-28). The `Server` and `UI` jobs cache the bench (the Frappe clone, the Python
+  environment and node_modules) under a key made of the exact Python version, `pyproject.toml` and
+  the ISO week. The app and the sites are never cached. The `Server` job makes one tenant site with
+  the full install, dumps it (`sellos.tests.tenant_template`), and the tests build every other tenant
+  site from that dump with `bench new-site --source-sql`. Exactly one real provisioning test,
+  `test_plan_limits_are_applied_on_the_site`, still uses the full install on every run.
 * `Linters` (`.github/workflows/linter.yml`): pre-commit (ruff, prettier, eslint, gitleaks), Semgrep with the Frappe rules, and pip-audit. GitHub shows each job's run time.
 
 ## Blocking a merge
