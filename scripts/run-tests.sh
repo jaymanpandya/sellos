@@ -2,7 +2,7 @@
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
 # Order: new files marked intent-to-add, the guards (scripts/check-guards.sh --all: lint, Semgrep and the task guards, SOS-SETUP-33), preflight (CI parity, a snapshot of the bench's sites and databases), put the clean baseline back, build the web
-# app, migrate, prepare_clean_site (code, every run), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the test files the task changed first, each run 5 times, where one failed run fails it (SOS-SETUP-33, scripts/lib/flake_check.sh; a failure stops the gate at once), the
+# app, migrate, prepare_clean_site (code, every run), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the test files the task changed first, each run 5, 3 or 2 times by the time of its first run, with the repeats capped at 10 minutes, where one failed run fails it (SOS-SETUP-33 and SOS-SETUP-34, scripts/lib/flake_check.sh; a failure stops the gate at once), the
 # whole backend suite (a module that failed on a MariaDB 1020 or deadlock is rerun once, alone, and
 # a second database conflict exits 3, SOS-SETUP-25), the whole Cypress suite, then a check that no other site or database was touched and
 # that no secret is in a log: the provisioner's password (SOS-SETUP-18), the Telegram values and BuildOS's credentials (SOS-SETUP-29). A failed UI spec is rerun once, alone. The
@@ -217,19 +217,23 @@ cypress/integration/smoke/app_shell.cy.js
 cypress/integration/crm/leads_by_role.cy.js
 cypress/integration/security/phone_masking_leaks.cy.js"
 fi
+# SOS-SETUP-34: every changed test is listed first, so the repeat plan is printed before any repeat.
+FLAKE_TARGETS="$LOG_DIR/flake-targets-$STAMP.tsv"
+: >"$FLAKE_TARGETS"
 for f in $CHANGED_PY; do
   [ -f "apps/$APP/$f" ] || { echo "--- skipping $f: the task deleted it ---"; continue; }
   mod="$(printf '%s' "${f%.py}" | tr '/' '.')"
   echo "--- changed test module: $mod ---"
-  sellos_flake_check backend "$mod" "$LOG_DIR/backend-$STAMP-$mod" || { echo "CHANGED TEST FAILED: $mod"; exit 1; }
+  printf 'backend\t%s\t%s\n' "$mod" "$LOG_DIR/backend-$STAMP-$mod" >>"$FLAKE_TARGETS"
 done
 for f in $CHANGED_SPECS; do
   [ -f "apps/$APP/$f" ] || { echo "--- skipping $f: the task deleted it ---"; continue; }
   spec="${f#cypress/integration/}"
   echo "--- changed spec: $spec ---"
-  sellos_flake_check spec "$spec" "$LOG_DIR/ui-$STAMP-changed-$(printf '%s' "$spec" | tr '/' '_')" \
-    || { echo "CHANGED SPEC FAILED: $spec"; exit 1; }
+  printf 'spec\t%s\t%s\n' "$spec" "$LOG_DIR/ui-$STAMP-changed-$(printf '%s' "$spec" | tr '/' '_')" >>"$FLAKE_TARGETS"
 done
+# It prints CHANGED TEST FAILED or CHANGED SPEC FAILED itself, and a failure stops the gate at once.
+sellos_flake_gate "$FLAKE_TARGETS" || exit 1
 
 echo "--- Backend unit tests: $APP ---"
 # The runner prints one summary per batch, and the last one can say OK while an earlier one failed.

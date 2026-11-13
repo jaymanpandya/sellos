@@ -135,6 +135,17 @@ cmd_up() {
       "$SCRIPT_DIR/install-launch-agent.sh   (it then starts after a reboot and is restarted after sleep)"
   fi
 
+  # SOS-SETUP-34: the installed LaunchAgent runs only the pinned serve command, never an unpinned one.
+  local plist="${SELLOS_LAUNCH_AGENTS_DIR:-$HOME/Library/LaunchAgents}/$SERVER_LABEL.plist"
+  if [ ! -f "$plist" ]; then
+    fail "the SellOS server LaunchAgent is not installed ($plist)" "$SCRIPT_DIR/install-launch-agent.sh"
+  elif python3 "$SCRIPT_DIR/lib/launch_agent_check.py" "$plist" >/dev/null 2>&1; then
+    ok "the LaunchAgent runs bench --site $SITE serve --port 8004, and no unpinned serve"
+  else
+    fail "the LaunchAgent $plist does not run the pinned server: $(python3 "$SCRIPT_DIR/lib/launch_agent_check.py" "$plist" 2>&1 | head -1)" \
+      "$SCRIPT_DIR/install-launch-agent.sh   (it rewrites the plist with the pinned command)"
+  fi
+
   # MariaDB as the provisioner. The password stays in this process's environment and goes to the
   # client only through MYSQL_PWD, never on a command line or the screen.
   if ! sellos_provisioner_available; then

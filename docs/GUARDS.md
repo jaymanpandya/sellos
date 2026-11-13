@@ -37,6 +37,7 @@ literal. The phone guard's message had named the fix from the start.
 | 7 | stale-skips | `scripts/check_no_stale_skips.py` | 1 |
 | 8 | lint | `pre-commit` (gitleaks, ruff, ruff format, prettier, eslint, file checks) | 1 |
 | 9 | semgrep | Semgrep with the Frappe rules and `r/python.lang.correctness` | 1 |
+| 10 | serve | `sellos/testing/guards.py` over every file git knows | 1 |
 
 A missing tool (pre-commit, Semgrep or its rules) exits 3. That is a problem with the environment, not the code.
 
@@ -144,3 +145,14 @@ with open(path) as f: ...                  Path(path).read_text(encoding="utf-8"
 ```
 
 Never add `nosemgrep` to pass. The few existing ones mark a fixed path that the loop itself passes in.
+
+## 10. serve: every serve command is the pinned SellOS one
+
+**Why.** A serve with no `--site` falls back to default_site and serves BuildOS's site on every host
+name (SOS-SETUP-13). CI run 92 failed on 9cbace7 because a hand commit wrote the command with `$SITE`
+and `$PORT`, and only the full backend suite checked it. Since SOS-SETUP-34 this guard runs the same
+check in a second.
+
+**How to comply.** Write the command out literally, in every script, document and test:
+`bench --site sellos_test.localhost serve --port 8004`. A line that warns against the unpinned form names it after
+the word "without" and `--site`.

@@ -6,7 +6,8 @@ decisions in `docs/DEV_STRATEGY.md` section 9 (consent never blocks, calls in Hi
 called SellOS with no company or suite brand, customers never use the desk). The fixes follow the model
 of SOS-SETUP-31 (a supersede note when two tasks define the same data) and of SOS-P0-06L and SOS-P0-04
 (row 26: building and deploying are separate tasks). No Status of an existing task was changed, and no
-block was deleted. SOS-N21A stays Blocked, as committed.
+block was deleted. SOS-N21A stays Blocked, as committed. Jayman answered the questions on 13
+November 2026, and SOS-SETUP-34 applied the answers: see "Jayman's answers" at the end.
 
 Key to the problem column: **X** mixes code with deployment, a live account or human acceptance;
 **O** overlaps another task's data; **C** contradicts a decision or a rule; **M** missing dependency;
@@ -482,3 +483,49 @@ Softwares. "Pandya" remains only where it names the first company's own site, we
 17. **May SOS-P6-06 build invoices before SOS-N15 (format in a setting, approval in SOS-P6-06A), and
     may SOS-N15 drop its dependency on SOS-N14?** Recommended: yes to both. The accountant then
     approves real samples, and SOS-N15 can start now. Unblocks: SOS-P6-06, SOS-N15.
+
+## Jayman's answers (SOS-SETUP-34, 13 November 2026)
+
+Questions 1 to 3, 5 to 9, 11, 12 and 14 to 16 were answered "as recommended". Questions 4, 10, 13 and
+17 had their own answers, given below. Each answer is now in the blocks it names, as a note that
+starts "Decided by Jayman (SOS-SETUP-34" and, where the answer changes what is built, as an acceptance
+criterion.
+
+| # | Answer | What changed in `TASKS.md` |
+| --- | --- | --- |
+| 1 | Reset SOS-N21A | Status Not Started (`scripts/set-task-status.sh`); the recovery branch is reference only |
+| 2 | Staging gives live tests their public HTTPS address | SOS-P0-06D added to SOS-P2-02L, P2-13, P5-07L, P6-03L, P6-15L, P6-11L |
+| 3 | The voice chain may change; SOS-P5-07 may start before SOS-N21 | SOS-P5-07 depends on SOS-P2-03, P2-04, P2-05 and builds adapters for every candidate; SOS-P5-08 on SOS-P5-07L and P2-14; SOS-P5-09 on SOS-P5-07 and P2-11; `test_the_voice_pilot_chain` changed to match |
+| 4 | As recommended, and the Dec 20 test is at least 50 supervised end to end AI calls (the disclosure, the handover, reviewed transcripts) | SOS-P5-07L holds the 50 calls; SOS-P2-14, P5-08, P5-09 and P5-09A moved to Jan 1; the pilot is limited to site visit confirmations and follow ups for existing clients; SOS-P5-09A now also depends on SOS-P5-08 |
+| 5 | Jayman writes the default consent wording; a company setting; counsel reviews after launch | Notes on SOS-P2-08, P1-09, P1-10, P5-06; new SOS-N22 (Jayman, Waiting), a dependency of SOS-P1-10 and P2-13 |
+| 6 | A missed call changes no stage | SOS-P2-08's criterion rewritten; it depends on SOS-P2-09 (the caller queue) |
+| 7 | Party names: Company Admins only, never searchable, views logged, kept five years; poster details only on the draft, masked, deleted on rejection | Criteria on SOS-P3-12 and P6-10, note on P3-10 |
+| 8 | Market data on the control site behind a role checked API, from files Jayman supplies; ready reckoner from a file; licence switch a platform setting, On by default | Criteria on SOS-P3-02, P3-08, P4-07, P3-01L; notes on P3-01, P3-13 |
+| 9 | The recommended numbers | SOS-P3-03 95 percent; P3-05 precision 95, recall 85; P3-07 2 hours; P3-09 median error 10 percent; P2-13 2 percent; P4-09 15 minutes; P6-12 and P6-12D 1 hour, 20 sites, 50 users, 95 percent within 1 second |
+| 10 | One provider account held by Jayman, Anthropic; two model settings (voice agent: fast; assistant: stronger); the agent does not choose the model | SOS-N21A gains a language model comparison: the 20 Roman Hinglish replies through two or three candidate models named in `~/iespl-baseline/bakeoff/llm-models.txt`, a rating sheet `docs/bakeoff/llm-rating-sheet.md`, the Keychain item `sellos_anthropic_key` (5 to 6 points); SOS-N21 chooses each model from it; settings "Voice agent model" on SOS-P5-07 and "Assistant model" on SOS-P3-10 |
+| 11 | The recommended definitions | Notes on SOS-P4-03, P4-04, P4-05 (and a criterion for the Dossier), P5-05 |
+| 12 | Company Admins export report results only | Criterion on SOS-P5-04 |
+| 13 | Partners create leads through one whitelisted method, rate limited, and see only their own leads | Criterion on SOS-P5-06: the setting "Partner lead limit", default 20 leads per partner per hour |
+| 14 | Meta's Cloud API; Jayman holds the account and verifies it; designs in `docs/whatsapp/` | Notes on SOS-P6-11, P6-11L, P6-16, P6-17; new SOS-N23 (Jayman, Waiting), a dependency of SOS-P6-16 and P6-17 |
+| 15 | A share target and paste, no browser extension | Criterion on SOS-P6-10 |
+| 16 | Add an outgoing email task | New SOS-P0-13 (AMP Labs, Waiting, Dec 20), a dependency of SOS-P1-11 |
+| 17 | Invoices as an editable template; no invoice to a real customer until SOS-N15 is Complete | SOS-P6-06's description and criteria; the platform setting "Invoice format approved" is Off until then. SOS-N15 keeps its dependency on SOS-N14, which the answer did not cover |
+
+SOS-REG-L depends on the three new tasks. After the changes there is no dangling dependency, no cycle,
+and no Dec 20 task depends on an unfinished Jan 1 task. `scripts/select-next-task.sh TASKS.md` picks SOS-N21A.
+
+### Remaining scope for Claude Code (13 November 2026, after SOS-SETUP-34)
+
+Tasks owned by Claude Code that are Not Started (none is In Progress or Blocked): 64 tasks, 357 points.
+Before this commit: 64 tasks, 356 points; SOS-N21A gained a point, and SOS-P5-09 (3 points) moved from
+Dec 20 to Jan 1. SOS-P1-11 is owned by "AMP Labs, Claude Code" and is Waiting, so it is not counted.
+
+| Tier | Tasks | Points | Pace by 12 December (29 days) | Pace by 22 December (39 days) |
+| --- | --- | --- | --- | --- |
+| Dec 20 | 19 | 91 | 0.66 tasks, 3.1 points a day | 0.49 tasks, 2.3 points a day |
+| Jan 1 | 45 | 266 | | |
+| All | 64 | 357 | 2.2 tasks, 12.3 points a day | 1.6 tasks, 9.2 points a day |
+
+The days count from 14 November to the date, inclusive. For comparison, the loop finished 8 tasks (36
+points) on 10 November and 9 (48 points) on 11 November. Those were mostly rebuilds of code that
+already existed. It has finished none since SOS-N21A was Blocked on 13 November.

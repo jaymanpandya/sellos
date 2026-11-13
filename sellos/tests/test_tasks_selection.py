@@ -144,9 +144,20 @@ class RealTasksFile(unittest.TestCase):
 				self.assertIn(d, self.by_id, f"{t['id']} depends on unknown {d}")
 
 	def test_the_voice_pilot_chain(self):
-		self.assertEqual(set(self.by_id["SOS-P5-07"]["deps"]), {"SOS-P2-03", "SOS-P2-04", "SOS-N21"})
-		self.assertEqual(self.by_id["SOS-P5-08"]["deps"], ["SOS-P5-07", "SOS-P2-14"])
-		self.assertEqual(self.by_id["SOS-P5-09"]["deps"], ["SOS-P5-08"])
+		"""SOS-SETUP-34 (Jayman, questions 3 and 4): SOS-P5-07 starts before SOS-N21 and after the Call
+		Log; the pilot waits for the live test; the report needs only the Call Log; the baseline, the
+		pilot, the report and the decision are in the Jan 1 tier, and the Dec 20 test is 50 calls."""
+		self.assertEqual(set(self.by_id["SOS-P5-07"]["deps"]), {"SOS-P2-03", "SOS-P2-04", "SOS-P2-05"})
+		self.assertEqual(self.by_id["SOS-P5-08"]["deps"], ["SOS-P5-07L", "SOS-P2-14"])
+		self.assertEqual(self.by_id["SOS-P5-09"]["deps"], ["SOS-P5-07", "SOS-P2-11"])
+		self.assertIn("SOS-N21", self.by_id["SOS-P5-07L"]["deps"])
+		self.assertIn("SOS-P5-08", self.by_id["SOS-P5-09A"]["deps"])
+		for tid in ("SOS-P2-14", "SOS-P5-08", "SOS-P5-09", "SOS-P5-09A"):
+			self.assertEqual(self.by_id[tid]["launch"], "Jan 1", tid)
+		for tid in ("SOS-P5-07", "SOS-P5-07L"):
+			self.assertEqual(self.by_id[tid]["launch"], "Dec 20", tid)
+		block = self.text.split("### SOS-P5-07L:", 1)[1].split("\n### ", 1)[0]
+		self.assertIn("At least 50 supervised end to end AI calls", block)
 
 	def test_the_hinglish_bakeoff_blocks_the_voice_choice(self):
 		"""SOS-SETUP-30: SOS-N21 is chosen from SOS-N21A's bake-off on our own Hinglish audio."""
@@ -159,7 +170,15 @@ class RealTasksFile(unittest.TestCase):
 		block = self.text.split("### SOS-N21A:", 1)[1].split("\n### ", 1)[0]
 		for i in range(1, 21):
 			self.assertIn(f"`{i:02d}.wav`", block)
-		for name in ("sellos_sarvam_key", "sellos_deepgram_key", "sellos_elevenlabs_key", "get_secret(name)"):
+		for name in (
+			"sellos_sarvam_key",
+			"sellos_deepgram_key",
+			"sellos_elevenlabs_key",
+			"sellos_anthropic_key",
+			"get_secret(name)",
+			"llm-models.txt",
+			"docs/bakeoff/llm-rating-sheet.md",
+		):
 			self.assertIn(name, block)
 		self.assertIn("docs/bakeoff/results.md", self.text.split("### SOS-N21:", 1)[1].split("\n### ", 1)[0])
 

@@ -25,6 +25,7 @@ GUARD_NAMES = (
 	"stale-skips",
 	"lint",
 	"semgrep",
+	"serve",
 )
 
 
@@ -67,6 +68,20 @@ class TestGuardFunctions(unittest.TestCase):
 		self.assertIn("sellos.tests.phones", guards.message("phones", ["x"]))
 		self.assertIn("in_mobile(seed)", guards.message("phones", ["x"]))
 		self.assertIn("sellos/provisioning", guards.message("commands", ["x"]))
+
+	def test_an_unpinned_serve_command_is_found_and_a_pinned_one_is_not(self):
+		"""SOS-SETUP-34: CI run 92 failed on a serve command written with variables."""
+		subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
+		# Built here only so this file passes the guard it tests.
+		unpinned = "bench --site $SITE serve " + "--port $PORT"
+		(self.root / "scripts").mkdir()
+		(self.root / "scripts/a.sh").write_text(
+			f"echo start\n{unpinned}\nbench --site sellos_test.localhost serve --port 8004\n"
+			"# never run serve --port 8004 without --site\n",
+			encoding="utf-8",
+		)
+		self.assertEqual(guards.unpinned_serve_commands(self.root), [f"scripts/a.sh:2: {unpinned}"])
+		self.assertIn("bench --site sellos_test.localhost serve --port 8004", guards.message("serve", ["x"]))
 
 	def test_the_phone_allowed_list_is_empty(self):
 		self.assertEqual(guards.ALLOWED_PHONE_FILES, frozenset())
@@ -150,6 +165,15 @@ class CheckGuardsSandbox(unittest.TestCase):
 		self.assertIn("GUARD FAILED: commands", out)
 		self.assertIn("GUARD FAILED: semgrep", out)
 		self.assertIn("Guard lint: clean.", out)
+
+	def test_an_unpinned_serve_command_fails_with_the_fix(self):
+		unpinned = "bench serve " + "--port 8004"
+		(self.repo / "scripts/start.sh").write_text(f"{unpinned}\n", encoding="utf-8")
+		code, out = self.run_guards()
+		self.assertEqual(code, 1, out)
+		block = out.split("GUARD FAILED: serve", 1)[1].split("END GUARD", 1)[0]
+		self.assertIn("bench --site sellos_test.localhost serve --port 8004", block)
+		self.assertIn("scripts/start.sh:1:", block)
 
 	def test_a_lint_failure_on_both_passes_fails(self):
 		(self.repo / "sellos/new.py").write_text("x = 1\n", encoding="utf-8")

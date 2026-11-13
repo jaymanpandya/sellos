@@ -111,8 +111,9 @@ class TheGateAndCiUseIt(unittest.TestCase):
 		self.assertIn('source "$REPO_DIR/scripts/lib/db_conflict.sh"', gate)
 		# The whole suite and each changed module run through run_backend.
 		self.assertIn('run_backend "$LOG_DIR/backend-$STAMP-all.log" ||', gate)
-		# SOS-SETUP-33: each changed module runs 5 times, each run through run_backend.
-		self.assertIn('sellos_flake_check backend "$mod" "$LOG_DIR/backend-$STAMP-$mod" ||', gate)
+		# SOS-SETUP-33: each changed module runs more than once, each run through run_backend.
+		# SOS-SETUP-34: the changed modules are listed, then run through the repeat plan.
+		self.assertIn('printf \'backend\\t%s\\t%s\\n\' "$mod" "$LOG_DIR/backend-$STAMP-$mod"', gate)
 		flake = (REPO_ROOT / "scripts/lib/flake_check.sh").read_text(encoding="utf-8")
 		self.assertIn('run_backend "$prefix-run$run.log" --module "$target"', flake)
 		# run_backend runs the wrapper for the first run and for the rerun of a failing module.

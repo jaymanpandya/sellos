@@ -240,7 +240,7 @@ class OnePolicyForGateAndCi(unittest.TestCase):
 		# The whole suite through the rerun policy. SOS-SETUP-33: a changed spec runs 5 times through
 		# scripts/lib/flake_check.sh, with no rerun, so a flaky changed spec fails.
 		self.assertGreaterEqual(gate.count("sellos_ui_suite "), 1)
-		self.assertIn('sellos_flake_check spec "$spec"', gate)
+		self.assertIn("printf 'spec\\t%s\\t%s\\n' \"$spec\"", gate)
 		self.assertIn("export SELLOS_FLAKY_LIMIT=3", gate)
 		self.assertIn("export SELLOS_MAX_RERUN=5", gate)
 

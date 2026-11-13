@@ -6,6 +6,7 @@ gh and claude, so its checks are read from the script rather than run.
 """
 
 import os
+import plistlib
 import subprocess
 import tempfile
 import time
@@ -121,3 +122,89 @@ class TheChecksUpMakes(unittest.TestCase):
 		self.assertIn("server-check", text)
 		# A process on 8004 that is not the pinned SellOS server is never stopped.
 		self.assertIn("SellOS will not touch it", text)
+
+
+CHECK = REPO_ROOT / "scripts" / "lib" / "launch_agent_check.py"
+INSTALLED = Path.home() / "Library" / "LaunchAgents" / "com.sellos.server.plist"
+
+
+class TheLaunchAgentPlist(unittest.TestCase):
+	"""SOS-SETUP-34: the server plist runs "bench --site sellos_test.localhost serve --port 8004" and
+	never an unpinned serve. The plist is read with plistlib, as launchd reads it."""
+
+	def setUp(self):
+		self.dir = Path(tempfile.mkdtemp(prefix="sellos-plist-"))
+		self.addCleanup(lambda: subprocess.run(["rm", "-rf", str(self.dir)]))
+
+	def write_plists(self):
+		fake_bin = self.dir / "bin"
+		fake_bin.mkdir()
+		(fake_bin / "bench").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+		(fake_bin / "bench").chmod(0o755)
+		agents = self.dir / "agents"
+		env = {
+			**os.environ,
+			"PATH": f"{fake_bin}:/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
+			"SELLOS_LAUNCH_AGENTS_DIR": str(agents),
+			"SELLOS_BASELINE_DIR": str(self.dir / "baseline"),
+			"SELLOS_BENCH_DIR": "/srv/the bench",
+		}
+		result = subprocess.run(
+			["bash", str(INSTALL), "--write-only"], capture_output=True, text=True, env=env, timeout=60
+		)
+		self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+		return agents / "com.sellos.server.plist", fake_bin / "bench"
+
+	def test_the_written_plist_runs_only_the_pinned_server(self):
+		path, bench = self.write_plists()
+		data = plistlib.loads(path.read_bytes())
+		self.assertEqual(data["Label"], "com.sellos.server")
+		self.assertEqual(
+			data["ProgramArguments"],
+			[
+				"/bin/bash",
+				"-c",
+				f'cd "/srv/the bench" && exec "{bench}" --site sellos_test.localhost serve --port 8004',
+			],
+		)
+		self.assertTrue(data["KeepAlive"])
+		self.assertTrue(data["RunAtLoad"])
+		self.assertEqual(run_check(path), (0, "pinned: --site sellos_test.localhost serve --port 8004\n"))
+
+	def test_the_check_refuses_an_unpinned_serve(self):
+		path, bench = self.write_plists()
+		self.assertEqual(run_check(path)[0], 0)
+		data = plistlib.loads(path.read_bytes())
+		port = "--port"  # kept apart so this file passes the serve guard (sellos/testing/guards.py)
+		for command in (
+			f'cd "/srv" && exec "{bench}" serve {port} 8004',
+			f'cd "/srv" && exec "{bench}" --site test_site serve {port} 8004',
+			f'cd "/srv" && exec "{bench}" --site sellos_test.localhost serve {port} 8000',
+			f'cd "/srv" && exec "{bench}" --site sellos_test.localhost serve {port} 8004; "{bench}" serve',
+		):
+			with self.subTest(command=command):
+				data["ProgramArguments"] = ["/bin/bash", "-c", command]
+				path.write_bytes(plistlib.dumps(data))
+				code, out = run_check(path)
+				self.assertEqual(code, 1, out)
+
+	def test_the_installed_plist_on_this_machine_is_pinned(self):
+		if not INSTALLED.exists():
+			self.skipTest("no SellOS LaunchAgent on this machine (CI)")
+		code, out = run_check(INSTALLED)
+		self.assertEqual(code, 0, out)
+		args = plistlib.loads(INSTALLED.read_bytes())["ProgramArguments"]
+		self.assertTrue(args[2].endswith("--site sellos_test.localhost serve --port 8004"), args)
+
+	def test_sellos_up_checks_the_installed_plist(self):
+		text = SELLOS.read_text(encoding="utf-8")
+		up = text.split("cmd_up() {", 1)[1].split("\ncmd_status() {", 1)[0]
+		self.assertIn('lib/launch_agent_check.py" "$plist"', up)
+		self.assertIn(
+			'python3 "$REPO_DIR/scripts/lib/launch_agent_check.py" "$SERVER_PLIST"', INSTALL.read_text()
+		)
+
+
+def run_check(path):
+	result = subprocess.run(["python3", str(CHECK), str(path)], capture_output=True, text=True, timeout=30)
+	return result.returncode, result.stdout + result.stderr

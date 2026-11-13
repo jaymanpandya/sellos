@@ -180,9 +180,14 @@ class GateUntrackedFiles(unittest.TestCase):
 		)
 		self.assertIn("git add -A", step)
 		self.assertIn("git clean -fd", step)
+		# SOS-SETUP-34: the loop commits through loop_commit, so the step runs with the real function.
+		helper = lines_between(BUILD_LOOP, "loop_commit() {", 'git commit "${args[@]}"') + "\n}"
+		self.assertIn("lib/commit_message.py", helper)
+		step = f"{helper}\n{step}"
 		env = {
 			"PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
 			"HOME": str(self.outside),
+			"SCRIPT_DIR": str(SCRIPTS),
 			"TASK_ID": TASK,
 			"PRE_TASK_SHA": self.base,
 			"GIT_AUTHOR_NAME": "Gate Test",

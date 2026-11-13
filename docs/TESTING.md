@@ -23,7 +23,7 @@ The agent never commits. Git hooks are not used.
 5. Take the bench gate lock (waiting for any other gate's heavy segment, and recording the wait in the
    gate log), restore the clean baseline (a clean migrated install) over `sellos_test.localhost`,
    migrate, then `prepare_clean_site` (code, on every run).
-6. The test files the task changed, first, each run five times (`SELLOS_FLAKE_RUNS`, `scripts/lib/flake_check.sh`). A failure on any run stops the gate, and a failure after a passing run is reported as flaky (SOS-SETUP-33). The test rules in `CLAUDE.md` say how to write a test that cannot flake.
+6. The test files the task changed, first, each run five times when its first run takes under 60 seconds, three times under 3 minutes and twice above, with the repeats of one gate capped at 10 minutes (SOS-SETUP-34; `SELLOS_FLAKE_RUNS` lowers every tier, `SELLOS_FLAKE_CAP_SECONDS` sets the cap; `scripts/lib/flake_check.sh` and `scripts/lib/flake_plan.py`). Every changed test runs once, then the repeat plan is printed, then the repeats run. A failure on any run stops the gate, and a failure after a passing run is reported as flaky (SOS-SETUP-33). The test rules in `CLAUDE.md` say how to write a test that cannot flake.
 7. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
    that needed a rerun is logged FLAKY, and one that is FLAKY three times fails the gate. The bench
    gate lock is released at the end of the Cypress run, or when the gate fails or is killed. The

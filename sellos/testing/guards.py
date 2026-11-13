@@ -7,6 +7,9 @@ a second, without a database or a bench, and the backend tests run the same func
 
 * raw_phone_numbers: sellos/tests/test_no_raw_phone_numbers.py (SOS-P1-06)
 * modules_running_commands: sellos/provisioning/test_p1_02_worker.py (SOS-P1-02)
+* unpinned_serve_commands: sellos/tests/test_sellos_server_port.py (SOS-SETUP-13). Added by SOS-SETUP-34:
+  CI run 92 failed on 9cbace7 because a hand commit wrote the serve command with variables, and only
+  the full suite ran this check.
 
 Each returns the list of offending places, empty when the code is clean. `message()` gives the text
 the guard prints and the test asserts with: what is wrong, then the fix it names. docs/GUARDS.md
@@ -15,6 +18,7 @@ explains each guard.
 
 import ast
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -45,6 +49,11 @@ FIXES = {
 		"(or au_mobile, ae_mobile, near_in_mobile) and derive every other form from it, such as "
 		"its ten national digits or its spoken words. Do not disguise a literal (no joins, ranges, "
 		"concatenation or escapes): that is working around the guard."
+	),
+	"serve": (
+		"Write every serve command as the pinned SellOS one, literally: "
+		"bench --site sellos_test.localhost serve --port 8004 (no variables for the site or the port). "
+		"A line that warns against the unpinned form names it after the word 'without' and '--site'."
 	),
 	"commands": (
 		"Only sellos/provisioning runs commands (SOS-P1-02). Call a helper in that package "
@@ -97,7 +106,37 @@ def modules_running_commands(package=PACKAGE):
 	return found
 
 
-CHECKS = {"phones": raw_phone_numbers, "commands": modules_running_commands}
+PINNED_SERVE = "--site sellos_test.localhost serve --port 8004"
+SERVE_SUFFIXES = frozenset({".md", ".sh", ".js", ".py"})
+# The guard and its test name the unpinned form to look for it.
+SERVE_SELF_FILES = frozenset({"sellos/tests/test_sellos_server_port.py", "sellos/testing/guards.py"})
+
+
+def unpinned_serve_commands(root=APP_ROOT):
+	"""'path:line: text' for every serve command in the repository that is not the pinned SellOS one."""
+	files = subprocess.run(
+		["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+		cwd=root,
+		capture_output=True,
+		text=True,
+		check=True,
+	).stdout.split()
+	found = []
+	for rel in files:
+		path = root / rel
+		if rel.startswith(("docs/legacy/", "frontend/node_modules/")) or not path.is_file():
+			continue
+		if path.suffix not in SERVE_SUFFIXES or rel in SERVE_SELF_FILES:
+			continue
+		for n, line in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
+			# A line warning against the unpinned form names it next to "without --site".
+			warning = "without" in line and "--site" in line.split("without", 1)[1]
+			if "serve --port" in line and PINNED_SERVE not in line and not warning:
+				found.append(f"{rel}:{n}: {line.strip()}")
+	return found
+
+
+CHECKS = {"phones": raw_phone_numbers, "commands": modules_running_commands, "serve": unpinned_serve_commands}
 
 
 def message(name, found):

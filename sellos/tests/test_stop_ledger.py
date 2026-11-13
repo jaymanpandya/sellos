@@ -113,7 +113,7 @@ class LoopRecordsItsStops(loop_env.LoopSandbox):
 		self.run_loop([0], extra_env=env)
 		self.assertEqual(
 			self.git("log", "-1", "--format=%s"),
-			"SOS-LOOP: the last stop and the restart, in docs/STOPS.md [skip ci]",
+			"SOS-LOOP: the last stop and the restart, in docs/STOPS.md",
 		)
 		rows = [line for line in self.ledger().splitlines() if line.startswith("| 20")]
 		self.assertEqual(len(rows), 2)

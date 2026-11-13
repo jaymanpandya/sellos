@@ -65,6 +65,32 @@ LOG_DIR="${SELLOS_LOG_DIR:-/tmp/sellos-test-logs}"
 TASK_BLOCK_PATH="${SELLOS_TASK_BLOCK_PATH:-/tmp/sellos-task-block.md}"
 BRANCH="${SELLOS_BRANCH:-1.0}"
 
+# SOS-SETUP-34: every commit the loop makes goes through loop_commit, which takes every CI skip marker
+# ([skip ci], [ci skip], [no ci], [skip actions], skip-checks: true and the like) out of its message
+# (scripts/lib/commit_message.py), so no loop commit ever skips CI. Use it as git commit, with -m or -F.
+loop_commit() {
+  local args=() msg
+  while (($#)); do
+    case "$1" in
+      -m)
+        msg="$(printf '%s\n' "$2" | python3 "$SCRIPT_DIR/lib/commit_message.py" clean)" || return 1
+        args+=(-m "$msg")
+        shift 2
+        ;;
+      -F)
+        python3 "$SCRIPT_DIR/lib/commit_message.py" clean-file "$2" || return 1
+        args+=(-F "$2")
+        shift 2
+        ;;
+      *)
+        args+=("$1")
+        shift
+        ;;
+    esac
+  done
+  git commit "${args[@]}"
+}
+
 # SOS-SETUP-33: the stop ledger. Every way this script ends, except "another loop is running", appends
 # one row to docs/STOPS.md (time, task, category, cause, minutes the attempt took) through the EXIT
 # trap, and prints the hours since the last stop. The next start commits the row with the idle time. Each stop site sets its category and
@@ -130,7 +156,7 @@ if [[ -f "$STOPS_FILE" ]]; then
   python3 "$STOPS_PY" restarted "$STOPS_FILE" || true
   git -C "$PROJECT_DIR" add -- docs/STOPS.md >/dev/null 2>&1 || true
   if ! git -C "$PROJECT_DIR" diff --cached --quiet -- docs/STOPS.md 2>/dev/null; then
-    git -C "$PROJECT_DIR" commit -q -m "SOS-LOOP: the last stop and the restart, in docs/STOPS.md [skip ci]" -- docs/STOPS.md || true
+    (cd "$PROJECT_DIR" && loop_commit -q -m "SOS-LOOP: the last stop and the restart, in docs/STOPS.md" -- docs/STOPS.md) || true
   fi
 fi
 echo "$(python3 "$STOPS_PY" summary "$STOPS_FILE" "$PROJECT_DIR" 2>/dev/null)"
@@ -405,7 +431,8 @@ git said:
 $(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
     exit 1
   fi
-  # SOS-SETUP-33: a push of nothing but the stop ledger ([skip ci]) changes no code, so CI is not run or awaited.
+  # SOS-SETUP-33: a push of nothing but the stop ledger changes no code, so CI is not awaited. SOS-SETUP-34:
+  # CI still runs on it, because no loop commit carries a skip marker.
   if [[ -z "$(printf '%s\n' "$AHEAD_LIST" | awk '$2 != "SOS-LOOP:"')" ]]; then
     echo "Only the stop ledger was ahead. Pushed it without waiting for CI."
   else
@@ -470,7 +497,7 @@ $WAITING_LINES"
   if [[ "$CURRENT_STATUS" == "Not Started" ]]; then
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "In Progress" "$TASKS_FILE"
     git add "$TASKS_FILE"
-    git commit -m "$TASK_ID: mark In Progress"
+    loop_commit -m "$TASK_ID: mark In Progress"
   fi
 
   IP_SHA="$(git rev-parse HEAD)"
@@ -554,7 +581,7 @@ $TASK_BLOCK"
   if [[ -n "$MARKER_LINE" ]]; then RESPONSE="$MARKER_LINE"; fi
 
   if is_limit "$RESPONSE"; then
-    git add -A; git commit -m "$TASK_ID: salvage before waiting for the usage limit" --allow-empty >/dev/null 2>&1 || true
+    git add -A; loop_commit -m "$TASK_ID: salvage before waiting for the usage limit" --allow-empty >/dev/null 2>&1 || true
     git branch "failed/${TASK_ID}-limit-$(date +%Y%m%d-%H%M%S)" >/dev/null 2>&1 || true
     git reset --hard "$PRE_TASK_SHA" >/dev/null 2>&1; git clean -fd >/dev/null 2>&1
     wait_for_limit "$RESPONSE"
@@ -563,13 +590,13 @@ $TASK_BLOCK"
   if [[ "$CLAUDE_EXIT" -ne 0 ]]; then
     SALVAGE_BRANCH="failed/${TASK_ID}-$(date +%Y%m%d-%H%M%S)"
     git add -A
-    git commit -m "$TASK_ID: salvage before revert (may not build or pass tests)" --allow-empty >/dev/null 2>&1 || true
+    loop_commit -m "$TASK_ID: salvage before revert (may not build or pass tests)" --allow-empty >/dev/null 2>&1 || true
     git branch "$SALVAGE_BRANCH" >/dev/null 2>&1 || true
     echo "Preserved this attempt's work on branch $SALVAGE_BRANCH before reverting main."
     git reset --hard "$PRE_TASK_SHA" && git clean -fd
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Blocked" "$TASKS_FILE"
     git add "$TASKS_FILE"
-    git commit -m "$TASK_ID: Claude process crashed, marking Blocked (repo reset to pre-task state)"
+    loop_commit -m "$TASK_ID: Claude process crashed, marking Blocked (repo reset to pre-task state)"
     stop_note crash "Claude's process exited $CLAUDE_EXIT"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID crashed Claude's process (exit $CLAUDE_EXIT). Marked Blocked, repo reset to before this task. Stopping."
     break
@@ -578,7 +605,7 @@ $TASK_BLOCK"
   if [[ "$RESPONSE" == NEEDS_INPUT:* ]]; then
     SALVAGE_BRANCH="failed/${TASK_ID}-$(date +%Y%m%d-%H%M%S)"
     git add -A
-    git commit -m "$TASK_ID: salvage before revert (may not build or pass tests)" --allow-empty >/dev/null 2>&1 || true
+    loop_commit -m "$TASK_ID: salvage before revert (may not build or pass tests)" --allow-empty >/dev/null 2>&1 || true
     git branch "$SALVAGE_BRANCH" >/dev/null 2>&1 || true
     echo "Preserved this attempt's work on branch $SALVAGE_BRANCH before reverting main."
     git reset --hard "$PRE_TASK_SHA" && git clean -fd
@@ -597,13 +624,13 @@ $TASK_BLOCK"
   if [[ "$RESPONSE" != IMPLEMENTATION_READY:* ]]; then
     SALVAGE_BRANCH="failed/${TASK_ID}-$(date +%Y%m%d-%H%M%S)"
     git add -A
-    git commit -m "$TASK_ID: salvage before revert (may not build or pass tests)" --allow-empty >/dev/null 2>&1 || true
+    loop_commit -m "$TASK_ID: salvage before revert (may not build or pass tests)" --allow-empty >/dev/null 2>&1 || true
     git branch "$SALVAGE_BRANCH" >/dev/null 2>&1 || true
     echo "Preserved this attempt's work on branch $SALVAGE_BRANCH before reverting main."
     git reset --hard "$PRE_TASK_SHA" && git clean -fd
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Blocked" "$TASKS_FILE"
     git add "$TASKS_FILE"
-    git commit -m "$TASK_ID: unrecognized response, marking Blocked (repo reset to pre-task state)"
+    loop_commit -m "$TASK_ID: unrecognized response, marking Blocked (repo reset to pre-task state)"
     stop_note unrecognized "the reply had no IMPLEMENTATION_READY or NEEDS_INPUT line and no work"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID gave an unrecognized response. Marked Blocked, repo reset to before this task. Stopping."
     break
@@ -696,7 +723,7 @@ Decide for yourself, following the policy above, and fix it now. Do not ask agai
       printf '%s: %s\n\n' "$TASK_ID" "$TASK_TITLE"
       printf '%s\n' "$SUMMARY" | fold -s -w 100 | head -n 20
     } >"$COMMIT_MSG_FILE"
-    git commit -F "$COMMIT_MSG_FILE"
+    loop_commit -F "$COMMIT_MSG_FILE"
     rm -f "$COMMIT_MSG_FILE"
     if ! push_with_retry; then
       stop_note push-failed "the push failed after every retry"
@@ -717,13 +744,13 @@ $RUN_SUMMARY"
     TAIL="$(tail -n 40 "$LOG_DIR/latest.log" 2>/dev/null || echo 'no log available')"
     SALVAGE_BRANCH="failed/${TASK_ID}-$(date +%Y%m%d-%H%M%S)"
     git add -A
-    git commit -m "$TASK_ID: salvage before revert (may not build or pass tests)" --allow-empty >/dev/null 2>&1 || true
+    loop_commit -m "$TASK_ID: salvage before revert (may not build or pass tests)" --allow-empty >/dev/null 2>&1 || true
     git branch "$SALVAGE_BRANCH" >/dev/null 2>&1 || true
     echo "Preserved this attempt's work on branch $SALVAGE_BRANCH before reverting main."
     git reset --hard "$PRE_TASK_SHA" && git clean -fd
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Blocked" "$TASKS_FILE"
     git add "$TASKS_FILE"
-    git commit -m "$TASK_ID: tests failed, marking Blocked (repo reset to pre-task state, no broken code left on main)"
+    loop_commit -m "$TASK_ID: tests failed, marking Blocked (repo reset to pre-task state, no broken code left on main)"
     stop_note blocked "the gate still failed after $GATE_RUN gate run(s): $(grep -m1 -E "GUARDS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED|TENANT TEMPLATE FAILED" "$LOG_DIR/latest.log" 2>/dev/null || echo "see the gate log")"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID failed tests. Blocked, repo reset to before this task — main is clean. Tail: $TAIL"
     break

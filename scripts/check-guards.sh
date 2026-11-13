@@ -58,8 +58,9 @@ else
   echo "=== Guards: ${#CHANGED[@]} changed file(s) since ${BASE:0:9} ==="
 fi
 
-# 1 and 2. Raw phone numbers and commands outside sellos/provisioning (sellos/testing/guards.py).
-for g in phones commands; do
+# 1, 2 and 10. Raw phone numbers, commands outside sellos/provisioning, and (SOS-SETUP-34) a serve command
+# that is not the pinned SellOS one (sellos/testing/guards.py).
+for g in phones commands serve; do
   out="$(python3 -c 'import sys; sys.path.insert(0, "."); from sellos.testing import guards; sys.exit(guards.main(sys.argv[1:]))' "$g" 2>&1)"
   rc=$?
   if [ "$rc" -eq 0 ]; then

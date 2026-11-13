@@ -246,12 +246,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Description:** As Jayman, I want the building blocks of the voice agent chosen, so that SOS-P5-07 is built on settled choices. The agent calls in Hinglish: spoken Hindi with English words, on phone lines at 8 kHz (Jayman, 11 November 2026). Choose the speech to text, language model and text to speech providers, and write the AI disclosure line in Roman Hinglish. The choice is made from the bake-off results in `docs/bakeoff/results.md`, which SOS-N21A's harness writes from our own recordings, not from vendor claims (`docs/DEV_STRATEGY.md` row 33).
 - **Acceptance Criteria:**
   - The speech to text, language model and text to speech providers are named, with who holds the account and key for each.
+  - The language model is one Anthropic account held by Jayman, with two model settings: the voice agent's (fast) and the agent assistant's (stronger). Each model is chosen from the mean ratings in `docs/bakeoff/llm-rating-sheet.md` and the latencies in `docs/bakeoff/results.md`, and the choice cites them.
   - The speech to text choice cites its numbers in `docs/bakeoff/results.md`: word error rate, entity accuracy for numbers, prices and localities (each scored separately) and time to first result.
   - The text to speech choice cites its mean rating (1 to 5) from the rating sheet and its latency from `docs/bakeoff/results.md`.
   - The call language is Hinglish, and transcripts and prompts are in Roman script.
   - The exact AI disclosure line is written down in Roman Hinglish.
 - **Test Criteria:** Verified by Jayman against `docs/bakeoff/results.md`.
-- **Notes:** Record the choices here, in this block, for SOS-P5-07 to read. Speech to text candidates: Sarvam Saaras V3 and Deepgram Nova-3 (language=multi, with real estate keyterms). Text to speech candidates: Sarvam Bulbul V3 and ElevenLabs. The bake-off does not score the language model; Jayman names it here. Rewritten by SOS-SETUP-30 (Jayman, 11 November 2026): the call languages are now Hinglish only, and the choice waits for the bake-off. Added by SOS-SETUP-33 (13 November 2026): this task includes Jayman's live run: record the 20 lines, store the three keys in the Keychain, run `scripts/bakeoff.sh --live` in a terminal, and fill in the rating sheet. The agent never runs `--live`.
+- **Notes:** Record the choices here, in this block, for SOS-P5-07 to read. Speech to text candidates: Sarvam Saaras V3 and Deepgram Nova-3 (language=multi, with real estate keyterms). Text to speech candidates: Sarvam Bulbul V3 and ElevenLabs. Language model candidates: two or three Anthropic models, named by Jayman in `~/iespl-baseline/bakeoff/llm-models.txt` and compared by SOS-N21A's language model comparison. Rewritten by SOS-SETUP-30 (Jayman, 11 November 2026): the call languages are now Hinglish only, and the choice waits for the bake-off. Added by SOS-SETUP-33 (13 November 2026): this task includes Jayman's live run: record the 20 lines, store the four keys in the Keychain (`sellos_anthropic_key` added by SOS-SETUP-34), write the two or three candidate model names in `llm-models.txt`, run `scripts/bakeoff.sh --live` in a terminal, and fill in the rating sheet. The agent never runs `--live`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, questions 3 and 10): one provider account for the language model, Anthropic, held by Jayman; keys in the Keychain locally and in encrypted settings in production. SOS-P5-07 builds adapters for every bake-off candidate behind the provider setting, and this task only records which ones the settings use. The model is not chosen by the agent.
 - **Owner:** Jayman
 - **Priority:** P5
 - **Launch:** Dec 20
@@ -285,24 +286,55 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - `20.wav`: Rate per square foot kitna chal raha hai is area mein, around 45 hazaar?
   Speech to text: the candidates are Sarvam (Saaras V3) and Deepgram (Nova-3, `language=multi`, with keyterms for real estate words, read from a list in the package: BHK, carpet area, RERA, possession, maintenance, floor rise, stamp duty, the localities above and the like). The harness sends each recording as 8 kHz mono audio, as a phone line carries it, converting a recording that is not 8 kHz first. For each provider and each file it records the transcript, the word error rate against the reference, entity accuracy for numbers, prices and localities scored separately, and the time to first result. Scoring normalises both sides before comparing: case and punctuation, and spoken Hindi or English numbers against digits, so "teen crore" and "3 crore", "do crore pachaas lakh" and "2.5 crore", and "nau aath saat" and "987" match.
   Text to speech: write 20 agent replies in Roman Hinglish, the first being a draft of the AI disclosure line (SOS-N21 sets the final one). Generate each at 8 kHz with each provider (Sarvam Bulbul V3 and ElevenLabs), save the audio under `~/iespl-baseline/bakeoff/out/<provider>/`, record the latency (time to first audio and total), and write a rating sheet `docs/bakeoff/rating-sheet.md` with one row per reply and provider and an empty 1 to 5 column for Jayman.
+  Language model (SOS-SETUP-34): run the same 20 agent replies through two or three candidate language models of the one provider, Anthropic (Jayman, 13 November 2026), so SOS-N21 can choose the model for each of the two settings (voice agent: fast; assistant: stronger). For each of the 20 replies, the scenario is the caller's line it answers and the lead context it needs; each candidate writes its own reply in Roman Hinglish from the same system prompt. The candidate model names are not chosen by the agent: they are read from `~/iespl-baseline/bakeoff/llm-models.txt`, one per line, two or three lines, which Jayman writes before the live run, and the harness refuses fewer than two or more than three. The live adapter calls Anthropic's Messages API over HTTPS with the standard library, streaming, and records time to first token and total time per reply. Write a rating sheet `docs/bakeoff/llm-rating-sheet.md` with one row per reply and model, the reference reply beside it, and empty 1 to 5 columns for Hinglish naturalness and for correctness, and add the models' latencies to `results.md`.
   Results: write `docs/bakeoff/results.md`: one table per provider with every file's numbers, then a summary table comparing the providers (mean word error rate, entity accuracy per kind, median and slowest time to first result, text to speech latency). Ship it as "Not run yet" until Jayman runs the harness.
-  Keys: they come only from the macOS Keychain items `sellos_sarvam_key`, `sellos_deepgram_key` and `sellos_elevenlabs_key`, through one function `get_secret(name)` in `sellos/voice/bakeoff/`, built like `get_provisioner_password()` in `sellos/provisioning/credentials.py`. It accepts only those three names. A key goes only into the request to its provider: nothing prints, logs or writes one, no exception message or result holds one, and the frame that raises a provider error holds no key (`docs/DEV_STRATEGY.md` row 29). When an item is missing, the error says how to store it (`security add-generic-password -a "$USER" -s <name> -w`) without showing a value.
+  Keys: they come only from the macOS Keychain items `sellos_sarvam_key`, `sellos_deepgram_key`, `sellos_elevenlabs_key` and (SOS-SETUP-34) `sellos_anthropic_key`, through one function `get_secret(name)` in `sellos/voice/bakeoff/`, built like `get_provisioner_password()` in `sellos/provisioning/credentials.py`. It accepts only those four names. A key goes only into the request to its provider: nothing prints, logs or writes one, no exception message or result holds one, and the frame that raises a provider error holds no key (`docs/DEV_STRATEGY.md` row 29). When an item is missing, the error says how to store it (`security add-generic-password -a "$USER" -s <name> -w`) without showing a value.
 - **Acceptance Criteria:**
-  - `scripts/bakeoff.sh --fake` runs the whole harness with fake speech to text and text to speech providers on test recordings, and writes the transcripts, scores, latencies, audio, rating sheet and `results.md` to a folder it is given.
+  - `scripts/bakeoff.sh --fake` runs the whole harness with fake speech to text, language model and text to speech providers on test recordings, and writes the transcripts, scores, latencies, audio, both rating sheets and `results.md` to a folder it is given.
   - Real providers run only with `scripts/bakeoff.sh --live`, which refuses to start when standard input is not a terminal, so the build loop's agent cannot run it. The agent never runs `--live`.
   - Word error rate and entity accuracy are correct on hand worked examples, including spoken numbers and prices against digits, and numbers, prices and localities are scored separately.
   - Time to first result and text to speech latency are measured and recorded per file.
   - `docs/bakeoff/reference.tsv` holds the 20 rows with their entities, `docs/bakeoff/sentences.md` lists the 20 lines, and `docs/bakeoff/results.md` says "Not run yet".
-  - `get_secret` reads only the three Keychain items, and no key appears in standard output, standard error, a log, a results file or a traceback with its locals.
-  - The speech to text and text to speech candidates sit behind one adapter interface each, so a provider is added by writing one adapter.
-- **Test Criteria:** Backend tests with fake providers: scoring on worked examples, a whole `--fake` run on two short 8 kHz test recordings, `--live` refused without a terminal, `get_secret` refusing an unknown name, and a fake key that never appears in the captured output, the written files or a formatted traceback with locals. The Keychain is never read in a test: the call is replaced.
-- **Notes:** Added by SOS-SETUP-30 (Jayman, 11 November 2026). Never run `security find-generic-password -w` or any command that prints a key. Add no package: the bench is shared (SOS-SETUP-20). Use the standard library and what Frappe already installs; if a provider's streaming API needs a library the bench does not have, measure its HTTP API and say so in `results.md`. The recordings and generated audio stay in `~/iespl-baseline/bakeoff/`, never in the repository. Added by SOS-SETUP-33 (13 November 2026): the 5c6a5c6 Block came from the raw phone number guard (`sellos/tests/test_no_raw_phone_numbers.py`), which recording 08's spoken number trips when a test writes it out. In tests, a spoken phone number is made from a number from `sellos.tests.phones`, spelled out in Hindi digit words by a helper; no test or spec writes a ten digit number or its spoken form by hand. The 20 sentences in `docs/bakeoff/` are not test files and stay as written. The recovered work is on the branch `wip/SOS-N21A-recovery-20261113`; a person decides whether to start from it when resetting this task.
+  - The language model comparison reads two or three model names from `llm-models.txt`, refuses any other count, runs the 20 replies through each, records time to first token and total time, and writes `docs/bakeoff/llm-rating-sheet.md` with one row per reply and model and empty 1 to 5 columns.
+  - `get_secret` reads only the four Keychain items, and no key appears in standard output, standard error, a log, a results file or a traceback with its locals.
+  - The speech to text, language model and text to speech candidates sit behind one adapter interface each, so a provider is added by writing one adapter.
+- **Test Criteria:** Backend tests with fake providers: scoring on worked examples, a whole `--fake` run on two short 8 kHz test recordings, `--live` refused without a terminal, the language model comparison with a fake model (two and three model names pass, one and four are refused), `get_secret` refusing an unknown name, and a fake key that never appears in the captured output, the written files or a formatted traceback with locals. The Keychain is never read in a test: the call is replaced.
+- **Notes:** Added by SOS-SETUP-30 (Jayman, 11 November 2026). Never run `security find-generic-password -w` or any command that prints a key. Add no package: the bench is shared (SOS-SETUP-20). Use the standard library and what Frappe already installs; if a provider's streaming API needs a library the bench does not have, measure its HTTP API and say so in `results.md`. The recordings and generated audio stay in `~/iespl-baseline/bakeoff/`, never in the repository. Added by SOS-SETUP-33 (13 November 2026): the 5c6a5c6 Block came from the raw phone number guard (`sellos/tests/test_no_raw_phone_numbers.py`), which recording 08's spoken number trips when a test writes it out. In tests, a spoken phone number is made from a number from `sellos.tests.phones`, spelled out in Hindi digit words by a helper; no test or spec writes a ten digit number or its spoken form by hand. The 20 sentences in `docs/bakeoff/` are not test files and stay as written. The recovered work is on the branch `wip/SOS-N21A-recovery-20261113`; a person decides whether to start from it when resetting this task. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 1): reset to Not Started by `scripts/set-task-status.sh`. Rebuild from this text; `wip/SOS-N21A-recovery-20261113` is reference only.
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Launch:** Dec 20
-- **Story Points:** 5
+- **Story Points:** 6
 - **Dependencies:** none
-- **Status:** Blocked
+- **Status:** Not Started
+
+### SOS-N22: Write the default consent wording
+- **Epic:** Compliance, procurement and access
+- **Description:** As Jayman, I want the default consent wording written, so that the enquiry page, the website forms and the partner views show it from the start. Write the default text of the company setting "Consent wording" (SOS-P2-08), which each Company Admin can then edit. Counsel reviews it after launch.
+- **Acceptance Criteria:**
+  - The default consent wording is written and stored as the setting's default.
+- **Test Criteria:** Verified by Jayman.
+- **Notes:** Added by SOS-SETUP-34 (Jayman, 13 November 2026, question 5). Jayman's work, so it is Waiting and the loop does not pick it.
+- **Owner:** Jayman
+- **Priority:** P0
+- **Launch:** Dec 20
+- **Story Points:** 1
+- **Dependencies:** none
+- **Status:** Waiting
+
+### SOS-N23: Put the WhatsApp flow designs and the ten flows in docs/whatsapp
+- **Epic:** Compliance, procurement and access
+- **Description:** As Jayman, I want the WhatsApp flow designs in the repository, so that SOS-P6-16 and SOS-P6-17 are built from them. Put the existing WhatsApp CRM designs and the list of the ten flows in `docs/whatsapp/`, and complete Meta's business verification on the Meta business account Jayman holds.
+- **Acceptance Criteria:**
+  - `docs/whatsapp/` holds the flow designs and names the ten flows, split into group one (SOS-P6-16) and group two (SOS-P6-17).
+  - The Meta business account is verified.
+- **Test Criteria:** Verified by Jayman.
+- **Notes:** Added by SOS-SETUP-34 (Jayman, 13 November 2026, question 14). Jayman's work, so it is Waiting and the loop does not pick it.
+- **Owner:** Jayman
+- **Priority:** P0
+- **Launch:** Jan 1
+- **Story Points:** 1
+- **Dependencies:** none
+- **Status:** Waiting
 
 ### SOS-P0-01: Summarise the BuildOS conventions
 - **Epic:** Platform foundations and DevOps
@@ -529,6 +561,22 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Dependencies:** SOS-P0-04, SOS-P1-14D
 - **Status:** Waiting
 
+### SOS-P0-13: Set up outgoing email in production
+- **Epic:** Platform foundations and DevOps
+- **Description:** As Jayman, I want SellOS to send real email, so that invitations, alerts, scheduled reports and billing mail reach people. Set up a transactional mail provider for production, with SPF and DKIM on the domain.
+- **Acceptance Criteria:**
+  - A transactional mail provider sends from the SellOS domain.
+  - SPF and DKIM pass for the domain.
+  - A test email from a company site arrives and is not marked as spam.
+- **Test Criteria:** Send a test email from production and check its headers.
+- **Notes:** Added by SOS-SETUP-34 (Jayman, 13 November 2026, question 16). AMP Labs work, so it is Waiting and the loop does not pick it.
+- **Owner:** AMP Labs
+- **Priority:** P0
+- **Launch:** Dec 20
+- **Story Points:** 2
+- **Dependencies:** SOS-P0-04
+- **Status:** Waiting
+
 ### SOS-P1-06A: CRM works on a fresh company site
 - **Epic:** Core CRM and consent
 - **Description:** Reopens SOS-P1-06, which was ticked while the CRM did not work in a browser. On 4 November 2026, on the SellOS test site, every CRM call answered 403, the Leads page showed "No leads yet", the page used placeholder colours and fonts, and the page named the site instead of the company, and the whole gate was green. This task makes the CRM work on a fresh company site, for the right roles, and makes the screens say so when it does not. The records, permissions and masking rules built in SOS-P1-06 stay as they are (see CLAUDE.md, "CRM data rules").
@@ -607,7 +655,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The targets (restore time, number of sites, concurrent users, response times) are read from one settings file, so SOS-P6-12D sets the agreed numbers without a code change.
   - At small scale on the local bench (three tenant sites made from the tenant template, ten concurrent users against `sellos_test.localhost` on port 8004) each run completes and the report holds its numbers.
 - **Test Criteria:** Backend tests that run each at the small scale above and check the report, and drop every tenant site they made.
-- **Notes:** Split by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). This task is the code, owned by Claude Code. The full run on staging with 20 sites and the agreed numbers is SOS-P6-12D. Add no package for the load test.
+- **Notes:** Split by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). This task is the code, owned by Claude Code. The full run on staging with 20 sites and the agreed numbers is SOS-P6-12D. Add no package for the load test. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): the settings file starts with the agreed numbers: one site restored within 1 hour, 20 sites in the rolling upgrade, 50 concurrent users, 95 percent of list screens within 1 second.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -617,13 +665,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 
 ### SOS-P6-12D: Run the restore, upgrade and load tests on staging
 - **Epic:** Platform foundations and DevOps
-- **Description:** As Jayman, I want the platform proven under restore, upgrade and load, so that we can onboard other agencies safely. The deploy half of SOS-P6-12: run SOS-P6-12's scripts on staging, a full restore, a rolling upgrade across 20 test sites and a load test at the agreed number of concurrent users.
+- **Description:** As Jayman, I want the platform proven under restore, upgrade and load, so that we can onboard other agencies safely. The deploy half of SOS-P6-12: run SOS-P6-12's scripts on staging, a full restore, a rolling upgrade across 20 test sites and a load test at 50 concurrent users.
 - **Acceptance Criteria:**
-  - The restore completes within the agreed time.
+  - One site is restored within 1 hour.
   - The upgrade across 20 sites loses no data.
-  - The load test meets the agreed response times.
+  - With 50 concurrent users, 95 percent of list screens answer within 1 second.
 - **Test Criteria:** A results report is stored, and every failure becomes an SOS-FIX task.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). The agreed numbers are a question in `docs/BACKLOG_AUDIT.md`. Waiting, and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). The agreed numbers are a question in `docs/BACKLOG_AUDIT.md`. Waiting, and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): restore within 1 hour, 50 concurrent users, 95 percent of list screens within 1 second.
 - **Owner:** AMP Labs, Jayman
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -788,12 +836,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Admin and agent users exist.
   - Branding is applied.
 - **Test Criteria:** Jayman signs in as each role and sees the correct screens.
-- **Notes:** Dependencies added by SOS-SETUP-33 (13 November 2026): the site goes live over HTTPS only once the bench is installed on production (SOS-P0-06D) and the wildcard certificate is issued (SOS-P0-05D).
+- **Notes:** Dependencies added by SOS-SETUP-33 (13 November 2026): the site goes live over HTTPS only once the bench is installed on production (SOS-P0-06D) and the wildcard certificate is issued (SOS-P0-05D). Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 16): depends on SOS-P0-13, outgoing email in production.
 - **Owner:** AMP Labs, Claude Code
 - **Priority:** P1
 - **Launch:** Dec 20
 - **Story Points:** 3
-- **Dependencies:** SOS-P1-03, SOS-P0-05D, SOS-P0-06D
+- **Dependencies:** SOS-P1-03, SOS-P0-05D, SOS-P0-06D, SOS-P0-13
 - **Status:** Waiting
 
 ### SOS-P1-07: Build the buyer pipeline
@@ -849,7 +897,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - A submission without consent wording creates the lead with consent status Unknown and a recorded warning, and no Consent Record.
   - The endpoint is rate limited.
 - **Test Criteria:** Tests for valid, bad key, missing consent wording (accepted, Unknown, warning recorded) and flood submissions.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): SOS-P2-08's enquiry page and this endpoint both turn a form submission into a Lead and a Consent Record. SOS-P2-08 builds the one lead intake function (`sellos.crm.intake`) and this endpoint calls it, adding only the per company key and the rate limit; it does not build a second intake path. The per company key is a record that holds a hash of the key and its scope (Lead intake here; SOS-P4-08 adds Listings read), shown once when it is made and never returned by an API. The Consent Record's evidence link is the raw submission saved as a private file (`/private/files/...`), which SOS-P1-08's evidence rule already accepts, so that rule is not changed. The consent wording comes from the company setting that SOS-P2-08 adds.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): SOS-P2-08's enquiry page and this endpoint both turn a form submission into a Lead and a Consent Record. SOS-P2-08 builds the one lead intake function (`sellos.crm.intake`) and this endpoint calls it, adding only the per company key and the rate limit; it does not build a second intake path. The per company key is a record that holds a hash of the key and its scope (Lead intake here; SOS-P4-08 adds Listings read), shown once when it is made and never returned by an API. The Consent Record's evidence link is the raw submission saved as a private file (`/private/files/...`), which SOS-P1-08's evidence rule already accepts, so that rule is not changed. The consent wording comes from the company setting that SOS-P2-08 adds. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 5): the consent wording is the company setting "Consent wording", which each Company Admin can edit. Its default text is written by Jayman (SOS-N22); counsel reviews it after launch. Tests use their own wording.
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Launch:** Jan 1
@@ -866,12 +914,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Failures are retried and alerted.
   - The website still holds a copy.
 - **Test Criteria:** Submit a form and see the lead in SellOS within a minute.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): SOS-N07 (counsel's review of the consent wording) is Not Needed, so "the consent wording approved by counsel" has no source yet. The wording is the company setting added by SOS-P2-08; who writes and approves its text is a question in `docs/BACKLOG_AUDIT.md`.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): SOS-N07 (counsel's review of the consent wording) is Not Needed, so "the consent wording approved by counsel" has no source yet. The wording is the company setting added by SOS-P2-08; who writes and approves its text is a question in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 5): the consent wording is the company setting "Consent wording", which each Company Admin can edit. Its default text is written by Jayman (SOS-N22); counsel reviews it after launch. Tests use their own wording.
 - **Owner:** AMP Labs
 - **Priority:** P1
 - **Launch:** Jan 1
 - **Story Points:** 3
-- **Dependencies:** SOS-P1-09
+- **Dependencies:** SOS-P1-09, SOS-N22
 - **Status:** Waiting
 
 ### SOS-P1-12: Import the bought lead lists
@@ -934,12 +982,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Plivo's real events for that call pass the signature check and update the Call Log, and the recording link is stored.
   - Every difference between Plivo's real answers and the fake provider's is written down and becomes an SOS-FIX task.
 - **Test Criteria:** Verified by Jayman against the Call Log and Plivo's console.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the Plivo account and keys. The agent never calls Plivo, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the Plivo account and keys. The agent never calls Plivo, so it is Waiting and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 2): provider webhooks reach a public HTTPS address on staging, never a tunnel to the shared bench on port 8004, so this depends on SOS-P0-06D.
 - **Owner:** Jayman
 - **Priority:** P2
 - **Launch:** Dec 20
 - **Story Points:** 1
-- **Dependencies:** SOS-P2-01, SOS-P2-02, SOS-P2-06
+- **Dependencies:** SOS-P2-01, SOS-P2-02, SOS-P2-06, SOS-P0-06D
 - **Status:** Waiting
 
 ### SOS-P2-03: Build the call router
@@ -1033,16 +1081,16 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Description:** As Jayman, I want bought leads given a way to respond, so that they can become callable leads. Give bought leads ways to come to us: a missed call to the 022 number, a link to the enquiry page shared through WhatsApp or ads, and the website forms. A missed call or form submission creates an inquiry Consent Record with a 7 day clock. An explicit stop request is recorded as Opted out with a red warning, and does not block. Consent never blocks (Jayman, 10 November 2026). The SMS route is parked with the Tata DLT stories.
 - **Acceptance Criteria:**
   - A missed call to the 022 number is detected without the call being answered.
-  - A missed call creates a Consent Record and moves the lead.
+  - A missed call from a known lead changes no stage: it creates an inquiry Consent Record (7 days) and an activity, the lead becomes Consented, and it rises to the top of the caller queue. A missed call from an unknown number creates a new lead on the New stage, with the same record and activity.
   - The enquiry page records the consent wording.
   - A stop request, by call, form or message, is recorded as Opted out and shows a red warning on the lead, the caller queue and the call log. It does not block a later call, SMS or WhatsApp message.
 - **Test Criteria:** Feed a missed call event from a number made by `sellos.tests.phones` through the fake provider and the webhook, submit the enquiry page, and confirm the record and the lead state. Whether Plivo bills the rejected call is checked on a real call in SOS-P2-13.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. A missed call arrives as a provider event through SOS-P2-06's webhook, so this task depends on it. This task builds the one lead intake function (`sellos.crm.intake`) behind the enquiry page; SOS-P1-09 and SOS-P5-06 call it and build no second path. The consent wording shown on the page is a company setting, "Consent wording", that a Company Admin edits; who writes its text is a question in `docs/BACKLOG_AUDIT.md`. A Consent Record's evidence link is the raw event or submission saved as a private file (`/private/files/...`), which SOS-P1-08's evidence rule already accepts. Which stage "moves the lead" means is a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if it is still open when this task starts.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. A missed call arrives as a provider event through SOS-P2-06's webhook, so this task depends on it. This task builds the one lead intake function (`sellos.crm.intake`) behind the enquiry page; SOS-P1-09 and SOS-P5-06 call it and build no second path. The consent wording shown on the page is a company setting, "Consent wording", that a Company Admin edits; who writes its text is a question in `docs/BACKLOG_AUDIT.md`. A Consent Record's evidence link is the raw event or submission saved as a private file (`/private/files/...`), which SOS-P1-08's evidence rule already accepts. Which stage "moves the lead" means is a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if it is still open when this task starts. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 5): the consent wording is the company setting "Consent wording", which each Company Admin can edit. Its default text is written by Jayman (SOS-N22); counsel reviews it after launch. Tests use their own wording. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 6): "moves the lead" means no stage change, as the criterion now says. It depends on SOS-P2-09 because the lead rises to the top of the caller queue.
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Launch:** Dec 20
 - **Story Points:** 8
-- **Dependencies:** SOS-P2-04, SOS-P2-06
+- **Dependencies:** SOS-P2-04, SOS-P2-06, SOS-P2-09
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -1117,15 +1165,15 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Description:** As Jayman, I want test calls proven end to end, so that we trust the setup before real use. The Indian number, +91 22 6998 6373, is already bought. Place test calls to Indian numbers only (international calling is dropped, Jayman, 10 November 2026) and check cost and recordings. This is the live test of the calling tasks, which are built and tested against a fake provider: click to call between two real phones (SOS-P2-07), a real missed call to the 022 number and whether Plivo bills it (SOS-P2-08), and the call reports against Plivo's statement (SOS-P2-11).
 - **Acceptance Criteria:**
   - Click to call completes between two real Indian phones, and a real missed call to the 022 number creates its Consent Record.
-  - Logged cost is within an agreed tolerance of Plivo's statement.
+  - Logged cost is within 2 percent of Plivo's statement.
   - Recordings play.
 - **Test Criteria:** Reconcile the Call Log with the Plivo statement.
-- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): India only, and it now holds the live checks of SOS-P2-07, SOS-P2-08 and SOS-P2-11. The agreed cost tolerance is a question in `docs/BACKLOG_AUDIT.md`.
+- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): India only, and it now holds the live checks of SOS-P2-07, SOS-P2-08 and SOS-P2-11. The agreed cost tolerance is a question in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 2): provider webhooks reach a public HTTPS address on staging, never a tunnel to the shared bench on port 8004, so this depends on SOS-P0-06D. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): the cost tolerance is 2 percent.
 - **Owner:** Jayman
 - **Priority:** P2
 - **Launch:** Dec 20
 - **Story Points:** 3
-- **Dependencies:** SOS-P2-07, SOS-P2-02L, SOS-P2-08, SOS-P2-11
+- **Dependencies:** SOS-P2-07, SOS-P2-02L, SOS-P2-08, SOS-P2-11, SOS-P0-06D, SOS-N22
 - **Status:** Waiting
 
 ### SOS-P2-14: Onboard the first caller and start the baseline
@@ -1136,9 +1184,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The caller works from the caller queue and reads each lead's consent warning before calling.
   - Baseline metrics are tracked weekly.
 - **Test Criteria:** A weekly baseline report is produced for four weeks.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 4): moved to the Jan 1 tier; the four week baseline cannot end by 20 December.
 - **Owner:** Jayman
 - **Priority:** P2
-- **Launch:** Dec 20
+- **Launch:** Jan 1
 - **Story Points:** 3
 - **Dependencies:** SOS-P2-13
 - **Status:** Waiting
@@ -1152,7 +1201,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Runs are scheduled and failures raise alerts.
   - The adapter never solves captchas or bypasses access controls.
 - **Test Criteria:** Contract tests with sample payloads, and a test that a failed run raises an alert.
-- **Notes:** Split by SOS-SETUP-33 (13 November 2026): SOS-N11 (bought data) is Not Needed and SOS-N12 (the Department of Registration and Stamps) is Waiting with an uncertain outcome, so the interface, the file adapter, the schedule and the alerts are built now with a fake source, and the real source's first batch is SOS-P3-01L. Which site holds the market data, and where it comes from, are questions in `docs/BACKLOG_AUDIT.md`.
+- **Notes:** Split by SOS-SETUP-33 (13 November 2026): SOS-N11 (bought data) is Not Needed and SOS-N12 (the Department of Registration and Stamps) is Waiting with an uncertain outcome, so the interface, the file adapter, the schedule and the alerts are built now with a fake source, and the real source's first batch is SOS-P3-01L. Which site holds the market data, and where it comes from, are questions in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 8): Market data lives on the control site and reaches company sites through a role checked API. It is loaded from export files Jayman supplies (Index II or DoRS) through SOS-P3-01's file adapter, ready reckoner rates are loaded from a file Jayman supplies, and the data licence switch is a platform setting, On by default for data SellOS owns.
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1167,8 +1216,9 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - One real batch is ingested, and its record count matches the source's.
   - The source's licence terms are recorded with the batch.
   - Nothing solves a captcha or bypasses an access control.
+  - The ready reckoner rates file is supplied and loaded.
 - **Test Criteria:** Verified by Jayman against the source's own count.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the source and its terms, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the source and its terms, so it is Waiting and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 8): Market data lives on the control site and reaches company sites through a role checked API. It is loaded from export files Jayman supplies (Index II or DoRS) through SOS-P3-01's file adapter, ready reckoner rates are loaded from a file Jayman supplies, and the data licence switch is a platform setting, On by default for data SellOS owns.
 - **Owner:** Jayman
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1183,7 +1233,9 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Original fields are unchanged.
   - Source, fetch time and hash are stored.
   - Re runs do not create duplicates.
+  - The raw transaction table is on the control site, and company sites read it only through a role checked API.
 - **Test Criteria:** Ingest the same batch twice and confirm there are no duplicates.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 8): Market data lives on the control site and reaches company sites through a role checked API. It is loaded from export files Jayman supplies (Index II or DoRS) through SOS-P3-01's file adapter, ready reckoner rates are loaded from a file Jayman supplies, and the data licence switch is a platform setting, On by default for data SellOS owns.
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1199,7 +1251,8 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Dates are standard.
   - Areas are in carpet square feet with the conversion rule recorded.
   - Unparseable records go to a review list.
-- **Test Criteria:** A golden file of 100 verified records, with an accuracy threshold agreed with Jayman.
+- **Test Criteria:** A golden file of 100 verified records, with at least 95 percent of fields correct.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): at least 95 percent of fields correct. The gate uses a synthetic golden file Claude Code writes; the check on real data is SOS-P3-13.
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1246,7 +1299,8 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Each record gets a match or a review status.
   - Confidence is stored.
   - Reviewer decisions are saved and reused.
-- **Test Criteria:** Precision and recall are measured on 200 hand matched records.
+- **Test Criteria:** Precision and recall are measured on 200 hand matched records: precision at least 95 percent and recall at least 85 percent.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): precision at least 95 percent, recall at least 85 percent. The gate uses a synthetic golden file Claude Code writes; the check on real data is SOS-P3-13.
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1274,9 +1328,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Description:** As an Agent, I want up to date rates and trends, so that guidance reflects the market. Compute rate per square foot, rolling 3, 6 and 12 month trends and building statistics every night.
 - **Acceptance Criteria:**
   - Jobs run nightly and are repeatable.
-  - They finish within the agreed window.
+  - They finish within 2 hours.
   - Failures raise alerts.
 - **Test Criteria:** Recompute a known sample by hand and compare.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): the window is 2 hours.
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1292,7 +1347,9 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Profiles show trend, volume and price against the ready reckoner.
   - Every figure links to its records.
   - Role permissions apply.
+  - Ready reckoner rates are loaded from a file through the file adapter; the tests use a sample file.
 - **Test Criteria:** API tests, and an end to end view of a known building.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 8): Market data lives on the control site and reaches company sites through a role checked API. It is loaded from export files Jayman supplies (Index II or DoRS) through SOS-P3-01's file adapter, ready reckoner rates are loaded from a file Jayman supplies, and the data licence switch is a platform setting, On by default for data SellOS owns.
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1308,7 +1365,8 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - A range is returned with its comparables.
   - The method is shown.
   - Too few comparables returns a clear refusal.
-- **Test Criteria:** Back test against 50 known sales and report the error.
+- **Test Criteria:** Back test against 50 known sales and report the error: median error at most 10 percent.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): median error at most 10 percent. The gate uses a synthetic golden file Claude Code writes; the check on real data is SOS-P3-13.
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1325,8 +1383,9 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Unknown buildings get a clear refusal.
   - Party names are hidden where the role forbids them.
   - Questions are logged.
+  - The language model sits behind one adapter, Anthropic, with a fake that scripts tool calls for the tests; the model is the setting "Assistant model" (the stronger one SOS-N21 chooses), and its key comes from encrypted settings.
 - **Test Criteria:** A scripted question set with expected tool calls, and a test with an unknown building to confirm it does not invent figures.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): the party name limits come from SOS-P3-12, so it is a dependency. The language model sits behind one adapter interface, and the tests use a fake model that returns scripted tool calls. The agent never calls a real model and never holds its key, which lives in encrypted settings or an environment variable. Which model and whose account is a question in `docs/BACKLOG_AUDIT.md`. The run with the real model is SOS-P3-10L.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): the party name limits come from SOS-P3-12, so it is a dependency. The language model sits behind one adapter interface, and the tests use a fake model that returns scripted tool calls. The agent never calls a real model and never holds its key, which lives in encrypted settings or an environment variable. Which model and whose account is a question in `docs/BACKLOG_AUDIT.md`. The run with the real model is SOS-P3-10L. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 7): the party name limits are SOS-P3-12's: only a Company Admin sees party names, and every view is logged. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 10): one Anthropic account held by Jayman for the assistant and the voice agent, with two model settings; the agent never chooses the model and never calls the real API.
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1344,7 +1403,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Party names stay hidden where the role forbids them.
   - Every difference from the fake model's behaviour becomes an SOS-FIX task.
 - **Test Criteria:** Verified by Jayman against the scripted question set.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 10): Anthropic, with the assistant model SOS-N21 chooses; Jayman enters the key.
 - **Owner:** Jayman
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1376,8 +1435,9 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Name search is off unless allowed.
   - Access is logged.
   - Retention follows the advice.
+  - Index II buyer and seller names are visible only to Company Admins, are never searchable, every view is logged, and they are kept five years. A Facebook poster's name and number are kept only on the draft listing, masked like a lead's phone, and deleted when the draft is rejected.
 - **Test Criteria:** Permission tests for each role.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): SOS-N13 (counsel's advice on party names) is Not Needed, so "the rules from SOS-N13" have no source. The rules to apply are a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if it is still open when this task starts.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): SOS-N13 (counsel's advice on party names) is Not Needed, so "the rules from SOS-N13" have no source. The rules to apply are a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if it is still open when this task starts. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 7): these rules replace "the rules from SOS-N13". Index II buyer and seller names are visible only to Company Admins, are never searchable, every view is logged, and they are kept five years. A Facebook poster's name and number are kept only on the draft listing, masked like a lead's phone, and deleted when the draft is rejected.
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1394,7 +1454,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - 50 records are checked against Index II.
   - The accuracy is reported and discrepancies are logged.
 - **Test Criteria:** An audit report with the sample and the results.
-- **Notes:** Dependencies added by SOS-SETUP-33 (13 November 2026): loading five years needs the real source (SOS-P3-01L) and the verified buildings (SOS-P3-04A).
+- **Notes:** Dependencies added by SOS-SETUP-33 (13 November 2026): loading five years needs the real source (SOS-P3-01L) and the verified buildings (SOS-P3-04A). Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 8): Market data lives on the control site and reaches company sites through a role checked API. It is loaded from export files Jayman supplies (Index II or DoRS) through SOS-P3-01's file adapter, ready reckoner rates are loaded from a file Jayman supplies, and the data licence switch is a platform setting, On by default for data SellOS owns.
 - **Owner:** Jayman
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1443,6 +1503,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Invalid files are rejected.
   - The order can be changed.
 - **Test Criteria:** Upload valid and invalid files.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 11): the asset library is the company's uploaded files.
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Launch:** Jan 1
@@ -1459,7 +1520,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Stage rules are enforced. The rule that a seller cannot reach Listed without a signed mandate is added by SOS-P4-05, which builds Mandate.
   - Changes are logged.
 - **Test Criteria:** Stage rule tests.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): Pipeline Stage (SOS-P1-03, SOS-P1-07) has no pipeline field, so the seller stages would mix with the buyer stages. This task supersedes the single stage list: it adds a `pipeline` field (Buyer or Seller) to Pipeline Stage, a patch that can be run again safely sets every existing stage to Buyer, and the seller stages above are seeded as Seller (Sold a Won stage, Closed lost a Lost stage, the rest Open). `MAX_STAGES`, the rule of at least one Won and one Lost stage, and the rule that a stage with leads cannot be deleted (SOS-P1-07) apply to each pipeline on its own. The buyer screens and SOS-P1-03's and SOS-P1-07's tests filter on Buyer and keep every assertion; the number of assertions in each changed test must not fall. The no Listed without a signed mandate rule moved to SOS-P4-05, because Mandate does not exist before it. Whether a seller is a Lead on the Seller pipeline or a record of its own is a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if it is still open when this task starts.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): Pipeline Stage (SOS-P1-03, SOS-P1-07) has no pipeline field, so the seller stages would mix with the buyer stages. This task supersedes the single stage list: it adds a `pipeline` field (Buyer or Seller) to Pipeline Stage, a patch that can be run again safely sets every existing stage to Buyer, and the seller stages above are seeded as Seller (Sold a Won stage, Closed lost a Lost stage, the rest Open). `MAX_STAGES`, the rule of at least one Won and one Lost stage, and the rule that a stage with leads cannot be deleted (SOS-P1-07) apply to each pipeline on its own. The buyer screens and SOS-P1-03's and SOS-P1-07's tests filter on Buyer and keep every assertion; the number of assertions in each changed test must not fall. The no Listed without a signed mandate rule moved to SOS-P4-05, because Mandate does not exist before it. Whether a seller is a Lead on the Seller pipeline or a record of its own is a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if it is still open when this task starts. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 11): a seller is a Lead on the Seller pipeline, linked to a Client.
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Launch:** Jan 1
@@ -1477,8 +1538,9 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The Dossier is hidden until signed.
   - Each Dossier view is logged.
   - A seller cannot be moved to the Listed stage without a signed mandate (the stage rule from SOS-P4-04).
+  - The Private Sale Dossier (the files and notes attached to a Mandate) is released only when the Mandate is signed.
 - **Test Criteria:** Try to open the Dossier without a signed mandate and confirm it fails.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): the Listed stage rule moved here from SOS-P4-04. What the Private Sale Dossier holds is not defined anywhere; it is a question in `docs/BACKLOG_AUDIT.md`.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): the Listed stage rule moved here from SOS-P4-04. What the Private Sale Dossier holds is not defined anywhere; it is a question in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 11): the Private Sale Dossier is the files and notes attached to a Mandate, released only when the Mandate is signed.
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Launch:** Jan 1
@@ -1511,7 +1573,9 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Comparables appear on both screens.
   - Each links to its records.
   - They are hidden if the licence forbids showing them.
+  - The data licence switch is a platform setting, On by default; when it is Off, comparables are hidden.
 - **Test Criteria:** An end to end check on a known building, and a test of the licence switch.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 8): Market data lives on the control site and reaches company sites through a role checked API. It is loaded from export files Jayman supplies (Index II or DoRS) through SOS-P3-01's file adapter, ready reckoner rates are loaded from a file Jayman supplies, and the data licence switch is a platform setting, On by default for data SellOS owns.
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Launch:** Jan 1
@@ -1538,12 +1602,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 
 ### SOS-P4-09: Switch the website to read listings from SellOS
 - **Epic:** Inventory, mandates and deals
-- **Description:** As Jayman, I want the Pandya website to show listings from SellOS, so that nothing is entered twice. Render the listing pages from the endpoint, remove unpublished listings within the agreed time, and fall back safely if the endpoint is down.
+- **Description:** As Jayman, I want the Pandya website to show listings from SellOS, so that nothing is entered twice. Render the listing pages from the endpoint, remove unpublished listings within 15 minutes, and fall back safely if the endpoint is down.
 - **Acceptance Criteria:**
   - Pages render from the endpoint.
-  - Unpublishing removes a listing within the agreed time.
+  - Unpublishing removes a listing within 15 minutes.
   - An outage shows the last good copy.
 - **Test Criteria:** Toggle a listing and check the site, and simulate an outage.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): 15 minutes.
 - **Owner:** AMP Labs
 - **Priority:** P4
 - **Launch:** Jan 1
@@ -1644,8 +1709,9 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Exports match the screen.
   - Scheduled emails arrive on time.
   - Recipients only get data they may see.
+  - A Company Admin may export report results only: the rows and figures they can already see, with phone numbers masked, and every export logged. Raw DocType export stays Platform Admin only.
 - **Test Criteria:** Compare an export with the screen, and run a scheduled email.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): CLAUDE.md says only the Platform Admin may bulk export, and this task gives Company Admins CSV and PDF export. Which exports a Company Admin may make is a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if it is still open when this task starts. Scheduled email needs an outgoing mail account on production, which no task sets up yet (same file).
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): CLAUDE.md says only the Platform Admin may bulk export, and this task gives Company Admins CSV and PDF export. Which exports a Company Admin may make is a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if it is still open when this task starts. Scheduled email needs an outgoing mail account on production, which no task sets up yet (same file). Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 12): this permission change is approved as the criterion above says.
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Launch:** Jan 1
@@ -1663,7 +1729,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The Dossier is hidden until a mandate is signed.
   - Clients see only their own data.
 - **Test Criteria:** Permission tests, and an end to end walk through for a buyer and a seller.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): no task defines a shortlist record. What a shortlist is (a list of listings per client, made by the agent) is a question in `docs/BACKLOG_AUDIT.md`.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): no task defines a shortlist record. What a shortlist is (a list of listings per client, made by the agent) is a question in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 11): a shortlist is a list of listings per client, made by the agent and seen by the client.
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Launch:** Jan 1
@@ -1680,8 +1746,9 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Shared inventory is visible.
   - Deals and commission status show only the partner's own, with earnings so far, potential earnings and the partner's QR code.
   - Partners cannot see other partners' leads.
+  - A partner creates a lead only through one whitelisted method, which records them as its partner. The method is rate limited per partner by the company setting "Partner lead limit", default 20 leads per partner per hour, and refuses the next lead with a clear message. After that the lead is read only to the partner, who logs nothing, and a partner only ever sees their own leads.
 - **Test Criteria:** Permission tests, and an end to end test of registering a lead.
-- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): the product names no company, so "work with Pandya" reads "work with the company". A registered lead goes through SOS-P2-08's lead intake function, so it is a dependency. CLAUDE.md says a Channel Partner's access is read only; whether a partner may create a lead is a question in `docs/BACKLOG_AUDIT.md`, and a change to permissions needs Jayman's approval.
+- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): the product names no company, so "work with Pandya" reads "work with the company". A registered lead goes through SOS-P2-08's lead intake function, so it is a dependency. CLAUDE.md says a Channel Partner's access is read only; whether a partner may create a lead is a question in `docs/BACKLOG_AUDIT.md`, and a change to permissions needs Jayman's approval. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 5): the consent wording is the company setting "Consent wording", which each Company Admin can edit. Its default text is written by Jayman (SOS-N22); counsel reviews it after launch. Tests use their own wording. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 13): partners may create leads, as the criterion above says; the limit is 20 leads per partner per hour (Jayman, 13 November 2026). This permission change is approved.
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Launch:** Jan 1
@@ -1700,17 +1767,17 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The first audio of each reply starts within about one second of the caller finishing speaking. The time from the end of the caller's speech to the first audio sent is measured for every turn and recorded on the Call Log.
   - Real estate vocabulary is a per company list of keyterms, which a Company Admin edits, and it is passed to the speech to text provider on every call.
   - A caller can ask for a human at any time, including during the disclosure line or while the agent is speaking, and the call is handed over to a human. The agent also hands over on confusion.
-  - The speech to text and text to speech adapters each sit behind one replaceable interface, and the provider in use is a setting, so the SOS-N21 choice can change without a rebuild.
+  - The speech to text, language model and text to speech adapters each sit behind one replaceable interface, and the provider in use is a setting, so the SOS-N21 choice can change without a rebuild. There is an adapter for every bake-off candidate: Sarvam Saaras V3 and Deepgram Nova-3 for speech to text, Sarvam Bulbul V3 and ElevenLabs for text to speech, and Anthropic for the language model, whose model is the setting "Voice agent model" (the fast one SOS-N21 chooses).
   - It writes the outcome and transcript to the Call Log.
   - It runs the consent function of SOS-P2-04 before each call and records the consent status and warning on the Call Log. It never refuses a call on consent while Consent enforcement is Off. Consent never blocks (Jayman, 10 November 2026).
   - It records each call's purpose, and a promotional purpose on the 022 number is recorded as a warning.
 - **Test Criteria:** Scripted test calls covering normal, interruption, silence and handover cases, including a request for a human during the disclosure line and mid reply. A latency measurement per turn from the end of caller speech to first audio, reported as median and slowest against the one second target. A test that the disclosure line is the first audio of every call, a test that the company's keyterms reach the speech to text request, and a test that switching the provider setting to a fake adapter changes the provider with no code change.
-- **Notes:** Updated by SOS-SETUP-30 (Jayman, 11 November 2026): Hinglish, Roman script, the one second target, per company keyterms, handover at any time and replaceable adapters. Added by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key: the Plivo audio stream, speech to text, the language model and text to speech each have a fake. The per turn latency and the transcript are fields this task adds to SOS-P2-05's Call Log, which it does not redefine; SOS-P2-05 comes before this task in the same tier. The company keyterm list starts from SOS-N21A's list. The AI disclosure line is a company setting that starts as SOS-N21's line. The live call is SOS-P5-07L. (Adding SOS-P2-05 and SOS-P5-07L to the voice chain's dependencies needs `test_the_voice_pilot_chain` changed, which is a question in `docs/BACKLOG_AUDIT.md`.)
+- **Notes:** Updated by SOS-SETUP-30 (Jayman, 11 November 2026): Hinglish, Roman script, the one second target, per company keyterms, handover at any time and replaceable adapters. Added by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key: the Plivo audio stream, speech to text, the language model and text to speech each have a fake. The per turn latency and the transcript are fields this task adds to SOS-P2-05's Call Log, which it does not redefine; SOS-P2-05 comes before this task in the same tier. The company keyterm list starts from SOS-N21A's list. The AI disclosure line is a company setting that starts as SOS-N21's line. The live call is SOS-P5-07L. (Adding SOS-P2-05 and SOS-P5-07L to the voice chain's dependencies needs `test_the_voice_pilot_chain` changed, which is a question in `docs/BACKLOG_AUDIT.md`.) Decided by Jayman (SOS-SETUP-34, 13 November 2026, questions 3 and 10): this task starts before SOS-N21 and depends on SOS-P2-05 instead; SOS-N21 only sets the provider and model settings. The note above about `test_the_voice_pilot_chain` is resolved: SOS-SETUP-34 changed the test. Keys come from encrypted settings, never from the code.
 - **Owner:** Claude Code
 - **Priority:** P5
 - **Launch:** Dec 20
 - **Story Points:** 8
-- **Dependencies:** SOS-P2-03, SOS-P2-04, SOS-N21
+- **Dependencies:** SOS-P2-03, SOS-P2-04, SOS-P2-05
 - **Status:** Not Started
 
 ### SOS-P5-07L: Live test the voice agent
@@ -1722,13 +1789,14 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The median and slowest time from the end of the caller's speech to the first audio are recorded on the Call Log and compared with the one second target.
   - Asking for a human, during the disclosure line and mid reply, hands the call to a real phone.
   - Every difference from the fakes becomes an SOS-FIX task.
-- **Test Criteria:** Ten real calls, with the latency figures and the handover results written down.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. SOS-P5-08 does not start before this is Complete.
+  - At least 50 supervised end to end AI calls are completed before 20 December, each one checked for the disclosure line first, a working handover to a human when asked, and a reviewed transcript. They use only the purposes SOS-P5-08 allows on the 022 number.
+- **Test Criteria:** At least 50 supervised end to end AI calls, each listened to by Jayman or a caller, with the latency figures, the handover results and every transcript reviewed and written down.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. SOS-P5-08 does not start before this is Complete. Decided by Jayman (SOS-SETUP-34, 13 November 2026, questions 2 and 4): this is the Dec 20 test of the voice agent: at least 50 supervised end to end AI calls (the disclosure, the handover, reviewed transcripts). Plivo's audio stream reaches the agent at a public HTTPS address on staging, so it depends on SOS-P0-06D.
 - **Owner:** Jayman
 - **Priority:** P5
 - **Launch:** Dec 20
 - **Story Points:** 2
-- **Dependencies:** SOS-P5-07, SOS-N21, SOS-P2-02L
+- **Dependencies:** SOS-P5-07, SOS-N21, SOS-P2-02L, SOS-P0-06D
 - **Status:** Waiting
 
 ### SOS-P5-08: Run the AI pilot
@@ -1738,13 +1806,14 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - 400 calls are completed, or the pilot is stopped with a recorded reason.
   - Transcripts are reviewed weekly.
   - Complaints are logged, and zero are required to continue.
+  - Every pilot call is a site visit confirmation or a follow up for an existing client, the only purposes allowed on the 022 number.
 - **Test Criteria:** A weekly review log is kept.
-- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): the call language is Hinglish (SOS-SETUP-30). Do not start before SOS-P5-07L is Complete. Its dependencies are not changed here because `test_the_voice_pilot_chain` locks them (question in `docs/BACKLOG_AUDIT.md`). Which purposes the pilot may use on the 022 number, and whether a four week baseline and a four week pilot fit the Dec 20 tier, are questions in the same file.
+- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): the call language is Hinglish (SOS-SETUP-30). Do not start before SOS-P5-07L is Complete. Its dependencies are not changed here because `test_the_voice_pilot_chain` locks them (question in `docs/BACKLOG_AUDIT.md`). Which purposes the pilot may use on the 022 number, and whether a four week baseline and a four week pilot fit the Dec 20 tier, are questions in the same file. Decided by Jayman (SOS-SETUP-34, 13 November 2026, questions 3 and 4): moved to the Jan 1 tier, because a four week baseline and a four week pilot cannot end by 20 December. It depends on SOS-P5-07L. The pilot is limited to site visit confirmations and follow ups for existing clients.
 - **Owner:** Jayman
 - **Priority:** P5
-- **Launch:** Dec 20
+- **Launch:** Jan 1
 - **Story Points:** 5
-- **Dependencies:** SOS-P5-07, SOS-P2-14
+- **Dependencies:** SOS-P5-07L, SOS-P2-14
 - **Status:** Waiting
 
 ### SOS-P5-09: Compare AI with the human baseline
@@ -1755,12 +1824,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The data reconciles with the Call Log.
   - The report runs for any date range, and is tested on seeded AI and human Call Logs.
 - **Test Criteria:** Reconcile the report with the raw data.
-- **Notes:** Split by SOS-SETUP-33 (13 November 2026): this task builds the comparison report, owned by Claude Code. Jayman's go or no go decision on the pilot data is SOS-P5-09A. The report needs only the Call Log, so it could start before the pilot ends; that dependency change needs `test_the_voice_pilot_chain` changed (question in `docs/BACKLOG_AUDIT.md`).
+- **Notes:** Split by SOS-SETUP-33 (13 November 2026): this task builds the comparison report, owned by Claude Code. Jayman's go or no go decision on the pilot data is SOS-P5-09A. The report needs only the Call Log, so it could start before the pilot ends; that dependency change needs `test_the_voice_pilot_chain` changed (question in `docs/BACKLOG_AUDIT.md`). Decided by Jayman (SOS-SETUP-34, 13 November 2026, questions 3 and 4): it needs only the Call Log, so it depends on SOS-P5-07 and SOS-P2-11 instead of SOS-P5-08, and it is in the Jan 1 tier.
 - **Owner:** Claude Code
 - **Priority:** P5
-- **Launch:** Dec 20
+- **Launch:** Jan 1
 - **Story Points:** 3
-- **Dependencies:** SOS-P5-08
+- **Dependencies:** SOS-P5-07, SOS-P2-11
 - **Status:** Not Started
 
 ### SOS-P5-09A: Record the AI go or no go decision
@@ -1770,12 +1839,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The comparison report is run on the pilot and the four week baseline, and reconciles with the Call Log.
   - A go or no go decision is recorded, with its reasons.
 - **Test Criteria:** Verified by the recorded decision.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman's decision, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman's decision, so it is Waiting and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 4): Jan 1 tier. It depends on SOS-P5-08 too, because SOS-P5-09 no longer does and the decision needs the pilot's data.
 - **Owner:** Jayman
 - **Priority:** P5
-- **Launch:** Dec 20
+- **Launch:** Jan 1
 - **Story Points:** 1
-- **Dependencies:** SOS-P5-09
+- **Dependencies:** SOS-P5-09, SOS-P5-08
 - **Status:** Waiting
 
 ### SOS-P6-01: Build the billing records
@@ -1850,12 +1919,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - A failed payment is recorded.
   - Every difference from the fake gateway becomes an SOS-FIX task.
 - **Test Criteria:** Verified by Jayman against Razorpay's test dashboard.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. Razorpay's webhooks need a public HTTPS address (question in `docs/BACKLOG_AUDIT.md`).
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. Razorpay's webhooks need a public HTTPS address (question in `docs/BACKLOG_AUDIT.md`). Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 2): provider webhooks reach a public HTTPS address on staging, never a tunnel to the shared bench on port 8004, so this depends on SOS-P0-06D.
 - **Owner:** Jayman
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 1
-- **Dependencies:** SOS-N14, SOS-P6-03
+- **Dependencies:** SOS-N14, SOS-P6-03, SOS-P0-06D
 - **Status:** Waiting
 
 ### SOS-P6-15: Build the Stripe adapter
@@ -1883,12 +1952,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Stripe's real webhooks update the subscription, and a replayed one changes nothing.
   - Every difference from the fake gateway becomes an SOS-FIX task.
 - **Test Criteria:** Verified by Jayman against Stripe's test dashboard.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 2): provider webhooks reach a public HTTPS address on staging, never a tunnel to the shared bench on port 8004, so this depends on SOS-P0-06D.
 - **Owner:** Jayman
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 1
-- **Dependencies:** SOS-N14, SOS-P6-15
+- **Dependencies:** SOS-N14, SOS-P6-15, SOS-P0-06D
 - **Status:** Waiting
 
 ### SOS-P6-04: Build the billing lifecycle
@@ -1928,14 +1997,16 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 
 ### SOS-P6-06: Build GST compliant invoices
 - **Epic:** Billing and subscriptions
-- **Description:** As Jayman, I want compliant invoices, so that customers and the tax authority are satisfied. Generate an invoice for every payment in the format the accountant confirms, with GST for Indian customers and the correct treatment for overseas customers, numbered in sequence.
+- **Description:** As Jayman, I want compliant invoices, so that customers and the tax authority are satisfied. Generate an invoice for every payment from an editable invoice template, with GST for Indian customers and the correct treatment for overseas customers, numbered in sequence.
 - **Acceptance Criteria:**
   - Each payment has a numbered invoice.
   - GST is shown for Indian customers.
-  - Overseas invoices follow the treatment held in the invoice format setting, which SOS-P6-06A fills in from SOS-N15.
+  - Overseas invoices follow the treatment held in the invoice template, which SOS-P6-06A fills in from SOS-N15.
   - Credit notes are supported.
+  - No invoice is issued to a real customer until SOS-N15 is Complete. A platform setting, "Invoice format approved", is Off until then; while it is Off an invoice can be previewed and saved as a draft but not issued to a customer.
+  - The invoice is an editable template that a Platform Admin changes without a code change.
 - **Test Criteria:** Tests of numbering, the GST lines (CGST and SGST within the state, IGST across states, the overseas treatment from the setting) and credit notes, with sample invoices saved for the accountant. The accountant's approval is SOS-P6-06A.
-- **Notes:** Split by SOS-SETUP-33 (13 November 2026): SOS-N15's own test is that the accountant approves a sample invoice made by this task, so this task cannot wait for SOS-N15. It builds the invoice from a format held in a setting (the seller's GSTIN, the service code, the numbering series, the overseas treatment) and the accountant's approval is SOS-P6-06A, which depends on SOS-N15.
+- **Notes:** Split by SOS-SETUP-33 (13 November 2026): SOS-N15's own test is that the accountant approves a sample invoice made by this task, so this task cannot wait for SOS-N15. It builds the invoice from a format held in a setting (the seller's GSTIN, the service code, the numbering series, the overseas treatment) and the accountant's approval is SOS-P6-06A, which depends on SOS-N15. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 17): invoices are built as an editable template now, and none is issued to a real customer until SOS-N15 is Complete. SOS-N15's dependency on SOS-N14 is unchanged: the answer did not cover it.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -2020,8 +2091,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The post becomes a draft in the review queue.
   - No automated collection runs against Facebook.
   - Poster personal data follows the counsel rules.
+  - A poster's name and number are kept only on the draft listing, masked like a lead's phone, and deleted when the draft is rejected.
+  - It is a share target in the SellOS web app on a phone, plus pasting a post's link and text on a computer. There is no browser extension.
 - **Test Criteria:** Parse 20 saved sample posts (fixtures with made up names and numbers from `sellos.tests.phones`) and check the parsing, and a test that nothing is collected without an agent action. The capture of real posts is SOS-P6-10L, owned by Jayman.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): the post parser sits behind one capture interface, and the tests feed it saved post fixtures; no test or code path sends a request to Facebook. The capture of real posts by a signed in agent is SOS-P6-10L. "As counsel advises" has no source (SOS-N13 is Not Needed), and whether the assist is a browser extension or a share target is not decided; both are questions in `docs/BACKLOG_AUDIT.md`.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): the post parser sits behind one capture interface, and the tests feed it saved post fixtures; no test or code path sends a request to Facebook. The capture of real posts by a signed in agent is SOS-P6-10L. "As counsel advises" has no source (SOS-N13 is Not Needed), and whether the assist is a browser extension or a share target is not decided; both are questions in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 7): the poster rule above replaces "as counsel advises". Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 15): a share target and paste, not a browser extension.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -2057,7 +2130,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Every send goes through the consent function of SOS-P2-04 and records the consent status and warning. None is refused while Consent enforcement is Off. Consent never blocks (Jayman, 10 November 2026).
   - A conversation can be handed to a human.
 - **Test Criteria:** An end to end test through a fake WhatsApp provider behind the adapter interface, with signed webhook bodies, covering inbound, outbound, an opt in, a stop request and handoff. The test on a real number is SOS-P6-11L, owned by Jayman.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. Every send goes through SOS-P2-04's consent function, so it is a dependency, and each message links to its Consent Check and defines no consent fields of its own. A Consent Record made from a conversation has the message saved as a private file as its evidence link. Which WhatsApp provider is used is a question in `docs/BACKLOG_AUDIT.md`.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. Every send goes through SOS-P2-04's consent function, so it is a dependency, and each message links to its Consent Check and defines no consent fields of its own. A Consent Record made from a conversation has the message saved as a private file as its evidence link. Which WhatsApp provider is used is a question in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 14): Meta's Cloud API directly, behind the adapter; Jayman holds the Meta business account and does the business verification; Jayman puts the flow designs and the list of the ten flows in `docs/whatsapp/` (SOS-N23); "the agent's calendar" means Site Visit records.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -2075,12 +2148,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - A conversation is handed to a human.
   - Every difference from the fake provider becomes an SOS-FIX task.
 - **Test Criteria:** Verified by Jayman on his own phone.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. The provider's webhooks need a public HTTPS address (question in `docs/BACKLOG_AUDIT.md`).
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. The provider's webhooks need a public HTTPS address (question in `docs/BACKLOG_AUDIT.md`). Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 2): provider webhooks reach a public HTTPS address on staging, never a tunnel to the shared bench on port 8004, so this depends on SOS-P0-06D. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 14): Meta's Cloud API directly, behind the adapter; Jayman holds the Meta business account and does the business verification; Jayman puts the flow designs and the list of the ten flows in `docs/whatsapp/` (SOS-N23); "the agent's calendar" means Site Visit records.
 - **Owner:** Jayman
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 1
-- **Dependencies:** SOS-P6-11
+- **Dependencies:** SOS-P6-11, SOS-P0-06D
 - **Status:** Waiting
 
 ### SOS-P6-16: Rebuild WhatsApp flows, group one
@@ -2092,12 +2165,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Handoff works from each flow.
   - Each flow records the lead's consent status and shows its warning to the agent, and never stops a message on consent while Consent enforcement is Off. Consent never blocks (Jayman, 10 November 2026).
 - **Test Criteria:** Scripted conversations through each flow with the fake WhatsApp provider of SOS-P6-11.
-- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): tested with SOS-P6-11's fake provider; the real number is SOS-P6-11L. Where "the existing WhatsApp CRM designs" are is a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if they are not in the repository when this task starts.
+- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): tested with SOS-P6-11's fake provider; the real number is SOS-P6-11L. Where "the existing WhatsApp CRM designs" are is a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if they are not in the repository when this task starts. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 14): Meta's Cloud API directly, behind the adapter; Jayman holds the Meta business account and does the business verification; Jayman puts the flow designs and the list of the ten flows in `docs/whatsapp/` (SOS-N23); "the agent's calendar" means Site Visit records.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 8
-- **Dependencies:** SOS-P6-11
+- **Dependencies:** SOS-P6-11, SOS-N23
 - **Status:** Not Started
 
 ### SOS-P6-17: Rebuild WhatsApp flows, group two
@@ -2109,12 +2182,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Handoff passes the full conversation.
   - All ten flows are live.
 - **Test Criteria:** Scripted conversations through each flow with the fake WhatsApp provider of SOS-P6-11, including an opt out.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): tested with SOS-P6-11's fake provider. The "remaining flows" and the ten flows are not listed anywhere, and "the agent's calendar" is taken to be the Site Visit record; both are in the WhatsApp question in `docs/BACKLOG_AUDIT.md`.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): tested with SOS-P6-11's fake provider. The "remaining flows" and the ten flows are not listed anywhere, and "the agent's calendar" is taken to be the Site Visit record; both are in the WhatsApp question in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 14): Meta's Cloud API directly, behind the adapter; Jayman holds the Meta business account and does the business verification; Jayman puts the flow designs and the list of the ten flows in `docs/whatsapp/` (SOS-N23); "the agent's calendar" means Site Visit records.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 8
-- **Dependencies:** SOS-P6-11
+- **Dependencies:** SOS-P6-11, SOS-N23
 - **Status:** Not Started
 
 ### SOS-P6-13: Prepare legal terms and the support process
@@ -2320,7 +2393,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P6
 - **Launch:** Jan 1
-- **Dependencies:** SOS-N12, SOS-N14, SOS-N15, SOS-N16, SOS-N21, SOS-N21A, SOS-P0-01, SOS-P0-02, SOS-P0-03, SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-07, SOS-P0-06L, SOS-P0-08, SOS-P0-09, SOS-P0-12, SOS-P1-06A, SOS-P1-06B, SOS-P1-14, SOS-P6-12, SOS-P0-10, SOS-P1-04, SOS-P1-05, SOS-P1-13, SOS-P5-10, SOS-P0-11, SOS-P1-01, SOS-P1-02, SOS-P1-03, SOS-P1-11, SOS-P1-07, SOS-P1-08, SOS-P1-09, SOS-P1-10, SOS-P1-12, SOS-P2-01, SOS-P2-02, SOS-P2-03, SOS-P2-04, SOS-P2-05, SOS-P2-06, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-13, SOS-P2-14, SOS-P3-01, SOS-P3-02, SOS-P3-03, SOS-P3-04, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12, SOS-P3-13, SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07, SOS-P4-08, SOS-P4-09, SOS-P4-10, SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06, SOS-P5-07, SOS-P5-08, SOS-P5-09, SOS-P6-01, SOS-P6-02, SOS-P6-03, SOS-P6-15, SOS-P6-04, SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-09, SOS-P6-10, SOS-P6-11, SOS-P6-16, SOS-P6-17, SOS-P6-13, SOS-P6-14, SOS-REG-A, SOS-REG-B, SOS-REG-C, SOS-FIX-1, SOS-P0-05D, SOS-P0-06D, SOS-P0-08D, SOS-P1-14D, SOS-P6-12D, SOS-P2-02L, SOS-P3-01L, SOS-P3-04A, SOS-P3-10L, SOS-P4-10C, SOS-P5-07L, SOS-P5-09A, SOS-P6-02A, SOS-P6-03L, SOS-P6-15L, SOS-P6-06A, SOS-P6-10L, SOS-P6-11L, SOS-P6-13C
+- **Dependencies:** SOS-N12, SOS-N14, SOS-N15, SOS-N16, SOS-N21, SOS-N21A, SOS-P0-01, SOS-P0-02, SOS-P0-03, SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-07, SOS-P0-06L, SOS-P0-08, SOS-P0-09, SOS-P0-12, SOS-P1-06A, SOS-P1-06B, SOS-P1-14, SOS-P6-12, SOS-P0-10, SOS-P1-04, SOS-P1-05, SOS-P1-13, SOS-P5-10, SOS-P0-11, SOS-P1-01, SOS-P1-02, SOS-P1-03, SOS-P1-11, SOS-P1-07, SOS-P1-08, SOS-P1-09, SOS-P1-10, SOS-P1-12, SOS-P2-01, SOS-P2-02, SOS-P2-03, SOS-P2-04, SOS-P2-05, SOS-P2-06, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-13, SOS-P2-14, SOS-P3-01, SOS-P3-02, SOS-P3-03, SOS-P3-04, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12, SOS-P3-13, SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07, SOS-P4-08, SOS-P4-09, SOS-P4-10, SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06, SOS-P5-07, SOS-P5-08, SOS-P5-09, SOS-P6-01, SOS-P6-02, SOS-P6-03, SOS-P6-15, SOS-P6-04, SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-09, SOS-P6-10, SOS-P6-11, SOS-P6-16, SOS-P6-17, SOS-P6-13, SOS-P6-14, SOS-REG-A, SOS-REG-B, SOS-REG-C, SOS-FIX-1, SOS-P0-05D, SOS-P0-06D, SOS-P0-08D, SOS-P1-14D, SOS-P6-12D, SOS-P2-02L, SOS-P3-01L, SOS-P3-04A, SOS-P3-10L, SOS-P4-10C, SOS-P5-07L, SOS-P5-09A, SOS-P6-02A, SOS-P6-03L, SOS-P6-15L, SOS-P6-06A, SOS-P6-10L, SOS-P6-11L, SOS-P6-13C, SOS-N22, SOS-N23, SOS-P0-13
 - **Status:** Waiting
 
 ### SOS-FIX-1: An unknown path under /sellos shows a blank page

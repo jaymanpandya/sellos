@@ -17,6 +17,8 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from sellos.testing import guards
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = REPO_ROOT / "scripts"
 LIB = SCRIPTS / "lib" / "sellos_server.sh"
@@ -192,32 +194,8 @@ class ScriptsUseTheRule(unittest.TestCase):
 		self.assertLess(new_site, set_port)
 
 	def test_no_unpinned_serve_command_in_the_repository(self):
-		files = subprocess.run(
-			["git", "ls-files", "--cached", "--others", "--exclude-standard"],
-			cwd=REPO_ROOT,
-			capture_output=True,
-			text=True,
-			check=True,
-		).stdout.split()
-		bad = []
-		for rel in files:
-			path = REPO_ROOT / rel
-			if rel.startswith(("docs/legacy/", "frontend/node_modules/")) or not path.is_file():
-				continue
-			if (
-				path.suffix not in {".md", ".sh", ".js", ".py"}
-				or rel == "sellos/tests/test_sellos_server_port.py"
-			):
-				continue
-			for n, line in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
-				# A line warning against the unpinned form names it next to "without --site".
-				warning = "without" in line and "--site" in line.split("without", 1)[1]
-				if (
-					"serve --port" in line
-					and "--site sellos_test.localhost serve --port 8004" not in line
-					and not warning
-				):
-					bad.append(f"{rel}:{n}: {line.strip()}")
+		# SOS-SETUP-34: the scan is the serve guard, so scripts/check-guards.sh runs it in a second too.
+		bad = guards.unpinned_serve_commands(REPO_ROOT)
 		self.assertEqual(bad, [], "every serve command must be the pinned SellOS one")
 
 

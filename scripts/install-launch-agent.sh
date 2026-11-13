@@ -4,6 +4,8 @@
 #   scripts/install-launch-agent.sh             install, or reinstall, and start it
 #   scripts/install-launch-agent.sh --replace   also stop a SellOS server started by hand on 8004 first
 #   scripts/install-launch-agent.sh --remove    stop it and remove both agents
+#   scripts/install-launch-agent.sh --write-only  write both plists to SELLOS_LAUNCH_AGENTS_DIR and check
+#                                               them, touching neither launchd nor port 8004 (the tests)
 #
 # Two agents in ~/Library/LaunchAgents:
 #   com.sellos.server         cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004
@@ -39,8 +41,8 @@ if [ "$MODE" = "--remove" ]; then
   echo "Removed $SERVER_LABEL and $HEALTH_LABEL. Start the server by hand with: cd $BENCH_DIR && bench --site sellos_test.localhost serve --port 8004"
   exit 0
 fi
-if [ "$MODE" != "install" ] && [ "$MODE" != "--replace" ]; then
-  echo "Usage: $0 [--replace | --remove]" >&2
+if [ "$MODE" != "install" ] && [ "$MODE" != "--replace" ] && [ "$MODE" != "--write-only" ]; then
+  echo "Usage: $0 [--replace | --remove | --write-only]" >&2
   exit 2
 fi
 
@@ -48,6 +50,72 @@ BENCH_BIN="$(command -v bench || true)"
 if [ -z "$BENCH_BIN" ]; then
   echo "bench is not on PATH. Install it as for the rest of the bench, then run this again." >&2
   exit 3
+fi
+
+# Both plists, then the check that the server plist runs only the pinned serve command (SOS-SETUP-34).
+write_plists() {
+  mkdir -p "$AGENTS" "$BASELINE_DIR"
+  PATH_FOR_AGENT="$(dirname "$BENCH_BIN"):/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+  cat >"$SERVER_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$SERVER_LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>cd "$BENCH_DIR" &amp;&amp; exec "$BENCH_BIN" --site sellos_test.localhost serve --port 8004</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>$PATH_FOR_AGENT</string>
+    <key>HOME</key><string>$HOME</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>ProcessType</key><string>Interactive</string>
+  <key>StandardOutPath</key><string>$BASELINE_DIR/sellos-server.log</string>
+  <key>StandardErrorPath</key><string>$BASELINE_DIR/sellos-server.log</string>
+</dict>
+</plist>
+EOF
+
+  cat >"$HEALTH_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$HEALTH_LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$REPO_DIR/scripts/sellos</string>
+    <string>server-check</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>$PATH_FOR_AGENT</string>
+    <key>HOME</key><string>$HOME</string>
+  </dict>
+  <key>StartInterval</key><integer>120</integer>
+  <key>StandardOutPath</key><string>$BASELINE_DIR/sellos-server-health.log</string>
+  <key>StandardErrorPath</key><string>$BASELINE_DIR/sellos-server-health.log</string>
+</dict>
+</plist>
+EOF
+
+  if ! python3 "$REPO_DIR/scripts/lib/launch_agent_check.py" "$SERVER_PLIST"; then
+    echo "$SERVER_PLIST does not run the pinned SellOS server. Not loading it." >&2
+    exit 1
+  fi
+}
+
+if [ "$MODE" = "--write-only" ]; then
+  write_plists
+  exit 0
 fi
 
 # A server already on 8004 that launchd did not start would hold the port, and the agent would
@@ -78,59 +146,7 @@ for _ in $(seq 1 20); do
   sleep 1
 done
 
-mkdir -p "$AGENTS" "$BASELINE_DIR"
-PATH_FOR_AGENT="$(dirname "$BENCH_BIN"):/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-
-cat >"$SERVER_PLIST" <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key><string>$SERVER_LABEL</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>/bin/bash</string>
-    <string>-c</string>
-    <string>cd "$BENCH_DIR" &amp;&amp; exec "$BENCH_BIN" --site sellos_test.localhost serve --port 8004</string>
-  </array>
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>PATH</key><string>$PATH_FOR_AGENT</string>
-    <key>HOME</key><string>$HOME</string>
-  </dict>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-  <key>ThrottleInterval</key><integer>10</integer>
-  <key>ProcessType</key><string>Interactive</string>
-  <key>StandardOutPath</key><string>$BASELINE_DIR/sellos-server.log</string>
-  <key>StandardErrorPath</key><string>$BASELINE_DIR/sellos-server.log</string>
-</dict>
-</plist>
-EOF
-
-cat >"$HEALTH_PLIST" <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key><string>$HEALTH_LABEL</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>$REPO_DIR/scripts/sellos</string>
-    <string>server-check</string>
-  </array>
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>PATH</key><string>$PATH_FOR_AGENT</string>
-    <key>HOME</key><string>$HOME</string>
-  </dict>
-  <key>StartInterval</key><integer>120</integer>
-  <key>StandardOutPath</key><string>$BASELINE_DIR/sellos-server-health.log</string>
-  <key>StandardErrorPath</key><string>$BASELINE_DIR/sellos-server-health.log</string>
-</dict>
-</plist>
-EOF
-
+write_plists
 plutil -lint "$SERVER_PLIST" "$HEALTH_PLIST" >/dev/null
 unload "$HEALTH_LABEL"
 launchctl bootstrap "$DOMAIN" "$SERVER_PLIST"
