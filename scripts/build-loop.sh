@@ -126,19 +126,45 @@ if [[ "$ORIGIN_URL" == ssh://* || "$ORIGIN_URL" =~ ^[^/:]+@[^/:]+: ]]; then
 fi
 
 # What went wrong in the last gate run: the unit test failures, the browser test failures, and the end of the log.
+# SOS-SETUP-32: both prompts carry this. On 13 November 2026 the SOS-N21A agent wrote a phone number
+# as map(str, range(...)) so test_no_raw_phone_numbers would not match it, Semgrep flagged that, the
+# first repair turned it back into a literal, and the task was Blocked. The guard's message named the
+# fix (sellos.tests.phones) the whole time.
+GUARD_RULES="Guards. Some tests check the code itself rather than a feature: sellos/tests/test_no_raw_phone_numbers.py, the no-commands check in sellos/provisioning/test_p1_02_worker.py, the permission matrix, the secret leak checks, Semgrep and the lint rules. When one fails, read its whole message before anything else: it says what is wrong and names the fix (for a phone number, generate it with sellos.tests.phones, for example in_mobile(seed), and derive every other form from it, such as its ten national digits or its spoken words). Apply that fix in your own code. Never work around a guard: never disguise what it looks for (no concatenation, joins, ranges, escapes, encodings, comments or computed strings), never move code to a folder the guard skips just to escape it (code goes where the guard says it belongs: commands only in sellos/provisioning, through its existing helpers), never add to an allowed list, and never edit the guard. Read every failing test in the failure output, in every batch, not only the first, and fix all of them in this pass."
+
+# SOS-SETUP-32: what the repair agent sees of a failed gate run. On 13 November 2026 SOS-N21A was
+# Blocked after its repair runs never saw the failing guard: this kept only the last failed batch,
+# cut it at 150 lines, which one traceback's local variables filled, and the 25 line tail began one
+# line after the guard's message. Now every failing test in every batch comes first, each with its
+# assertion message (which for a guard names the fix), then each failed batch with its locals left
+# out, then the last lines of the run.
 failure_context() {
   local log="$LOG_DIR/latest.log"
   if [[ ! -f "$log" ]]; then log="$(ls -t "$LOG_DIR"/run-*.log 2>/dev/null | head -1)"; fi
   if [[ -z "$log" || ! -f "$log" ]]; then echo "no log available"; return; fi
   local eq; eq="$(printf '=%.0s' $(seq 1 70))"
   {
-    echo "--- unit test failures:"
-    awk -v eq="$eq" '{L[NR]=$0} $0==eq{if (bs==0 || bs<prevran) bs=NR} /^Ran [0-9]+ tests/{prevran=NR} /^FAILED \(/{s=bs; e=NR} END{if (e) for (i=s;i<=e;i++) print L[i]}' "$log" | head -150
+    echo "--- every failing test, in every batch, with its message (read each one; a guard's message names its fix):"
+    # From a FAIL or ERROR header, skip the traceback and print the exception line and the message
+    # under it, up to the next separator, at most 25 lines each.
+    awk -v eq="$eq" '
+      /^ ?(FAIL|ERROR):? / {print; inblk=1; msg=0; n=0; next}
+      inblk && ($0==eq || /^-{70}$/ && msg) {inblk=0; msg=0; next}
+      inblk && !msg && /^[A-Za-z_][A-Za-z0-9_.]*(Error|Exception|Failure|Exit)(:|$)/ {msg=1}
+      inblk && msg && n<25 {print "    " $0; n++}
+    ' "$log" | head -200
+    echo "--- each failed backend batch (local variables left out):"
+    awk -v eq="$eq" '
+      {L[NR]=$0}
+      $0==eq {if (bs==0 || bs<prevran) bs=NR}
+      /^Ran [0-9]+ tests/ {prevran=NR}
+      /^FAILED \(/ {print "[batch]"; for (i=bs;i<=NR;i++) print L[i]; bs=0}
+    ' "$log" | grep -v -E '^    [A-Za-z_][A-Za-z0-9_]* = ' | head -200
     echo "--- browser test failures:"
     awk '/^  [0-9]+\) /{c=14} c>0{print; c--}' "$log" | head -150
     echo "--- last lines of the run:"
-    tail -n 25 "$log"
-  } | cut -c1-220
+    tail -n 40 "$log"
+  } | cut -c1-300
 }
 
 is_limit() { printf '%s\n' "$1" | grep -q -i -E "hit your .*limit|usage limit|limit reached"; }
@@ -391,6 +417,8 @@ replace what is weak, and keep what passes review against the task block.
 Do not delete the tree first. Every task adds or refreshes tests that name
 its task ID, even where code for it already exists.
 
+$GUARD_RULES
+
 MariaDB: never use the MariaDB root account or any root password. Tenant
 sites are created, dropped, listed and probed only with
 scripts/tenant-site.sh (create <id>, drop <id>, list, probe) or the
@@ -522,6 +550,7 @@ $PREFLIGHT_OUT"
     echo "The gate failed. Asking Claude to repair it from the failure output (gate run $GATE_RUN of $MAX_GATE_RUNS)."
     FAILCTX="$(failure_context)"
     REPAIR_PROMPT="The test gate for the task below failed. Your changes are still in the working tree, uncommitted, and nothing has been reset. Read the failure output at the end, find the cause in the code, and fix it. This is gate run $GATE_RUN of $MAX_GATE_RUNS.
+$GUARD_RULES
 Rules. Fix the product code or the test you added, and never delete or weaken an assertion to make a test pass. A failing test is fixed in the code, not in the test, unless the task block says otherwise. Never use the MariaDB root account or a root password: only the provisioner account in SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD, whose values you never print, log or write. Never edit a gate file: scripts/run-tests.sh, scripts/build-loop.sh, scripts/watchdog.sh, scripts/select-next-task.sh, scripts/set-task-status.sh, scripts/make-baseline.sh, scripts/prepare-regression.sh, scripts/pause-loop.sh, scripts/resume-loop.sh, scripts/refresh-buildos-reference.sh, scripts/install-shared-helpers.sh, anything under scripts/shared, anything under scripts/lib, scripts/check_*.py, cypress.config.js, cypress/support/e2e.js, .pre-commit-config.yaml, .semgrepignore, .eslintrc, .github/workflows, docs/DEV_STRATEGY.md, docs/TESTING.md or docs/regression/README.md, and never change the [tool.ruff] tables in pyproject.toml (adding a dependency there is fine). Never remove an assertion and never delete a test file. If a failing test is in a file this task did not change, follow the policy below. Read the whole failing test first, because the first failing assertion hides every later one: check every assertion against the code before you reply, and fix all of them in this pass. You may run the single backend test module or the single browser spec that you changed, one at a time and in the foreground, from ~/iespl-bench: bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>, or bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Never run the full suite, and never run anything in the background. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. The word Frappe must never appear in any user facing label, screen, or error message.
 Respond with either of the following as the literal first characters of your response, nothing before it:
 Policy, because nobody can answer questions during a run, so never ask one. If a failing test is outside this task, you may fix that test file or the shared fixtures it uses when the cause is test data, test order or a hard coded assumption, and you must say what you changed. If a test deletes or empties shared data, make it restore what it removed, even when it fails. Never change product code that this task did not touch just to make a test pass, and never weaken or delete an assertion. If you truly cannot fix it, still reply with IMPLEMENTATION_READY and a plain account of what is failing and why.

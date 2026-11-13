@@ -2,7 +2,7 @@
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
 # Order: new files marked intent-to-add, preflight (CI parity, a snapshot of the bench's sites and databases), lint and Semgrep, the task guards, put the clean baseline back, build the web
-# app, migrate, prepare_clean_site (code, every run), the test files the task changed first (a failure stops the gate at once), the
+# app, migrate, prepare_clean_site (code, every run), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the test files the task changed first (a failure stops the gate at once), the
 # whole backend suite (a module that failed on a MariaDB 1020 or deadlock is rerun once, alone, and
 # a second database conflict exits 3, SOS-SETUP-25), the whole Cypress suite, then a check that no other site or database was touched and
 # that no secret is in a log: the provisioner's password (SOS-SETUP-18), the Telegram values and BuildOS's credentials (SOS-SETUP-29). A failed UI spec is rerun once, alone. The
@@ -191,6 +191,34 @@ echo "--- Preparing the clean site (code, every run) ---"
 bench --site "$SITE" execute "$APP.tests.ui_fixtures.prepare_clean_site"
 bench --site "$SITE" clear-cache
 
+# SOS-SETUP-32: the tenant template, on by default, with CI's rule (SOS-SETUP-28). One tenant site is
+# made with Frappe's full install, dumped and dropped, and every tenant site the tests make is built
+# from the dump, except inside full_install(), which exactly one real provisioning test uses
+# (sellos/provisioning/test_tenant_template.py checks both). Without it the integration batch took
+# 669 s here against about 2 minutes on CI. SELLOS_TENANT_TEMPLATE=off turns it off for one run.
+# It is made after the migrate, from the code under test, so the dump is never stale.
+export SELLOS_TENANT_TEMPLATE="${SELLOS_TENANT_TEMPLATE:-on}"
+TEMPLATE_SQL="$LOG_DIR/tenant-template-$STAMP.sql"
+unset SELLOS_TENANT_TEMPLATE_SQL
+if [ "$SELLOS_TENANT_TEMPLATE" = "off" ]; then
+  echo "--- Tenant template off (SELLOS_TENANT_TEMPLATE=off): every tenant site gets the full install ---"
+elif [ "$SELLOS_TENANT_TEMPLATE" != "on" ]; then
+  echo "SELLOS_TENANT_TEMPLATE must be on or off, not '$SELLOS_TENANT_TEMPLATE'." >&2
+  sellos_env_exit 2
+elif ! sellos_provisioner_available; then
+  echo "The tenant template needs the provisioner password (SOS-SETUP-22). Store it, or run with SELLOS_TENANT_TEMPLATE=off." >&2
+  sellos_env_exit 3
+else
+  echo "--- Making the tenant template (one full install) ---"
+  TEMPLATE_START="$(date +%s)"
+  # A failure here is the code's: the full install of a tenant site broke, which the one real
+  # provisioning test would find too.
+  (cd sites && ../env/bin/python -m "$APP.tests.tenant_template" make "$TEMPLATE_SQL") \
+    || { echo "TENANT TEMPLATE FAILED: the full install of a tenant site failed"; exit 1; }
+  export SELLOS_TENANT_TEMPLATE_SQL="$TEMPLATE_SQL"
+  echo "Tenant template made in $(($(date +%s) - TEMPLATE_START)) s"
+fi
+
 echo "--- Changed tests first: $APP ---"
 REPORT_TEST_EXIT="apps/$APP/scripts/lib/report_test_exit.sh"
 DB_CONFLICT="apps/$APP/scripts/lib/db_conflict.py"
@@ -231,6 +259,8 @@ echo "--- Backend unit tests: $APP ---"
 # The runner prints one summary per batch, and the last one can say OK while an earlier one failed.
 # The wrapper prints every batch and the exit code, and the exit code decides (SOS-SETUP-24).
 run_backend "$LOG_DIR/backend-$STAMP-all.log" || { echo "BACKEND TESTS FAILED"; exit 1; }
+rm -f "$TEMPLATE_SQL"
+unset SELLOS_TENANT_TEMPLATE_SQL
 
 echo "--- UI tests: $APP ---"
 # Rerun once, alone; FLAKY on a passing rerun; three times FLAKY fails (scripts/lib/ui_flaky.sh).

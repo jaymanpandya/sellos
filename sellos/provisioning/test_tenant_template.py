@@ -1,4 +1,5 @@
 """SOS-SETUP-28: CI builds tenant test sites from a template dump, with one real install per run.
+SOS-SETUP-32: the local gate does the same by default, and SELLOS_TENANT_TEMPLATE=off turns it off.
 
 tenant_sites.create adds --source-sql when SELLOS_TENANT_TEMPLATE_SQL names a dump, and the launcher
 then gives the site its own Administrator password. full_install() turns the template off, and exactly
@@ -94,3 +95,20 @@ class OneRealInstallPerRun(unittest.TestCase):
 		if os.environ.get("GITHUB_ACTIONS") == "true":
 			self.assertTrue(tenant_template.template_in_use(), "CI's Server job must set the template")
 			self.assertTrue(Path(os.environ[tenant_sites.TEMPLATE_ENV]).is_file())
+
+	def test_the_gate_makes_the_template_once_by_default_with_a_switch_to_turn_it_off(self):
+		gate = (REPO_ROOT / "scripts/run-tests.sh").read_text(encoding="utf-8")
+		self.assertEqual(gate.count('.tests.tenant_template" make'), 1)
+		self.assertIn('export SELLOS_TENANT_TEMPLATE="${SELLOS_TENANT_TEMPLATE:-on}"', gate)
+		self.assertIn('if [ "$SELLOS_TENANT_TEMPLATE" = "off" ]; then', gate)
+		self.assertIn('export SELLOS_TENANT_TEMPLATE_SQL="$TEMPLATE_SQL"', gate)
+		# made after the migrate, from the code under test, and before the first test runs
+		self.assertLess(gate.index("prepare_clean_site"), gate.index('.tests.tenant_template" make'))
+		self.assertLess(gate.index('.tests.tenant_template" make'), gate.index("--- Changed tests first"))
+
+	def test_in_the_gate_the_template_is_set_unless_it_is_switched_off(self):
+		if os.environ.get("SELLOS_TENANT_TEMPLATE") == "on":
+			self.assertTrue(tenant_template.template_in_use(), "The gate must set the template")
+			self.assertTrue(Path(os.environ[tenant_sites.TEMPLATE_ENV]).is_file())
+		elif os.environ.get("SELLOS_TENANT_TEMPLATE") == "off":
+			self.assertFalse(tenant_template.template_in_use(), "SELLOS_TENANT_TEMPLATE=off must turn it off")

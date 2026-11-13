@@ -89,6 +89,7 @@ passes. `sellos/tests/test_check_gate_files.py` tests the guard.
 
 * `SELLOS_ALLOW_NO_BASELINE="reason"` lets one gate run go on without the baseline.
 * `SELLOS_ALLOW_ASSERTION_DROP="reason"` lets one run drop assertions. The loop never sets either.
+* `SELLOS_TENANT_TEMPLATE=off` makes every tenant site with the full install for one run. By default the gate, like CI, builds them from a template dump made once per run, and exactly one real provisioning test uses the full install (SOS-SETUP-32).
 
 ## Running parts by hand
 
