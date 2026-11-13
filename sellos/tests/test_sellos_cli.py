@@ -77,6 +77,7 @@ class SellosCli(unittest.TestCase):
 		)
 		self.env["SELLOS_TASKS_FILE"] = str(tasks)
 		code, out = self.run_cli("status")
+		self.assertEqual(code, 0, out)
 		tasks_part = out.split("== Tasks", 1)[1].split("== CI", 1)[0]
 		self.assertIn("SOS-A-1: one", tasks_part.split("Blocked:", 1)[1])
 		self.assertIn("SOS-A-2: two", tasks_part.split("Blocked:", 1)[0])
