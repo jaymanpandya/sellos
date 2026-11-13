@@ -92,3 +92,61 @@ class TestGuardRulesInBothPrompts(unittest.TestCase):
 		repair = script.split('REPAIR_PROMPT="', 1)[1].split("Task:\n$TASK_BLOCK", 1)[0]
 		self.assertIn("$GUARD_RULES", implementation)
 		self.assertIn("$GUARD_RULES", repair)
+
+
+def run_repair_head(log_text):
+	"""The real guard_failures and repair_head from scripts/build-loop.sh, on a gate log."""
+	script = LOOP.read_text(encoding="utf-8")
+	start = script.index("guard_failures() {")
+	end = script.index("\n}\n", script.index("repair_head() {")) + 3
+	with tempfile.TemporaryDirectory() as folder:
+		Path(folder, "latest.log").write_text(log_text, encoding="utf-8")
+		result = subprocess.run(
+			["bash", "-c", script[start:end] + f'LOG_DIR="{folder}"; repair_head'],
+			capture_output=True,
+			text=True,
+			check=True,
+		)
+	return result.stdout
+
+
+class TestRepairStartsWithTheGuard(unittest.TestCase):
+	"""SOS-SETUP-33: a repair after a failed guard starts with the guard's message and the rule."""
+
+	def test_the_guard_message_and_the_rule_come_first(self):
+		log = "\n".join(
+			[
+				"=== SellOS test run ===",
+				"--- Guards (scripts/check-guards.sh --all) ---",
+				"Guard commands: clean.",
+				"GUARD FAILED: phones",
+				"Fix: Use sellos.tests.phones, never a literal number.",
+				"sellos/voice/bakeoff/test_bakeoff.py:22: TEN_DIGITS = x",
+				"END GUARD",
+				"GUARD FAILED: semgrep",
+				"Fix: Rewrite the code each finding below names.",
+				"END GUARD",
+				"=== GUARDS FAILED in 19s: phones semgrep ===",
+				"GUARDS FAILED",
+			]
+		)
+		head = run_repair_head(log + "\n")
+		self.assertTrue(
+			head.startswith("A guard failed. Do not work around a guard; apply the fix it names.\n"), head
+		)
+		self.assertIn("GUARD FAILED: phones\nFix: Use sellos.tests.phones", head)
+		self.assertIn("test_bakeoff.py:22", head)
+		self.assertIn("GUARD FAILED: semgrep", head)
+		self.assertNotIn("Guard commands: clean.", head)
+		self.assertLess(head.index("GUARD FAILED: phones"), head.index("run scripts/check-guards.sh"))
+
+	def test_no_guard_failure_adds_nothing(self):
+		self.assertEqual(run_repair_head("Ran 3 tests\nFAILED (failures=1)\n"), "")
+
+	def test_the_repair_prompt_opens_with_it(self):
+		script = LOOP.read_text(encoding="utf-8")
+		self.assertIn('REPAIR_PROMPT="$(repair_head)The test gate for the task below failed.', script)
+		repair = script.split('REPAIR_PROMPT="', 1)[1].split("Task:\n$TASK_BLOCK", 1)[0]
+		self.assertIn("$GUARDS_CHECK", repair)
+		for gate_file in ("scripts/check-guards.sh", "sellos/testing/guards.py", "docs/GUARDS.md"):
+			self.assertIn(gate_file, repair)
