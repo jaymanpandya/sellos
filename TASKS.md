@@ -81,14 +81,14 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Budget from may not be above budget to; the message says so.
   - A patch adds the fields to existing company sites and changes no existing lead.
 - **Test Criteria:** Backend tests for the fields, the budget check, the filters and the patch run twice; a Cypress spec in which an agent fills the card and filters the list by it.
-- **Notes:** Added by SOS-SETUP-35 (13 November 2026): calling, the caller queue and the reports need it, and no task built it.
+- **Notes:** Added by SOS-SETUP-35 (13 November 2026): calling, the caller queue and the reports need it, and no task built it. A previous attempt is on branch wip/SOS-P1-15-20261113: read it for reference with git show, do not run seed_regression_data against the test site.
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Launch:** Dec 20
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-06A
 - **Browser spec:** required
-- **Status:** In Progress
+- **Status:** Not Started
 
 ### SOS-P1-16: Find duplicates when a lead or client is entered
 - **Epic:** Core CRM and consent

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
-# Order: new files marked intent-to-add, the guards (scripts/check-guards.sh --all: lint, Semgrep and the task guards, SOS-SETUP-33), preflight (CI parity, a snapshot of the bench's sites and databases), put the clean baseline back, build the web
-# app, migrate, prepare_clean_site (code, every run), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the test files the task changed first, each run 5, 3 or 2 times by the time of its first run, with the repeats capped at 10 minutes, where one failed run fails it (SOS-SETUP-33 and SOS-SETUP-34, scripts/lib/flake_check.sh; a failure stops the gate at once), the
+# Order: new files marked intent-to-add, the guards (scripts/check-guards.sh --all: lint, Semgrep and the task guards, SOS-SETUP-33), preflight (CI parity, a snapshot of the bench's sites and databases), build the web app, put the clean baseline back
+# over a wiped database, migrate, prepare_clean_site (code, every run), a check that the site is clean (exit 3, SOS-SETUP-36), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the test files the task changed first, each run 5, 3 or 2 times by the time of its first run, with the repeats capped at 10 minutes, where one failed run fails it (SOS-SETUP-33 and SOS-SETUP-34, scripts/lib/flake_check.sh; a failure stops the gate at once), the same reset and check again when a changed spec ran, the
 # whole backend suite (a module that failed on a MariaDB 1020 or deadlock is rerun once, alone, and
 # a second database conflict exits 3, SOS-SETUP-25), the whole Cypress suite, then a check that no other site or database was touched and
 # that no secret is in a log: the provisioner's password (SOS-SETUP-18), the Telegram values and BuildOS's credentials (SOS-SETUP-29). A failed UI spec is rerun once, alone. The
@@ -149,20 +149,30 @@ bench_gate_acquire "SellOS gate${SELLOS_TASK_ID:+ $SELLOS_TASK_ID}" "${SELLOS_GA
 rm -f "$SELLOS_ENV_EXIT_FILE"
 echo "Bench gate lock wait: ${BENCH_GATE_WAITED}s"
 
-# every gate run starts from the same clean data: put the saved snapshot back before anything else
-if [ -f "$BASELINE" ]; then
-  echo "--- Restoring the clean test site baseline ---"
-  gunzip -c "$BASELINE" | bench --site "$SITE" mariadb
-  bench --site "$SITE" clear-cache
-  bench --site "$SITE" clear-website-cache
-else
-  echo "--- NO BASELINE (allowed by a human): running on the existing test site data ---"
-fi
-
+# Every gate run starts from the same clean data: put the saved snapshot back before anything else.
+# SOS-SETUP-36: the restore drops every table first, because a dump resets only the tables it holds
+# (scripts/lib/restore_baseline.sh), and the site is then checked clean: a row in a table a clean
+# company site never fills exits 3, naming the table and its row count (scripts/lib/check_clean_site.sh).
 # The baseline is a clean migrated install. The state a provisioned company site is in, and the role
 # users, are made by code on every run, so the gate exercises the same code provisioning uses.
 # SOS-SETUP-33: migrate and prepare through the script CI's Server and UI jobs run.
-bash "$REPO_DIR/scripts/lib/prepare_test_site.sh" "$SITE" "$APP"
+sellos_reset_test_site() {
+  if [ -f "$BASELINE" ]; then
+    echo "--- Restoring the clean test site baseline ---"
+    echo "Every table is dropped first ($1)."
+    bash "$REPO_DIR/scripts/lib/restore_baseline.sh" "$SITE" "$BASELINE"
+  else
+    echo "--- NO BASELINE (allowed by a human): running on the existing test site data ---"
+  fi
+  bash "$REPO_DIR/scripts/lib/prepare_test_site.sh" "$SITE" "$APP"
+  if [ -f "$BASELINE" ]; then
+    local clean_status=0
+    bash "$REPO_DIR/scripts/lib/check_clean_site.sh" "$SITE" || clean_status=$?
+    if [ "$clean_status" -eq 3 ]; then sellos_env_exit 3; fi
+    if [ "$clean_status" -ne 0 ]; then exit 1; fi
+  fi
+}
+sellos_reset_test_site "before the tests"
 
 # SOS-SETUP-32: the tenant template, on by default, with CI's rule (SOS-SETUP-28). One tenant site is
 # made with Frappe's full install, dumped and dropped, and every tenant site the tests make is built
@@ -234,6 +244,13 @@ for f in $CHANGED_SPECS; do
 done
 # It prints CHANGED TEST FAILED or CHANGED SPEC FAILED itself, and a failure stops the gate at once.
 sellos_flake_gate "$FLAKE_TARGETS" || exit 1
+
+# SOS-SETUP-36: a spec runs against the real test site, and only its own after hook cleans up what it
+# made. Nothing enforces that hook, so when a changed spec ran, the site is reset again and checked
+# clean before the backend suite, whatever the spec left. The tenant template is a file and stays.
+if grep -q '^spec' "$FLAKE_TARGETS"; then
+  sellos_reset_test_site "after the changed specs, before the backend suite"
+fi
 
 echo "--- Backend unit tests: $APP ---"
 # The runner prints one summary per batch, and the last one can say OK while an earlier one failed.

@@ -384,7 +384,8 @@ class TestRealProvisioning(WorkerCase):
 			self.assertEqual(job.status, "Active", job.log)
 			self.assertEqual(job.attempts, 1)
 			if template_in_use():  # SOS-SETUP-28: CI builds these from its template dump
-				self.assertEqual(used, [os.environ[tenant_sites.TEMPLATE_ENV]])
+				# tenant_sites.template_sql() resolves the path, and on macOS /tmp is /private/tmp.
+				self.assertEqual(used, [str(Path(os.environ[tenant_sites.TEMPLATE_ENV]).resolve())])
 			site, info = self.read_back(tenant_id)
 			self.assertEqual(info["site"], site)
 			self.assertEqual(info["admin"], f"owner-{tenant_id}@example.com")

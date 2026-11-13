@@ -65,10 +65,9 @@ echo "--- Bench gate lock (restore and migrate only) ---"
 bench_gate_acquire "SellOS prepare-regression" "${SELLOS_GATE_LOCK_MAX_WAIT:-5400}"
 echo "Bench gate lock wait: ${BENCH_GATE_WAITED}s"
 
-echo "--- Restoring the clean baseline over $SITE ---"
-gunzip -c "$BASELINE" | bench --site "$SITE" mariadb
-bench --site "$SITE" clear-cache
-bench --site "$SITE" clear-website-cache
+# SOS-SETUP-36: every table is dropped first, because a dump resets only the tables it holds.
+echo "--- Restoring the clean baseline over $SITE (every table) ---"
+bash "apps/$APP/scripts/lib/restore_baseline.sh" "$SITE" "$BASELINE"
 
 echo "--- Migrating $SITE ---"
 bench --site "$SITE" migrate
@@ -77,6 +76,8 @@ bench_gate_release
 
 echo "--- Preparing the clean site and seeding the regression data ---"
 bench --site "$SITE" execute "$APP.tests.ui_fixtures.prepare_clean_site"
+# SOS-SETUP-36: the seed starts from a clean site, or this stops with exit 3 naming the table.
+bash "apps/$APP/scripts/lib/check_clean_site.sh" "$SITE"
 bench --site "$SITE" execute "$APP.tests.ui_fixtures.seed_regression_data"
 bench --site "$SITE" clear-cache
 

@@ -161,6 +161,10 @@ class Helper(unittest.TestCase):
 					],
 					stdout=subprocess.DEVNULL,
 					env=self.env,
+					# A process started in the background by a shell without job control (the loop,
+					# from scripts/sellos) inherits SIGINT as ignored, and a shell that starts with
+					# SIGINT ignored cannot trap it. Give the holder the default, as a terminal would.
+					preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_DFL),
 				)
 				self.assertTrue(wait_for(lambda: (self.lock / "start").exists()), "the lock was not taken")
 				proc.send_signal(sig)

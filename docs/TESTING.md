@@ -21,10 +21,16 @@ The agent never commits. Git hooks are not used.
    running at the same time (SOS-SETUP-20).
 4. Build the web app (`npm ci`, `npm run build`).
 5. Take the bench gate lock (waiting for any other gate's heavy segment, and recording the wait in the
-   gate log), restore the clean baseline (a clean migrated install) over `sellos_test.localhost`,
-   migrate, then `prepare_clean_site` (code, on every run).
+   gate log), drop every table of `sellos_test.localhost` and restore the clean baseline (a clean
+   migrated install) over it, migrate, then `prepare_clean_site` (code, on every run), then check the
+   site is clean: a row in Consent Record, Provisioning Job, Support Access Log, Support Grant or
+   Tenant exits 3, naming the table and its row count (SOS-SETUP-36,
+   `scripts/lib/restore_baseline.sh` and `scripts/lib/check_clean_site.sh`). A dump resets only the
+   tables it holds, so a restore without the drop leaves the rows of every table made since.
 6. The test files the task changed, first, each run five times when its first run takes under 60 seconds, three times under 3 minutes and twice above, with the repeats of one gate capped at 10 minutes (SOS-SETUP-34; `SELLOS_FLAKE_RUNS` lowers every tier, `SELLOS_FLAKE_CAP_SECONDS` sets the cap; `scripts/lib/flake_check.sh` and `scripts/lib/flake_plan.py`). Every changed test runs once, then the repeat plan is printed, then the repeats run. A failure on any run stops the gate, and a failure after a passing run is reported as flaky (SOS-SETUP-33). The test rules in `CLAUDE.md` say how to write a test that cannot flake.
-7. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
+7. When a changed spec ran, the same drop, restore, migrate, prepare and clean check again, so the
+   backend suite starts clean whatever a spec left (SOS-SETUP-36).
+8. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
    that needed a rerun is logged FLAKY, and one that is FLAKY three times fails the gate. The bench
    gate lock is released at the end of the Cypress run, or when the gate fails or is killed. The
    policy is `scripts/lib/ui_flaky.sh`, and CI's UI job runs Cypress through the same script, with

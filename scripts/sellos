@@ -286,7 +286,10 @@ $in_progress"
     echo
     echo "=== loop started by sellos up: $(date) ==="
   } >>"$LOOP_LOG"
-  (cd "$REPO_DIR" && nohup "$SCRIPT_DIR/build-loop.sh" >>"$LOOP_LOG" 2>&1 </dev/null &)
+  # set -m: without job control bash starts a background job with SIGINT ignored, every child
+  # inherits that, and a shell that starts with SIGINT ignored cannot trap it, so the gate lock's
+  # INT trap never ran (docs/STOPS.md, 2026-11-13). With job control the loop gets default signals.
+  (set -m; cd "$REPO_DIR" && nohup "$SCRIPT_DIR/build-loop.sh" >>"$LOOP_LOG" 2>&1 </dev/null &)
   sleep 3
   pid="$(loop_pid)"
   if [ -n "$pid" ]; then

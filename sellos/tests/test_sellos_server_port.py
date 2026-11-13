@@ -175,8 +175,9 @@ class ScriptsUseTheRule(unittest.TestCase):
 
 	def test_gate_and_regression_check_port_then_app_before_wiping(self):
 		for name, wipe in (
-			("run-tests.sh", 'gunzip -c "$BASELINE"'),
-			("prepare-regression.sh", 'gunzip -c "$BASELINE"'),
+			# SOS-SETUP-36: the wipe is scripts/lib/restore_baseline.sh (every table, then the dump).
+			("run-tests.sh", 'scripts/lib/restore_baseline.sh" "$SITE" "$BASELINE"'),
+			("prepare-regression.sh", 'scripts/lib/restore_baseline.sh" "$SITE" "$BASELINE"'),
 		):
 			with self.subTest(script=name):
 				text = self.read(name)
