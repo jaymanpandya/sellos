@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
-# Order: new files marked intent-to-add, preflight (CI parity, a snapshot of the bench's sites and databases), lint and Semgrep, the task guards, put the clean baseline back, build the web
+# Order: new files marked intent-to-add, the guards (scripts/check-guards.sh --all: lint, Semgrep and the task guards, SOS-SETUP-33), preflight (CI parity, a snapshot of the bench's sites and databases), put the clean baseline back, build the web
 # app, migrate, prepare_clean_site (code, every run), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the test files the task changed first (a failure stops the gate at once), the
 # whole backend suite (a module that failed on a MariaDB 1020 or deadlock is rerun once, alone, and
 # a second database conflict exits 3, SOS-SETUP-25), the whole Cypress suite, then a check that no other site or database was touched and
@@ -78,6 +78,18 @@ echo "=== SellOS test run: $(date) ==="
   git ls-files --others --exclude-standard -z | xargs -0 git add --intent-to-add
 )
 
+# SOS-SETUP-33: every cheap guard first, in about 20 seconds with no database: raw phone numbers,
+# commands outside sellos/provisioning, secrets, gate files, the assertion ratchet, task evidence,
+# stale skips, lint (CI's pre-commit) and Semgrep (CI's exact semgrep ci). One script, the same one
+# the agent runs before it finishes and CI's Linters job runs (scripts/check-guards.sh, docs/GUARDS.md).
+# A failure stops the gate here, before twenty minutes of tests, and the loop hands its GUARD FAILED
+# blocks to the repair agent first. A missing tool exits 3, an environment problem.
+echo "--- Guards (scripts/check-guards.sh --all) ---"
+GUARDS_STATUS=0
+"$REPO_DIR/scripts/check-guards.sh" --all || GUARDS_STATUS=$?
+if [ "$GUARDS_STATUS" -eq 3 ]; then sellos_env_exit 3; fi
+if [ "$GUARDS_STATUS" -ne 0 ]; then echo "GUARDS FAILED"; exit 1; fi
+
 echo "--- Preflight ---"
 # SOS-SETUP-20: the BuildOS and SellOS loops run at the same time. Their sites do not collide (Redis
 # keys are namespaced per site, bench clear-cache is per site), so nothing waits for BuildOS here.
@@ -122,36 +134,6 @@ fi
 if [ ! -x "$BASELINE_DIR/semgrep-venv/bin/semgrep" ] || [ ! -d "$BASELINE_DIR/semgrep-rules/rules" ]; then
   echo "Semgrep or the Frappe rules are missing. Run scripts/make-baseline.sh once. CI runs them on every push." >&2
   sellos_env_exit 3
-fi
-
-echo "--- Lint and Semgrep (the same checks CI runs) ---"
-(
-  cd "$REPO_DIR"
-  # The first pass may rewrite files (ruff format). The second must come back clean.
-  pre-commit run --all-files || pre-commit run --all-files
-  # Exactly CI's command (.github/workflows/linter.yml), reading the same .semgrepignore.
-  "$BASELINE_DIR/semgrep-venv/bin/semgrep" ci \
-    --config "$BASELINE_DIR/semgrep-rules/rules" --config r/python.lang.correctness
-)
-
-# SOS-SETUP-16: the whole Cypress suite runs below, so a spec for a later task is skipped until that
-# task. A skip that names no task, or a task that is Complete or is the one being finished, fails.
-echo "--- Skipped specs wait for an unfinished task ---"
-(
-  cd "$REPO_DIR"
-  python3 scripts/check_no_stale_skips.py ${SELLOS_TASK_ID:+--current "$SELLOS_TASK_ID"} TASKS.md cypress/integration
-)
-
-if [ -n "${SELLOS_TASK_ID:-}" ]; then
-  echo "--- Task guards: $SELLOS_TASK_ID ---"
-  (
-    cd "$REPO_DIR"
-    python3 scripts/check_gate_files.py "$SELLOS_BASE_SHA" "$SELLOS_TASK_BLOCK_FILE"
-    python3 scripts/check_assertion_ratchet.py "$SELLOS_BASE_SHA"
-    python3 scripts/check_task_evidence.py "$SELLOS_TASK_ID" "$SELLOS_BASE_SHA" "$SELLOS_TASK_BLOCK_FILE"
-  )
-else
-  echo "--- Task guards skipped: no task is set (a hand run) ---"
 fi
 
 echo "--- Building web app: $APP/frontend ---"

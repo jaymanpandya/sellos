@@ -431,6 +431,13 @@ class GateSandbox(Sandbox):
 	def setUp(self):
 		super().setUp()
 		shutil.copy2(SCRIPTS / "run-tests.sh", self.repo / "scripts" / "run-tests.sh")
+		# SOS-SETUP-33: the gate runs scripts/check-guards.sh first. These tests are about what comes
+		# after it, so it passes here; sellos/tests/test_check_guards.py tests the real one.
+		self.write(
+			self.repo / "scripts" / "check-guards.sh",
+			'#!/usr/bin/env bash\necho "=== GUARDS PASSED (stub) ==="\n',
+			0o755,
+		)
 		# SOS-SETUP-16: the gate checks skipped specs before the baseline restore. Give it the real
 		# check, a backlog and a spec folder with no skips, so it passes and the restore still runs.
 		shutil.copy2(SCRIPTS / "check_no_stale_skips.py", self.repo / "scripts" / "check_no_stale_skips.py")

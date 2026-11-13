@@ -9,20 +9,22 @@ The agent never commits. Git hooks are not used.
 
 1. New files are marked intent-to-add (`git ls-files --others --exclude-standard -z | xargs -0 git add
    --intent-to-add`), so every check below sees them as CI does. No content is staged.
-2. Preflight: the bench gate lock helper (`~/iespl-baseline/bench-gate-lock.sh`, installed from
+2. The guards, `scripts/check-guards.sh --all`, in about 20 seconds with no database (SOS-SETUP-33):
+   raw phone numbers, commands outside `sellos/provisioning`, secrets, gate files, the assertion
+   ratchet, task evidence, stale skips, lint (`pre-commit run --all-files`) and Semgrep (CI's exact
+   `semgrep ci` with the Frappe rules and `r/python.lang.correctness`). A failure stops the gate here.
+   The agent runs `scripts/check-guards.sh` (its changed files) before it replies. `docs/GUARDS.md`
+   explains each guard, why it exists and how to comply.
+3. Preflight: the bench gate lock helper (`~/iespl-baseline/bench-gate-lock.sh`, installed from
    `scripts/shared/bench-gate-lock.sh`) exists, the bench
    serves `sellos_test.localhost`, the clean baseline and Semgrep exist. A BuildOS gate or loop may be
    running at the same time (SOS-SETUP-20).
-3. Lint (`pre-commit run --all-files`) and Semgrep, CI's exact command (`semgrep ci` with the Frappe
-   rules and `r/python.lang.correctness`).
-4. The task guards (only when the loop sets the task): gate files untouched, no assertion removed, and
-   a test that names the task.
-5. Build the web app (`npm ci`, `npm run build`).
-6. Take the bench gate lock (waiting for any other gate's heavy segment, and recording the wait in the
+4. Build the web app (`npm ci`, `npm run build`).
+5. Take the bench gate lock (waiting for any other gate's heavy segment, and recording the wait in the
    gate log), restore the clean baseline (a clean migrated install) over `sellos_test.localhost`,
    migrate, then `prepare_clean_site` (code, on every run).
-7. The test files the task changed, first. A failure stops the gate.
-8. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
+6. The test files the task changed, first. A failure stops the gate.
+7. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
    that needed a rerun is logged FLAKY, and one that is FLAKY three times fails the gate. The bench
    gate lock is released at the end of the Cypress run, or when the gate fails or is killed. The
    policy is `scripts/lib/ui_flaky.sh`, and CI's UI job runs Cypress through the same script, with
@@ -77,7 +79,7 @@ These decide whether a task passes, so a task may not change them unless its blo
 `.semgrepignore`, `.eslintrc`, `.github/workflows/*`, `docs/DEV_STRATEGY.md`,
 `scripts/prepare-regression.sh`, `scripts/pause-loop.sh`, `scripts/resume-loop.sh`,
 `scripts/refresh-buildos-reference.sh`, `scripts/install-shared-helpers.sh`, `scripts/shared/*`,
-`docs/regression/README.md` and this file. `docs/regression/flows.md`
+`docs/regression/README.md`, `scripts/check-guards.sh`, `sellos/testing/guards.py`, `docs/GUARDS.md` and this file. `docs/regression/flows.md`
 is append only: a task adds its flows and may never remove one.
 
 `pyproject.toml` is not protected as a whole, because tasks add dependencies to it. The guard loads it

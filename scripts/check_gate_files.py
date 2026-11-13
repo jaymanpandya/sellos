@@ -49,6 +49,10 @@ PROTECTED = [
 	"scripts/refresh-buildos-reference.sh",
 	"scripts/install-shared-helpers.sh",
 	"scripts/shared/*",
+	# The fast guards and their rules (SOS-SETUP-33).
+	"scripts/check-guards.sh",
+	"sellos/testing/guards.py",
+	"docs/GUARDS.md",
 ]
 
 # A task adds its flows here, so the file is not protected from a change. A flow already in it may

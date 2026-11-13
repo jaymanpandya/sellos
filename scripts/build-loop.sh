@@ -132,6 +132,14 @@ fi
 # fix (sellos.tests.phones) the whole time.
 GUARD_RULES="Guards. Some tests check the code itself rather than a feature: sellos/tests/test_no_raw_phone_numbers.py, the no-commands check in sellos/provisioning/test_p1_02_worker.py, the permission matrix, the secret leak checks, Semgrep and the lint rules. When one fails, read its whole message before anything else: it says what is wrong and names the fix (for a phone number, generate it with sellos.tests.phones, for example in_mobile(seed), and derive every other form from it, such as its ten national digits or its spoken words). Apply that fix in your own code. Never work around a guard: never disguise what it looks for (no concatenation, joins, ranges, escapes, encodings, comments or computed strings), never move code to a folder the guard skips just to escape it (code goes where the guard says it belongs: commands only in sellos/provisioning, through its existing helpers), never add to an allowed list, and never edit the guard. Read every failing test in the failure output, in every batch, not only the first, and fix all of them in this pass."
 
+# SOS-SETUP-33: every guard runs in scripts/check-guards.sh in under 30 seconds with no database. The
+# agent runs it before it replies, and docs/GUARDS.md (each guard, why, how to comply, an example)
+# goes into both prompts, so a guard is met while the agent still has the context, not after a
+# twenty minute gate run.
+GUARDS_DOC="$(cat "$PROJECT_DIR/docs/GUARDS.md" 2>/dev/null || echo "docs/GUARDS.md is missing.")"
+GUARDS_CHECK="Before you reply, run scripts/check-guards.sh from the app folder (it takes under 30 seconds and needs no database) and fix every GUARD FAILED block it prints, the way its Fix line says, then run it again until it prints GUARDS PASSED. The gate runs the same guards first and a task that fails one goes back to repair. This is docs/GUARDS.md:
+$GUARDS_DOC"
+
 # SOS-SETUP-32: what the repair agent sees of a failed gate run. On 13 November 2026 SOS-N21A was
 # Blocked after its repair runs never saw the failing guard: this kept only the last failed batch,
 # cut it at 150 lines, which one traceback's local variables filled, and the 25 line tail began one
@@ -389,6 +397,12 @@ $WAITING_LINES"
   fi
 
   IP_SHA="$(git rev-parse HEAD)"
+  # The gate and scripts/check-guards.sh run the task guards from these. SOS-SETUP-33: they are set
+  # before the agent starts, so the agent's own run of scripts/check-guards.sh checks the task too.
+  printf '%s\n' "$TASK_BLOCK" > "$TASK_BLOCK_PATH"
+  export SELLOS_TASK_ID="$TASK_ID"
+  export SELLOS_BASE_SHA="$IP_SHA"
+  export SELLOS_TASK_BLOCK_FILE="$TASK_BLOCK_PATH"
   # The gate's secret leak check searches every file changed since this moment.
   export SELLOS_TASK_STARTED="$(date +%s)"
 
@@ -418,6 +432,8 @@ Do not delete the tree first. Every task adds or refreshes tests that name
 its task ID, even where code for it already exists.
 
 $GUARD_RULES
+
+$GUARDS_CHECK
 
 MariaDB: never use the MariaDB root account or any root password. Tenant
 sites are created, dropped, listed and probed only with
@@ -514,12 +530,6 @@ $TASK_BLOCK"
   fi
 
   SUMMARY="${RESPONSE#IMPLEMENTATION_READY: }"
-
-  # The gate runs the three task guards from these.
-  printf '%s\n' "$TASK_BLOCK" > "$TASK_BLOCK_PATH"
-  export SELLOS_TASK_ID="$TASK_ID"
-  export SELLOS_BASE_SHA="$IP_SHA"
-  export SELLOS_TASK_BLOCK_FILE="$TASK_BLOCK_PATH"
 
   MAX_GATE_RUNS="${SELLOS_MAX_GATE_RUNS:-3}"
   GATE_RUN=1

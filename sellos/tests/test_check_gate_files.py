@@ -21,6 +21,10 @@ NEWLY_PROTECTED = [
 	"scripts/check_ci_parity.py",
 	"scripts/check_site_set.py",
 	"scripts/notify-telegram.sh",
+	# SOS-SETUP-33: the fast guards and the rules they enforce.
+	"scripts/check-guards.sh",
+	"sellos/testing/guards.py",
+	"docs/GUARDS.md",
 ]
 ALLOWED_BLOCK = "### SOS-X-1: a task\n- **Status:** In Progress\n- **Gate files:** allowed\n"
 PLAIN_BLOCK = "### SOS-X-1: a task\n- **Status:** In Progress\n"

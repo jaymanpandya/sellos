@@ -25,6 +25,7 @@ from frappe.tests import IntegrationTestCase, UnitTestCase
 
 from sellos.access.roles import ensure_roles
 from sellos.provisioning import site_script, tenant_setup, tenant_sites, worker
+from sellos.testing import guards
 from sellos.tests.tenant_template import full_install, template_in_use
 
 PACKAGE = Path(__file__).resolve().parents[1]
@@ -64,22 +65,9 @@ class TestWebProcessHasNoShell(UnitTestCase):
 	"""SOS-P1-02: the web process has no shell access. Only the worker package runs commands."""
 
 	def test_no_module_outside_the_provisioning_package_runs_commands(self):
-		forbidden = {"subprocess", "pty", "pexpect"}
-		for path in PACKAGE.rglob("*.py"):
-			rel = path.relative_to(PACKAGE)
-			if rel.parts[0] in ("provisioning", "tests", "testing") or path.name.startswith("test_"):
-				continue
-			tree = ast.parse(path.read_text())
-			for node in ast.walk(tree):
-				if isinstance(node, ast.Import):
-					found = {a.name.split(".")[0] for a in node.names}
-				elif isinstance(node, ast.ImportFrom):
-					found = {(node.module or "").split(".")[0]}
-				elif isinstance(node, ast.Call) and ast.unparse(node.func) in ("os.system", "os.popen"):
-					found = {"os.system"}
-				else:
-					continue
-				self.assertFalse(found & (forbidden | {"os.system"}), f"{rel} runs commands")
+		# SOS-SETUP-33: the scan is sellos.testing.guards, which scripts/check-guards.sh also runs.
+		found = guards.modules_running_commands()
+		self.assertFalse(found, guards.message("commands", found))
 
 	def test_nothing_in_the_provisioning_package_is_reachable_from_the_web(self):
 		for path in (PACKAGE / "provisioning").glob("*.py"):
