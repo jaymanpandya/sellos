@@ -106,3 +106,11 @@ See `frontend/CLAUDE.md`. The build plan is in `TASKS.md`, and the earlier brief
 * Never state that something exists or works unless a test read it back or the gate output shows it.
   When you report on a task, quote the gate summary line.
 * The gate uses only `sellos_test.localhost`. It never touches the main bench or BuildOS.
+
+## Test rules
+
+The gate runs every new or changed test (backend module and Cypress spec) five times, and a failure on any run is a failure that must be fixed (SOS-SETUP-33). A test that passes four times in five is a race, and a race is fixed in the test or the code, never by a retry, a longer wait or a rerun.
+
+* No real background jobs in tests. Never wait for the bench worker or the scheduler to pick up a job. Call the job's function directly in the test, or run it with `frappe.enqueue(..., now=True)`. The worker is shared with BuildOS, and its timing is not yours.
+* Wait on conditions, never on time. No `time.sleep` in a backend test and no `cy.wait(<milliseconds>)` in a spec. Wait for the thing you need: an alias (`cy.wait("@save")`), an element's state (`.should("be.visible")`, `.should("contain", ...)`), or a polled condition with a time limit.
+* No shared mutable state. Each test makes its own records, with names unique to it, and restores any setting, user or shared record it changes, even when it fails (`addCleanup`, `after`). Never depend on another test having run first, on test order, or on a record another test made. No module level mutable globals that tests change.

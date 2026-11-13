@@ -2,7 +2,7 @@
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
 # Order: new files marked intent-to-add, the guards (scripts/check-guards.sh --all: lint, Semgrep and the task guards, SOS-SETUP-33), preflight (CI parity, a snapshot of the bench's sites and databases), put the clean baseline back, build the web
-# app, migrate, prepare_clean_site (code, every run), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the test files the task changed first (a failure stops the gate at once), the
+# app, migrate, prepare_clean_site (code, every run), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the test files the task changed first, each run 5 times, where one failed run fails it (SOS-SETUP-33, scripts/lib/flake_check.sh; a failure stops the gate at once), the
 # whole backend suite (a module that failed on a MariaDB 1020 or deadlock is rerun once, alone, and
 # a second database conflict exits 3, SOS-SETUP-25), the whole Cypress suite, then a check that no other site or database was touched and
 # that no secret is in a log: the provisioner's password (SOS-SETUP-18), the Telegram values and BuildOS's credentials (SOS-SETUP-29). A failed UI spec is rerun once, alone. The
@@ -212,6 +212,9 @@ source "$REPO_DIR/scripts/lib/db_conflict.sh"
 # SOS-SETUP-27: the one rerun policy for Cypress, shared with CI's UI job.
 # shellcheck source=lib/ui_flaky.sh
 source "$REPO_DIR/scripts/lib/ui_flaky.sh"
+# SOS-SETUP-33: every new or changed test runs 5 times (SELLOS_FLAKE_RUNS), and one failure fails it.
+# shellcheck source=lib/flake_check.sh
+source "$REPO_DIR/scripts/lib/flake_check.sh"
 CHANGED="$(git -C "apps/$APP" status --porcelain -uall | { grep -v -E '^(.D|D.) ' || true; } | sed -E 's/^.{2} //; s/.* -> //')"
 CHANGED_PY="$(printf '%s\n' "$CHANGED" | grep -E '(^|/)test_[^/]*\.py$' || true)"
 CHANGED_SPECS="$(printf '%s\n' "$CHANGED" | grep -E '^cypress/integration/.*\.cy\.js$' || true)"
@@ -227,13 +230,13 @@ for f in $CHANGED_PY; do
   [ -f "apps/$APP/$f" ] || { echo "--- skipping $f: the task deleted it ---"; continue; }
   mod="$(printf '%s' "${f%.py}" | tr '/' '.')"
   echo "--- changed test module: $mod ---"
-  run_backend "$LOG_DIR/backend-$STAMP-$mod.log" --module "$mod" || { echo "CHANGED TEST FAILED: $mod"; exit 1; }
+  sellos_flake_check backend "$mod" "$LOG_DIR/backend-$STAMP-$mod" || { echo "CHANGED TEST FAILED: $mod"; exit 1; }
 done
 for f in $CHANGED_SPECS; do
   [ -f "apps/$APP/$f" ] || { echo "--- skipping $f: the task deleted it ---"; continue; }
   spec="${f#cypress/integration/}"
   echo "--- changed spec: $spec ---"
-  sellos_ui_suite "$LOG_DIR/ui-$STAMP-changed-$(printf '%s' "$spec" | tr '/' '_').log" "$spec" \
+  sellos_flake_check spec "$spec" "$LOG_DIR/ui-$STAMP-changed-$(printf '%s' "$spec" | tr '/' '_')" \
     || { echo "CHANGED SPEC FAILED: $spec"; exit 1; }
 done
 
