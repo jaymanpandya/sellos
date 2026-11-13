@@ -20,9 +20,12 @@ class TestCiWorkflows(unittest.TestCase):
 			self.assertRegex(text, r"(?m)^  pull_request:\s*$")
 
 	def test_runs_lint_tests_and_build(self):
-		self.assertIn("pre-commit/action", self.lint)
-		self.assertIn("run-tests --app sellos", self.ci)
-		self.assertIn("npm run build", self.ci)
+		# SOS-SETUP-33: CI calls the gate's own scripts, which hold the commands.
+		self.assertIn("bash scripts/check-guards.sh --all", self.lint)
+		self.assertIn('scripts/lib/backend_suite.sh" "$RUNNER_TEMP/backend.log"', self.ci)
+		self.assertIn("scripts/build-web-app.sh", self.ci)
+		self.assertIn("npm run build", (ROOT / "scripts/build-web-app.sh").read_text())
+		self.assertIn("run-tests --app", (ROOT / "scripts/lib/db_conflict.sh").read_text())
 
 	def test_ci_jobs_are_named_for_branch_protection(self):
 		jobs = re.findall(r"(?m)^  (frontend|tests|ui):\s*$", self.ci)

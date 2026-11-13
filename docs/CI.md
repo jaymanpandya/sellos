@@ -14,7 +14,8 @@ Two workflows run on every pull request and on every push to `1.0`.
   the full install, dumps it (`sellos.tests.tenant_template`), and the tests build every other tenant
   site from that dump with `bench new-site --source-sql`. Exactly one real provisioning test,
   `test_plan_limits_are_applied_on_the_site`, still uses the full install on every run.
-* `Linters` (`.github/workflows/linter.yml`): pre-commit (ruff, prettier, eslint, gitleaks), Semgrep with the Frappe rules, and pip-audit. GitHub shows each job's run time.
+* `Linters` (`.github/workflows/linter.yml`): `scripts/check-guards.sh --all`, the gate's first step (pre-commit with ruff, prettier, eslint and gitleaks, Semgrep with the Frappe rules at the pinned version, and the code guards), and pip-audit. GitHub shows each job's run time.
+* One CI (SOS-SETUP-33). Every CI step that can be the gate's step runs the gate's own script. `docs/CI_DIFFERENCES.md` lists what still differs and why. `scripts/ci-rehearsal.sh` runs CI's steps on a fresh clone of the last commit before a push.
 
 ## Blocking a merge
 

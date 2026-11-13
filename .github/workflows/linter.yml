@@ -25,15 +25,29 @@ jobs:
         with:
           python-version: '3.14'
           cache: pip
-      - uses: pre-commit/action@v3.0.0
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
 
-      - name: Download Semgrep rules
-        run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
-
-      - name: Run Semgrep rules
+      - name: Install pre-commit, Semgrep and the Frappe rules
+        # The version and rules commit the gate uses, from one file (scripts/lib/semgrep.env).
         run: |
-          pip install semgrep
-          semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
+          source scripts/lib/semgrep.env
+          pip install pre-commit "semgrep==$SEMGREP_VERSION"
+          git init -q "$RUNNER_TEMP/frappe-semgrep-rules"
+          git -C "$RUNNER_TEMP/frappe-semgrep-rules" fetch -q --depth 1 https://github.com/frappe/semgrep-rules.git "$SEMGREP_RULES_SHA"
+          git -C "$RUNNER_TEMP/frappe-semgrep-rules" checkout -q FETCH_HEAD
+
+      - name: Guards (the gate's own script)
+        # SOS-SETUP-33: scripts/check-guards.sh --all, the script the gate runs first: every
+        # pre-commit hook (gitleaks, ruff, prettier, eslint, the file checks), semgrep ci with the
+        # Frappe rules and r/python.lang.correctness, raw phone numbers, commands outside
+        # sellos/provisioning, the assertion ratchet and stale skips. The two task guards need a
+        # task and are skipped here (docs/CI_DIFFERENCES.md).
+        run: |
+          SELLOS_SEMGREP="$(command -v semgrep)" SELLOS_SEMGREP_RULES="$RUNNER_TEMP/frappe-semgrep-rules/rules" \
+            bash scripts/check-guards.sh --all
 
   deps-vulnerable-check:
     name: 'Vulnerable Dependency Check'

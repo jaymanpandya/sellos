@@ -28,10 +28,8 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install and build (P0.07)
-        working-directory: frontend
-        run: |
-          npm ci --no-audit --no-fund
-          npm run build
+        # The gate builds with the same script (SOS-SETUP-33, docs/CI_DIFFERENCES.md).
+        run: bash scripts/build-web-app.sh
 
       - name: Runner minutes (SOS-SETUP-28)
         if: always()
@@ -160,11 +158,8 @@ jobs:
 
       - name: Build web app (P0.07)
         # Built inside the bench copy of the app, because bench get-app clones only tracked files
-        # and the built page is not tracked.
-        working-directory: /home/runner/frappe-bench/apps/sellos/frontend
-        run: |
-          npm ci --no-audit --no-fund
-          npm run build
+        # and the built page is not tracked. The gate's script (SOS-SETUP-33).
+        run: bash /home/runner/frappe-bench/apps/sellos/scripts/build-web-app.sh
 
       - name: Create the tenant provisioner account (SOS-SETUP-18)
         # The narrow account tenant tests create and drop sites with, as on the local bench: CREATE
@@ -199,16 +194,25 @@ jobs:
         env:
           SELLOS_DB_PROVISIONER_USER: sellos_provisioner
 
-      - name: Run Tests
-        # The wrapper prints every batch's summary and the exit code, and says which batch failed.
-        # Frappe runs integration tests and the rest as two batches, and the last "OK" can follow a
-        # FAILED one (run 42830839891). The exit code decides, not a summary line (SOS-SETUP-24).
+      - name: Prepare the clean site (SOS-SETUP-33)
+        # The gate's own script: migrate, then prepare_clean_site, so the backend suite starts from the
+        # state the gate's does (docs/CI_DIFFERENCES.md).
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
-          bash "$GITHUB_WORKSPACE/scripts/lib/report_test_exit.sh" bench --site test_site run-tests --app sellos
+          bash "$GITHUB_WORKSPACE/scripts/lib/prepare_test_site.sh" test_site sellos
+
+      - name: Run Tests
+        # The gate's run_backend, through scripts/lib/backend_suite.sh: report_test_exit.sh prints
+        # every batch's summary and the exit code (the last "OK" can follow a FAILED batch, run
+        # 42830839891, SOS-SETUP-24), and a module that failed on a MariaDB 1020 or deadlock is rerun
+        # once, alone (SOS-SETUP-25). The exit code decides, not a summary line.
+        working-directory: /home/runner/frappe-bench
+        run: bash "$GITHUB_WORKSPACE/scripts/lib/backend_suite.sh" "$RUNNER_TEMP/backend.log"
         env:
           TYPE: server
+          SITE: test_site
+          APP: sellos
           SELLOS_DB_PROVISIONER_USER: sellos_provisioner
           # SELLOS_DB_PROVISIONER_PASSWORD comes from GITHUB_ENV, set when the account is made.
 
@@ -336,7 +340,7 @@ jobs:
         # tracked files and the built page is not tracked.
         working-directory: /home/runner/frappe-bench
         run: |
-          (cd apps/sellos/frontend && npm ci --no-audit --no-fund && npm run build)
+          bash apps/sellos/scripts/build-web-app.sh
           CI=Yes bench build --force
 
       - name: Start bench
@@ -354,12 +358,9 @@ jobs:
           curl -sf -o /dev/null http://test_site:8000/api/method/ping || { tail -n 60 "$GITHUB_WORKSPACE/bench_start.log"; exit 1; }
 
       - name: Prepare the clean site
-        # The same fixture scripts/run-tests.sh runs on every local gate run (SOS-P1-06A made it work).
+        # The gate's own script (SOS-SETUP-33), the fixture SOS-P1-06A made work.
         working-directory: /home/runner/frappe-bench
-        run: |
-          bench --site test_site migrate
-          bench --site test_site execute sellos.tests.ui_fixtures.prepare_clean_site
-          bench --site test_site clear-cache
+        run: bash "$GITHUB_WORKSPACE/scripts/lib/prepare_test_site.sh" test_site sellos
 
       - name: Restore the flaky log (SOS-SETUP-27)
         # The count of reruns that passed lives across runs in the Actions cache, as the local gate's

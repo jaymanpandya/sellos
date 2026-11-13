@@ -21,7 +21,9 @@ class TestSecretScan(unittest.TestCase):
 	def test_gitleaks_runs_in_continuous_integration(self):
 		"""The Linters workflow runs every pre-commit hook, gitleaks included, on push and pull request."""
 		lint = (ROOT / ".github/workflows/linter.yml").read_text()
-		self.assertIn("pre-commit/action", lint)
+		# SOS-SETUP-33: through the gate's guards script, which runs pre-commit --all-files.
+		self.assertIn("bash scripts/check-guards.sh --all", lint)
+		self.assertIn("pre-commit run", (ROOT / "scripts/check-guards.sh").read_text())
 		self.assertRegex(lint, r"(?m)^  pull_request:\s*$")
 		self.assertNotIn("continue-on-error", lint)
 		self.assertNotIn("SKIP:", lint)

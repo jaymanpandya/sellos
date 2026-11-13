@@ -94,10 +94,11 @@ class ReportTestExit(unittest.TestCase):
 class TheGateAndCiUseIt(unittest.TestCase):
 	def test_ci_runs_the_backend_suite_through_the_wrapper(self):
 		ci = (REPO_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-		self.assertIn(
-			'bash "$GITHUB_WORKSPACE/scripts/lib/report_test_exit.sh" bench --site test_site run-tests --app sellos',
-			ci,
-		)
+		# SOS-SETUP-33: through the gate's run_backend (scripts/lib/backend_suite.sh), which runs the
+		# wrapper with the site and app CI gives it.
+		self.assertIn('bash "$GITHUB_WORKSPACE/scripts/lib/backend_suite.sh"', ci)
+		suite = (REPO_ROOT / "scripts/lib/backend_suite.sh").read_text(encoding="utf-8")
+		self.assertIn('export REPORT_TEST_EXIT="$LIB/report_test_exit.sh"', suite)
 		self.assertEqual(len(re.findall(r"^\s*bench --site \S+ run-tests\b", ci, re.M)), 0)
 
 	def test_the_gate_runs_every_backend_test_command_through_the_wrapper(self):

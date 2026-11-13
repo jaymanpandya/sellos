@@ -39,11 +39,16 @@ LATEST="$(ls -t "sites/$SITE/private/backups/"*-database.sql.gz | head -1)"
 cp "$LATEST" "$BASELINE_DIR/sellos_test_clean.sql.gz"
 echo "Baseline saved: $BASELINE_DIR/sellos_test_clean.sql.gz"
 
+# SOS-SETUP-33: the pinned version and rules commit CI uses (scripts/lib/semgrep.env).
+# shellcheck source=lib/semgrep.env
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/semgrep.env"
 if [ ! -d "$BASELINE_DIR/semgrep-rules/rules" ]; then
-  git clone --depth 1 https://github.com/frappe/semgrep-rules.git "$BASELINE_DIR/semgrep-rules"
+  git clone https://github.com/frappe/semgrep-rules.git "$BASELINE_DIR/semgrep-rules"
 fi
+git -C "$BASELINE_DIR/semgrep-rules" fetch --quiet origin "$SEMGREP_RULES_SHA" 2>/dev/null || true
+git -C "$BASELINE_DIR/semgrep-rules" checkout --quiet "$SEMGREP_RULES_SHA"
 if [ ! -x "$BASELINE_DIR/semgrep-venv/bin/semgrep" ]; then
   python3 -m venv "$BASELINE_DIR/semgrep-venv"
-  "$BASELINE_DIR/semgrep-venv/bin/pip" install --quiet semgrep
 fi
+"$BASELINE_DIR/semgrep-venv/bin/pip" install --quiet "semgrep==$SEMGREP_VERSION"
 echo "Semgrep and the Frappe rules are ready."

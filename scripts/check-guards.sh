@@ -138,6 +138,17 @@ if [ ! -x "$SEMGREP" ] || [ ! -d "$SEMGREP_RULES" ]; then
   MISSING+=("Semgrep or the Frappe rules (run scripts/make-baseline.sh once)")
 else
   SG_OUT=/tmp/sellos-guards-semgrep.$$
+  # With --all (the gate and CI), Semgrep and the rules must be the pinned ones, so the two cannot
+  # judge the same code differently (scripts/lib/semgrep.env, docs/CI_DIFFERENCES.md).
+  if [ "$ALL" -eq 1 ] && [ "${SELLOS_SEMGREP_PIN_CHECK:-on}" = "on" ]; then
+    # shellcheck source=lib/semgrep.env
+    source "$REPO_DIR/scripts/lib/semgrep.env"
+    have_version="$("$SEMGREP" --version 2>/dev/null | tail -1)"
+    have_rules="$(git -C "$SEMGREP_RULES" rev-parse HEAD 2>/dev/null || echo none)"
+    if [ "$have_version" != "$SEMGREP_VERSION" ] || [ "$have_rules" != "$SEMGREP_RULES_SHA" ]; then
+      MISSING+=("Semgrep $SEMGREP_VERSION with the Frappe rules at ${SEMGREP_RULES_SHA:0:9} (found ${have_version:-none} with rules at ${have_rules:0:9}; run scripts/make-baseline.sh, which installs the pinned ones)")
+    fi
+  fi
   if [ "$ALL" -eq 1 ]; then
     "$SEMGREP" ci --config "$SEMGREP_RULES" --config r/python.lang.correctness >"$SG_OUT" 2>"$SG_OUT.err"
     rc=$?

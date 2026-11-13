@@ -53,6 +53,10 @@ PROTECTED = [
 	"scripts/check-guards.sh",
 	"sellos/testing/guards.py",
 	"docs/GUARDS.md",
+	# The scripts the gate and CI share (SOS-SETUP-33).
+	"scripts/build-web-app.sh",
+	"scripts/ci-rehearsal.sh",
+	"docs/CI_DIFFERENCES.md",
 ]
 
 # A task adds its flows here, so the file is not protected from a change. A flow already in it may

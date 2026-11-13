@@ -137,13 +137,8 @@ if [ ! -x "$BASELINE_DIR/semgrep-venv/bin/semgrep" ] || [ ! -d "$BASELINE_DIR/se
 fi
 
 echo "--- Building web app: $APP/frontend ---"
-(
-  cd "apps/$APP/frontend"
-  if [ ! -f node_modules/.package-lock.json ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
-    npm ci --no-audit --no-fund
-  fi
-  npm run build
-)
+# SOS-SETUP-33: the same script CI's three jobs build with.
+"$REPO_DIR/scripts/build-web-app.sh" --if-stale
 
 # The heavy segment starts here and ends after the Cypress run. A wait past SELLOS_GATE_LOCK_MAX_WAIT
 # (default 90 minutes) exits 3 inside the helper, recorded beforehand as an environment problem.
@@ -164,14 +159,10 @@ else
   echo "--- NO BASELINE (allowed by a human): running on the existing test site data ---"
 fi
 
-echo "--- Migrating $SITE ---"
-bench --site "$SITE" migrate
-bench --site "$SITE" clear-cache
 # The baseline is a clean migrated install. The state a provisioned company site is in, and the role
 # users, are made by code on every run, so the gate exercises the same code provisioning uses.
-echo "--- Preparing the clean site (code, every run) ---"
-bench --site "$SITE" execute "$APP.tests.ui_fixtures.prepare_clean_site"
-bench --site "$SITE" clear-cache
+# SOS-SETUP-33: migrate and prepare through the script CI's Server and UI jobs run.
+bash "$REPO_DIR/scripts/lib/prepare_test_site.sh" "$SITE" "$APP"
 
 # SOS-SETUP-32: the tenant template, on by default, with CI's rule (SOS-SETUP-28). One tenant site is
 # made with Frappe's full install, dumped and dropped, and every tenant site the tests make is built
