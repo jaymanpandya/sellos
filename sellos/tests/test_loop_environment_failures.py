@@ -244,7 +244,8 @@ class LoopSandbox(Sandbox):
 			(SCRIPTS / "shared/bench-gate-lock.sh").read_text(),
 		)
 		self.write(self.bench / "apps/buildos/buildos/hooks.py", "app_name = 'buildos'\n")
-		for name in ("tasks.py", "db_secrets.sh"):
+		# SOS-SETUP-33: the loop records every stop in docs/STOPS.md with lib/stops.py.
+		for name in ("tasks.py", "db_secrets.sh", "stops.py"):
 			shutil.copy2(SCRIPTS / "lib" / name, self.repo / "scripts" / "lib" / name)
 		self.write(self.repo / "scripts/run-tests.sh", FAKE_GATE, 0o755)
 		self.write(self.repo / "scripts/notify-telegram.sh", FAKE_NOTIFY, 0o755)
@@ -311,7 +312,13 @@ class LoopEnvironmentFailures(LoopSandbox):
 		self.assertIn(
 			"work 1", (self.repo / "sellos/work.py").read_text(encoding="utf-8"), "the work was reset"
 		)
-		self.assertEqual(self.git("status", "--porcelain"), "M sellos/work.py")
+		# SOS-SETUP-33: the stop's row in docs/STOPS.md is the only other change; the next start commits it.
+		changes = [
+			line.strip()
+			for line in self.git("status", "--porcelain", "-uall").splitlines()
+			if "docs/STOPS.md" not in line
+		]
+		self.assertEqual(changes, ["M sellos/work.py"])
 		self.assertEqual(self.git("branch", "--list", "failed/*"), "", "a salvage branch was made")
 		note = self.read("notifications")
 		self.assertIn(ENV_HEADLINE, note)

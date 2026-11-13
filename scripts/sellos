@@ -238,7 +238,8 @@ PY
   if [ "$branch" = "$BRANCH" ]; then ok "git is on $BRANCH"; else fail "git is on $branch, not $BRANCH" "git -C $REPO_DIR checkout $BRANCH"; fi
   blocked="$(tasks_with_status Blocked)"
   in_progress="$(tasks_with_status "In Progress")"
-  dirty="$(git -C "$REPO_DIR" status --porcelain)"
+  # docs/STOPS.md holds the last stop's row until the loop's next start commits it.
+  dirty="$(git -C "$REPO_DIR" status --porcelain | grep -v ' docs/STOPS.md$' || true)"
   if [ -n "$blocked" ]; then
     fail "a task is Blocked, and the loop starts nothing while one is:
 $blocked" \
@@ -259,7 +260,7 @@ $in_progress"
     fail "the loop is paused for regression ($PAUSE_FILE)" "$SCRIPT_DIR/resume-loop.sh"
   fi
 
-  echo "Last stop: $(hours_since_last_stop) hours ago (docs/STOPS.md)"
+  echo "$(python3 "$SCRIPT_DIR/lib/stops.py" summary "$STOPS_FILE" "$REPO_DIR" 2>/dev/null)"
   if [ "$FAILS" -gt 0 ]; then
     echo "Not starting the loop: $FAILS check(s) failed. Apply each fix above and run: $SCRIPT_DIR/sellos up"
     return 1
@@ -297,7 +298,8 @@ cmd_status() {
     echo "  not running"
   fi
   [ -e "$PAUSE_FILE" ] && echo "  paused for regression: $PAUSE_FILE (scripts/resume-loop.sh lifts it)"
-  echo "  hours since the last stop: $(hours_since_last_stop) (docs/STOPS.md)"
+  echo "  $(python3 "$SCRIPT_DIR/lib/stops.py" summary "$STOPS_FILE" "$REPO_DIR" 2>/dev/null) (docs/STOPS.md)"
+  tail -n 3 "$STOPS_FILE" 2>/dev/null | grep '^| 20' | cut -c1-160 | sed 's/^/  last stops: /'
   echo
   echo "== Log ($LOOP_LOG)"
   tail -n 15 "$LOOP_LOG" 2>/dev/null | cut -c1-200 | sed 's/^/  /'

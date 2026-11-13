@@ -36,7 +36,7 @@ if [ "$MODE" = "--remove" ]; then
   unload "$HEALTH_LABEL"
   unload "$SERVER_LABEL"
   rm -f "$SERVER_PLIST" "$HEALTH_PLIST"
-  echo "Removed $SERVER_LABEL and $HEALTH_LABEL. Start the server by hand with: cd $BENCH_DIR && bench --site $SITE serve --port $PORT"
+  echo "Removed $SERVER_LABEL and $HEALTH_LABEL. Start the server by hand with: cd $BENCH_DIR && bench --site sellos_test.localhost serve --port 8004"
   exit 0
 fi
 if [ "$MODE" != "install" ] && [ "$MODE" != "--replace" ]; then
@@ -91,7 +91,7 @@ cat >"$SERVER_PLIST" <<EOF
   <array>
     <string>/bin/bash</string>
     <string>-c</string>
-    <string>cd "$BENCH_DIR" &amp;&amp; exec "$BENCH_BIN" --site $SITE serve --port $PORT</string>
+    <string>cd "$BENCH_DIR" &amp;&amp; exec "$BENCH_BIN" --site sellos_test.localhost serve --port 8004</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>

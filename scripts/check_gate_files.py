@@ -60,6 +60,8 @@ PROTECTED = [
 	# Starting and watching the loop, and the server's LaunchAgent (SOS-SETUP-33).
 	"scripts/sellos",
 	"scripts/install-launch-agent.sh",
+	# The stop ledger: only the loop writes it.
+	"docs/STOPS.md",
 ]
 
 # A task adds its flows here, so the file is not protected from a change. A flow already in it may

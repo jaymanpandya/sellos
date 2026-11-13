@@ -65,6 +65,32 @@ LOG_DIR="${SELLOS_LOG_DIR:-/tmp/sellos-test-logs}"
 TASK_BLOCK_PATH="${SELLOS_TASK_BLOCK_PATH:-/tmp/sellos-task-block.md}"
 BRANCH="${SELLOS_BRANCH:-1.0}"
 
+# SOS-SETUP-33: the stop ledger. Every way this script ends, except "another loop is running", appends
+# one row to docs/STOPS.md (time, task, category, cause, minutes the attempt took) through the EXIT
+# trap, and prints the hours since the last stop. The next start commits the row with the idle time. Each stop site sets its category and
+# cause with stop_note first; anything that ends the loop without one (set -e, a signal) is still
+# recorded, as "unexpected" or "stopped". The next start fills in how long the loop stood idle.
+STOPS_FILE="$PROJECT_DIR/docs/STOPS.md"
+STOPS_PY="$SCRIPT_DIR/lib/stops.py"
+STOP_CATEGORY="unexpected"
+STOP_CAUSE="the loop ended without saying why (a failed command under set -e)"
+STOP_TASK="-"
+stop_note() { STOP_CATEGORY="$1"; STOP_CAUSE="$2"; }
+on_exit() {
+  local status=$? minutes=0
+  if [[ "$(cat "$LOCK_FILE" 2>/dev/null)" == "$$" ]]; then rm -f "$LOCK_FILE"; fi
+  [[ "$STOP_CATEGORY" == "none" ]] && return
+  if [[ "$STOP_TASK" != "-" && -n "${SELLOS_TASK_STARTED:-}" ]]; then
+    minutes=$((($(date +%s) - SELLOS_TASK_STARTED) / 60))
+  fi
+  [[ "$STOP_CATEGORY" == "unexpected" ]] && STOP_CAUSE="$STOP_CAUSE, exit $status"
+  # Not committed here: an environment stop leaves the tree exactly as it was. The next start commits it.
+  python3 "$STOPS_PY" record "$STOPS_FILE" "$STOP_TASK" "$STOP_CATEGORY" "$STOP_CAUSE" "$minutes" || true
+  echo "Stop recorded in docs/STOPS.md: $STOP_CATEGORY, $STOP_TASK. $(python3 "$STOPS_PY" summary "$STOPS_FILE" "$PROJECT_DIR" 2>/dev/null)"
+}
+trap on_exit EXIT
+trap 'stop_note stopped "stopped by a signal (sellos stop --now, Ctrl-C or a shutdown)"; exit 143' TERM INT HUP
+
 # SOS-SETUP-18: the provisioner account's values never reach the loop's log. Everything this script
 # and its children print goes through the redaction filter from here on.
 # shellcheck source=lib/db_secrets.sh
@@ -75,6 +101,7 @@ source "$SCRIPT_DIR/lib/db_secrets.sh"
 # know it. The agent never gets it: its code reads the Keychain through get_provisioner_password().
 if ! sellos_provisioner_available; then
   echo "The MariaDB provisioner password is not in SELLOS_DB_PROVISIONER_PASSWORD and the Keychain item sellos_provisioner is missing. Store it once with: $SELLOS_STORE_COMMAND"
+  stop_note start "the provisioner password is missing"
   "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: the provisioner password is missing. Store it once with: $SELLOS_STORE_COMMAND" >/dev/null 2>&1 || true
   exit 3
 fi
@@ -89,13 +116,24 @@ if [[ -f "$LOCK_FILE" ]]; then
   OLD_PID="$(cat "$LOCK_FILE" 2>/dev/null || true)"
   if [[ -n "$OLD_PID" ]] && kill -0 "$OLD_PID" 2>/dev/null; then
     echo "Another build-loop.sh is already running (pid $OLD_PID) against this repo. Exiting."
+    stop_note none "another loop is running"
     exit 1
   fi
   echo "Stale lock file found (pid ${OLD_PID:-unknown}, not running). Removing."
   rm -f "$LOCK_FILE"
 fi
 echo $$ > "$LOCK_FILE"
-trap 'rm -f "$LOCK_FILE"' EXIT
+# The loop starts: fill in how long it stood idle since the last stop, commit that, and say how long
+# it has run without a stop (SOS-SETUP-33).
+# Only docs/STOPS.md is committed, whatever else the tree holds (an In Progress task's work stays as it is).
+if [[ -f "$STOPS_FILE" ]]; then
+  python3 "$STOPS_PY" restarted "$STOPS_FILE" || true
+  git -C "$PROJECT_DIR" add -- docs/STOPS.md >/dev/null 2>&1 || true
+  if ! git -C "$PROJECT_DIR" diff --cached --quiet -- docs/STOPS.md 2>/dev/null; then
+    git -C "$PROJECT_DIR" commit -q -m "SOS-LOOP: the last stop and the restart, in docs/STOPS.md [skip ci]" -- docs/STOPS.md || true
+  fi
+fi
+echo "$(python3 "$STOPS_PY" summary "$STOPS_FILE" "$PROJECT_DIR" 2>/dev/null)"
 
 cd "$PROJECT_DIR"
 
@@ -105,6 +143,7 @@ INSTALLED_HELPER="${SELLOS_BASELINE_DIR:-$HOME/iespl-baseline}/bench-gate-lock.s
 if ! cmp -s "$SCRIPT_DIR/shared/bench-gate-lock.sh" "$INSTALLED_HELPER"; then
   echo "WARNING: $INSTALLED_HELPER is missing or differs from scripts/shared/bench-gate-lock.sh. Reinstalling it."
   if ! "$SCRIPT_DIR/install-shared-helpers.sh"; then
+    stop_note start "the bench gate lock helper could not be installed"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: could not install the bench gate lock helper at $INSTALLED_HELPER. Stopping before any task starts." || true
     exit 3
   fi
@@ -112,6 +151,7 @@ fi
 # The agent reads BuildOS only in this read only copy, never under apps/buildos.
 if ! REFERENCE_OUT="$("$SCRIPT_DIR/refresh-buildos-reference.sh" 2>&1)"; then
   echo "$REFERENCE_OUT"
+  stop_note environment "the BuildOS reference copy could not be refreshed"
   "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: Environment problem, not the task. The BuildOS reference copy could not be refreshed. Stopping before any task starts:
 $REFERENCE_OUT" || true
   exit 3
@@ -309,6 +349,7 @@ stop_for_environment() {
   local why="$1" detail="$2"
   echo "Environment problem, not the task: $why"
   printf '%s\n' "$detail"
+  stop_note environment "$why"
   "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: Environment problem, not the task. $why
 $TASK_ID stays In Progress and its work is left in the working tree as it is: no repair run, no reset, no salvage, not Blocked.
 The gate said:
@@ -321,12 +362,14 @@ Fix it, then restart the loop. It resumes $TASK_ID." || true
 if ! LS_REMOTE_OUT="$(git ls-remote --exit-code origin HEAD 2>&1)"; then
   echo "git cannot reach the remote (origin). Stopping before any task starts."
   printf '%s\n' "$LS_REMOTE_OUT"
+  stop_note start "git cannot reach origin"
   "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: git cannot reach the remote (origin). Stopping before any task starts. git said:
 $(printf '%s' "$LS_REMOTE_OUT" | head -c 3000)" || true
   exit 1
 fi
 if ! FETCH_OUT="$(git fetch origin "$BRANCH" 2>&1)"; then
   printf '%s\n' "$FETCH_OUT"
+  stop_note start "could not fetch $BRANCH"
   "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: could not fetch $BRANCH from origin. Stopping before any task starts. git said:
 $(printf '%s' "$FETCH_OUT" | head -c 3000)" || true
   exit 1
@@ -335,6 +378,7 @@ fi
 if ! GH_AUTH_OUT="$(gh auth status 2>&1)"; then
   echo "gh is not signed in, so the loop cannot watch CI. Stopping before any task starts."
   printf '%s\n' "$GH_AUTH_OUT"
+  stop_note start "gh is not signed in"
   "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: gh auth status failed, so CI cannot be watched. Stopping before any task starts. gh said:
 $(printf '%s' "$GH_AUTH_OUT" | head -c 3000)" || true
   exit 1
@@ -346,6 +390,7 @@ if [[ "$AHEAD" -gt 0 ]]; then
   if [[ -n "$BAD_LIST" ]]; then
     echo "$BRANCH has unpushed commits whose message does not start with SOS-. Not pushing them."
     printf '%s\n' "$BAD_LIST"
+    stop_note push-failed "unpushed commits that do not start with SOS-"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $BRANCH is $AHEAD commit(s) ahead of origin, and these do not start with SOS-, so nothing was pushed. Stopping before any task starts:
 $BAD_LIST" || true
     exit 1
@@ -353,17 +398,24 @@ $BAD_LIST" || true
   echo "$BRANCH is $AHEAD commit(s) ahead of origin. Pushing them before any task starts:"
   printf '%s\n' "$AHEAD_LIST"
   if ! push_with_retry; then
+    stop_note push-failed "pushing the commits that were ahead failed"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $BRANCH is $AHEAD commit(s) ahead of origin and the push failed. Stopping before any task starts. The commits are kept:
 $AHEAD_LIST
 git said:
 $(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
     exit 1
   fi
-  "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: pushed $AHEAD commit(s) that were ahead of origin. Waiting for CI before picking a task:
+  # SOS-SETUP-33: a push of nothing but the stop ledger ([skip ci]) changes no code, so CI is not run or awaited.
+  if [[ -z "$(printf '%s\n' "$AHEAD_LIST" | awk '$2 != "SOS-LOOP:"')" ]]; then
+    echo "Only the stop ledger was ahead. Pushed it without waiting for CI."
+  else
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: pushed $AHEAD commit(s) that were ahead of origin. Waiting for CI before picking a task:
 $AHEAD_LIST" || true
-  if ! ci_green "$(git rev-parse HEAD)"; then
-    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the pushed head $(git rev-parse --short HEAD). Stopping, nothing new started.${CI_RED_REASON:+ $CI_RED_REASON}" || true
-    exit 1
+    if ! ci_green "$(git rev-parse HEAD)"; then
+      stop_note ci-red "CI red or missing on the pushed head. $CI_RED_REASON"
+      "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the pushed head $(git rev-parse --short HEAD). Stopping, nothing new started.${CI_RED_REASON:+ $CI_RED_REASON}" || true
+      exit 1
+    fi
   fi
 fi
 
@@ -372,8 +424,10 @@ fi
 PAUSE_FILE="${SELLOS_PAUSE_FILE:-/tmp/sellos-loop.pause}"
 
 while true; do
+  STOP_TASK="-"
   if [[ -e "$PAUSE_FILE" ]]; then
     echo "Paused for regression: $PAUSE_FILE exists. Nothing picked. Run scripts/resume-loop.sh, then start the loop again."
+    stop_note paused "the regression pause file exists"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: Paused for regression. Nothing picked. Run scripts/resume-loop.sh after the regression, then start the loop again." || true
     break
   fi
@@ -381,6 +435,7 @@ while true; do
   TASK_ID="$("$SCRIPT_DIR/select-next-task.sh" "$TASKS_FILE")"
 
   if [[ "$TASK_ID" == "NONE_ELIGIBLE" ]]; then
+    stop_note no-work "no eligible task: the Waiting tasks hold up the rest"
     WAITING_LINES="$(python3 "$SCRIPT_DIR/lib/tasks.py" waiting "$TASKS_FILE" | head -12 || true)"
     if [[ -n "$WAITING_LINES" ]]; then
       "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: no eligible tasks left. Stopping. Waiting tasks that hold up Not Started work (finish one by hand with scripts/set-task-status.sh <ID> Complete TASKS.md, then commit and push):
@@ -392,11 +447,13 @@ $WAITING_LINES"
   fi
 
   if [[ "$TASK_ID" == BLOCKED_EXISTS:* ]]; then
+    stop_note blocked-exists "a Blocked task is open: ${TASK_ID#BLOCKED_EXISTS:}"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: halted. Blocked task(s) still open: ${TASK_ID#BLOCKED_EXISTS:}. Fix and reset to Not Started before any new work can start."
     break
   fi
 
   echo "Selected task: $TASK_ID"
+  STOP_TASK="$TASK_ID"
 
   # Known-good point to fall back to if this task doesn't end cleanly.
   PRE_TASK_SHA="$(git rev-parse HEAD)"
@@ -513,6 +570,7 @@ $TASK_BLOCK"
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Blocked" "$TASKS_FILE"
     git add "$TASKS_FILE"
     git commit -m "$TASK_ID: Claude process crashed, marking Blocked (repo reset to pre-task state)"
+    stop_note crash "Claude's process exited $CLAUDE_EXIT"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID crashed Claude's process (exit $CLAUDE_EXIT). Marked Blocked, repo reset to before this task. Stopping."
     break
   fi
@@ -524,6 +582,7 @@ $TASK_BLOCK"
     git branch "$SALVAGE_BRANCH" >/dev/null 2>&1 || true
     echo "Preserved this attempt's work on branch $SALVAGE_BRANCH before reverting main."
     git reset --hard "$PRE_TASK_SHA" && git clean -fd
+    stop_note needs-input "${RESPONSE#NEEDS_INPUT: }"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID needs input (repo reset to pre-task state) — ${RESPONSE#NEEDS_INPUT: }"
     break
   fi
@@ -545,6 +604,7 @@ $TASK_BLOCK"
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Blocked" "$TASKS_FILE"
     git add "$TASKS_FILE"
     git commit -m "$TASK_ID: unrecognized response, marking Blocked (repo reset to pre-task state)"
+    stop_note unrecognized "the reply had no IMPLEMENTATION_READY or NEEDS_INPUT line and no work"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID gave an unrecognized response. Marked Blocked, repo reset to before this task. Stopping."
     break
   fi
@@ -639,12 +699,17 @@ Decide for yourself, following the policy above, and fix it now. Do not ask agai
     git commit -F "$COMMIT_MSG_FILE"
     rm -f "$COMMIT_MSG_FILE"
     if ! push_with_retry; then
+      stop_note push-failed "the push failed after every retry"
       "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID passed the gate and is committed, but the push failed after every retry. The commit is kept and nothing was reset. The next start pushes it first. Stopping. git said:
 $(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
       break
     fi
-    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID complete: $TASK_TITLE"
+    RUN_SUMMARY="$(python3 "$STOPS_PY" summary "$STOPS_FILE" "$PROJECT_DIR" 2>/dev/null || true)"
+    echo "$RUN_SUMMARY"
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID complete: $TASK_TITLE
+$RUN_SUMMARY"
     if ! ci_green "$(git rev-parse HEAD)"; then
+      stop_note ci-red "CI red or missing on the task commit. $CI_RED_REASON"
       "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the commit for $TASK_ID. Stopping, nothing new started.${CI_RED_REASON:+ $CI_RED_REASON}"
       break
     fi
@@ -659,6 +724,7 @@ $(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Blocked" "$TASKS_FILE"
     git add "$TASKS_FILE"
     git commit -m "$TASK_ID: tests failed, marking Blocked (repo reset to pre-task state, no broken code left on main)"
+    stop_note blocked "the gate still failed after $GATE_RUN gate run(s): $(grep -m1 -E "GUARDS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED|TENANT TEMPLATE FAILED" "$LOG_DIR/latest.log" 2>/dev/null || echo "see the gate log")"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID failed tests. Blocked, repo reset to before this task — main is clean. Tail: $TAIL"
     break
   fi

@@ -112,7 +112,7 @@ class TheChecksUpMakes(unittest.TestCase):
 
 	def test_the_launch_agent_runs_only_the_pinned_server(self):
 		text = INSTALL.read_text(encoding="utf-8")
-		self.assertIn('exec "$BENCH_BIN" --site $SITE serve --port $PORT', text)
+		self.assertIn('exec "$BENCH_BIN" --site sellos_test.localhost serve --port 8004', text)
 		self.assertIn('SITE="sellos_test.localhost"', text)
 		self.assertIn("PORT=8004", text)
 		self.assertIn("<key>KeepAlive</key><true/>", text)
