@@ -1,4 +1,5 @@
-"""The five SellOS roles (P1.04). Created from code on install and on every migrate, never in the Desk."""
+"""The six SellOS roles (P1.04; the Sales Manager approved by Jayman, SOS-SETUP-35). Created from code on
+install and on every migrate, never in the Desk."""
 
 import frappe
 
@@ -7,6 +8,9 @@ COMPANY_ADMIN = "SellOS Company Admin"
 AGENT = "SellOS Agent"
 CLIENT = "SellOS Client"
 CHANNEL_PARTNER = "SellOS Channel Partner"
+# SOS-SETUP-35: approved by Jayman on 13 November 2026. It holds no method and sees no lead until
+# SOS-P1-18 builds sales teams and gives it its team's leads, with phone numbers masked.
+SALES_MANAGER = "SellOS Sales Manager"
 
 # role name -> whether the role may open the Frappe desk. Only the Platform Admin may.
 ROLES = {
@@ -15,6 +19,7 @@ ROLES = {
 	AGENT: 0,
 	CLIENT: 0,
 	CHANNEL_PARTNER: 0,
+	SALES_MANAGER: 0,
 }
 
 

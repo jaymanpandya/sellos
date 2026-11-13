@@ -5,7 +5,7 @@ from unittest.mock import patch
 import frappe
 
 from sellos.access import lead_permissions as lp
-from sellos.access.roles import AGENT, CHANNEL_PARTNER, CLIENT, COMPANY_ADMIN, PLATFORM_ADMIN
+from sellos.access.roles import AGENT, CHANNEL_PARTNER, CLIENT, COMPANY_ADMIN, PLATFORM_ADMIN, SALES_MANAGER
 
 
 class TestLeadScope(unittest.TestCase):
@@ -17,6 +17,8 @@ class TestLeadScope(unittest.TestCase):
 		self.assertEqual(lp.scope_for([CHANNEL_PARTNER]), "own")
 		self.assertEqual(lp.scope_for([CLIENT]), "none")
 		self.assertEqual(lp.scope_for([]), "none")
+		# SOS-SETUP-35: the Sales Manager sees no lead until SOS-P1-18 gives it its team's leads.
+		self.assertEqual(lp.scope_for([SALES_MANAGER]), "none")
 
 	def test_the_widest_scope_wins(self):
 		self.assertEqual(lp.scope_for([AGENT, COMPANY_ADMIN]), "all")

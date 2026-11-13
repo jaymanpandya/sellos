@@ -8,7 +8,7 @@ from sellos.access.roles import ensure_roles
 
 class TestDeskGuard(unittest.TestCase):
 	def test_customer_roles_are_blocked_from_the_desk(self):
-		for role in ("Company Admin", "Agent", "Client", "Channel Partner"):
+		for role in ("Company Admin", "Agent", "Client", "Channel Partner", "Sales Manager"):
 			self.assertTrue(is_blocked("a@x.com", ["All", f"SellOS {role}"], "/app/user"), role)
 			self.assertTrue(is_blocked("a@x.com", [f"SellOS {role}"], "/app"), role)
 			self.assertTrue(is_blocked("a@x.com", [f"SellOS {role}"], "/desk/user"), role)
@@ -41,6 +41,7 @@ class TestDeskGuardRequests(unittest.TestCase):
 		"SellOS Agent": True,
 		"SellOS Client": True,
 		"SellOS Channel Partner": True,
+		"SellOS Sales Manager": True,
 	}
 	PASSWORD = "Zx9!qwerty_long_p010"
 

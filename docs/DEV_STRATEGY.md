@@ -224,7 +224,7 @@ Copy BuildOS's `scripts/build-loop.sh` and change only these things. Do not rety
    SellOS ID.
 2. Paths in both prompts: `bench --site sellos_test.localhost run-tests --app sellos --module ...` and
    `bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/...`.
-3. The locked architecture paragraph: no ERPNext, the web app never uses the Frappe desk, five roles,
+3. The locked architecture paragraph: no ERPNext, the web app never uses the Frappe desk, six roles,
    isolation by site, consent never blocks (section 9), the 022 number is for service and
    transactional calls, the product is called SellOS with no company or suite brand, and the word
    Frappe never appears in a user facing label. The prompt also carries the rebuild rule (section 9).

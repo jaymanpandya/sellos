@@ -12,6 +12,11 @@ every migrate. Nothing here is set up in the Desk.
 | Agent | `SellOS Agent` | crm, home, profile | No |
 | Channel Partner | `SellOS Channel Partner` | partner, home, profile | No |
 | Client | `SellOS Client` | client, home, profile | No |
+| Sales Manager | `SellOS Sales Manager` | none yet (SOS-P1-18 adds its area) | No |
+
+The Sales Manager was approved by Jayman on 13 November 2026 (SOS-SETUP-35). Until SOS-P1-18 builds sales
+teams it holds no API method and its data scope is "none"; SOS-P1-18 gives it the leads, activities, tasks
+and site visits of its own team's members, with phone numbers masked as for an Agent.
 
 The areas come from `frontend/src/personas.js`. The desk block is `sellos/access/desk_guard.py`.
 
@@ -53,7 +58,7 @@ on a company site, because the data scope above is "none".
 | `sellos.crm.api.record_consent`, `record_opt_out`, `record_dnd_result` (P1.08, the Consent Record; consent never blocks) | Company Admin, Agent |
 | `sellos.access.support.list_support_users`, `grant_support_access`, `revoke_support_access`, `list_support_grants`, `support_access_log` (P1.13) | Company Admin |
 | `sellos.config.setup_wizard.get_setup_state`, `save_profile`, `save_branding`, `save_stages`, `add_user`, `finish_setup` (P1.03, the setup wizard) | Company Admin |
-| `sellos.access.field_history.getdoc`, `get_docinfo` (P1.06B: the record loader, with the history of fields the reader may not read left out) | Every role |
+| `sellos.access.field_history.getdoc`, `get_docinfo` (P1.06B: the record loader, with the history of fields the reader may not read left out) | Every role but the Sales Manager (until SOS-P1-18) |
 
 Each story that adds a method adds a row here.
 
@@ -63,7 +68,7 @@ Each story that adds a method adds a row here.
 
 ## The permission test suite (P1.05)
 
-`sellos/access/test_p1_05_permission_suite.py` calls every method in the matrix as each of the five roles,
+`sellos/access/test_p1_05_permission_suite.py` calls every method in the matrix as each of the six roles,
 as a user from another company (on a company's own site, a signed-in user with no role) and as a guest,
 against one company's seeded records. It fails the build when a refused caller is not refused, when any
 caller other than the Company Admin gets the company's record or a full phone number, when a method has no

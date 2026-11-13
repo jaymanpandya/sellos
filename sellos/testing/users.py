@@ -37,6 +37,12 @@ TEST_USERS = {
 		"roles": ["SellOS Channel Partner"],
 		"desk": False,
 	},
+	"sales_manager": {
+		"email": "sos_test_sales_manager@example.com",
+		"first_name": "Gate Sales Manager",
+		"roles": ["SellOS Sales Manager"],
+		"desk": False,
+	},
 	"client": {
 		"email": "sos_test_client@example.com",
 		"first_name": "Gate Client",

@@ -77,6 +77,7 @@ role_home_page = {
 	"SellOS Agent": "sellos",
 	"SellOS Client": "sellos",
 	"SellOS Channel Partner": "sellos",
+	"SellOS Sales Manager": "sellos",
 }
 
 # Generators

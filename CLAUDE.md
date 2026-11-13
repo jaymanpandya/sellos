@@ -15,7 +15,7 @@ SellOS is a multitenant real estate platform for Indian agents, built on Frappe 
 3. DocTypes, hooks and patches live in the app repositories as code. Never create DocTypes through the Desk.
 4. Customers never use the Frappe desk. Every customer feature is built in the SellOS web app, which follows the BuildOS frontend stack, structure and tooling once P0.01 is approved. Only the Platform Admin may open /desk, and only to operate the control site. No customer role (Company Admin, Agent, Client or Channel Partner) ever gets it. Decided by Jayman at Checkpoint A.
 5. Every API method is whitelisted, declares its allowed roles, and is covered by the permission test matrix. A method with no declaration is denied.
-6. Five roles: Platform Admin, Company Admin, Agent, Client and Channel Partner.
+6. Six roles: Platform Admin, Company Admin, Sales Manager, Agent, Client and Channel Partner. The Sales Manager was approved by Jayman on 13 November 2026 (SOS-SETUP-35): it sees and edits only its own sales team's leads and their records, with phone numbers masked as for an Agent.
 7. Consent never blocks (Jayman, 10 November 2026). A lead's consent status (Consented, Unknown, Opted out, Registered DND when known) is recorded and shown as a warning on the lead, the caller queue and the call log. It never prevents a call, an SMS or a WhatsApp message, in code or in the screens. Enforcement lives in one function behind the company setting "Consent enforcement", which is Off by default. An explicit stop request is recorded as Opted out with a red warning, and does not block. Calling hours stay a configurable setting.
 8. The 022 number is for service and transactional calls. Each call records its purpose.
 9. Secrets live in encrypted settings or environment variables, never in a repository.
@@ -63,7 +63,7 @@ Run these from the app folder (`apps/sellos` in the bench). Never start, stop or
 
 ## Role model
 
-Platform Admin, Company Admin, Agent, Client and Channel Partner. In code the role names are `SellOS Platform Admin`, `SellOS Company Admin`, `SellOS Agent`, `SellOS Client` and `SellOS Channel Partner`. The web app maps them to areas in `frontend/src/personas.js`. Any change to roles or permissions needs Jayman's approval first.
+Platform Admin, Company Admin, Sales Manager, Agent, Client and Channel Partner. In code the role names are `SellOS Platform Admin`, `SellOS Company Admin`, `SellOS Sales Manager`, `SellOS Agent`, `SellOS Client` and `SellOS Channel Partner`. The Sales Manager (approved by Jayman, SOS-SETUP-35, 13 November 2026) sees and edits the leads, activities, tasks and site visits of its own sales team's members, reassigns leads within the team, and sees phone numbers masked like an Agent. Until SOS-P1-18 builds sales teams it holds no method and sees no lead. The web app maps them to areas in `frontend/src/personas.js`. Any change to roles or permissions needs Jayman's approval first.
 
 ## CRM data rules (decided by Jayman, P1.06)
 

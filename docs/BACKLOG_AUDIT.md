@@ -529,3 +529,35 @@ Dec 20 to Jan 1. SOS-P1-11 is owned by "AMP Labs, Claude Code" and is Waiting, s
 The days count from 14 November to the date, inclusive. For comparison, the loop finished 8 tasks (36
 points) on 10 November and 9 (48 points) on 11 November. Those were mostly rebuilds of code that
 already existed. It has finished none since SOS-N21A was Blocked on 13 November.
+
+## SOS-SETUP-35: the core CRM, the approved tasks and the build order (13 November 2026)
+
+Calling needs a CRM to call from, and no task built one, so 12 tasks were added: SOS-P1-15 to
+SOS-P1-26 (buyer requirements, duplicate check, user management, sales teams and the Sales Manager,
+assignment, lead sources, call outcomes, follow ups, notifications, the pipeline board, site visits,
+and the agent's Today screen). The calling, import, website and report tasks that use them now depend
+on them. Jayman then reviewed `SellOS_Tasks_Rewritten.xlsx` and approved its five decisions:
+
+1. The sixth role, Sales Manager. `sellos/access/roles.py`, `hooks.role_home_page`, the test user
+   `sales_manager`, the permission suite, `docs/permissions.md` and `CLAUDE.md` have it. It holds no
+   method and sees no lead until SOS-P1-18, which is now Not Started.
+2. The 14 tasks SOS-P7-01 to SOS-P7-14 (76 points, Jan 1, Claude Code). SOS-P5-06 depends on SOS-P7-01
+   to P7-04, and SOS-P5-05 on SOS-P7-09.
+3. A channel partner's lead is protected for 90 days by default, a company setting (SOS-P7-02).
+4. A unit hold lasts 48 hours by default, a company setting (SOS-P7-06).
+5. The sheet's Suggested order is the build order. `TASKS.md` lists the open tasks in that order,
+   then the finished ones, so the loop picks in that order within each tier.
+
+Two dependencies were added to the sheet's: SOS-P7-03 on SOS-P7-07 (it shares price lists) and
+SOS-P7-10 on SOS-P7-02 (a booking moves a partner's registration to Booked). Both come earlier in the
+order. Where the sheet's plain language descriptions and `TASKS.md` differ, `TASKS.md` stays the source:
+SOS-P1-14 and SOS-P4-04 are described there by work that moved to SOS-P1-14D and SOS-P4-05.
+
+Checks: no dangling dependency, no cycle, no Dec 20 task waiting on a Jan 1 task, and no task listed
+before a task it depends on. `scripts/lib/tasks.py order` gives the Suggested order for the 85 Claude
+Code tasks it can reach; SOS-P7-11, P7-12, P7-14 wait for SOS-P0-13 (AMP Labs) and SOS-P6-16, P6-17
+for SOS-N23 (Jayman).
+
+Remaining for Claude Code: 90 tasks, 493 points (Dec 20: 31 tasks, 151 points; Jan 1: 59, 342). By 12
+December (29 days) that is 3.1 tasks and 17.0 points a day, the Dec 20 tier alone 1.1 tasks and 5.2
+points; by 22 December (39 days) 2.3 tasks and 12.6 points a day, the Dec 20 tier alone 0.8 and 3.9.

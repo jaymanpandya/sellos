@@ -21,7 +21,7 @@ from sellos.access.registry import (
 	load_declared_modules,
 	undeclared_whitelisted_methods,
 )
-from sellos.access.roles import ensure_roles
+from sellos.access.roles import ROLES, ensure_roles
 from sellos.access.test_permission_matrix import import_all_sellos_modules, matrix_problems
 from sellos.testing.users import TEST_USERS, create_test_users
 from sellos.tests import phones
@@ -38,6 +38,7 @@ WHO = {
 	"agent": "agent",
 	"client": "client",
 	"channel_partner": "channel_partner",
+	"sales_manager": "sales_manager",
 	"outsider": "basic",
 	"guest": None,
 }
@@ -47,6 +48,7 @@ ROLE_KEYS = {
 	"SellOS Agent": "agent",
 	"SellOS Client": "client",
 	"SellOS Channel Partner": "channel_partner",
+	"SellOS Sales Manager": "sales_manager",
 }
 
 # Arguments for every method in the matrix. `{client}` and `{lead}` are filled in with the records the
@@ -147,8 +149,10 @@ class TestPermissionSuiteCoverage(IntegrationTestCase):
 		self.assertEqual(missing, [], f"Add SAMPLE_CALLS entries for: {missing}")
 		self.assertEqual(sorted(set(SAMPLE_CALLS) - set(MATRIX)), [], "SAMPLE_CALLS names a stale method")
 
-	def test_the_suite_covers_all_five_roles_an_outsider_and_a_guest(self):
+	def test_the_suite_covers_all_six_roles_an_outsider_and_a_guest(self):
 		self.assertEqual(set(ROLE_KEYS.values()) | {"outsider", "guest"}, set(WHO))
+		# SOS-SETUP-35: every SellOS role is in the suite, the Sales Manager included.
+		self.assertEqual(set(ROLE_KEYS), set(ROLES))
 		self.assertEqual({role for roles in MATRIX.values() for role in roles} - set(ROLE_KEYS), set())
 
 	def test_a_sellos_method_with_no_declaration_is_refused_before_it_runs(self):

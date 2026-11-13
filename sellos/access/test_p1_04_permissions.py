@@ -1,4 +1,4 @@
-# SOS-P1-04 five roles with a written table, and agents see only their own leads unless shared.
+# SOS-P1-04 six roles (the Sales Manager since SOS-SETUP-35) with a written table, and agents see only their own leads unless shared.
 from pathlib import Path
 
 import frappe
@@ -19,9 +19,9 @@ def _email(key):
 
 
 class TestWrittenPermissionTable(IntegrationTestCase):
-	def test_the_table_names_all_five_roles_and_their_code_names(self):
+	def test_the_table_names_all_six_roles_and_their_code_names(self):
 		text = DOC.read_text()
-		self.assertEqual(len(ROLES), 5)
+		self.assertEqual(len(ROLES), 6)
 		for role in ROLES:
 			self.assertIn(f"`{role}`", text, role)
 
