@@ -10,4 +10,4 @@ restart" is filled in when the loop starts again.
 
 | Time (UTC) | Task | Category | Cause | Attempt lost (min) | Idle until restart (h) |
 | --- | --- | --- | --- | --- | --- |
-| 2026-11-13 02:05 | SOS-N21A | blocked | the gate still failed after 3 gate runs: the phone number guard and the no-commands guard (docs/DEV_STRATEGY.md row 38); recorded by hand by SOS-SETUP-33 | 34 |  |
+| 2026-11-13 02:05 | SOS-N21A | blocked | the gate still failed after 3 gate runs: the phone number guard and the no-commands guard (docs/DEV_STRATEGY.md row 38); recorded by hand by SOS-SETUP-33 | 34 | 7.1 |
