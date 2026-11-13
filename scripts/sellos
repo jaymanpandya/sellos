@@ -1,0 +1,378 @@
+#!/usr/bin/env bash
+# sellos: start, watch and stop the SellOS build loop, from any directory (SOS-SETUP-33).
+#
+#   sellos up            check everything the loop needs, start what SellOS owns, refuse with the exact
+#                        fix for anything else, then start the loop (log: ~/iespl-baseline/sellos-loop.log)
+#   sellos up --check    the same checks, and start what SellOS owns, but never the loop
+#   sellos status        the loop process, the log tail, git, tasks in progress or blocked, CI, the locks
+#                        and the hours since the last stop
+#   sellos stop          pause: the running task finishes (gate, commit, push), then the loop stops
+#   sellos stop --now    stop the loop process now; the task stays In Progress and its work stays in the
+#                        working tree, and the next "sellos up" resumes it
+#   sellos server-check  used by the health LaunchAgent: restart the SellOS server if it does not answer
+#
+# Put it on your PATH once: ln -s ~/iespl-bench/apps/sellos/scripts/sellos /opt/homebrew/bin/sellos
+# It never starts, stops or touches the servers on 8000 (BuildOS) or 8002 (Pamaa), or Redis: those
+# belong to the shared bench, so when they are down it refuses and says how to start them.
+set -uo pipefail
+
+SELF="$0"
+while [ -L "$SELF" ]; do
+  target="$(readlink "$SELF")"
+  case "$target" in /*) SELF="$target" ;; *) SELF="$(dirname "$SELF")/$target" ;; esac
+done
+SCRIPT_DIR="$(cd "$(dirname "$SELF")" && pwd -P)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
+BENCH_DIR="${SELLOS_BENCH_DIR:-$HOME/iespl-bench}"
+BASELINE_DIR="${SELLOS_BASELINE_DIR:-$HOME/iespl-baseline}"
+SITE="${SELLOS_TEST_SITE:-sellos_test.localhost}"
+LOOP_LOG="${SELLOS_LOOP_LOG:-$BASELINE_DIR/sellos-loop.log}"
+LOCK_FILE="${SELLOS_LOOP_LOCK:-/tmp/sellos-build-loop.lock}"
+PAUSE_FILE="${SELLOS_PAUSE_FILE:-/tmp/sellos-loop.pause}"
+GATE_LOCK_DIR="/tmp/iespl-bench-heavy.lock.d"
+STOPS_FILE="$REPO_DIR/docs/STOPS.md"
+TASKS_FILE="${SELLOS_TASKS_FILE:-$REPO_DIR/TASKS.md}"
+BRANCH="${SELLOS_BRANCH:-1.0}"
+SERVER_LABEL="com.sellos.server"
+MIN_FREE_GB="${SELLOS_MIN_FREE_GB:-10}"
+
+# shellcheck source=lib/sellos_server.sh
+source "$SCRIPT_DIR/lib/sellos_server.sh"
+# shellcheck source=lib/db_secrets.sh
+source "$SCRIPT_DIR/lib/db_secrets.sh"
+
+FAILS=0
+ok() { printf '  ok    %s\n' "$1"; }
+warn() { printf '  WARN  %s\n' "$1"; [ -n "${2:-}" ] && printf '        fix: %s\n' "$2"; return 0; }
+fail() {
+  printf '  FAIL  %s\n' "$1"
+  printf '        fix: %s\n' "$2"
+  FAILS=$((FAILS + 1))
+}
+
+loop_pid() {
+  local pid
+  pid="$(cat "$LOCK_FILE" 2>/dev/null || true)"
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then echo "$pid"; fi
+}
+
+# Task IDs with a status, as "ID: title".
+tasks_with_status() {
+  awk -v want="$1" '
+    /^### / { id = $0; sub(/^### /, "", id) }
+    /\*\*Status:\*\*/ { s = $0; sub(/.*\*\*Status:\*\* */, "", s); if (s == want) print "    " id }
+  ' "$TASKS_FILE"
+}
+
+server_ok() {
+  (
+    SELLOS_ENV_EXIT_FILE=""
+    sellos_require_port "$BENCH_DIR" "$SITE" && sellos_preflight "$SITE" "$PORT"
+  ) >/dev/null 2>&1
+}
+
+agent_installed() { launchctl print "gui/$(id -u)/$SERVER_LABEL" >/dev/null 2>&1; }
+
+restart_server() { launchctl kickstart -k "gui/$(id -u)/$SERVER_LABEL" >/dev/null 2>&1; }
+
+wait_for_server() {
+  local i
+  for i in $(seq 1 45); do
+    server_ok && return 0
+    sleep 2
+  done
+  return 1
+}
+
+hours_since_last_stop() {
+  python3 "$SCRIPT_DIR/lib/stops.py" since "$STOPS_FILE" 2>/dev/null || echo "unknown"
+}
+
+cmd_up() {
+  local check_only=0
+  [ "${1:-}" = "--check" ] && check_only=1
+  echo "SellOS: checking what the loop needs"
+  local pid
+  pid="$(loop_pid)"
+  if [ -n "$pid" ]; then
+    echo "The loop is already running (pid $pid). See: $SCRIPT_DIR/sellos status"
+    return 0
+  fi
+
+  # Redis: both are started by the shared bench's Procfile, never by SellOS.
+  local port
+  for port in 11000 13000; do
+    if redis-cli -p "$port" ping 2>/dev/null | grep -q PONG; then
+      ok "Redis on $port answers"
+    else
+      fail "Redis on $port does not answer (the shared bench's redis_queue / redis_cache)" \
+        "start the shared bench in its own terminal: cd $BENCH_DIR && bench start   (SellOS never starts it)"
+    fi
+  done
+
+  # The shared bench's web server on 8000 (BuildOS). SellOS never starts or stops it.
+  if curl -sf -o /dev/null --max-time 10 "http://127.0.0.1:8000/api/method/ping"; then
+    ok "the bench on port 8000 answers"
+  else
+    fail "nothing answers on port 8000 (the shared bench)" \
+      "start the shared bench in its own terminal: cd $BENCH_DIR && bench start   (SellOS never starts it)"
+  fi
+
+  # The SellOS server on 8004: SellOS's own, so it is started here when it is down.
+  if server_ok; then
+    ok "the SellOS server on 8004 serves $SITE"
+  elif agent_installed; then
+    echo "        the SellOS server is not answering; restarting its LaunchAgent"
+    restart_server
+    if wait_for_server; then
+      ok "the SellOS server on 8004 serves $SITE (restarted)"
+    else
+      fail "the SellOS server on 8004 does not serve $SITE, even after a restart" \
+        "read $BASELINE_DIR/sellos-server.log; check the site with: cd $BENCH_DIR && bench --site $SITE doctor"
+    fi
+  else
+    fail "the SellOS server on 8004 is not serving $SITE, and its LaunchAgent is not installed" \
+      "$SCRIPT_DIR/install-launch-agent.sh   (it then starts after a reboot and is restarted after sleep)"
+  fi
+
+  # MariaDB as the provisioner. The password stays in this process's environment and goes to the
+  # client only through MYSQL_PWD, never on a command line or the screen.
+  if ! sellos_provisioner_available; then
+    fail "the provisioner password is not in the Keychain item sellos_provisioner" "$SELLOS_STORE_COMMAND"
+  elif ! sellos_load_provisioner_password; then
+    fail "the Keychain item sellos_provisioner exists but could not be read" \
+      "unlock the login Keychain (security unlock-keychain), then run this again"
+  elif MYSQL_PWD="$SELLOS_DB_PROVISIONER_PASSWORD" mariadb -h 127.0.0.1 -u "$SELLOS_DB_PROVISIONER_USER" \
+    --batch --skip-column-names -e "SELECT 1" >/dev/null 2>&1; then
+    ok "MariaDB accepts the provisioner ($SELLOS_DB_PROVISIONER_USER)"
+  else
+    fail "MariaDB refuses the provisioner login ($SELLOS_DB_PROVISIONER_USER)" \
+      "is MariaDB running? brew services start mariadb@11.8 ; if it is, the Keychain password and the account differ: reset one of them (docs/DEV_STRATEGY.md section 1)"
+  fi
+  unset SELLOS_DB_PROVISIONER_PASSWORD
+
+  # Claude's login.
+  local auth
+  auth="$(claude auth status 2>/dev/null || true)"
+  python3 - "$auth" <<'PY'
+import json, sys
+from datetime import datetime, UTC
+try:
+	status = json.loads(sys.argv[1])
+except ValueError:
+	print("  FAIL  claude auth status gave no answer\n        fix: claude auth login")
+	sys.exit(1)
+if not status.get("loggedIn"):
+	print("  FAIL  Claude is not logged in\n        fix: claude auth login")
+	sys.exit(1)
+expires = status.get("loginExpiresAt")
+if not expires:
+	print("  ok    Claude is logged in")
+	sys.exit(0)
+left = datetime.fromisoformat(expires.replace("Z", "+00:00")) - datetime.now(UTC)
+days = left.total_seconds() / 86400
+if days <= 0:
+	print("  FAIL  Claude's login has expired\n        fix: claude auth login")
+	sys.exit(1)
+if days < 7:
+	print(f"  WARN  Claude's login expires in {days:.1f} days ({expires})\n        fix: claude auth login, before it runs out mid-task")
+else:
+	print(f"  ok    Claude is logged in, {days:.0f} days left")
+PY
+  [ $? -ne 0 ] && FAILS=$((FAILS + 1))
+
+  # Telegram: the loop's variables, copied from BuildOS's when they are not set.
+  if [ -z "${SELLOS_TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${BUILDOS_TELEGRAM_BOT_TOKEN:-}" ]; then
+    export SELLOS_TELEGRAM_BOT_TOKEN="$BUILDOS_TELEGRAM_BOT_TOKEN"
+    echo "        SELLOS_TELEGRAM_BOT_TOKEN copied from BUILDOS_TELEGRAM_BOT_TOKEN"
+  fi
+  if [ -z "${SELLOS_TELEGRAM_CHAT_ID:-}" ] && [ -n "${BUILDOS_TELEGRAM_CHAT_ID:-}" ]; then
+    export SELLOS_TELEGRAM_CHAT_ID="$BUILDOS_TELEGRAM_CHAT_ID"
+    echo "        SELLOS_TELEGRAM_CHAT_ID copied from BUILDOS_TELEGRAM_CHAT_ID"
+  fi
+  if [ -n "${SELLOS_TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${SELLOS_TELEGRAM_CHAT_ID:-}" ]; then
+    ok "Telegram is set (SELLOS_TELEGRAM_BOT_TOKEN and SELLOS_TELEGRAM_CHAT_ID)"
+  else
+    fail "Telegram is not set, so nobody would hear that the loop stopped" \
+      "export BUILDOS_TELEGRAM_BOT_TOKEN and BUILDOS_TELEGRAM_CHAT_ID (or the SELLOS_ ones) in ~/.zshrc, open a new shell, and run this again"
+  fi
+
+  # GitHub and Actions minutes.
+  if ! gh auth status >/dev/null 2>&1; then
+    fail "gh is not signed in, so the loop cannot push or watch CI" "gh auth login"
+  else
+    local visibility unstarted last
+    visibility="$(cd "$REPO_DIR" && gh repo view --json visibility --jq .visibility 2>/dev/null || true)"
+    if [ "$visibility" = "PUBLIC" ]; then
+      ok "Actions minutes: the repository is public, so standard runners cost no minutes"
+    else
+      warn "Actions minutes: the repository is ${visibility:-of unknown visibility}; the budget cannot be read without the user scope" \
+        "gh auth refresh -h github.com -s user, then check github.com/settings/billing"
+    fi
+    last="$(cd "$REPO_DIR" && gh run list --branch "$BRANCH" -L 1 --json databaseId,conclusion --jq '.[0] | "\(.databaseId) \(.conclusion)"' 2>/dev/null || true)"
+    if [ "${last#* }" = "failure" ]; then
+      unstarted="$(python3 "$SCRIPT_DIR/lib/ci_minutes.py" never-started "${last%% *}" 2>/dev/null || true)"
+      if [ -n "$unstarted" ]; then
+        fail "the last CI run's jobs never started ($unstarted): the Actions budget may be spent" \
+          "check github.com/settings/billing, then rerun: gh run rerun ${last%% *}"
+      else
+        warn "the last CI run on $BRANCH (${last%% *}) is red; the loop stops at its first push if it still is" \
+          "gh run view ${last%% *} --log-failed"
+      fi
+    fi
+  fi
+
+  # Disk space on the volume that holds the bench.
+  local free_gb
+  free_gb="$(df -Pk "$BENCH_DIR" | awk 'NR==2 {printf "%d", $4 / 1048576}')"
+  if [ "${free_gb:-0}" -ge "$MIN_FREE_GB" ]; then
+    ok "disk: ${free_gb} GB free"
+  else
+    fail "disk: only ${free_gb} GB free (the gate needs at least $MIN_FREE_GB GB for dumps, logs and Cypress)" \
+      "free space: rm -rf $BENCH_DIR/sites/*/private/backups/* /tmp/sellos-test-logs/* and empty the Trash"
+  fi
+
+  # The repository and the backlog.
+  local branch blocked in_progress dirty
+  branch="$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD)"
+  if [ "$branch" = "$BRANCH" ]; then ok "git is on $BRANCH"; else fail "git is on $branch, not $BRANCH" "git -C $REPO_DIR checkout $BRANCH"; fi
+  blocked="$(tasks_with_status Blocked)"
+  in_progress="$(tasks_with_status "In Progress")"
+  dirty="$(git -C "$REPO_DIR" status --porcelain)"
+  if [ -n "$blocked" ]; then
+    fail "a task is Blocked, and the loop starts nothing while one is:
+$blocked" \
+      "find the cause, then: $SCRIPT_DIR/set-task-status.sh <ID> \"Not Started\" $TASKS_FILE && git -C $REPO_DIR commit -am \"<ID>: reset to Not Started\" && git -C $REPO_DIR push"
+  else
+    ok "no task is Blocked"
+  fi
+  if [ -n "$dirty" ] && [ -z "$in_progress" ]; then
+    fail "the working tree has changes and no task is In Progress, so they would land in the next task's commit" \
+      "commit them with an SOS- message, or keep them on a branch: git -C $REPO_DIR stash -u"
+  elif [ -n "$in_progress" ]; then
+    ok "the loop will resume:
+$in_progress"
+  else
+    ok "the working tree is clean"
+  fi
+  if [ -e "$PAUSE_FILE" ]; then
+    fail "the loop is paused for regression ($PAUSE_FILE)" "$SCRIPT_DIR/resume-loop.sh"
+  fi
+
+  echo "Last stop: $(hours_since_last_stop) hours ago (docs/STOPS.md)"
+  if [ "$FAILS" -gt 0 ]; then
+    echo "Not starting the loop: $FAILS check(s) failed. Apply each fix above and run: $SCRIPT_DIR/sellos up"
+    return 1
+  fi
+  if [ "$check_only" -eq 1 ]; then
+    echo "Every check passed. Not starting the loop (--check). Start it with: $SCRIPT_DIR/sellos up"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$LOOP_LOG")"
+  {
+    echo
+    echo "=== loop started by sellos up: $(date) ==="
+  } >>"$LOOP_LOG"
+  (cd "$REPO_DIR" && nohup "$SCRIPT_DIR/build-loop.sh" >>"$LOOP_LOG" 2>&1 </dev/null &)
+  sleep 3
+  pid="$(loop_pid)"
+  if [ -n "$pid" ]; then
+    echo "The loop is running (pid $pid). Log: $LOOP_LOG"
+    echo "Watch it with: $SCRIPT_DIR/sellos status"
+  else
+    echo "The loop exited at once. The end of its log:"
+    tail -n 20 "$LOOP_LOG"
+    return 1
+  fi
+}
+
+cmd_status() {
+  local pid
+  echo "== Loop"
+  pid="$(loop_pid)"
+  if [ -n "$pid" ]; then
+    echo "  running, pid $pid, since $(ps -o lstart= -p "$pid" 2>/dev/null)"
+  else
+    echo "  not running"
+  fi
+  [ -e "$PAUSE_FILE" ] && echo "  paused for regression: $PAUSE_FILE (scripts/resume-loop.sh lifts it)"
+  echo "  hours since the last stop: $(hours_since_last_stop) (docs/STOPS.md)"
+  echo
+  echo "== Log ($LOOP_LOG)"
+  tail -n 15 "$LOOP_LOG" 2>/dev/null | cut -c1-200 | sed 's/^/  /'
+  echo
+  echo "== Git"
+  git -C "$REPO_DIR" fetch -q origin "$BRANCH" 2>/dev/null || true
+  echo "  $(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD) at $(git -C "$REPO_DIR" log -1 --format='%h %s' | cut -c1-120)"
+  echo "  ahead $(git -C "$REPO_DIR" rev-list --count "origin/$BRANCH..HEAD" 2>/dev/null || echo ?), behind $(git -C "$REPO_DIR" rev-list --count "HEAD..origin/$BRANCH" 2>/dev/null || echo ?) of origin/$BRANCH"
+  local changes
+  changes="$(git -C "$REPO_DIR" status --porcelain | wc -l | tr -d ' ')"
+  echo "  $changes changed file(s) in the working tree"
+  echo
+  echo "== Tasks"
+  echo "  In Progress:"
+  tasks_with_status "In Progress" | sed 's/^/  /'
+  echo "  Blocked:"
+  tasks_with_status Blocked | sed 's/^/  /'
+  echo "  next pick: $("$SCRIPT_DIR/select-next-task.sh" "$TASKS_FILE" 2>/dev/null)"
+  echo
+  echo "== CI on $BRANCH"
+  (cd "$REPO_DIR" && gh run list --branch "$BRANCH" -L 4 \
+    --json workflowName,status,conclusion,headSha,createdAt \
+    --jq '.[] | "  \(.headSha[0:7])  \(.workflowName)  \(.status) \(.conclusion // "")  \(.createdAt)"' 2>/dev/null) ||
+    echo "  gh could not list the runs (gh auth status)"
+  echo
+  echo "== Locks"
+  if [ -f "$LOCK_FILE" ]; then
+    echo "  loop lock $LOCK_FILE: pid $(cat "$LOCK_FILE")$([ -n "$pid" ] || echo ' (stale: no such process)')"
+  else
+    echo "  loop lock: none"
+  fi
+  if [ -d "$GATE_LOCK_DIR" ]; then
+    echo "  bench gate lock: held by $(cat "$GATE_LOCK_DIR/owner" 2>/dev/null) (pid $(cat "$GATE_LOCK_DIR/pid" 2>/dev/null)) since $(cat "$GATE_LOCK_DIR/start" 2>/dev/null)"
+  else
+    echo "  bench gate lock: free"
+  fi
+  echo
+  echo "== SellOS server (8004)"
+  if server_ok; then echo "  serving $SITE"; else echo "  NOT serving $SITE (sellos up restarts it)"; fi
+}
+
+cmd_stop() {
+  local pid
+  pid="$(loop_pid)"
+  if [ "${1:-}" = "--now" ]; then
+    if [ -z "$pid" ]; then
+      echo "The loop is not running."
+      return 0
+    fi
+    pkill -TERM -P "$pid" 2>/dev/null || true
+    kill -TERM "$pid" 2>/dev/null || true
+    echo "Stopped the loop (pid $pid). The task stays In Progress, its work stays in the working tree, and sellos up resumes it."
+    echo "=== loop stopped by sellos stop --now: $(date) ===" >>"$LOOP_LOG"
+    return 0
+  fi
+  "$SCRIPT_DIR/pause-loop.sh" >/dev/null
+  if [ -n "$pid" ]; then
+    echo "Pausing: the running task finishes (gate, commit, push), then the loop stops. Use 'sellos stop --now' to stop it at once."
+  else
+    echo "The loop is not running. It is paused, so it will not pick a task until scripts/resume-loop.sh."
+  fi
+}
+
+cmd_server_check() {
+  server_ok && return 0
+  agent_installed || return 0
+  echo "$(date): the SellOS server did not answer; restarting $SERVER_LABEL"
+  restart_server
+}
+
+case "${1:-}" in
+  up) shift; cmd_up "$@" ;;
+  status) cmd_status ;;
+  stop) shift; cmd_stop "$@" ;;
+  server-check) cmd_server_check ;;
+  -h | --help | help | "") sed -n 2,18p "$SELF" | sed 's/^# \{0,1\}//' ;;
+  *) echo "Unknown command: $1 (up, status, stop, stop --now)" >&2; exit 2 ;;
+esac

@@ -57,6 +57,9 @@ PROTECTED = [
 	"scripts/build-web-app.sh",
 	"scripts/ci-rehearsal.sh",
 	"docs/CI_DIFFERENCES.md",
+	# Starting and watching the loop, and the server's LaunchAgent (SOS-SETUP-33).
+	"scripts/sellos",
+	"scripts/install-launch-agent.sh",
 ]
 
 # A task adds its flows here, so the file is not protected from a change. A flow already in it may
