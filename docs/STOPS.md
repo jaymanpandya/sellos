@@ -13,3 +13,4 @@ restart" is filled in when the loop starts again.
 | --- | --- | --- | --- | --- | --- |
 | 2026-11-13 02:05 | SOS-N21A | blocked | the gate still failed after 3 gate runs: the phone number guard and the no-commands guard (docs/DEV_STRATEGY.md row 38); recorded by hand by SOS-SETUP-33 | 34 | 7.1 |
 | 2026-11-13 22:05 | SOS-P1-15 | gate hole | stopped by hand (exit 143, SOS-SETUP-36): the baseline restore reset only the tables in the 4 November dump, so a Support Grant and Consent Records the agent seeded by hand, and older Provisioning Job and Tenant rows, survived into the backend suite (13 failures); nothing reset the site between the changed specs and the backend suite. Work saved on wip/SOS-P1-15-20261113 | 774 | 6.3 |
+| 2026-11-14 04:52 | SOS-P1-15 | stopped | stopped by a signal (sellos stop --now, Ctrl-C or a shutdown) | 29 | 0.0 |
