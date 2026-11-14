@@ -75,6 +75,61 @@
 			class="field mt-4"
 			@input="load"
 		/>
+		<form
+			class="mt-4 flex flex-wrap gap-2 rounded-input border border-line bg-surface p-3"
+			data-testid="sellos-leads-filters"
+			@submit.prevent="load"
+		>
+			<input
+				v-model.number="filters.budget_min"
+				data-testid="sellos-leads-filter-budget-min"
+				type="number"
+				min="0"
+				placeholder="Budget from (rupees)"
+				class="field w-auto"
+			/>
+			<input
+				v-model.number="filters.budget_max"
+				data-testid="sellos-leads-filter-budget-max"
+				type="number"
+				min="0"
+				placeholder="Budget to (rupees)"
+				class="field w-auto"
+			/>
+			<select
+				v-model="filters.configuration"
+				data-testid="sellos-leads-filter-configuration"
+				class="field w-auto"
+			>
+				<option value="">Any configuration</option>
+				<option v-for="c in CONFIGURATIONS" :key="c">{{ c }}</option>
+			</select>
+			<input
+				v-model="filters.locality"
+				data-testid="sellos-leads-filter-locality"
+				placeholder="Locality"
+				class="field w-auto"
+			/>
+			<select
+				v-model="filters.timeline"
+				data-testid="sellos-leads-filter-timeline"
+				class="field w-auto"
+			>
+				<option value="">Any timeline</option>
+				<option v-for="t in TIMELINES" :key="t">{{ t }}</option>
+			</select>
+			<button type="submit" class="btn" data-testid="sellos-leads-filter-apply">
+				Filter
+			</button>
+			<button
+				type="button"
+				class="btn"
+				data-testid="sellos-leads-filter-clear"
+				@click="clearFilters"
+			>
+				Clear filters
+			</button>
+		</form>
 		<p v-if="loadError" data-testid="sellos-leads-error" role="alert" class="mt-4 text-accent">
 			{{ loadError }}
 		</p>
@@ -114,7 +169,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { CLIENT_TYPES, crmApi, serverMessage } from "../crm/crmApi";
+import { CLIENT_TYPES, CONFIGURATIONS, TIMELINES, crmApi, serverMessage } from "../crm/crmApi";
 import { logRequestError } from "../api";
 
 const route = useRoute();
@@ -128,6 +183,14 @@ const creating = ref(false);
 const error = ref("");
 const loadError = ref("");
 const loading = ref(true);
+const emptyFilters = () => ({
+	budget_min: "",
+	budget_max: "",
+	configuration: "",
+	locality: "",
+	timeline: "",
+});
+const filters = reactive(emptyFilters());
 const form = reactive({
 	client_name: "",
 	client_type: "Buyer",
@@ -138,11 +201,20 @@ const form = reactive({
 	source: "",
 });
 
+function activeFilters() {
+	return Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== "" && v != null));
+}
+
+async function clearFilters() {
+	Object.assign(filters, emptyFilters());
+	await load();
+}
+
 async function load() {
 	loading.value = true;
 	loadError.value = "";
 	try {
-		leads.value = (await crmApi.listLeads(search.value)) || [];
+		leads.value = (await crmApi.listLeads(search.value, 0, activeFilters())) || [];
 	} catch (e) {
 		leads.value = [];
 		loadError.value = serverMessage(e, "The leads could not be loaded.");

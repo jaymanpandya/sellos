@@ -14,6 +14,7 @@ from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
 from sellos.crm import consent
 from sellos.crm.base import is_overdue
+from sellos.crm.requirements import REQUIREMENT_FIELDS, has_filters, join_values, matches, requirements_view
 
 READERS = (AGENT, CHANNEL_PARTNER, COMPANY_ADMIN)
 LOGGERS = (AGENT, COMPANY_ADMIN)  # may log activities, tasks and visits. A partner only reads them.
@@ -27,10 +28,11 @@ CLIENT_FIELDS = (
 	"phone",
 	"overseas_phone",
 )
-LEAD_FIELDS = ("client", "source", "assigned_to", "notes")
+LEAD_FIELDS = ("client", "source", "assigned_to", "notes", *REQUIREMENT_FIELDS)
 ACTIVITY_FIELDS = ("lead", "activity_type", "activity_date", "notes")
 TASK_FIELDS = ("lead", "title", "due_date", "status", "assigned_to", "notes")
 VISIT_FIELDS = ("lead", "project_name", "visit_datetime", "status", "notes")
+MULTI_VALUE_FIELDS = ("configuration", "preferred_localities")
 ARCHIVABLE = ("Client", "Lead", "Lead Activity", "Lead Task", "Site Visit")
 
 
@@ -46,6 +48,9 @@ def _sees_phone() -> bool:
 def _save(doctype, name, values, allowed):
 	"""Create or update with the user's own permission checked, then write the allowed fields."""
 	values = _values(values, allowed)
+	for field in MULTI_VALUE_FIELDS:
+		if field in values:
+			values[field] = join_values(values[field])
 	if name:
 		doc = frappe.get_doc(doctype, name)
 		doc.check_permission("write")
@@ -132,16 +137,47 @@ def save_client(name=None, values=None):
 
 
 @sellos_api(*READERS)
-def list_leads(search=None, include_archived=0):
+def list_leads(
+	search=None,
+	include_archived=0,
+	budget_min=None,
+	budget_max=None,
+	configuration=None,
+	locality=None,
+	timeline=None,
+):
+	"""The leads the user may see. The requirement filters (SOS-P1-15) are budget range, configuration
+	(one or several), locality and timeline; see sellos.crm.requirements.matches."""
 	filters = {} if cint(include_archived) else {"archived": 0}
+	if isinstance(configuration, str) and configuration.startswith("["):
+		configuration = frappe.parse_json(configuration)
+	requirement_filters = {
+		"budget_min": budget_min,
+		"budget_max": budget_max,
+		"configuration": configuration,
+		"locality": locality,
+		"timeline": timeline,
+	}
+	narrowed = has_filters(**requirement_filters)
 	leads = frappe.get_list(
 		"Lead",
 		filters=filters,
 		or_filters=_search(search, ("lead_title", "source")),
-		fields=["name", "lead_title", "client", "source", "assigned_to", "archived", "modified"],
+		fields=[
+			"name",
+			"lead_title",
+			"client",
+			"source",
+			"assigned_to",
+			"archived",
+			"modified",
+			*REQUIREMENT_FIELDS,
+		],
 		order_by="modified desc",
-		limit_page_length=100,
+		limit_page_length=0 if narrowed else 100,
 	)
+	if narrowed:
+		leads = [lead for lead in leads if matches(lead, **requirement_filters)][:100]
 	for lead in leads:
 		lead["client_name"] = frappe.db.get_value("Client", lead.client, "client_name")
 		tasks = frappe.get_all(
@@ -149,6 +185,7 @@ def list_leads(search=None, include_archived=0):
 		)
 		lead["consent_status"] = consent.compute_status(lead.name)
 		lead["consent_warning"] = consent.WARNINGS[lead["consent_status"]][0]
+		lead["requirements"] = requirements_view(lead)
 		lead["open_tasks"] = len(tasks)
 		lead["overdue_tasks"] = sum(is_overdue(t.due_date, "Open") for t in tasks)
 	return leads
@@ -167,6 +204,7 @@ def get_lead(name):
 	lead.check_permission("read")
 	return {
 		"lead": lead.as_dict(no_nulls=True),
+		"requirements": requirements_view(lead),
 		"client": client_view(frappe.get_doc("Client", lead.client)),
 		"timeline": _timeline(name),
 		"consent": consent.consent_view(name),

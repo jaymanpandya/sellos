@@ -88,7 +88,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-06A
 - **Browser spec:** required
-- **Status:** In Progress
+- **Status:** Complete
 
 ### SOS-P1-16: Find duplicates when a lead or client is entered
 - **Epic:** Core CRM and consent

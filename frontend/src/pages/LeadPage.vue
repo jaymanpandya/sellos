@@ -148,6 +148,99 @@
 		</section>
 
 		<section
+			data-testid="sellos-lead-requirements"
+			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
+		>
+			<h2 class="font-medium text-ink">Requirements</h2>
+			<form v-if="canLog" class="space-y-3" @submit.prevent="saveRequirements">
+				<div class="flex flex-wrap gap-2">
+					<input
+						v-model.number="req.budget_from"
+						data-testid="sellos-lead-req-budget-from"
+						type="number"
+						min="0"
+						placeholder="Budget from (rupees)"
+						class="field flex-1"
+					/>
+					<input
+						v-model.number="req.budget_to"
+						data-testid="sellos-lead-req-budget-to"
+						type="number"
+						min="0"
+						placeholder="Budget to (rupees)"
+						class="field flex-1"
+					/>
+				</div>
+				<fieldset class="flex flex-wrap gap-3 text-sm text-ink">
+					<legend class="text-ink-muted">Configuration</legend>
+					<label v-for="c in CONFIGURATIONS" :key="c" class="flex items-center gap-1">
+						<input
+							v-model="req.configuration"
+							type="checkbox"
+							:value="c"
+							data-testid="sellos-lead-req-configuration"
+						/>
+						{{ c }}
+					</label>
+				</fieldset>
+				<div class="flex flex-wrap gap-2">
+					<select
+						v-model="req.property_type"
+						data-testid="sellos-lead-req-property-type"
+						class="field w-auto"
+					>
+						<option value="">Property type</option>
+						<option v-for="o in PROPERTY_TYPES" :key="o">{{ o }}</option>
+					</select>
+					<select
+						v-model="req.purpose"
+						data-testid="sellos-lead-req-purpose"
+						class="field w-auto"
+					>
+						<option value="">Purpose</option>
+						<option v-for="o in PURPOSES" :key="o">{{ o }}</option>
+					</select>
+					<select
+						v-model="req.timeline"
+						data-testid="sellos-lead-req-timeline"
+						class="field w-auto"
+					>
+						<option value="">Timeline</option>
+						<option v-for="o in TIMELINES" :key="o">{{ o }}</option>
+					</select>
+					<select
+						v-model="req.possession"
+						data-testid="sellos-lead-req-possession"
+						class="field w-auto"
+					>
+						<option value="">Possession</option>
+						<option v-for="o in POSSESSIONS" :key="o">{{ o }}</option>
+					</select>
+				</div>
+				<input
+					v-model="req.localities"
+					data-testid="sellos-lead-req-localities"
+					placeholder="Preferred localities, separated by commas"
+					class="field"
+				/>
+				<p
+					v-if="requirementsError"
+					role="alert"
+					data-testid="sellos-lead-req-error"
+					class="text-sm text-accent"
+				>
+					{{ requirementsError }}
+				</p>
+				<button type="submit" class="btn" data-testid="sellos-lead-req-save">
+					Save requirements
+				</button>
+			</form>
+			<p data-testid="sellos-lead-req-summary" class="text-sm text-ink-muted">
+				{{ summary }}
+			</p>
+		</section>
+
+		<section
 			v-if="canLog"
 			data-testid="sellos-lead-log"
 			class="mt-6 space-y-3 rounded-input border border-line bg-surface p-4"
@@ -273,7 +366,18 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { ACTIVITY_TYPES, CONSENT_BASES, STOP_SOURCES, crmApi, serverMessage } from "../crm/crmApi";
+import {
+	ACTIVITY_TYPES,
+	CONFIGURATIONS,
+	CONSENT_BASES,
+	POSSESSIONS,
+	PROPERTY_TYPES,
+	PURPOSES,
+	STOP_SOURCES,
+	TIMELINES,
+	crmApi,
+	serverMessage,
+} from "../crm/crmApi";
 
 const route = useRoute();
 const router = useRouter();
@@ -286,9 +390,76 @@ const activity = reactive({ type: "Call", notes: "" });
 const task = reactive({ title: "", due_date: "" });
 const visit = reactive({ project_name: "", visit_datetime: "" });
 
+const req = reactive({
+	budget_from: "",
+	budget_to: "",
+	configuration: [],
+	property_type: "",
+	localities: "",
+	purpose: "",
+	timeline: "",
+	possession: "",
+});
+const requirementsError = ref("");
+const rupees = (n) => (n ? "₹" + Number(n).toLocaleString("en-IN") : "");
+const requirementRows = computed(() => {
+	const r = detail.value?.requirements || {};
+	return [
+		[
+			"Budget",
+			[rupees(r.budget_from), rupees(r.budget_to)].filter(Boolean).join(" to ") || "Not set",
+		],
+		["Configuration", (r.configuration || []).join(", ") || "Not set"],
+		["Property type", r.property_type || "Not set"],
+		["Preferred localities", (r.preferred_localities || []).join(", ") || "Not set"],
+		["Purpose", r.purpose || "Not set"],
+		["Timeline", r.timeline || "Not set"],
+		["Possession", r.possession || "Not set"],
+	];
+});
+const summary = computed(() => requirementRows.value.map((r) => `${r[0]} ${r[1]}`).join(". "));
+
+function fillRequirements() {
+	const r = detail.value.requirements || {};
+	Object.assign(req, {
+		budget_from: r.budget_from ?? "",
+		budget_to: r.budget_to ?? "",
+		configuration: [...(r.configuration || [])],
+		property_type: r.property_type || "",
+		localities: (r.preferred_localities || []).join(", "),
+		purpose: r.purpose || "",
+		timeline: r.timeline || "",
+		possession: r.possession || "",
+	});
+}
+
+async function saveRequirements() {
+	requirementsError.value = "";
+	try {
+		const { localities, ...rest } = req;
+		const saved = await crmApi.saveLead(
+			{
+				...rest,
+				budget_from: req.budget_from || 0,
+				budget_to: req.budget_to || 0,
+				preferred_localities: localities
+					.split(",")
+					.map((l) => l.trim())
+					.filter(Boolean),
+			},
+			route.params.name
+		);
+		detail.value = { ...detail.value, ...saved };
+		fillRequirements();
+	} catch (e) {
+		requirementsError.value = serverMessage(e, "The requirements could not be saved.");
+	}
+}
+
 async function load() {
 	try {
 		detail.value = await crmApi.getLead(route.params.name);
+		fillRequirements();
 	} catch (e) {
 		error.value = "This lead could not be opened.";
 	}

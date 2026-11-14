@@ -10,6 +10,15 @@
   "source",
   "assigned_to",
   "notes",
+  "section_requirements",
+  "budget_from",
+  "budget_to",
+  "configuration",
+  "property_type",
+  "preferred_localities",
+  "purpose",
+  "timeline",
+  "possession",
   "section_consent",
   "consent_status",
   "opted_out_on",
@@ -55,6 +64,59 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "section_requirements",
+   "fieldtype": "Section Break",
+   "label": "Requirements"
+  },
+  {
+   "fieldname": "budget_from",
+   "fieldtype": "Currency",
+   "label": "Budget from (rupees)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "budget_to",
+   "fieldtype": "Currency",
+   "label": "Budget to (rupees)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "configuration",
+   "fieldtype": "Small Text",
+   "label": "Configuration",
+   "description": "One or more of: 1 RK, 1 BHK, 2 BHK, 3 BHK, 4 BHK and above. One per line."
+  },
+  {
+   "fieldname": "property_type",
+   "fieldtype": "Select",
+   "label": "Property type",
+   "options": "\nApartment\nVilla\nPlot\nOffice\nShop"
+  },
+  {
+   "fieldname": "preferred_localities",
+   "fieldtype": "Small Text",
+   "label": "Preferred localities",
+   "description": "One per line."
+  },
+  {
+   "fieldname": "purpose",
+   "fieldtype": "Select",
+   "label": "Purpose",
+   "options": "\nEnd use\nInvestment"
+  },
+  {
+   "fieldname": "timeline",
+   "fieldtype": "Select",
+   "label": "Timeline",
+   "options": "\nImmediate\nWithin 3 months\n3 to 6 months\nOver 6 months"
+  },
+  {
+   "fieldname": "possession",
+   "fieldtype": "Select",
+   "label": "Possession",
+   "options": "\nReady\nUnder construction\nAny"
   },
   {
    "fieldname": "section_consent",

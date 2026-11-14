@@ -6,8 +6,8 @@ const call = (method, params = {}) =>
 	apiRequest({ url: `/api/method/sellos.crm.api.${method}`, method: "POST", params });
 
 export const crmApi = {
-	listLeads: (search = "", includeArchived = 0) =>
-		call("list_leads", { search, include_archived: includeArchived }),
+	listLeads: (search = "", includeArchived = 0, filters = {}) =>
+		call("list_leads", { search, include_archived: includeArchived, ...filters }),
 	getLead: (name) => call("get_lead", { name }),
 	saveClient: (values, name = null) => call("save_client", { name, values }),
 	saveLead: (values, name = null) => call("save_lead", { name, values }),
@@ -34,6 +34,12 @@ export const STOP_SOURCES = [
 	"Website",
 	"Other",
 ];
+// What a buyer wants (SOS-P1-15). The server checks every choice against the same lists.
+export const CONFIGURATIONS = ["1 RK", "1 BHK", "2 BHK", "3 BHK", "4 BHK and above"];
+export const PROPERTY_TYPES = ["Apartment", "Villa", "Plot", "Office", "Shop"];
+export const PURPOSES = ["End use", "Investment"];
+export const TIMELINES = ["Immediate", "Within 3 months", "3 to 6 months", "Over 6 months"];
+export const POSSESSIONS = ["Ready", "Under construction", "Any"];
 export const ACTIVITY_TYPES = ["Call", "WhatsApp", "Email", "Meeting", "Note"];
 
 // The message the server sent for a failed call, or the fallback. The request helper puts the

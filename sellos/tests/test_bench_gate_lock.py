@@ -88,13 +88,23 @@ class Helper(unittest.TestCase):
 		self.addCleanup(proc.kill)
 		return proc
 
+	def frozen_clock(self):
+		"""A PATH whose date always answers one second, so a loaded machine cannot make a free lock wait."""
+		stub = self.root / "frozen-clock"
+		stub.mkdir()
+		script = stub / "date"
+		script.write_text("#!/bin/sh\necho 1800000000\n", encoding="utf-8")
+		script.chmod(0o755)
+		return {"PATH": f"{stub}{os.pathsep}{os.environ.get('PATH', '')}"}
+
 	def test_a_free_lock_is_taken_and_released(self):
 		result = self.bash(
 			'bench_gate_acquire "SellOS gate" 10\n'
 			'cat "$BENCH_GATE_LOCK_DIR/owner"; cat "$BENCH_GATE_LOCK_DIR/pid"\n'
 			'echo "waited=$BENCH_GATE_WAITED"\n'
 			"bench_gate_release\n"
-			'[ -d "$BENCH_GATE_LOCK_DIR" ] && echo still-held || echo gone\n'
+			'[ -d "$BENCH_GATE_LOCK_DIR" ] && echo still-held || echo gone\n',
+			extra_env=self.frozen_clock(),
 		)
 		self.assertEqual(result.returncode, 0, result.stderr)
 		self.assertIn("SellOS gate\n", result.stdout)

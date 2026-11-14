@@ -358,6 +358,10 @@ def seed_regression_data():
 	* Two support grants (SOS-P1-13) for the gate platform admin: one the Company Admin ended early
 	  and one still active for 2 hours, each with its Granted (and Revoked) line in the access log.
 
+	* Requirements (SOS-P1-15): Buyer One wants a 2 or 3 BHK apartment under construction in Andheri
+	  West or Powai for 80 lakh to 1.2 crore, within 3 months. Investor Four wants a ready villa in
+	  Alibaug as an investment. The other leads have none.
+
 	* Consent (SOS-P1-08): Buyer One has a Consent record, Buyer Two a live Inquiry, NRI Five a live
 	  Application, Buyer Three is Opted out (phone call), Investor Four is Registered DND, and the
 	  other leads are Unknown.
@@ -380,6 +384,7 @@ def seed_regression_data():
 	agent_two, agent_three = _ensure_regression_agents()
 	existing = frappe.db.get_value("Client", {"client_name": f"{REGRESSION_PREFIX}Buyer One"}, "name")
 	if existing:
+		_seed_requirements(agent_one, agent_two)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -491,6 +496,7 @@ def seed_regression_data():
 		# The phone number changes once, so the change history holds the old and the new number.
 		crm.save_client(name=client_one, values={"phone": phones.near_in_mobile(101)})
 
+	_seed_requirements(agent_one, agent_two)
 	_seed_support_grants(admin)
 	_seed_control_site()
 	_seed_setup_wizard(admin)
@@ -498,6 +504,52 @@ def seed_regression_data():
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
 	return _regression_summary()
+
+
+def _seed_requirements(agent_one, agent_two):
+	"""What two buyers want (SOS-P1-15), saved through the lead API by the agent who owns each lead.
+
+	Buyer One wants a 2 or 3 BHK apartment under construction; Investor Four wants a ready plot or
+	villa as an investment. Safe to run again: a lead that already has a budget is left alone.
+	"""
+	from sellos.crm import api as crm
+
+	wants = (
+		(
+			agent_one,
+			"Buyer One",
+			{
+				"budget_from": 8000000,
+				"budget_to": 12000000,
+				"configuration": ["2 BHK", "3 BHK"],
+				"property_type": "Apartment",
+				"preferred_localities": ["Andheri West", "Powai"],
+				"purpose": "End use",
+				"timeline": "Within 3 months",
+				"possession": "Under construction",
+			},
+		),
+		(
+			agent_two,
+			"Investor Four",
+			{
+				"budget_from": 20000000,
+				"budget_to": 30000000,
+				"configuration": ["4 BHK and above"],
+				"property_type": "Villa",
+				"preferred_localities": ["Alibaug"],
+				"purpose": "Investment",
+				"timeline": "3 to 6 months",
+				"possession": "Ready",
+			},
+		),
+	)
+	for user, title, values in wants:
+		client = frappe.db.get_value("Client", {"client_name": f"{REGRESSION_PREFIX}{title}"}, "name")
+		lead = frappe.db.get_value("Lead", {"client": client}, ["name", "budget_from"], as_dict=True)
+		if lead and not lead.budget_from:
+			with _as_user(user):
+				crm.save_lead(name=lead.name, values=values)
 
 
 def _seed_support_grants(admin):
