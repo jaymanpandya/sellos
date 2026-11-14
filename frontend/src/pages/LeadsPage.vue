@@ -17,7 +17,7 @@
 			v-if="creating"
 			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
 			data-testid="sellos-lead-form"
-			@submit.prevent="create"
+			@submit.prevent="create(false)"
 		>
 			<input
 				v-model="form.client_name"
@@ -60,6 +60,61 @@
 				placeholder="Source"
 				class="field"
 			/>
+			<section
+				v-if="duplicates.length"
+				role="alert"
+				data-testid="sellos-duplicate-warning"
+				class="space-y-3 rounded-input border border-[#e8954a] bg-[#fdf1e3] p-3 text-sm text-[#7a4a10]"
+			>
+				<p class="font-medium">
+					This person is already in SellOS. Add the enquiry to them instead of making a
+					second client.
+				</p>
+				<div
+					v-for="match in duplicates"
+					:key="match.name"
+					data-testid="sellos-duplicate-match"
+					:data-visible="match.visible ? 'yes' : 'no'"
+					class="rounded-input border border-line bg-surface p-3 text-ink"
+				>
+					<p data-testid="sellos-duplicate-name" class="font-medium">
+						{{ match.visible ? match.client_name : "A client of another agent" }}
+					</p>
+					<p class="text-ink-muted">
+						Same {{ match.matched_on.map(matchLabel).join(" and ") }}.
+						<span data-testid="sellos-duplicate-phone">{{ match.phone }}</span>
+					</p>
+					<ul v-if="match.leads.length" class="mt-1">
+						<li
+							v-for="lead in match.leads"
+							:key="lead.name"
+							data-testid="sellos-duplicate-lead"
+						>
+							{{ lead.lead_title }}
+						</li>
+					</ul>
+					<p v-if="!match.can_add" class="mt-1 text-ink-muted">
+						You cannot see this client. Ask a Company Admin to look at it.
+					</p>
+					<button
+						v-else
+						type="button"
+						class="btn mt-2"
+						data-testid="sellos-duplicate-add"
+						@click="addToExisting(match)"
+					>
+						Add this enquiry to {{ match.client_name }}
+					</button>
+				</div>
+				<button
+					type="button"
+					class="btn"
+					data-testid="sellos-duplicate-new"
+					@click="create(true)"
+				>
+					Save as a new client anyway
+				</button>
+			</section>
 			<p v-if="error" data-testid="sellos-lead-form-error" class="text-sm text-accent">
 				{{ error }}
 			</p>
@@ -224,16 +279,46 @@ async function load() {
 	}
 }
 
-async function create() {
+const duplicates = ref([]);
+const MATCH_LABELS = { phone: "phone number", overseas_phone: "overseas phone", email: "email" };
+const matchLabel = (reason) => MATCH_LABELS[reason] || reason;
+
+// Finish a lead on the client it was made for (SOS-P1-16), then show it.
+async function finish(clientName, source) {
+	const saved = await crmApi.saveLead({ client: clientName, source: source });
+	creating.value = false;
+	duplicates.value = [];
+	Object.assign(form, { client_name: "", phone: "", overseas_phone: "", email: "", source: "" });
+	await load();
+	router.push(`${basePath.value}/${saved.lead.name}`);
+}
+
+// The first save looks for a client with the same phone, overseas phone or email and shows it. The
+// agent then adds the enquiry to that client, or saves a new one anyway (SOS-P1-16).
+async function create(anyway = false) {
 	error.value = "";
 	try {
+		if (!anyway) {
+			duplicates.value =
+				(await crmApi.findDuplicates({
+					phone: form.phone,
+					overseas_phone: form.overseas_phone,
+					email: form.email,
+				})) || [];
+			if (duplicates.value.length) return;
+		}
 		const { source, ...clientValues } = form;
 		const client = await crmApi.saveClient(clientValues);
-		const saved = await crmApi.saveLead({ client: client.name, source });
-		creating.value = false;
-		Object.assign(form, { client_name: "", phone: "", email: "", source: "" });
-		await load();
-		router.push(`${basePath.value}/${saved.lead.name}`);
+		await finish(client.name, source);
+	} catch (e) {
+		error.value = serverMessage(e, "The lead could not be saved.");
+	}
+}
+
+async function addToExisting(match) {
+	error.value = "";
+	try {
+		await finish(match.name, form.source);
 	} catch (e) {
 		error.value = serverMessage(e, "The lead could not be saved.");
 	}

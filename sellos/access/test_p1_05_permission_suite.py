@@ -55,6 +55,8 @@ ROLE_KEYS = {
 # test makes. Each one aims at the company's own record, which only the Company Admin may open.
 SAMPLE_CALLS = {
 	"sellos.crm.api.list_clients": {},
+	"sellos.crm.api.find_duplicates": {"phone": SECRET_PHONE},
+	"sellos.crm.api.merge_clients": {"keep": "{client}", "merge": "{client_other}"},
 	"sellos.crm.api.save_client": {"name": "{client}", "values": {"city": "Pune"}},
 	"sellos.crm.api.list_leads": {},
 	"sellos.crm.api.save_lead": {"name": "{lead}", "values": {"notes": "p105 edit"}},
@@ -179,6 +181,9 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"phone": SECRET_PHONE,
 			}
 		).insert()
+		other = frappe.get_doc(
+			{"doctype": "Client", "client_name": "P116 Other Buyer", "client_type": "Buyer"}
+		).insert()
 		lead = frappe.get_doc({"doctype": "Lead", "client": client.name, "source": "Website"}).insert()
 		frappe.get_doc(
 			{
@@ -195,6 +200,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		support.revoke_support_access(grant["name"])
 		self.names = {
 			"client": client.name,
+			"client_other": other.name,
 			"lead": lead.name,
 			"support_user": support_user,
 			"grant": grant["name"],

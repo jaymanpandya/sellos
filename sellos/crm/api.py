@@ -12,7 +12,7 @@ from frappe.utils import cint, now_datetime
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
-from sellos.crm import consent
+from sellos.crm import consent, duplicates
 from sellos.crm.base import is_overdue
 from sellos.crm.requirements import REQUIREMENT_FIELDS, has_filters, join_values, matches, requirements_view
 
@@ -131,6 +131,55 @@ def list_clients(search=None, include_archived=0):
 	return [client_view(doc, log=False) for doc in docs]
 
 
+def _match_view(match) -> dict:
+	"""One duplicate as the current user may see it (SOS-P1-16).
+
+	A client the user can read is shown with the leads they can read. One they cannot read is only
+	reported as existing, with the masked number: no name, no email, no leads, no full number. Only a
+	Company Admin gets full numbers, and that is logged like every other full number shown."""
+	name = match["name"]
+	readable = frappe.has_permission("Client", "read", doc=name)
+	view = {"name": name, "matched_on": match["matched_on"], "visible": bool(readable), "leads": []}
+	if not readable:
+		masked = frappe.db.get_value("Client", name, ["phone_masked", "overseas_phone_masked"], as_dict=True)
+		view.update(phone=masked.phone_masked, overseas_phone=masked.overseas_phone_masked, can_add=False)
+		return view
+	view.update(client_view(frappe.get_doc("Client", name), log=False), name=name, can_add=True)
+	view["leads"] = frappe.get_list(
+		"Lead",
+		filters={"client": name, "archived": 0},
+		fields=["name", "lead_title", "source", "assigned_to"],
+		order_by="modified desc",
+		limit_page_length=20,
+	)
+	return view
+
+
+@sellos_api(*LOGGERS)
+def find_duplicates(phone=None, overseas_phone=None, email=None, exclude=None):
+	"""The clients that already have this phone, overseas phone or email (SOS-P1-16).
+
+	Used by the screens while a lead or client is entered. It calls duplicates.find_matches, the
+	function the website endpoint and the import call too."""
+	matches = duplicates.find_matches(phone, overseas_phone, email, exclude=exclude)
+	views = [_match_view(match) for match in matches]
+	if _sees_phone():
+		log_full_number_shown(
+			[v["name"] for v in views if v["visible"] and (v["phone"] or v["overseas_phone"])]
+		)
+	return views
+
+
+@sellos_api(COMPANY_ADMIN)
+def merge_clients(keep, merge):
+	"""Merge the client `merge` into `keep` (SOS-P1-16). Leads, and with them their activities, tasks
+	and site visits, move to `keep`. `merge` is archived, never deleted, and the merge is logged."""
+	frappe.get_doc("Client", keep).check_permission("write")
+	frappe.get_doc("Client", merge).check_permission("write")
+	result = duplicates.merge_clients(keep, merge)
+	return {"kept": result["kept"], "merged": result["merged"], "leads_moved": len(result["leads_moved"])}
+
+
 @sellos_api(*READERS)
 def save_client(name=None, values=None):
 	return client_view(_save("Client", name, values, CLIENT_FIELDS))
@@ -206,6 +255,7 @@ def get_lead(name):
 		"lead": lead.as_dict(no_nulls=True),
 		"requirements": requirements_view(lead),
 		"client": client_view(frappe.get_doc("Client", lead.client)),
+		"can_merge": COMPANY_ADMIN in frappe.get_roles(),
 		"timeline": _timeline(name),
 		"consent": consent.consent_view(name),
 	}

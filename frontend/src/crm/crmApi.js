@@ -9,6 +9,9 @@ export const crmApi = {
 	listLeads: (search = "", includeArchived = 0, filters = {}) =>
 		call("list_leads", { search, include_archived: includeArchived, ...filters }),
 	getLead: (name) => call("get_lead", { name }),
+	findDuplicates: (values) => call("find_duplicates", values),
+	mergeClients: (keep, merge) => call("merge_clients", { keep, merge }),
+	listClients: (search = "") => call("list_clients", { search }),
 	saveClient: (values, name = null) => call("save_client", { name, values }),
 	saveLead: (values, name = null) => call("save_lead", { name, values }),
 	addActivity: (lead, activityType, notes = "") =>

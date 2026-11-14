@@ -54,6 +54,8 @@ on a company site, because the data scope above is "none".
 | Method | Roles |
 | --- | --- |
 | `sellos.crm.api.list_clients`, `save_client`, `list_leads`, `get_lead`, `save_lead`, `set_archived` | Company Admin, Agent, Channel Partner |
+| `sellos.crm.api.find_duplicates` (P1.16, the clients that already have a phone or email, masked as the viewer's role requires) | Company Admin, Agent |
+| `sellos.crm.api.merge_clients` (P1.16, moves a client's leads to the one kept, nothing deleted, logged) | Company Admin |
 | `sellos.crm.api.add_activity`, `save_task`, `save_site_visit` | Company Admin, Agent |
 | `sellos.crm.api.record_consent`, `record_opt_out`, `record_dnd_result` (P1.08, the Consent Record; consent never blocks) | Company Admin, Agent |
 | `sellos.access.support.list_support_users`, `grant_support_access`, `revoke_support_access`, `list_support_grants`, `support_access_log` (P1.13) | Company Admin |

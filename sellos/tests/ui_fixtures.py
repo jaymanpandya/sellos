@@ -182,6 +182,57 @@ def seed_consent_leads():
 	return made
 
 
+def seed_duplicate_clients():
+	"""Make what the duplicate spec needs (SOS-P1-16), through sellos.crm.api as the company admin.
+
+	* own: a client with an email whose lead is the test agent's.
+	* hidden: a client with an email and a phone whose only lead is the company admin's, so the test
+	  agent cannot see it.
+	* twin A and B: two clients with a lead each, for the company admin to merge.
+	Returns the names, emails, masked numbers and every spelling of the full numbers (which the
+	spec checks are never shown to the agent). Each run makes new ones, named so that
+	remove_seeded_leads removes them.
+	"""
+	from sellos.crm import api as crm
+	from sellos.crm.base import mask_phone
+
+	_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	tag = frappe.generate_hash(length=6).lower()
+	made = {}
+	with _as_user(admin):
+		for key, assignee, seed in (("own", agent, 71), ("hidden", admin, 72)):
+			name = f"Gate {'Own' if key == 'own' else 'Other'} Dup {tag}"
+			number = phones.in_mobile(seed)
+			client = crm.save_client(
+				values={
+					"client_name": name,
+					"client_type": "Buyer",
+					"email": f"dup_{key}_{tag}@example.com",
+					"phone": number,
+				}
+			)
+			crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": assignee})
+			made[f"{key}_name"] = name
+			made[f"{key}_email"] = f"dup_{key}_{tag}@example.com"
+			made[f"{key}_masked"] = mask_phone(number)
+			made[f"{key}_phone_forms"] = phones.forms(number)
+		for letter, seed in (("A", 73), ("B", 74)):
+			name = f"Gate Own Twin {letter} {tag}"
+			client = crm.save_client(
+				values={"client_name": name, "client_type": "Buyer", "phone": phones.in_mobile(seed)}
+			)
+			lead = crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": admin})
+			crm.add_activity(lead["lead"]["name"], "Call", f"Twin {letter} first call")
+			key = f"twin_{letter.lower()}"
+			made[f"{key}_name"] = name
+			made[f"{key}_client"] = client["name"]
+			made[f"{key}_lead"] = lead["lead"]["name"]
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return made
+
+
 def remove_seeded_leads():
 	"""Remove what seed_agent_leads and seed_client_with_phone committed (tests only, P1.06A).
 
@@ -366,6 +417,12 @@ def seed_regression_data():
 	  Application, Buyer Three is Opted out (phone call), Investor Four is Registered DND, and the
 	  other leads are Unknown.
 
+	* Duplicates (SOS-P1-16): Regression Twin A and Regression Twin B are the same person entered twice,
+	  each with a lead and an activity, for the Company Admin to merge. Every client's email is
+	  regression_<title>@example.com in lower case with underscores, so a duplicate warning can be
+	  tried by typing one, for example regression_buyer_two@example.com (the agent's own client) and
+	  regression_buyer_three@example.com (another agent's, which the first agent cannot see).
+
 	* The company setup wizard (SOS-P1-03) left half way: profile, colours and the default pipeline
 	  stages saved, the users step still to do, so it opens on that step.
 
@@ -385,6 +442,7 @@ def seed_regression_data():
 	existing = frappe.db.get_value("Client", {"client_name": f"{REGRESSION_PREFIX}Buyer One"}, "name")
 	if existing:
 		_seed_requirements(agent_one, agent_two)
+		_seed_twin_clients(admin, agent_one)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -497,6 +555,7 @@ def seed_regression_data():
 		crm.save_client(name=client_one, values={"phone": phones.near_in_mobile(101)})
 
 	_seed_requirements(agent_one, agent_two)
+	_seed_twin_clients(admin, agent_one)
 	_seed_support_grants(admin)
 	_seed_control_site()
 	_seed_setup_wizard(admin)
@@ -550,6 +609,33 @@ def _seed_requirements(agent_one, agent_two):
 		if lead and not lead.budget_from:
 			with _as_user(user):
 				crm.save_lead(name=lead.name, values=values)
+
+
+def _seed_twin_clients(admin, agent_one):
+	"""One person entered twice (SOS-P1-16), through the CRM API as the Company Admin.
+
+	Twin A and Twin B each have a lead and an activity and are given the same email. Safe to run
+	again: when Twin A is already there nothing is made.
+	"""
+	from sellos.crm import api as crm
+
+	if frappe.db.exists("Client", {"client_name": f"{REGRESSION_PREFIX}Twin A"}):
+		return
+	with _as_user(admin):
+		for letter, seed, source in (("A", 111, "Website"), ("B", 112, "Walk in")):
+			client = crm.save_client(
+				values={
+					"client_name": f"{REGRESSION_PREFIX}Twin {letter}",
+					"client_type": "Buyer",
+					"email": "regression_twin@example.com",
+					"city": "Mumbai",
+					"phone": phones.in_mobile(seed),
+				}
+			)
+			lead = crm.save_lead(
+				values={"client": client["name"], "source": source, "assigned_to": agent_one}
+			)
+			crm.add_activity(lead["lead"]["name"], "Call", f"Regression twin {letter} first call")
 
 
 def _seed_support_grants(admin):

@@ -16,10 +16,13 @@
   "section_private",
   "phone",
   "overseas_phone",
+  "phone_key",
+  "overseas_phone_key",
   "section_archive",
   "archived",
   "archived_on",
-  "archived_by"
+  "archived_by",
+  "merged_into"
  ],
  "fields": [
   {
@@ -96,6 +99,26 @@
    "permlevel": 1
   },
   {
+   "fieldname": "phone_key",
+   "fieldtype": "Data",
+   "label": "Phone (matching key)",
+   "hidden": 1,
+   "read_only": 1,
+   "search_index": 1,
+   "permlevel": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "overseas_phone_key",
+   "fieldtype": "Data",
+   "label": "Overseas phone (matching key)",
+   "hidden": 1,
+   "read_only": 1,
+   "search_index": 1,
+   "permlevel": 1,
+   "no_copy": 1
+  },
+  {
    "fieldname": "section_archive",
    "fieldtype": "Section Break",
    "label": "Archive",
@@ -122,6 +145,14 @@
    "label": "Archived by",
    "options": "User",
    "read_only": 1
+  },
+  {
+   "fieldname": "merged_into",
+   "fieldtype": "Link",
+   "label": "Merged into",
+   "options": "Client",
+   "read_only": 1,
+   "description": "Set when a Company Admin merges this client into another (SOS-P1-16)."
   }
  ],
  "index_web_pages_for_search": 0,

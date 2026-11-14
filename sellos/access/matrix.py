@@ -22,6 +22,8 @@ _OPENERS = frozenset({PLATFORM_ADMIN, COMPANY_ADMIN, AGENT, CLIENT, CHANNEL_PART
 # dotted method path -> the roles that may call it.
 MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.list_clients": _READERS,
+	"sellos.crm.api.find_duplicates": _LOGGERS,
+	"sellos.crm.api.merge_clients": _ADMIN_ONLY,
 	"sellos.crm.api.save_client": _READERS,
 	"sellos.crm.api.list_leads": _READERS,
 	"sellos.crm.api.save_lead": _READERS,

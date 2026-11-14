@@ -30,6 +30,44 @@
 		</div>
 
 		<section
+			v-if="detail.can_merge"
+			data-testid="sellos-merge"
+			class="mt-4 space-y-2 rounded-input border border-line bg-surface p-4"
+		>
+			<h2 class="font-medium text-ink">Merge a duplicate client</h2>
+			<p class="text-sm text-ink-muted">
+				Move another client's leads, activities, tasks and site visits to
+				{{ detail.client.client_name }}. The other client is archived, not deleted.
+			</p>
+			<select v-model="mergeFrom" data-testid="sellos-merge-select" class="field">
+				<option value="">Choose the duplicate client</option>
+				<option v-for="c in mergeChoices" :key="c.name" :value="c.name">
+					{{ c.client_name }} {{ c.phone }}
+				</option>
+			</select>
+			<p
+				v-if="mergeError"
+				role="alert"
+				data-testid="sellos-merge-error"
+				class="text-sm text-accent"
+			>
+				{{ mergeError }}
+			</p>
+			<p v-if="mergeDone" data-testid="sellos-merge-done" class="text-sm text-ink-muted">
+				{{ mergeDone }}
+			</p>
+			<button
+				type="button"
+				class="btn"
+				:disabled="!mergeFrom"
+				data-testid="sellos-merge-save"
+				@click="merge"
+			>
+				Merge into {{ detail.client.client_name }}
+			</button>
+		</section>
+
+		<section
 			v-if="detail.consent"
 			data-testid="sellos-lead-consent"
 			:data-status="detail.consent.status"
@@ -460,6 +498,7 @@ async function load() {
 	try {
 		detail.value = await crmApi.getLead(route.params.name);
 		fillRequirements();
+		await loadMergeChoices();
 	} catch (e) {
 		error.value = "This lead could not be opened.";
 	}
@@ -513,6 +552,35 @@ async function addVisit() {
 async function done(item) {
 	await crmApi.saveTask({ status: "Done" }, item.name);
 	await load();
+}
+
+const mergeFrom = ref("");
+const mergeChoices = ref([]);
+const mergeError = ref("");
+const mergeDone = ref("");
+
+async function loadMergeChoices() {
+	if (!detail.value?.can_merge) return;
+	try {
+		const clients = await crmApi.listClients();
+		mergeChoices.value = clients.filter((c) => c.name !== detail.value.lead.client);
+	} catch (e) {
+		mergeChoices.value = [];
+	}
+}
+
+// A Company Admin merges a duplicate client into this lead's client (SOS-P1-16).
+async function merge() {
+	mergeError.value = "";
+	mergeDone.value = "";
+	try {
+		const result = await crmApi.mergeClients(detail.value.lead.client, mergeFrom.value);
+		mergeDone.value = `Merged. ${result.leads_moved} lead(s) moved.`;
+		mergeFrom.value = "";
+		await load();
+	} catch (e) {
+		mergeError.value = serverMessage(e, "The clients could not be merged.");
+	}
 }
 
 async function archive() {
