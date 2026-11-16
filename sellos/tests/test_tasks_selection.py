@@ -23,6 +23,12 @@ _spec = importlib.util.spec_from_file_location(
 tasks = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(tasks)
 
+# Every status a task in TASKS.md may have. The loop moves the real tasks between them, so a test on
+# the real file checks only that a status is one of these, never which one (SOS-SETUP-38: CI run
+# 43954312044 went red because a test pinned SOS-P1-07 to Not Started and the loop marked it In
+# Progress). sellos/tests/test_no_live_status_pins.py fails on a new pin.
+STATUSES = {"Not Started", "In Progress", "Complete", "Blocked", "Waiting", "Parked", "Not Needed"}
+
 
 def block(task_id, status="Not Started", deps="none", launch="Dec 20", priority="P0", owner="Claude Code"):
 	lines = [f"### {task_id}: a task", f"- **Owner:** {owner}", f"- **Priority:** {priority}"]
@@ -219,7 +225,7 @@ class RealTasksFile(unittest.TestCase):
 		"""SOS-SETUP-30: SOS-N21 is chosen from SOS-N21A's bake-off on our own Hinglish audio."""
 		n21, n21a = self.by_id["SOS-N21"], self.by_id["SOS-N21A"]
 		self.assertEqual(n21["deps"], ["SOS-N21A"])
-		self.assertEqual(n21["status"], "Waiting")
+		self.assertIn(n21["status"], STATUSES)
 		self.assertEqual(n21a["deps"], [])
 		self.assertEqual(n21a["launch"], "Dec 20")
 		self.assertIn("SOS-N21A", self.by_id["SOS-REG-L"]["deps"])
@@ -241,7 +247,7 @@ class RealTasksFile(unittest.TestCase):
 	def test_the_buyer_pipeline_supersedes_the_wizard_stages(self):
 		"""SOS-SETUP-31: SOS-P1-07 states that it supersedes SOS-P1-03's stages, and consent never blocks."""
 		p107 = self.by_id["SOS-P1-07"]
-		self.assertEqual(p107["status"], "Not Started")
+		self.assertIn(p107["status"], STATUSES)
 		block = self.text.split("### SOS-P1-07:", 1)[1].split("\n### ", 1)[0]
 		self.assertIn("This task supersedes the default stage list seeded by SOS-P1-03.", block)
 		self.assertIn("The number of assertions in each changed test must not fall.", block)
@@ -256,9 +262,8 @@ class RealTasksFile(unittest.TestCase):
 		self.assertIn("Not Needed", line)
 
 	def test_the_status_of_every_task_is_a_known_value(self):
-		known = {"Not Started", "In Progress", "Complete", "Blocked", "Waiting", "Parked", "Not Needed"}
 		for t in self.tasks:
-			self.assertIn(t["status"], known, t["id"])
+			self.assertIn(t["status"], STATUSES, t["id"])
 
 	def test_no_task_id_repeats(self):
 		ids = re.findall(r"^### ([A-Za-z0-9_-]+):", self.text, flags=re.M)

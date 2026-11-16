@@ -9,9 +9,18 @@ const LEAD = {
 };
 
 context("SOS-P0-10: route access", () => {
+	// SOS-SETUP-38: the leads screen asks for the lead sources whenever its user may make a lead
+	// (SOS-P1-20). That call was the only one this spec did not stub, so a test ended with it still
+	// running, the next test's visit cut it off, and on a slow CI runner the app logged "list_lead_sources
+	// failed Failed to fetch" after its leaving-the-page mark had lapsed (CI runs 43897848128,
+	// 43902088789 and 43954312044). Every call the screens make is stubbed, and a test that opens the
+	// leads screen as a user who may make a lead waits for the sources before it moves on.
 	const stubCrm = () => {
 		cy.intercept("**/api/method/sellos.crm.api.list_leads*", { body: { message: [] } });
 		cy.intercept("**/api/method/sellos.crm.api.get_lead*", { body: LEAD });
+		cy.intercept("**/api/method/sellos.crm.api.list_lead_sources*", {
+			body: { message: { sources: [], can_manage: false } },
+		}).as("sources");
 	};
 
 	it("sends a user without a SellOS role to the no access page", () => {
@@ -43,9 +52,11 @@ context("SOS-P0-10: route access", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos/crm/leads");
 		cy.getByTestId("leads-page").should("be.visible");
+		cy.wait("@sources");
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/crm/leads/LD-1");
 		cy.getByTestId("lead-page").should("be.visible");
+		cy.wait("@sources");
 	});
 
 	it("keeps partners, clients and the platform admin out of the CRM area", () => {

@@ -6,7 +6,8 @@ consecutive tasks without an unplanned stop. Categories: `blocked` (the gate fai
 repairs), `task broke older specs` (the gate failed on a spec the task did not change, SOS-SETUP-37),
 `needs-input`, `crash`, `unrecognized`, `environment`, `ci-red`, `push-failed`, `blocked-exists`
 (before SOS-SETUP-37), `no-work`, `start` (a check before any task), `unexpected`, `gate hole` (a hole
-in the gate found by a stop, recorded by hand), and the planned ones, `paused` and `stopped`. "Attempt
+in the gate found by a stop, recorded by hand), `test pins a moving value` (a test asserted something
+the loop changes, such as a real task's status, SOS-SETUP-38), and the planned ones, `paused` and `stopped`. "Attempt
 lost" is the time from the task's start to the stop. "Idle until restart" is filled in when the loop
 starts again; it is 0.0 for a Blocked task the loop went on from at once (SOS-SETUP-37).
 
@@ -17,3 +18,4 @@ starts again; it is 0.0 for a Blocked task the loop went on from at once (SOS-SE
 | 2026-11-14 04:52 | SOS-P1-15 | stopped | stopped by a signal (sellos stop --now, Ctrl-C or a shutdown) | 29 | 0.0 |
 | 2026-11-14 07:25 | SOS-P1-20 | task broke older specs | the gate still failed after 3 gate run(s): UI TESTS FAILED. The task made the lead form's Source a required select and updated only leads_screen.cy.js; leads_by_role.cy.js and duplicate_warning.cy.js made a lead without a source and failed only in the whole suite. Blocked at 12:55 IST and the loop stood idle (recategorised by hand by SOS-SETUP-37; finished by hand in 08b6a92) | 42 | 56.5 |
 | 2026-11-16 17:46 | SOS-P1-07 | stopped | stopped by a signal (sellos stop --now, Ctrl-C or a shutdown) | 109 | 3.1 |
+| 2026-11-16 21:00 | SOS-P1-07 | test pins a moving value | CI run 43954312044 on 757df9c, red on two jobs. Server: test_tasks_selection.py asserted that the real SOS-P1-07 was Not Started, and the loop had marked it In Progress (SOS-N21 was pinned to Waiting the same way). UI: frontend/route_access.cy.js reached 3 in the flaky log (CI runs 43897848128, 43902088789, 43954312044), each time "list_lead_sources failed Failed to fetch" in the after each hook of the test after the one that left a real, unstubbed list_lead_sources call running. Recategorised by hand from ci-red by SOS-SETUP-38; P1-07's work stayed In Progress in the tree | 0 |  |
