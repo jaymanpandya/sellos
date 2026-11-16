@@ -35,9 +35,7 @@ context("SOS-P1-06A: leads screen", () => {
 		}).as("saveLead");
 		cy.intercept("**/api/method/sellos.crm.api.get_lead*", { body: LEAD });
 		cy.visit("/sellos/crm/leads");
-		cy.getByTestId("leads-new").click();
-		cy.getByTestId("lead-form-name").type("Asha Rao");
-		cy.getByTestId("lead-form-source").type("Website");
+		cy.fillNewLead({ name: "Asha Rao", source: "Website" });
 		cy.getByTestId("lead-form").submit();
 		cy.wait("@saveClient")
 			.its("request.body")

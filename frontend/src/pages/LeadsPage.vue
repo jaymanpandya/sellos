@@ -54,10 +54,36 @@
 				placeholder="Email"
 				class="field"
 			/>
-			<input
+			<select
 				v-model="form.source"
 				data-testid="sellos-lead-form-source"
-				placeholder="Source"
+				required
+				class="field"
+			>
+				<option value="" disabled>Choose a source</option>
+				<option v-for="s in sources" :key="s.name" :value="s.name">{{ s.name }}</option>
+			</select>
+			<div v-if="canManageSources" class="flex gap-2" data-testid="sellos-lead-source-add">
+				<input
+					v-model="newSource"
+					data-testid="sellos-lead-source-new"
+					placeholder="Add a source to the list"
+					class="field"
+					@keydown.enter.prevent="addSource"
+				/>
+				<button
+					type="button"
+					class="btn"
+					data-testid="sellos-lead-source-add-button"
+					@click="addSource"
+				>
+					Add source
+				</button>
+			</div>
+			<input
+				v-model="form.campaign"
+				data-testid="sellos-lead-form-campaign"
+				placeholder="Campaign (optional)"
 				class="field"
 			/>
 			<section
@@ -202,9 +228,13 @@
 				>
 					<span>
 						<span class="block font-medium text-ink">{{ lead.client_name }}</span>
-						<span class="block text-sm text-ink-muted">{{
-							lead.source || "No source"
-						}}</span>
+						<span
+							class="block text-sm text-ink-muted"
+							data-testid="sellos-lead-source"
+							>{{
+								lead.campaign ? `${lead.source} · ${lead.campaign}` : lead.source
+							}}</span
+						>
 					</span>
 					<span
 						v-if="lead.overdue_tasks"
@@ -254,7 +284,37 @@ const form = reactive({
 	country_of_residence: "",
 	email: "",
 	source: "",
+	campaign: "",
 });
+const sources = ref([]);
+const canManageSources = ref(false);
+const newSource = ref("");
+
+async function loadSources() {
+	try {
+		const result = await crmApi.listLeadSources();
+		sources.value = result.sources || [];
+		canManageSources.value = !!result.can_manage;
+	} catch (e) {
+		sources.value = [];
+		logRequestError("list_lead_sources failed", e);
+	}
+}
+
+// A Company Admin extends the list from the form. The new source is chosen at once.
+async function addSource() {
+	const name = newSource.value.trim();
+	if (!name) return;
+	error.value = "";
+	try {
+		const saved = await crmApi.saveLeadSource({ source_name: name });
+		await loadSources();
+		form.source = saved.name;
+		newSource.value = "";
+	} catch (e) {
+		error.value = serverMessage(e, "The source could not be added.");
+	}
+}
 
 function activeFilters() {
 	return Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== "" && v != null));
@@ -285,10 +345,19 @@ const matchLabel = (reason) => MATCH_LABELS[reason] || reason;
 
 // Finish a lead on the client it was made for (SOS-P1-16), then show it.
 async function finish(clientName, source) {
-	const saved = await crmApi.saveLead({ client: clientName, source: source });
+	const values = { client: clientName, source: source };
+	if (form.campaign.trim()) values.campaign = form.campaign.trim();
+	const saved = await crmApi.saveLead(values);
 	creating.value = false;
 	duplicates.value = [];
-	Object.assign(form, { client_name: "", phone: "", overseas_phone: "", email: "", source: "" });
+	Object.assign(form, {
+		client_name: "",
+		phone: "",
+		overseas_phone: "",
+		email: "",
+		source: "",
+		campaign: "",
+	});
 	await load();
 	router.push(`${basePath.value}/${saved.lead.name}`);
 }
@@ -324,5 +393,10 @@ async function addToExisting(match) {
 	}
 }
 
-onMounted(load);
+// Only someone who can make a lead needs the source list. A channel partner's screen never asks for
+// it, so leaving that screen cuts no request off half way.
+onMounted(() => {
+	load();
+	if (canCreate.value) loadSources();
+});
 </script>

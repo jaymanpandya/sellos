@@ -54,6 +54,8 @@ on a company site, because the data scope above is "none".
 | Method | Roles |
 | --- | --- |
 | `sellos.crm.api.list_clients`, `save_client`, `list_leads`, `get_lead`, `save_lead`, `set_archived` | Company Admin, Agent, Channel Partner |
+| `sellos.crm.api.list_lead_sources` (P1.20, the lead source list for a picker. A Company Admin also sees the disabled ones) | Company Admin, Agent, Channel Partner |
+| `sellos.crm.api.save_lead_source`, `delete_lead_source` (P1.20, extend, disable or delete a source. A source in use is never deleted) | Company Admin |
 | `sellos.crm.api.find_duplicates` (P1.16, the clients that already have a phone or email, masked as the viewer's role requires) | Company Admin, Agent |
 | `sellos.crm.api.merge_clients` (P1.16, moves a client's leads to the one kept, nothing deleted, logged) | Company Admin |
 | `sellos.crm.api.add_activity`, `save_task`, `save_site_visit` | Company Admin, Agent |

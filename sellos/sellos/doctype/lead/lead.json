@@ -8,6 +8,7 @@
   "client",
   "lead_title",
   "source",
+  "campaign",
   "assigned_to",
   "notes",
   "section_requirements",
@@ -48,9 +49,18 @@
   },
   {
    "fieldname": "source",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Source",
-   "in_list_view": 1
+   "options": "Lead Source",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "campaign",
+   "fieldtype": "Data",
+   "label": "Campaign",
+   "description": "Optional. The campaign that brought the lead."
   },
   {
    "fieldname": "assigned_to",
@@ -242,7 +252,7 @@
    "write": 1
   }
  ],
- "search_fields": "lead_title,client,source",
+ "search_fields": "lead_title,client,source,campaign",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

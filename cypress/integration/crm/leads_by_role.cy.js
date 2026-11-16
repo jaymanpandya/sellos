@@ -14,9 +14,7 @@ context("SOS-P1-06A: leads by role", () => {
 		cy.signInFresh("company_admin");
 		cy.bench("sellos.tests.ui_fixtures.fresh_phone", { seed: 11 }).then(({ phone }) => {
 			cy.visit("/sellos/crm/leads");
-			cy.getByTestId("leads-new").click();
-			cy.getByTestId("lead-form-name").type(name);
-			cy.getByTestId("lead-form-phone").type(phone);
+			cy.fillNewLead({ name, phone });
 			cy.getByTestId("lead-form-save").click();
 			cy.getByTestId("lead-form-error").should("not.exist");
 			cy.getByTestId("lead-row").contains(name).should("be.visible");

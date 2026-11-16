@@ -13,6 +13,9 @@ export const crmApi = {
 	mergeClients: (keep, merge) => call("merge_clients", { keep, merge }),
 	listClients: (search = "") => call("list_clients", { search }),
 	saveClient: (values, name = null) => call("save_client", { name, values }),
+	listLeadSources: (includeDisabled = 0) =>
+		call("list_lead_sources", { include_disabled: includeDisabled }),
+	saveLeadSource: (values, name = null) => call("save_lead_source", { name, values }),
 	saveLead: (values, name = null) => call("save_lead", { name, values }),
 	addActivity: (lead, activityType, notes = "") =>
 		call("add_activity", { lead, activity_type: activityType, notes }),

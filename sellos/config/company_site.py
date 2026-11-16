@@ -7,6 +7,7 @@ web app shows the company and never the site's address.
 import frappe
 
 from sellos.access.roles import ensure_roles
+from sellos.crm.lead_sources import ensure_default_sources
 
 DEFAULT_COMPANY_NAME = "Pandya Realtors"
 
@@ -14,6 +15,7 @@ DEFAULT_COMPANY_NAME = "Pandya Realtors"
 def configure_company_site(company_name: str | None = None) -> dict:
 	"""Make the site ready for a company. Returns the settings it left in place."""
 	ensure_roles()
+	ensure_default_sources()  # SOS-P1-20
 	settings = frappe.get_doc("SellOS Settings")
 	if company_name or not settings.company_name:
 		settings.company_name = company_name or DEFAULT_COMPANY_NAME

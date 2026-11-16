@@ -17,9 +17,7 @@ context("SOS-P1-16: duplicates", () => {
 	it("warns an agent, hides what they cannot see, and adds the enquiry to the existing client", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos/crm/leads");
-		cy.getByTestId("leads-new").click();
-		cy.getByTestId("lead-form-name").type("Someone New");
-		cy.getByTestId("lead-form-email").type(seeded.own_email.toUpperCase());
+		cy.fillNewLead({ name: "Someone New", email: seeded.own_email.toUpperCase() });
 		cy.getByTestId("lead-form-save").click();
 
 		cy.getByTestId("duplicate-warning").should("be.visible");
@@ -44,9 +42,7 @@ context("SOS-P1-16: duplicates", () => {
 	it("tells an agent a client exists without showing it when another agent owns it", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos/crm/leads");
-		cy.getByTestId("leads-new").click();
-		cy.getByTestId("lead-form-name").type("Someone Else");
-		cy.getByTestId("lead-form-email").type(seeded.hidden_email);
+		cy.fillNewLead({ name: "Someone Else", email: seeded.hidden_email });
 		cy.getByTestId("lead-form-save").click();
 
 		cy.getByTestId("duplicate-match").should("have.attr", "data-visible", "no");
@@ -64,9 +60,7 @@ context("SOS-P1-16: duplicates", () => {
 	it("saves with no warning when nothing matches", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos/crm/leads");
-		cy.getByTestId("leads-new").click();
-		cy.getByTestId("lead-form-name").type("Gate Own Nobody");
-		cy.getByTestId("lead-form-email").type(`nobody${Date.now()}@example.com`);
+		cy.fillNewLead({ name: "Gate Own Nobody", email: `nobody${Date.now()}@example.com` });
 		cy.getByTestId("lead-form-save").click();
 		cy.getByTestId("duplicate-warning").should("not.exist");
 		cy.getByTestId("lead-page").should("be.visible");

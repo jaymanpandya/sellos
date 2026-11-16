@@ -12,7 +12,7 @@ from frappe.utils import cint, now_datetime
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
-from sellos.crm import consent, duplicates
+from sellos.crm import consent, duplicates, lead_sources
 from sellos.crm.base import is_overdue
 from sellos.crm.requirements import REQUIREMENT_FIELDS, has_filters, join_values, matches, requirements_view
 
@@ -28,7 +28,7 @@ CLIENT_FIELDS = (
 	"phone",
 	"overseas_phone",
 )
-LEAD_FIELDS = ("client", "source", "assigned_to", "notes", *REQUIREMENT_FIELDS)
+LEAD_FIELDS = ("client", "source", "campaign", "assigned_to", "notes", *REQUIREMENT_FIELDS)
 ACTIVITY_FIELDS = ("lead", "activity_type", "activity_date", "notes")
 TASK_FIELDS = ("lead", "title", "due_date", "status", "assigned_to", "notes")
 VISIT_FIELDS = ("lead", "project_name", "visit_datetime", "status", "notes")
@@ -211,12 +211,13 @@ def list_leads(
 	leads = frappe.get_list(
 		"Lead",
 		filters=filters,
-		or_filters=_search(search, ("lead_title", "source")),
+		or_filters=_search(search, ("lead_title", "source", "campaign")),
 		fields=[
 			"name",
 			"lead_title",
 			"client",
 			"source",
+			"campaign",
 			"assigned_to",
 			"archived",
 			"modified",
@@ -238,6 +239,41 @@ def list_leads(
 		lead["open_tasks"] = len(tasks)
 		lead["overdue_tasks"] = sum(is_overdue(t.due_date, "Open") for t in tasks)
 	return leads
+
+
+@sellos_api(*READERS)
+def list_lead_sources(include_disabled=0):
+	"""The lead sources for a picker (SOS-P1-20). Only a Company Admin is shown, and may manage, the disabled ones."""
+	manage = COMPANY_ADMIN in frappe.get_roles()
+	sources = lead_sources.list_sources(include_disabled=bool(cint(include_disabled)) and manage)
+	return {"sources": sources, "can_manage": manage}
+
+
+@sellos_api(COMPANY_ADMIN)
+def save_lead_source(name=None, values=None):
+	"""Add a source, or enable or disable one. A source keeps its name, because reports group by it."""
+	values = _values(values, ("source_name", "enabled"))
+	if name:
+		doc = frappe.get_doc("Lead Source", name)
+		doc.check_permission("write")
+		if "enabled" in values:
+			doc.enabled = cint(values["enabled"])
+		doc.save()
+	else:
+		doc = frappe.get_doc({"doctype": "Lead Source", **values})
+		doc.check_permission("create")
+		doc.insert()
+	return {"name": doc.name, "enabled": cint(doc.enabled)}
+
+
+@sellos_api(COMPANY_ADMIN)
+def delete_lead_source(name):
+	"""Delete a source no lead uses. A source in use is refused, and is disabled instead."""
+	doc = frappe.get_doc("Lead Source", name)
+	doc.check_permission("delete")
+	lead_sources.ensure_deletable(name)
+	frappe.delete_doc("Lead Source", name)
+	return {"deleted": name}
 
 
 @sellos_api(*READERS)

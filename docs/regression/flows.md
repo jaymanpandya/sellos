@@ -85,3 +85,10 @@ FLOW SOS-P1-16-3 | agent | /sellos/crm/leads | Click New lead, type regression_b
 FLOW SOS-P1-16-4 | agent | /sellos/crm/leads | Click New lead, type a new name and an email nobody has, and click Save lead. | No warning shows and the lead is saved.
 FLOW SOS-P1-16-5 | company_admin | /sellos/crm/leads | Sign in as the Company Admin and open the lead of Regression Twin A. Under Merge a duplicate client choose Regression Twin B and click Merge into Regression Twin A. | The page says Merged with the number of leads moved. The leads list now shows both twin leads under Regression Twin A, each with its activity, and Regression Twin B is no longer in the merge choices.
 FLOW SOS-P1-16-6 | agent | /sellos/crm/leads | Sign in as the agent and open any lead. | There is no Merge a duplicate client section.
+
+## SOS-P1-20: lead sources
+
+FLOW SOS-P1-20-1 | agent | /sellos/crm/leads | Sign in as the first Regression agent. Click New lead and open the Source box. | The box lists Website, Portal, Referral, Walk in, Channel partner, Facebook, Missed call, Bought list and Regression Roadshow. Regression Old Hoarding is not there, and there is no Add a source box.
+FLOW SOS-P1-20-2 | agent | /sellos/crm/leads | Fill a new name, choose Referral as the source, type Diwali 2026 hoardings as the campaign and click Save lead. | The lead is saved and opens. The leads list shows it with Referral and Diwali 2026 hoardings under the client name.
+FLOW SOS-P1-20-3 | company_admin | /sellos/crm/leads | Sign in as the Company Admin and click New lead. Type Regression Open House in Add a source to the list and click Add source. | Regression Open House is added to the Source box and is chosen at once. Saving a lead with it shows Regression Open House on the leads list, and the first agent now sees it in the box too.
+FLOW SOS-P1-20-4 | company_admin | /sellos/crm/leads | Look at the leads list. | Regression Buyer Three shows Regression Roadshow and Diwali 2026 hoardings. Seller Seven shows Missed call and the two partner leads show Channel partner.

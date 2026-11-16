@@ -201,3 +201,21 @@ Cypress.Commands.add("bodyOf", (body) => {
 	});
 	return cy.wrap(data, { log: false });
 });
+
+// Open the New lead form and fill it in, without saving: the spec then clicks lead-form-save or
+// submits the form. Every lead needs a source from the list (SOS-P1-20), so this always chooses
+// one, "Website" unless the spec names another standard source. Every spec that creates a lead
+// through the form goes through here, so a change to the form is fixed once.
+// cy.fillNewLead({ name: "Asha Rao", phone, email, campaign, source: "Referral" }).
+Cypress.Commands.add(
+	"fillNewLead",
+	({ name, phone, email, campaign, source = "Website" } = {}) => {
+		cy.getByTestId("leads-new").click();
+		if (name) cy.getByTestId("lead-form-name").type(name);
+		if (phone) cy.getByTestId("lead-form-phone").type(phone);
+		if (email) cy.getByTestId("lead-form-email").type(email);
+		cy.getByTestId("lead-form-source").select(source);
+		cy.getByTestId("lead-form-source").should("have.value", source);
+		if (campaign) cy.getByTestId("lead-form-campaign").type(campaign);
+	}
+);

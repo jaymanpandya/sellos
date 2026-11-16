@@ -106,7 +106,9 @@ class TestSavingRequirements(CrmCase):
 		_, lead = self.make_lead("agent")
 		as_user("company_admin")
 		other = api.save_client(values={"client_name": "Other Buyer", "client_type": "Buyer"})
-		other_lead = api.save_lead(values={"client": other["name"], "assigned_to": email("company_admin")})
+		other_lead = api.save_lead(
+			values={"client": other["name"], "source": "Website", "assigned_to": email("company_admin")}
+		)
 		as_user("agent")
 		with self.assertRaises(frappe.PermissionError):
 			api.save_lead(name=other_lead["lead"]["name"], values={"timeline": "Immediate"})
@@ -214,7 +216,12 @@ class TestListFilters(CrmCase):
 		as_user("company_admin")
 		client = api.save_client(values={"client_name": "Admin Buyer", "client_type": "Buyer"})
 		theirs = api.save_lead(
-			values={"client": client["name"], "assigned_to": email("company_admin"), "timeline": "Immediate"}
+			values={
+				"client": client["name"],
+				"source": "Website",
+				"assigned_to": email("company_admin"),
+				"timeline": "Immediate",
+			}
 		)["lead"]["name"]
 		self.assertIn(theirs, self.names(timeline="Immediate"))
 		as_user("agent")
@@ -260,7 +267,9 @@ class TestRegressionSeed(CrmCase):
 			client = api.save_client(
 				values={"client_name": f"{ui_fixtures.REGRESSION_PREFIX}{title}", "client_type": "Buyer"}
 			)
-			leads[title] = api.save_lead(values={"client": client["name"]})["lead"]["name"]
+			leads[title] = api.save_lead(values={"client": client["name"], "source": "Website"})["lead"][
+				"name"
+			]
 		for _ in range(2):
 			ui_fixtures._seed_requirements(email("agent"), email("agent"))
 			one = api.get_lead(leads["Buyer One"])["requirements"]

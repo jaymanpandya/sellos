@@ -4,6 +4,7 @@ from frappe import _
 
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
 from sellos.crm.base import ArchiveOnly, stamp_archive
+from sellos.crm.lead_sources import check_usable
 from sellos.crm.requirements import validate_requirements
 
 CAN_BE_ASSIGNED = frozenset({AGENT, CHANNEL_PARTNER, COMPANY_ADMIN})
@@ -14,6 +15,7 @@ class Lead(ArchiveOnly):
 		self.lead_title = self.lead_title or self._title()
 		if self.assigned_to:
 			self._check_assignee()
+		check_usable(self)
 		validate_requirements(self)
 		stamp_archive(self)
 

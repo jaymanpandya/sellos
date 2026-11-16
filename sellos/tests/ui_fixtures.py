@@ -234,7 +234,9 @@ def seed_duplicate_clients():
 
 
 def remove_seeded_leads():
-	"""Remove what seed_agent_leads and seed_client_with_phone committed (tests only, P1.06A).
+	"""Remove what seed_agent_leads and seed_client_with_phone committed (tests only, P1.06A), and the
+	Gate Buyer lead leads_by_role.cy.js makes through the form. Its phone comes from fresh_phone with a
+	fixed seed, so a lead left behind would meet the next run with a duplicate warning (SOS-P1-16).
 
 	The CRM refuses a delete through the app, so this goes to the tables, and only for the clients
 	these two fixtures name. Other tests then see the agent's list as they left it. The specs that seed
@@ -247,6 +249,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Other %"],
 			["client_name", "like", "Gate Phone %"],
 			["client_name", "like", "Gate Consent %"],
+			["client_name", "like", "Gate Buyer %"],
 		],
 		pluck="name",
 	)
@@ -262,6 +265,23 @@ def remove_seeded_leads():
 			frappe.db.delete(doctype, {"name": ["in", names]})
 	frappe.db.commit()  # nosemgrep
 	return {"clients": len(clients), "leads": len(leads)}
+
+
+def remove_gate_lead_sources():
+	"""Remove what the lead source spec committed (tests only, SOS-P1-20): its clients, their leads and
+	the sources named Gate Source. The CRM refuses a delete through the app, so this goes to the tables."""
+	clients = frappe.get_all("Client", filters={"client_name": ["like", "Gate Source %"]}, pluck="name")
+	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name") if clients else []
+	for doctype, names in (("Lead", leads), ("Client", clients)):
+		if names:
+			frappe.db.delete("Version", {"ref_doctype": doctype, "docname": ["in", names]})
+			frappe.db.delete(doctype, {"name": ["in", names]})
+	sources = frappe.get_all("Lead Source", filters={"name": ["like", "Gate Source %"]}, pluck="name")
+	if sources:
+		frappe.db.delete("Version", {"ref_doctype": "Lead Source", "docname": ["in", sources]})
+		frappe.db.delete("Lead Source", {"name": ["in", sources]})
+	frappe.db.commit()  # nosemgrep
+	return {"clients": len(clients), "leads": len(leads), "sources": len(sources)}
 
 
 WIZARD_USER_PREFIX = "wizard_spec_"
@@ -423,6 +443,11 @@ def seed_regression_data():
 	  tried by typing one, for example regression_buyer_two@example.com (the agent's own client) and
 	  regression_buyer_three@example.com (another agent's, which the first agent cannot see).
 
+	* Lead sources (SOS-P1-20): the eight standard sources, Regression Roadshow (added by the company),
+	  Regression Old Hoarding (disabled, so no picker offers it), and Regression Buyer Three on the
+	  Roadshow source under the campaign Diwali 2026 hoardings. Seller Seven came by Missed call and the
+	  two partner leads by Channel partner.
+
 	* The company setup wizard (SOS-P1-03) left half way: profile, colours and the default pipeline
 	  stages saved, the users step still to do, so it opens on that step.
 
@@ -443,6 +468,7 @@ def seed_regression_data():
 	if existing:
 		_seed_requirements(agent_one, agent_two)
 		_seed_twin_clients(admin, agent_one)
+		_seed_lead_sources(admin)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -475,9 +501,9 @@ def seed_regression_data():
 	_, lead_five = make(agent_three, "NRI Five", "NRI", 106, "Website", **overseas)
 	_, lead_six = make(agent_three, "Buyer Six", "Buyer", 107, "Walk in")
 	# The Company Admin: an unassigned seller lead, and the two the channel partner sent.
-	_, lead_seven = make(admin, "Seller Seven", "Seller", 108, "Phone enquiry", assigned_to=admin)
-	make(admin, "Partner Lead One", "Buyer", 109, "Channel Partner", assigned_to=partner)
-	make(admin, "Partner Lead Two", "Investor", 110, "Channel Partner", assigned_to=partner)
+	_, lead_seven = make(admin, "Seller Seven", "Seller", 108, "Missed call", assigned_to=admin)
+	make(admin, "Partner Lead One", "Buyer", 109, "Channel partner", assigned_to=partner)
+	make(admin, "Partner Lead Two", "Investor", 110, "Channel partner", assigned_to=partner)
 
 	with _as_user(agent_one):
 		crm.add_activity(lead_one, "Call", "Called, wants a 2 BHK near the station")
@@ -556,6 +582,7 @@ def seed_regression_data():
 
 	_seed_requirements(agent_one, agent_two)
 	_seed_twin_clients(admin, agent_one)
+	_seed_lead_sources(admin)
 	_seed_support_grants(admin)
 	_seed_control_site()
 	_seed_setup_wizard(admin)
@@ -636,6 +663,29 @@ def _seed_twin_clients(admin, agent_one):
 				values={"client": client["name"], "source": source, "assigned_to": agent_one}
 			)
 			crm.add_activity(lead["lead"]["name"], "Call", f"Regression twin {letter} first call")
+
+
+def _seed_lead_sources(admin):
+	"""The lead sources (SOS-P1-20), through the CRM API as the Company Admin. Safe to run again.
+
+	Regression Roadshow is a source the company added and Regression Old Hoarding one it disabled.
+	Regression Buyer Three came through the Roadshow, under the campaign Diwali 2026 hoardings.
+	"""
+	from sellos.crm import api as crm
+
+	with _as_user(admin):
+		have = {row["name"] for row in crm.list_lead_sources(include_disabled=1)["sources"]}
+		if "Regression Roadshow" not in have:
+			crm.save_lead_source(values={"source_name": "Regression Roadshow"})
+		if "Regression Old Hoarding" not in have:
+			crm.save_lead_source(values={"source_name": "Regression Old Hoarding"})
+			crm.save_lead_source(name="Regression Old Hoarding", values={"enabled": 0})
+		client = frappe.db.get_value("Client", {"client_name": f"{REGRESSION_PREFIX}Buyer Three"}, "name")
+		lead = frappe.db.get_value("Lead", {"client": client}, "name") if client else None
+		if lead:
+			crm.save_lead(
+				name=lead, values={"source": "Regression Roadshow", "campaign": "Diwali 2026 hoardings"}
+			)
 
 
 def _seed_support_grants(admin):

@@ -126,7 +126,9 @@ class TestWhoSeesWhat(CrmCase):
 		_, lead = self.make_lead("agent")
 		as_user("company_admin")
 		other = api.save_client(values={"client_name": "Other", "client_type": "Seller"})
-		other_lead = api.save_lead(values={"client": other["name"], "assigned_to": email("company_admin")})
+		other_lead = api.save_lead(
+			values={"client": other["name"], "source": "Website", "assigned_to": email("company_admin")}
+		)
 		as_user("agent")
 		self.assertEqual([r["name"] for r in api.list_leads()], [lead])
 		self.assertRaises(frappe.PermissionError, api.get_lead, other_lead["lead"]["name"])
@@ -286,7 +288,9 @@ class TestOverHttp(CrmCase):
 		self.assertEqual(client.status_code, 200, client.get_data(as_text=True))
 		client_name = client.json["message"]["name"]
 		lead = http.post(
-			"/api/method/sellos.crm.api.save_lead", json={"values": {"client": client_name}}, headers=headers
+			"/api/method/sellos.crm.api.save_lead",
+			json={"values": {"client": client_name, "source": "Website"}},
+			headers=headers,
 		)
 		lead_name = lead.json["message"]["lead"]["name"]
 		act = http.post(
