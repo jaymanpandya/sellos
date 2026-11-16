@@ -289,29 +289,196 @@ wait_for_limit() {
 # billing problem) looks like. CI_RED_REASON then says so, and the stop notice carries it: the fix
 # is minutes, not code (DEV_STRATEGY.md section 4, row 32).
 CI_RED_REASON=""
+# SOS-SETUP-38: CI_FAILED_IDS holds the runs that failed, and CI_ENV_REASON says why a red run is the
+# environment's (jobs that never started, or no run at all), for ci_until_green below.
+CI_FAILED_IDS=""
+CI_ENV_REASON=""
+CI_FIRST_WAIT="${SELLOS_CI_FIRST_WAIT:-20}"
 ci_green() {
   local sha="$1" ids="" i=0 id rc=0 unstarted
   CI_RED_REASON=""
+  CI_FAILED_IDS=""
+  CI_ENV_REASON=""
   while [[ $i -lt 12 && -z "$ids" ]]; do
     ids="$(gh run list --branch "$BRANCH" --commit "$sha" --json databaseId --jq '.[].databaseId' 2>/dev/null || true)"
     [[ -z "$ids" ]] && sleep 10
     i=$((i + 1))
   done
-  if [[ -z "$ids" ]]; then echo "No CI run found for $sha."; return 1; fi
-  sleep 20
+  if [[ -z "$ids" ]]; then
+    echo "No CI run found for $sha."
+    CI_ENV_REASON="no CI run was found for $sha (GitHub Actions did not start one)"
+    return 1
+  fi
+  sleep "$CI_FIRST_WAIT"
   ids="$(gh run list --branch "$BRANCH" --commit "$sha" --json databaseId --jq '.[].databaseId' 2>/dev/null || echo "$ids")"
   for id in $ids; do
     if ! gh run watch "$id" --exit-status >/dev/null 2>&1; then
       echo "CI run $id failed."
       rc=1
+      CI_FAILED_IDS="${CI_FAILED_IDS:+$CI_FAILED_IDS }$id"
       unstarted="$(python3 "$SCRIPT_DIR/lib/ci_minutes.py" never-started "$id" 2>/dev/null || true)"
       if [[ -n "$unstarted" ]]; then
         CI_RED_REASON="CI run $id: these jobs never started ($unstarted). The Actions minutes budget may be spent, or billing needs attention. This is not a code failure."
+        CI_ENV_REASON="$CI_RED_REASON"
         echo "$CI_RED_REASON"
       fi
     fi
   done
   return $rc
+}
+
+# SOS-SETUP-38: a red CI on a head the loop pushed does not stop the loop when the loop can repair it.
+# On 16 November 2026 CI run 43954312044 went red on 757df9c (a test pinned a real task's status, and
+# a spec left a request running) and the loop stood stopped until a person fixed two test files.
+# ci_until_green reads the failed jobs' logs (scripts/lib/ci_failures.py) and:
+#   * a fault outside the code (a runner lost, jobs GitHub would not start, quota, network, no run at
+#     all): rerun the failed jobs once; green goes on, red stops (category environment);
+#   * a failing test: up to SELLOS_MAX_CI_REPAIRS (2) repair attempts, each one an agent given the
+#     failing tests and their messages, the gate, a commit, a push and a wait for CI. Green goes on;
+#     both attempts failing stops (category ci-red). A repair never starts on a tree that already has
+#     uncommitted work, and a failed attempt's changes stay in the tree for the next attempt.
+# Every step sends a Telegram message. On a stop it returns 1 with CI_STOP_CATEGORY, CI_STOP_CAUSE and
+# CI_STOP_NOTICE set; the caller records the stop and ends the loop.
+MAX_CI_REPAIRS="${SELLOS_MAX_CI_REPAIRS:-2}"
+CI_STOP_CATEGORY=""
+CI_STOP_CAUSE=""
+CI_STOP_NOTICE=""
+CI_FAILURES=""
+CI_KIND=""
+
+# The failed jobs' logs of CI_FAILED_IDS, then CI_FAILURES (the failing tests and their messages) and
+# CI_KIND ("code", or "environment <why>").
+ci_read_failures() {
+  local id log="$LOG_DIR/ci-failed.log"
+  mkdir -p "$LOG_DIR"
+  : >"$log"
+  for id in $CI_FAILED_IDS; do
+    gh run view "$id" --log-failed >>"$log" 2>&1 || true
+  done
+  CI_FAILURES="$(sellos_redact_text "$(python3 "$SCRIPT_DIR/lib/ci_failures.py" extract "$log" 2>/dev/null || true)")"
+  if [[ -n "$CI_ENV_REASON" ]]; then
+    CI_KIND="environment $CI_ENV_REASON"
+  else
+    CI_KIND="$(python3 "$SCRIPT_DIR/lib/ci_failures.py" kind "$log" 2>/dev/null || echo code)"
+  fi
+  if [[ -z "$CI_FAILURES" ]]; then
+    CI_FAILURES="(no failing test could be read from the log; its last lines:)
+$(sellos_redact_text "$(tail -n 30 "$log" | cut -c1-300)")"
+  fi
+}
+
+# Rerun the failed jobs of CI_FAILED_IDS once and wait for them. 0 when every one is then green.
+ci_rerun_failed() {
+  local id rc=0
+  [[ -n "$CI_FAILED_IDS" ]] || return 1
+  for id in $CI_FAILED_IDS; do
+    gh run rerun "$id" --failed >/dev/null 2>&1 || { echo "gh could not rerun CI run $id."; rc=1; continue; }
+  done
+  [[ "$rc" -eq 0 ]] || return 1
+  sleep "$CI_FIRST_WAIT"
+  for id in $CI_FAILED_IDS; do
+    gh run watch "$id" --exit-status >/dev/null 2>&1 || { echo "CI run $id is still red after its rerun."; rc=1; }
+  done
+  return $rc
+}
+
+ci_notify() { "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $1" || true; }
+
+# ci_until_green <what was pushed, for the messages> <task id or ->
+ci_until_green() {
+  local label="$1" task="$2" sha attempt=0 started=0 gate_exit response summary repair_log
+  CI_STOP_CATEGORY=""
+  CI_STOP_CAUSE=""
+  CI_STOP_NOTICE=""
+  sha="$(git rev-parse --short HEAD)"
+  ci_green "$(git rev-parse HEAD)" && return 0
+  while true; do
+    ci_read_failures
+    if [[ "$CI_KIND" == environment* ]]; then
+      local why="${CI_KIND#environment }"
+      ci_notify "CI is red on $label ($sha), and the cause is outside the code: $why. Rerunning the failed jobs once."
+      if ci_rerun_failed; then
+        ci_notify "CI is green on $label ($sha) after one rerun of the failed jobs. Going on."
+        return 0
+      fi
+      CI_STOP_CATEGORY=environment
+      CI_STOP_CAUSE="CI red on $sha ($label) for a reason outside the code, still red after one rerun: $why"
+      CI_STOP_NOTICE="CI is still red on $label ($sha) after one rerun, and the cause is outside the code: $why. Stopping, nothing new started. Fix the runner, quota or network, then restart the loop."
+      return 1
+    fi
+    if [[ "$attempt" -ge "$MAX_CI_REPAIRS" ]]; then
+      CI_STOP_CATEGORY=ci-red
+      CI_STOP_CAUSE="CI still red on $sha ($label) after $attempt repair attempt(s): $(printf '%s\n' "$CI_FAILURES" | head -n 2 | tr '\n' ' ' | cut -c1-200)"
+      CI_STOP_NOTICE="CI is still red on $label ($sha) after $attempt repair attempt(s). Stopping, nothing new started. Still failing:
+$CI_FAILURES"
+      return 1
+    fi
+    if [[ "$started" -eq 0 && -n "$(git status --porcelain)" ]]; then
+      CI_STOP_CATEGORY=ci-red
+      CI_STOP_CAUSE="CI red on $sha ($label), and the working tree holds uncommitted work, so a repair would mix it in"
+      CI_STOP_NOTICE="CI is red on $label ($sha). The working tree holds uncommitted work (an In Progress task's), so the loop did not repair it: the repair would be committed with that work. Stopping. Failing:
+$CI_FAILURES"
+      return 1
+    fi
+    started=1
+    attempt=$((attempt + 1))
+    ci_notify "CI is red on $label ($sha). Repair attempt $attempt of $MAX_CI_REPAIRS. Failing:
+$CI_FAILURES"
+    set +e
+    response="$(sellos_agent_env claude -p "The CI run on the pushed commit $sha ($label) is red. The working tree is the pushed code$([[ -n "$(git status --porcelain)" ]] && echo ", plus the changes of the last repair attempt, whose gate run failed (its failures are after the CI ones)"). Find the cause of every failure below in the code and fix it. This is CI repair attempt $attempt of $MAX_CI_REPAIRS.
+$GUARD_RULES
+$GUARDS_CHECK
+Rules. Fix the cause, in the product code or in the test. Never delete or weaken an assertion, never add a retry, never raise a limit (the flaky limit included), and never skip a test. A test that asserts a value the loop changes (a real task's status in TASKS.md, a row of docs/STOPS.md) is fixed by asserting only what stays true, or by a fixture the test writes itself. A spec that ends with a request still running is fixed by stubbing or waiting for that request. Never edit a gate file: scripts/run-tests.sh, scripts/build-loop.sh, anything under scripts/lib or scripts/shared, scripts/check_*.py, cypress.config.js, cypress/support/e2e.js, .github/workflows, docs/DEV_STRATEGY.md, docs/TESTING.md, docs/STOPS.md, docs/GUARDS.md, sellos/testing/guards.py or scripts/check-guards.sh. You may run the single backend test module or the single browser spec you changed, one at a time and in the foreground, from ~/iespl-bench: bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>, or bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Never run the full suite, and never run anything in the background. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh: the loop commits and pushes after the gate passes. Never run seed_regression_data, any ui_fixtures.seed_* function or scripts/prepare-regression.sh. The word Frappe must never appear in any user facing label, screen, or error message.
+Respond with this as the literal first characters of your response, nothing before it:
+IMPLEMENTATION_READY: <plain English summary of what you fixed>
+
+Failing in CI (test, then its message):
+$CI_FAILURES$([[ -n "$(git status --porcelain)" ]] && printf '\n\nThe last repair attempt'"'"'s gate run failed:\n%s' "$(failure_context)")" --dangerously-skip-permissions)"
+    set -e
+    response="$(sellos_redact_text "$response")"
+    mkdir -p "$LOG_DIR"
+    repair_log="$LOG_DIR/claude-ci-repair-${task}-$(date +%Y%m%d-%H%M%S).txt"
+    printf '%s\n' "$response" >"$repair_log"
+    summary="$(printf '%s\n' "$response" | grep -m1 -E '^IMPLEMENTATION_READY:' || true)"
+    summary="${summary#IMPLEMENTATION_READY: }"
+    if [[ -z "$(git status --porcelain)" ]]; then
+      ci_notify "CI repair attempt $attempt of $MAX_CI_REPAIRS on $label changed nothing, so nothing was pushed."
+      continue
+    fi
+    set +e
+    "$SCRIPT_DIR/run-tests.sh" 2>&1 | sellos_redact | tee "$GATE_OUT"
+    gate_exit="${PIPESTATUS[0]}"
+    set -e
+    if [[ "$gate_exit" -eq 2 || "$gate_exit" -eq 3 ]]; then
+      CI_STOP_CATEGORY=environment
+      CI_STOP_CAUSE="the gate stopped in its preflight (exit $gate_exit) during CI repair attempt $attempt on $sha ($label)"
+      CI_STOP_NOTICE="CI repair attempt $attempt on $label: the gate stopped before testing anything (exit $gate_exit), an environment problem. The repair's changes are left uncommitted in the working tree. Stopping.
+$(tail -n 15 "$GATE_OUT")"
+      return 1
+    fi
+    if [[ "$gate_exit" -ne 0 ]]; then
+      ci_notify "CI repair attempt $attempt of $MAX_CI_REPAIRS on $label failed the gate, so nothing was pushed. Its changes stay in the working tree for the next attempt.
+$(grep -m3 -E 'GUARDS FAILED|AFFECTED SPECS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED' "$GATE_OUT" 2>/dev/null || tail -n 5 "$GATE_OUT")"
+      continue
+    fi
+    git add -A
+    loop_commit -q -m "SOS-LOOP: repair of the red CI on $sha ($label), attempt $attempt
+
+${summary:-the repair passed the gate}"
+    if ! push_with_retry; then
+      CI_STOP_CATEGORY=push-failed
+      CI_STOP_CAUSE="the push of CI repair attempt $attempt failed after every retry"
+      CI_STOP_NOTICE="CI repair attempt $attempt on $label passed the gate and is committed, but the push failed after every retry. The commit is kept; the next start pushes it first. Stopping. git said:
+$(printf '%s' "$PUSH_ERROR" | head -c 3000)"
+      return 1
+    fi
+    sha="$(git rev-parse --short HEAD)"
+    ci_notify "CI repair attempt $attempt of $MAX_CI_REPAIRS on $label passed the gate and is pushed as $sha. Waiting for CI."
+    if ci_green "$(git rev-parse HEAD)"; then
+      ci_notify "CI is green on $sha after repair attempt $attempt. Going on."
+      return 0
+    fi
+  done
 }
 
 # Push the branch. A failed try is retried after 10, 30 and 90 seconds. GitHub's own
@@ -423,8 +590,26 @@ if ! GH_AUTH_OUT="$(gh auth status 2>&1)"; then
 $(printf '%s' "$GH_AUTH_OUT" | head -c 3000)" || true
   exit 1
 fi
+# SOS-SETUP-38: status commits are not pushed alone. A commit that changes nothing but TASKS.md and
+# docs/STOPS.md ("mark In Progress", a Blocked status, a stop ledger row) goes to origin only with the
+# next push that carries code (a task's completion), so CI never runs on a status commit. On 16 November
+# 2026 the loop pushed "SOS-P1-07: mark In Progress" alone at its start, CI ran on it, went red on a
+# test that pinned P1-07's status, and the loop stopped (CI run 43954312044).
+is_status_commit() {
+  local f
+  while IFS= read -r f; do
+    [[ -z "$f" || "$f" == "TASKS.md" || "$f" == "docs/STOPS.md" ]] || return 1
+  done < <(git diff-tree --no-commit-id --name-only -r "$1")
+  return 0
+}
 AHEAD="$(git rev-list --count "origin/$BRANCH..$BRANCH" 2>/dev/null || echo 0)"
-if [[ "$AHEAD" -gt 0 ]]; then
+CODE_AHEAD=0
+for c in $(git rev-list "origin/$BRANCH..$BRANCH" 2>/dev/null); do
+  is_status_commit "$c" || CODE_AHEAD=$((CODE_AHEAD + 1))
+done
+if [[ "$AHEAD" -gt 0 && "$CODE_AHEAD" -eq 0 ]]; then
+  echo "$BRANCH is $AHEAD status commit(s) ahead of origin (TASKS.md and docs/STOPS.md only). Not pushing them alone: they go up with the next task's completion push, so CI never runs on a status commit."
+elif [[ "$AHEAD" -gt 0 ]]; then
   AHEAD_LIST="$(git log --reverse --format='%h %s' "origin/$BRANCH..$BRANCH" | cut -c1-160)"
   BAD_LIST="$(git log --format='%h %s' "origin/$BRANCH..$BRANCH" | awk '$2 !~ /^SOS-/' | cut -c1-160)"
   if [[ -n "$BAD_LIST" ]]; then
@@ -435,7 +620,7 @@ if [[ "$AHEAD" -gt 0 ]]; then
 $BAD_LIST" || true
     exit 1
   fi
-  echo "$BRANCH is $AHEAD commit(s) ahead of origin. Pushing them before any task starts:"
+  echo "$BRANCH is $AHEAD commit(s) ahead of origin, $CODE_AHEAD of them with code. Pushing them before any task starts:"
   printf '%s\n' "$AHEAD_LIST"
   if ! push_with_retry; then
     stop_note push-failed "pushing the commits that were ahead failed"
@@ -445,18 +630,12 @@ git said:
 $(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
     exit 1
   fi
-  # SOS-SETUP-33: a push of nothing but the stop ledger changes no code, so CI is not awaited. SOS-SETUP-34:
-  # CI still runs on it, because no loop commit carries a skip marker.
-  if [[ -z "$(printf '%s\n' "$AHEAD_LIST" | awk '$2 != "SOS-LOOP:"')" ]]; then
-    echo "Only the stop ledger was ahead. Pushed it without waiting for CI."
-  else
-    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: pushed $AHEAD commit(s) that were ahead of origin. Waiting for CI before picking a task:
+  "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: pushed $AHEAD commit(s) that were ahead of origin. Waiting for CI before picking a task:
 $AHEAD_LIST" || true
-    if ! ci_green "$(git rev-parse HEAD)"; then
-      stop_note ci-red "CI red or missing on the pushed head. $CI_RED_REASON"
-      "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the pushed head $(git rev-parse --short HEAD). Stopping, nothing new started.${CI_RED_REASON:+ $CI_RED_REASON}" || true
-      exit 1
-    fi
+  if ! ci_until_green "the commits that were ahead" -; then
+    stop_note "$CI_STOP_CATEGORY" "$CI_STOP_CAUSE"
+    ci_notify "$CI_STOP_NOTICE"
+    exit 1
   fi
 fi
 
@@ -779,9 +958,9 @@ $(printf '%s' "$PUSH_ERROR" | head -c 3000)" || true
     echo "$RUN_SUMMARY"
     "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID complete: $TASK_TITLE
 $RUN_SUMMARY"
-    if ! ci_green "$(git rev-parse HEAD)"; then
-      stop_note ci-red "CI red or missing on the task commit. $CI_RED_REASON"
-      "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: CI is red (or missing) on the commit for $TASK_ID. Stopping, nothing new started.${CI_RED_REASON:+ $CI_RED_REASON}"
+    if ! ci_until_green "the commit for $TASK_ID" "$TASK_ID"; then
+      stop_note "$CI_STOP_CATEGORY" "$CI_STOP_CAUSE"
+      ci_notify "$CI_STOP_NOTICE"
       break
     fi
   else

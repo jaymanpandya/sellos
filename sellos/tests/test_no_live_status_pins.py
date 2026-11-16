@@ -11,6 +11,11 @@ The scan reads every test_*.py under sellos/ and scripts/. A file reads the real
 an expression such as REPO_ROOT / "TASKS.md" (a module level name, not self.repo or self.dir). In such
 a file, an assert call fails the scan when one argument mentions a status (["status"], .status,
 .get("status") or a "**Status:**" string) and another is a literal status value.
+
+docs/STOPS.md is the same: the loop appends a row at every stop and fills in the idle time at every
+start, so no test reads the real file at all (REPO_ROOT / "docs" / "STOPS.md", or REPO_ROOT /
+"docs/STOPS.md"). A ledger test writes its own copy in a temporary repository, as test_stop_ledger.py
+does. Tests use fixtures for anything the loop changes.
 """
 
 import ast
@@ -21,24 +26,44 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 STATUSES = {"Not Started", "In Progress", "Complete", "Blocked", "Waiting", "Parked", "Not Needed"}
 FIX = (
 	'Assert only that the status is valid, as in assertIn(task["status"], STATUSES) '
-	"(sellos/tests/test_tasks_selection.py), or test the rule on a TASKS.md the test writes itself."
+	"(sellos/tests/test_tasks_selection.py), or test the rule on a TASKS.md the test writes itself. "
+	"Never read the real docs/STOPS.md: write a ledger in a temporary repository (test_stop_ledger.py)."
 )
 
 
-def _reads_real_tasks_file(tree):
+def _from_the_real_repo(left):
+	"""True when a path expression starts at a module level root (REPO_ROOT, ROOT) or __file__."""
+	while isinstance(left, ast.BinOp) and isinstance(left.op, ast.Div):
+		left = left.left
+	if isinstance(left, ast.Name) and left.id.isupper():
+		return True
+	return "__file__" in ast.unparse(left)
+
+
+def _real_paths(tree, names):
+	"""Line numbers of each expression ROOT / ... / <one of names> that starts at the real repo."""
+	found = []
 	for node in ast.walk(tree):
 		if (
 			isinstance(node, ast.BinOp)
 			and isinstance(node.op, ast.Div)
 			and isinstance(node.right, ast.Constant)
-			and node.right.value == "TASKS.md"
+			and node.right.value in names
+			and _from_the_real_repo(node.left)
 		):
-			left = node.left
-			if isinstance(left, ast.Name) and left.id.isupper():
-				return True
-			if "__file__" in ast.unparse(left):
-				return True
-	return False
+			found.append(node.lineno)
+	return found
+
+
+def _reads_real_tasks_file(tree):
+	return bool(_real_paths(tree, {"TASKS.md"}))
+
+
+def find_stops_reads(source, filename="<test>"):
+	"""(line, code) for each read of the real docs/STOPS.md, which the loop changes at every stop."""
+	tree = ast.parse(source, filename)
+	lines = source.splitlines()
+	return [(n, lines[n - 1].strip()) for n in sorted(set(_real_paths(tree, {"STOPS.md", "docs/STOPS.md"})))]
 
 
 def _mentions_status(node):
@@ -92,7 +117,8 @@ def scan_repository(root=REPO_ROOT):
 	found = []
 	for folder in ("sellos", "scripts"):
 		for path in sorted((root / folder).rglob("test_*.py")):
-			for line, code in find_pins(path.read_text(encoding="utf-8"), str(path)):
+			source = path.read_text(encoding="utf-8")
+			for line, code in find_pins(source, str(path)) + find_stops_reads(source, str(path)):
 				found.append(f"{path.relative_to(root)}:{line}: {code}")
 	return found
 
@@ -135,3 +161,17 @@ class TestNoLiveStatusPins(unittest.TestCase):
 	def test_other_status_fields_are_not_task_statuses(self):
 		source = REAL + 'def t(self):\n\tself.assertEqual(grant["status"], "Active")\n'
 		self.assertEqual(find_pins(source), [])
+
+	def test_a_read_of_the_real_stop_ledger_is_found(self):
+		for expr in (
+			'REPO_ROOT / "docs" / "STOPS.md"',
+			'REPO_ROOT / "docs/STOPS.md"',
+			'Path(__file__).parents[2] / "docs" / "STOPS.md"',
+		):
+			with self.subTest(expr=expr):
+				source = REAL + f"def t(self):\n\tself.assertIn('| SOS-P1-07 |', ({expr}).read_text())\n"
+				self.assertEqual([line for line, _ in find_stops_reads(source)], [4])
+
+	def test_a_ledger_the_test_writes_itself_may_be_read(self):
+		source = 'def t(self):\n\tledger = (self.repo / "docs" / "STOPS.md").read_text()\n'
+		self.assertEqual(find_stops_reads(source), [])
