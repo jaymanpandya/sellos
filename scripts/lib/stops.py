@@ -7,7 +7,9 @@ it stood idle until someone restarted it. The loop prints the hours since the la
 number of tasks finished since then. The exit test (docs/DEV_STRATEGY.md section 11) is ten tasks
 in a row without an unplanned stop.
 
-  stops.py record <file> <task> <category> <cause> <attempt minutes>
+  stops.py record <file> <task> <category> <cause> <attempt minutes> [idle hours]
+                                        idle hours is given only for a stop the loop went on from
+                                        at once (a Blocked task, SOS-SETUP-37): it writes 0.0
   stops.py restarted <file>             fill the idle time of the last row, if it is empty
   stops.py since <file>                 hours since the last stop, one decimal ("never" with none)
   stops.py streak <file> <repo>         tasks the loop finished since the last unplanned stop
@@ -27,10 +29,12 @@ HEADER = """# Stops
 Every stop of the SellOS build loop, appended by `scripts/build-loop.sh` (SOS-SETUP-33). The loop
 prints the hours since the last stop. The exit test in `docs/DEV_STRATEGY.md` section 11 is ten
 consecutive tasks without an unplanned stop. Categories: `blocked` (the gate failed after its
-repairs), `needs-input`, `crash`, `unrecognized`, `environment`, `ci-red`, `push-failed`,
-`blocked-exists`, `no-work`, `start` (a check before any task), `unexpected`, and the planned ones,
-`paused` and `stopped`. "Attempt lost" is the time from the task's start to the stop. "Idle until
-restart" is filled in when the loop starts again.
+repairs), `task broke older specs` (the gate failed on a spec the task did not change, SOS-SETUP-37),
+`needs-input`, `crash`, `unrecognized`, `environment`, `ci-red`, `push-failed`, `blocked-exists`
+(before SOS-SETUP-37), `no-work`, `start` (a check before any task), `unexpected`, and the planned
+ones, `paused` and `stopped`. "Attempt lost" is the time from the task's start to the stop. "Idle
+until restart" is filled in when the loop starts again; it is 0.0 for a Blocked task the loop went on
+from at once (SOS-SETUP-37).
 
 | Time (UTC) | Task | Category | Cause | Attempt lost (min) | Idle until restart (h) |
 | --- | --- | --- | --- | --- | --- |
@@ -69,7 +73,7 @@ def clean(text, limit=200):
 	return text[: limit - 1] + "…" if len(text) > limit else text
 
 
-def record(path, task, category, cause, minutes):
+def record(path, task, category, cause, minutes, idle=""):
 	path = Path(path)
 	path.parent.mkdir(parents=True, exist_ok=True)
 	if not path.exists() or "| Time (UTC) |" not in path.read_text(encoding="utf-8"):
@@ -78,7 +82,8 @@ def record(path, task, category, cause, minutes):
 		lost = f"{max(0, float(minutes)):.0f}"
 	except ValueError:
 		lost = "0"
-	line = f"| {now().strftime(TIME_FORMAT)} | {clean(task or '-', 40)} | {clean(category, 20)} | {clean(cause)} | {lost} |  |\n"
+	idle = f"{float(idle):.1f}" if idle not in ("", None) else ""
+	line = f"| {now().strftime(TIME_FORMAT)} | {clean(task or '-', 40)} | {clean(category, 30)} | {clean(cause)} | {lost} | {idle} |\n"
 	with path.open("a", encoding="utf-8") as handle:
 		handle.write(line)
 
@@ -140,8 +145,8 @@ def main(argv):
 		print(__doc__)
 		return 2
 	command, path = argv[0], argv[1]
-	if command == "record" and len(argv) == 6:
-		record(path, *argv[2:6])
+	if command == "record" and len(argv) in (6, 7):
+		record(path, *argv[2:7])
 	elif command == "restarted":
 		restarted(path)
 	elif command == "since":

@@ -27,8 +27,16 @@ The agent never commits. Git hooks are not used.
    Tenant exits 3, naming the table and its row count (SOS-SETUP-36,
    `scripts/lib/restore_baseline.sh` and `scripts/lib/check_clean_site.sh`). A dump resets only the
    tables it holds, so a restore without the drop leaves the rows of every table made since.
-6. The test files the task changed, first, each run five times when its first run takes under 60 seconds, three times under 3 minutes and twice above, with the repeats of one gate capped at 10 minutes (SOS-SETUP-34; `SELLOS_FLAKE_RUNS` lowers every tier, `SELLOS_FLAKE_CAP_SECONDS` sets the cap; `scripts/lib/flake_check.sh` and `scripts/lib/flake_plan.py`). Every changed test runs once, then the repeat plan is printed, then the repeats run. A failure on any run stops the gate, and a failure after a passing run is reported as flaky (SOS-SETUP-33). The test rules in `CLAUDE.md` say how to write a test that cannot flake.
-7. When a changed spec ran, the same drop, restore, migrate, prepare and clean check again, so the
+6. The specs the task did not change but uses, each run once, all of them, before anything else runs
+   (SOS-SETUP-37, `scripts/lib/affected_specs.py`): a spec that uses a test id
+   (`data-testid="sellos-<id>"`) found anywhere in a changed frontend file, as it was or as it is, or
+   that names a function changed in a changed Python file by its dotted path (an API method it
+   intercepts or calls, a fixture it runs through `cy.bench`). Any failure stops the gate with
+   `AFFECTED SPEC FAILED: <spec>`, and `affected-specs.txt` in the log folder lists each with why
+   and whether it passed, which the loop puts at the top of the repair prompt. On 14 November 2026
+   SOS-P1-20 broke two such specs and learned it only from the whole suite, three gate runs in a row.
+   Then the test files the task changed, each run five times when its first run takes under 60 seconds, three times under 3 minutes and twice above, with the repeats of one gate capped at 10 minutes (SOS-SETUP-34; `SELLOS_FLAKE_RUNS` lowers every tier, `SELLOS_FLAKE_CAP_SECONDS` sets the cap; `scripts/lib/flake_check.sh` and `scripts/lib/flake_plan.py`). Every changed test runs once, then the repeat plan is printed, then the repeats run. A failure on any run stops the gate, and a failure after a passing run is reported as flaky (SOS-SETUP-33). The test rules in `CLAUDE.md` say how to write a test that cannot flake.
+7. When a changed or affected spec ran, the same drop, restore, migrate, prepare and clean check again, so the
    backend suite starts clean whatever a spec left (SOS-SETUP-36).
 8. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
    that needed a rerun is logged FLAKY, and one that is FLAKY three times fails the gate. The bench

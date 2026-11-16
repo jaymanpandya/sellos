@@ -96,10 +96,13 @@ class LoopRecordsItsStops(loop_env.LoopSandbox):
 		self.serve(302)
 		self.run_loop([1], max_runs=1)
 		self.assertEqual(self.status(), "Blocked", self.out)
+		# SOS-SETUP-37: the Blocked row is written at once, idle 0.0, and the loop goes on. With no other
+		# task left it then stops for no work, and that stop is the one the EXIT trap records.
 		self.assertRegex(
-			self.ledger(), rf"\| {loop_env.TASK} \| blocked \| the gate still failed after 1 gate run"
+			self.ledger(),
+			rf"\| {loop_env.TASK} \| blocked \| the gate still failed after 1 gate run.* \| 0\.0 \|",
 		)
-		self.assertIn("Stop recorded in docs/STOPS.md: blocked", self.out)
+		self.assertIn("Stop recorded in docs/STOPS.md: no-work", self.out)
 		self.assertIn("hours since the last stop", self.out)
 
 	def test_a_pause_is_recorded_and_the_next_start_commits_it_with_the_idle_time(self):

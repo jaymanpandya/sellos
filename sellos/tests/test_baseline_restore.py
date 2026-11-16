@@ -223,7 +223,7 @@ echo "BACKEND SUITE SEES $(bench --site "$SITE" mariadb -N -e 'SELECT COUNT(*) F
 		result = self.run_gate_segment(site, baseline, "spec\tcrm/x.cy.js\t/tmp/x\n")
 		out = result.stdout + result.stderr
 		self.assertEqual(result.returncode, 0, out)
-		self.assertIn("after the changed specs, before the backend suite", out)
+		self.assertIn("after the changed and affected specs, before the backend suite", out)
 		self.assertIn(f"Test site {site} is clean", out)
 		self.assertIn("BACKEND SUITE SEES 0 SUPPORT GRANTS", out)
 

@@ -83,6 +83,9 @@ class SellosCli(unittest.TestCase):
 		self.assertIn("SOS-A-1: one", tasks_part.split("Blocked:", 1)[1])
 		self.assertIn("SOS-A-2: two", tasks_part.split("Blocked:", 1)[0])
 		self.assertNotIn("SOS-A-3", tasks_part)
+		# SOS-SETUP-37: the loop goes on past a Blocked task, so the Blocked list comes first.
+		self.assertTrue(out.startswith("== Blocked\n  SOS-A-1: holds up nothing\n"), out[:200])
+		self.assertLess(out.index("== Blocked"), out.index("== Loop"))
 		for section in ("== Loop", "== Log", "== Git", "== CI on", "== Locks", "hours since the last stop"):
 			self.assertIn(section, out)
 

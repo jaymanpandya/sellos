@@ -3,15 +3,16 @@
 Every stop of the SellOS build loop, appended by `scripts/build-loop.sh` (SOS-SETUP-33). The loop
 prints the hours since the last stop. The exit test in `docs/DEV_STRATEGY.md` section 11 is ten
 consecutive tasks without an unplanned stop. Categories: `blocked` (the gate failed after its
-repairs), `needs-input`, `crash`, `unrecognized`, `environment`, `ci-red`, `push-failed`,
-`blocked-exists`, `no-work`, `start` (a check before any task), `unexpected`, `gate hole` (a hole in the
-gate found by a stop, recorded by hand), and the planned ones,
-`paused` and `stopped`. "Attempt lost" is the time from the task's start to the stop. "Idle until
-restart" is filled in when the loop starts again.
+repairs), `task broke older specs` (the gate failed on a spec the task did not change, SOS-SETUP-37),
+`needs-input`, `crash`, `unrecognized`, `environment`, `ci-red`, `push-failed`, `blocked-exists`
+(before SOS-SETUP-37), `no-work`, `start` (a check before any task), `unexpected`, `gate hole` (a hole
+in the gate found by a stop, recorded by hand), and the planned ones, `paused` and `stopped`. "Attempt
+lost" is the time from the task's start to the stop. "Idle until restart" is filled in when the loop
+starts again; it is 0.0 for a Blocked task the loop went on from at once (SOS-SETUP-37).
 
 | Time (UTC) | Task | Category | Cause | Attempt lost (min) | Idle until restart (h) |
 | --- | --- | --- | --- | --- | --- |
 | 2026-11-13 02:05 | SOS-N21A | blocked | the gate still failed after 3 gate runs: the phone number guard and the no-commands guard (docs/DEV_STRATEGY.md row 38); recorded by hand by SOS-SETUP-33 | 34 | 7.1 |
 | 2026-11-13 22:05 | SOS-P1-15 | gate hole | stopped by hand (exit 143, SOS-SETUP-36): the baseline restore reset only the tables in the 4 November dump, so a Support Grant and Consent Records the agent seeded by hand, and older Provisioning Job and Tenant rows, survived into the backend suite (13 failures); nothing reset the site between the changed specs and the backend suite. Work saved on wip/SOS-P1-15-20261113 | 774 | 6.3 |
 | 2026-11-14 04:52 | SOS-P1-15 | stopped | stopped by a signal (sellos stop --now, Ctrl-C or a shutdown) | 29 | 0.0 |
-| 2026-11-14 07:25 | SOS-P1-20 | blocked | the gate still failed after 3 gate run(s): UI TESTS FAILED | 42 |  |
+| 2026-11-14 07:25 | SOS-P1-20 | task broke older specs | the gate still failed after 3 gate run(s): UI TESTS FAILED. The task made the lead form's Source a required select and updated only leads_screen.cy.js; leads_by_role.cy.js and duplicate_warning.cy.js made a lead without a source and failed only in the whole suite. Blocked at 12:55 IST and the loop stood idle (recategorised by hand by SOS-SETUP-37; finished by hand in 08b6a92) | 42 |  |

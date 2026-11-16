@@ -145,7 +145,9 @@ class TestRepairStartsWithTheGuard(unittest.TestCase):
 
 	def test_the_repair_prompt_opens_with_it(self):
 		script = LOOP.read_text(encoding="utf-8")
-		self.assertIn('REPAIR_PROMPT="$(repair_head)The test gate for the task below failed.', script)
+		self.assertIn(
+			'REPAIR_PROMPT="$(repair_head)$(affected_context)The test gate for the task below failed.', script
+		)
 		repair = script.split('REPAIR_PROMPT="', 1)[1].split("Task:\n$TASK_BLOCK", 1)[0]
 		self.assertIn("$GUARDS_CHECK", repair)
 		for gate_file in ("scripts/check-guards.sh", "sellos/testing/guards.py", "docs/GUARDS.md"):

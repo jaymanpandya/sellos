@@ -2,7 +2,7 @@
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
 # Order: new files marked intent-to-add, the guards (scripts/check-guards.sh --all: lint, Semgrep and the task guards, SOS-SETUP-33), preflight (CI parity, a snapshot of the bench's sites and databases), build the web app, put the clean baseline back
-# over a wiped database, migrate, prepare_clean_site (code, every run), a check that the site is clean (exit 3, SOS-SETUP-36), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the test files the task changed first, each run 5, 3 or 2 times by the time of its first run, with the repeats capped at 10 minutes, where one failed run fails it (SOS-SETUP-33 and SOS-SETUP-34, scripts/lib/flake_check.sh; a failure stops the gate at once), the same reset and check again when a changed spec ran, the
+# over a wiped database, migrate, prepare_clean_site (code, every run), a check that the site is clean (exit 3, SOS-SETUP-36), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the specs the task did not change but uses, each run once (SOS-SETUP-37, scripts/lib/affected_specs.py; a failure stops the gate), the test files the task changed first, each run 5, 3 or 2 times by the time of its first run, with the repeats capped at 10 minutes, where one failed run fails it (SOS-SETUP-33 and SOS-SETUP-34, scripts/lib/flake_check.sh; a failure stops the gate at once), the same reset and check again when a changed spec ran, the
 # whole backend suite (a module that failed on a MariaDB 1020 or deadlock is rerun once, alone, and
 # a second database conflict exits 3, SOS-SETUP-25), the whole Cypress suite, then a check that no other site or database was touched and
 # that no secret is in a log: the provisioner's password (SOS-SETUP-18), the Telegram values and BuildOS's credentials (SOS-SETUP-29). A failed UI spec is rerun once, alone. The
@@ -242,14 +242,50 @@ for f in $CHANGED_SPECS; do
   echo "--- changed spec: $spec ---"
   printf 'spec\t%s\t%s\n' "$spec" "$LOG_DIR/ui-$STAMP-changed-$(printf '%s' "$spec" | tr '/' '_')" >>"$FLAKE_TARGETS"
 done
+# SOS-SETUP-37: the specs the task did not change but uses: a test id in a changed frontend file, or a
+# function changed in a changed Python file that a spec names by its dotted path
+# (scripts/lib/affected_specs.py). Each runs once, all of them, before the changed tests and their
+# repeats, so a task that breaks an older spec learns it in minutes, not at the end of the whole suite.
+# $LOG_DIR/affected-specs.txt lists each with why and PASSED or FAILED, and the loop puts it in the
+# repair prompt. On 14 November 2026 SOS-P1-20 was Blocked after three gate runs on two such specs.
+AFFECTED_FILE="$LOG_DIR/affected-specs.txt"
+rm -f "$AFFECTED_FILE"
+AFFECTED_RAN=""
+# shellcheck disable=SC2086
+AFFECTED="$(python3 "$REPO_DIR/scripts/lib/affected_specs.py" "apps/$APP" HEAD $CHANGED)" \
+  || { echo "AFFECTED SPECS FAILED: scripts/lib/affected_specs.py could not list them"; exit 1; }
+if [ -n "$AFFECTED" ]; then
+  echo "=== Specs that use what this task changed, each run once: ==="
+  printf '%s\n' "$AFFECTED" | sed 's/^/    /'
+  AFFECTED_FAILED=""
+  while IFS=$'\t' read -r spec why; do
+    [ -n "$spec" ] || continue
+    echo "--- affected spec: $spec ($why) ---"
+    if _sellos_ui_run "$LOG_DIR/ui-$STAMP-affected-$(printf '%s' "$spec" | tr '/' '_').log" "$spec"; then
+      printf 'PASSED\t%s\t%s\n' "$spec" "$why" >>"$AFFECTED_FILE"
+    else
+      printf 'FAILED\t%s\t%s\n' "$spec" "$why" >>"$AFFECTED_FILE"
+      AFFECTED_FAILED="$AFFECTED_FAILED $spec"
+    fi
+    AFFECTED_RAN=1
+  done <<<"$AFFECTED"
+  if [ -n "$AFFECTED_FAILED" ]; then
+    for spec in $AFFECTED_FAILED; do echo "AFFECTED SPEC FAILED: $spec"; done
+    echo "AFFECTED SPECS FAILED: the task broke spec(s) it did not change:$AFFECTED_FAILED. When a task changes a control or a test id, every spec that uses it is updated (grep cypress/ for it)."
+    exit 1
+  fi
+else
+  echo "=== No spec outside the task's own uses what it changed. ==="
+fi
+
 # It prints CHANGED TEST FAILED or CHANGED SPEC FAILED itself, and a failure stops the gate at once.
 sellos_flake_gate "$FLAKE_TARGETS" || exit 1
 
 # SOS-SETUP-36: a spec runs against the real test site, and only its own after hook cleans up what it
 # made. Nothing enforces that hook, so when a changed spec ran, the site is reset again and checked
 # clean before the backend suite, whatever the spec left. The tenant template is a file and stays.
-if grep -q '^spec' "$FLAKE_TARGETS"; then
-  sellos_reset_test_site "after the changed specs, before the backend suite"
+if grep -q '^spec' "$FLAKE_TARGETS" || [ -n "${AFFECTED_RAN:-}" ]; then
+  sellos_reset_test_site "after the changed and affected specs, before the backend suite"
 fi
 
 echo "--- Backend unit tests: $APP ---"

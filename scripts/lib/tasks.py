@@ -11,6 +11,11 @@ logic documented for that build:
      satisfied when it is "Complete" or "Not Needed" (SOS-SETUP-19).
   3. If nothing is eligible, report NONE_ELIGIBLE.
 
+A Blocked task does not halt the loop (SOS-SETUP-37). It is never picked, and
+since a Blocked dependency is not satisfied, neither is anything that depends
+on it, directly or through other tasks. `tasks.py blocked` lists each Blocked
+task and the tasks it holds up.
+
 A "Not Needed" task is never picked and never reported: not in the
 Blocked list, not in the Waiting report.
 
@@ -20,9 +25,8 @@ multi line block parsing with a custom record separator is a GNU
 extension that doesn't behave the same way on BSD awk. This keeps the
 logic itself identical, just more portable for a local Mac run.
 
-Known gap carried over deliberately, per the OTT build's own notes: this
-does NOT auto resume a "Blocked" task. Reset it to "Not Started" by hand
-once you've actually fixed the underlying problem, then relaunch the loop.
+A Blocked task is never resumed by itself. Reset it to "Not Started" by hand
+once the underlying problem is fixed.
 """
 
 import re
@@ -101,13 +105,9 @@ def select_next(tasks):
 		if t["status"] == "In Progress":
 			return t["id"]
 
-	# Never pick new "Not Started" work while anything sits Blocked. A blocker
-	# means the codebase is in a known-bad state; development halts entirely
-	# until every Blocked task is actually root-caused and reset by hand.
-	blocked = [t["id"] for t in tasks if t["status"] == "Blocked"]
-	if blocked:
-		return "BLOCKED_EXISTS:" + ",".join(blocked)
-
+	# SOS-SETUP-37: a Blocked task no longer halts everything. The loop resets the branch before it
+	# marks a task Blocked, so no broken code is left behind, and a Blocked task is not satisfied, so
+	# nothing that depends on it, directly or through other tasks, is ever eligible.
 	satisfied = {t["id"] for t in tasks if t["status"] in SATISFIED}
 
 	# Tier first, then dependencies, then file order (SOS-SETUP-19). Priority no longer orders.
@@ -134,7 +134,7 @@ def pick_order(tasks, limit=None):
 	order = []
 	while limit is None or len(order) < limit:
 		picked = select_next(state)
-		if picked == "NONE_ELIGIBLE" or picked.startswith("BLOCKED_EXISTS:"):
+		if picked == "NONE_ELIGIBLE":
 			break
 		order.append(picked)
 		for t in state:
@@ -169,6 +169,34 @@ def waiting_report(tasks):
 		lines.append(
 			f"{t['id']} waits on {waits}; holds up {', '.join(held[:4])}{' and more' if len(held) > 4 else ''}"
 		)
+	return lines
+
+
+def held_up_by(tasks, task_id):
+	"""Every not yet finished task that depends on task_id, directly or through other tasks, in file order."""
+	held = {task_id}
+	grew = True
+	while grew:
+		grew = False
+		for t in tasks:
+			if t["id"] not in held and t["status"] not in SATISFIED and held.intersection(t["deps"]):
+				held.add(t["id"])
+				grew = True
+	return [t["id"] for t in tasks if t["id"] in held and t["id"] != task_id]
+
+
+def blocked_report(tasks):
+	"""One line per Blocked task and what it holds up (SOS-SETUP-37), for sellos status and the notices."""
+	lines = []
+	for t in tasks:
+		if t["status"] != "Blocked":
+			continue
+		held = held_up_by(tasks, t["id"])
+		if not held:
+			lines.append(f"{t['id']}: holds up nothing")
+			continue
+		shown = ", ".join(held[:6]) + (f" and {len(held) - 6} more" if len(held) > 6 else "")
+		lines.append(f"{t['id']}: holds up {len(held)} task(s): {shown}")
 	return lines
 
 
@@ -208,7 +236,7 @@ def set_status(path, task_id, new_status):
 def main():
 	if len(sys.argv) < 3:
 		print(
-			"Usage: tasks.py select <TASKS_FILE> | tasks.py order <TASKS_FILE> [N] | tasks.py waiting <TASKS_FILE> | tasks.py set-status <TASKS_FILE> <TASK_ID> <STATUS>",
+			"Usage: tasks.py select <TASKS_FILE> | tasks.py order <TASKS_FILE> [N] | tasks.py waiting <TASKS_FILE> | tasks.py blocked <TASKS_FILE> | tasks.py set-status <TASKS_FILE> <TASK_ID> <STATUS>",
 			file=sys.stderr,
 		)
 		sys.exit(2)
@@ -224,6 +252,9 @@ def main():
 			print(task_id)
 	elif cmd == "waiting":
 		for line in waiting_report(parse(sys.argv[2])):
+			print(line)
+	elif cmd == "blocked":
+		for line in blocked_report(parse(sys.argv[2])):
 			print(line)
 	elif cmd == "set-status":
 		if len(sys.argv) != 5:

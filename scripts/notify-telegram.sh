@@ -34,12 +34,25 @@ if [ -z "${SELLOS_TELEGRAM_BOT_TOKEN:-}" ] || [ -z "${SELLOS_TELEGRAM_CHAT_ID:-}
   exit 0
 fi
 
-if ! curl -sS --max-time 20 -X POST \
+# SOS-SETUP-37: the message goes as plain text, at most 4000 characters (Telegram's limit is 4096),
+# and Telegram's answer is checked. It used to go with parse_mode=HTML, so any "<" in it (a Cypress
+# "<li>", the "<ID>" in the no-work notice) made Telegram refuse it with a 400 that curl, without
+# --fail, reported as a success: nothing in the log could say whether a notice arrived.
+if [ "${#MESSAGE}" -gt 4000 ]; then
+  MESSAGE="${MESSAGE:0:3950}
+… (cut; the whole message is in the loop log)"
+fi
+if ! RESPONSE="$(curl -sS --max-time 20 -X POST \
   "https://api.telegram.org/bot${SELLOS_TELEGRAM_BOT_TOKEN}/sendMessage" \
   -d "chat_id=${SELLOS_TELEGRAM_CHAT_ID}" \
-  --data-urlencode "text=${MESSAGE}" \
-  -d "parse_mode=HTML" \
-  > /dev/null 2>&1; then
+  --data-urlencode "text=${MESSAGE}" 2>/dev/null)"; then
   echo "NOTIFY: the Telegram send failed. The message is above." >&2
+  exit 0
 fi
+case "$RESPONSE" in
+  *'"ok":true'*)
+    echo "NOTIFY: sent to Telegram (message_id $(printf '%s' "$RESPONSE" | sed -n 's/.*"message_id":\([0-9]*\).*/\1/p'))." ;;
+  *)
+    echo "NOTIFY: Telegram refused the message: $(printf '%s' "$RESPONSE" | sed -n 's/.*"description":"\([^"]*\)".*/\1/p' | cut -c1-200)" >&2 ;;
+esac
 exit 0

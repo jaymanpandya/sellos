@@ -3,6 +3,8 @@
 * A Not Needed dependency counts as satisfied, and a Not Needed task is never picked or reported.
 * The loop chooses by Launch tier first (Dec 20 before Jan 1), then dependencies, then file order.
   Priority no longer orders.
+* SOS-SETUP-37: a Blocked task does not halt the loop. It is skipped with everything that depends on
+  it, and the report names what each Blocked task holds up.
 * The real TASKS.md: every task has a Launch line, only SOS-REG-L depends on a SOS-REG task, and the
   Status values line names Not Needed.
 """
@@ -69,7 +71,61 @@ class NotNeeded(unittest.TestCase):
 
 	def test_a_not_needed_task_is_not_in_the_blocked_list(self):
 		parsed = parse(block("SOS-P2-12", status="Not Needed"), block("SOS-P2-03", status="Blocked"))
-		self.assertEqual(tasks.select_next(parsed), "BLOCKED_EXISTS:SOS-P2-03")
+		self.assertEqual(tasks.blocked_report(parsed), ["SOS-P2-03: holds up nothing"])
+
+
+class ABlockedTaskDoesNotHaltTheLoop(unittest.TestCase):
+	"""SOS-SETUP-37: a Blocked task is skipped with everything that depends on it, and the rest goes on."""
+
+	def test_the_next_eligible_task_is_picked_past_a_blocked_one(self):
+		parsed = parse(block("SOS-P1-20", status="Blocked"), block("SOS-P1-21"))
+		self.assertEqual(tasks.select_next(parsed), "SOS-P1-21")
+
+	def test_a_blocked_task_is_never_picked(self):
+		parsed = parse(block("SOS-P1-20", status="Blocked"))
+		self.assertEqual(tasks.select_next(parsed), "NONE_ELIGIBLE")
+
+	def test_a_task_that_depends_on_a_blocked_one_is_skipped_directly_and_through_others(self):
+		parsed = parse(
+			block("SOS-P1-20", status="Blocked"),
+			block("SOS-P1-21", deps="SOS-P1-20"),
+			block("SOS-P1-22", deps="SOS-P1-21"),
+			block("SOS-P1-23", deps="SOS-P1-20, SOS-P1-24"),
+			block("SOS-P1-24", status="Complete"),
+			block("SOS-P1-25"),
+		)
+		self.assertEqual(tasks.select_next(parsed), "SOS-P1-25")
+		self.assertEqual(tasks.pick_order(parsed), ["SOS-P1-25"])
+
+	def test_in_progress_is_still_resumed_before_anything_else(self):
+		parsed = parse(
+			block("SOS-P1-20", status="Blocked"), block("SOS-P1-21"), block("SOS-P1-22", status="In Progress")
+		)
+		self.assertEqual(tasks.select_next(parsed), "SOS-P1-22")
+
+	def test_the_blocked_report_names_what_each_blocked_task_holds_up(self):
+		parsed = parse(
+			block("SOS-P1-20", status="Blocked"),
+			block("SOS-P1-21", deps="SOS-P1-20"),
+			block("SOS-P1-22", deps="SOS-P1-21"),
+			block("SOS-P1-23", deps="SOS-P1-20", status="Complete"),
+			block("SOS-P1-24", status="Blocked"),
+			block("SOS-P1-25"),
+		)
+		self.assertEqual(
+			tasks.blocked_report(parsed),
+			["SOS-P1-20: holds up 2 task(s): SOS-P1-21, SOS-P1-22", "SOS-P1-24: holds up nothing"],
+		)
+
+	def test_a_long_list_is_cut_after_six(self):
+		deps = [block(f"SOS-X-{n}", deps="SOS-P1-20") for n in range(1, 9)]
+		parsed = parse(block("SOS-P1-20", status="Blocked"), *deps)
+		self.assertEqual(
+			tasks.blocked_report(parsed),
+			[
+				"SOS-P1-20: holds up 8 task(s): SOS-X-1, SOS-X-2, SOS-X-3, SOS-X-4, SOS-X-5, SOS-X-6 and 2 more"
+			],
+		)
 
 
 class TierThenDependenciesThenFileOrder(unittest.TestCase):

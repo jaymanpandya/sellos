@@ -7,9 +7,9 @@
 #   2. Mark it In Progress and commit that immediately.
 #   3. Call `claude -p` once with the task embedded in the prompt.
 #   4. On IMPLEMENTATION_READY: run the real test gate (run-tests.sh).
-#      Pass -> mark Complete, commit, push. Fail -> mark Blocked, stop.
+#      Pass -> mark Complete, commit, push. Fail -> mark Blocked, notify, go on (SOS-SETUP-37).
 #   5. On NEEDS_INPUT: notify and stop — a human needs to answer.
-#   6. On a crashed Claude process: mark Blocked, notify, stop.
+#   6. On a crashed Claude process: mark Blocked, notify, go on (SOS-SETUP-37).
 #   7. On an environment problem (SOS-SETUP-14): the gate exits 2 or 3, or the server preflight
 #      fails after a failed gate run. Notify and stop, leaving the task In Progress and the
 #      working tree untouched: no repair run, no reset, no salvage, not Blocked. Restarting the
@@ -20,19 +20,17 @@
 #      Everything this script prints, every reply it saves and every notification is redacted, so
 #      their values never reach the loop log, NOTIFY, Telegram or a gate log.
 #
-# The loop stops itself on any blocked/needs-input/no-work state. It is
-# not designed to grind through failures unattended — that's deliberate,
-# per the OTT build's own experience.
+# The loop stops itself on needs-input, no-work and two Blocked tasks in a row.
 #
-# HARD RULE: development does not progress while anything is Blocked.
-# select-next-task.sh (via tasks.py) refuses to pick new "Not Started"
-# work as long as any task's Status is Blocked — it returns
-# "BLOCKED_EXISTS:<id,id,...>" instead, and this script treats that as
-# an immediate stop, same as a crash. A Blocked task is never
-# auto-resumed either. Root-cause the failure, verify it by hand
-# (including actually browsing the result, not just re-reading logs),
-# then run `scripts/set-task-status.sh <TASK_ID> "Not Started"`
-# yourself before relaunching.
+# SOS-SETUP-37: a Blocked task does not idle the loop. On 14 November 2026 SOS-P1-20 was Blocked at
+# 12:55 IST and the loop stood idle for two days with eligible work left. Now the loop sends the
+# notice, records the stop in docs/STOPS.md (idle 0.0, committed with the Blocked status), and picks
+# the next Not Started task whose dependencies are all Complete. tasks.py never picks a Blocked task,
+# and a Blocked dependency is unmet, so nothing that depends on one, directly or through other
+# tasks, is picked either. Two tasks Blocked in a row stop the loop: that is more likely the loop's
+# own fault than two bad tasks. A Blocked task is never auto-resumed. Root-cause the failure,
+# verify it by hand (including actually browsing the result, not just re-reading logs), then run
+# `scripts/set-task-status.sh <TASK_ID> "Not Started"` yourself.
 #
 # NO BROKEN CODE EVER LANDS ON MAIN: this script records the commit
 # HEAD was at before each task starts. On any non-clean outcome for
@@ -261,6 +259,22 @@ repair_head() {
   printf '%s\n%s\n%s\n\n' "A guard failed. $GUARD_RULE" "$fails" "Apply each Fix above in your own code, then run scripts/check-guards.sh and repeat until it prints GUARDS PASSED. $GUARD_RULE"
 }
 
+# SOS-SETUP-37: the specs the task did not change but uses (a test id in a changed screen, or a changed
+# API method), as the gate's last run left them in $LOG_DIR/affected-specs.txt, each with why and
+# whether it passed. A repair after one failed starts with them. Empty when the gate found none.
+affected_context() {
+  local file="$LOG_DIR/affected-specs.txt" failed
+  [[ -s "$file" ]] || return 0
+  failed="$(awk -F '\t' '$1 == "FAILED" {print "  " $2 " (" $3 ")"}' "$file")"
+  printf '%s\n' "Specs this task did not change but that use what it changed (a test id in a changed screen, or a changed API method). The gate ran each once, before anything else:"
+  awk -F '\t' '{print "  " $1 ": " $2 " (" $3 ")"}' "$file"
+  if [[ -n "$failed" ]]; then
+    printf '%s\n%s\n' "These failed, so this task broke them:" "$failed"
+    printf '%s\n' "Read each failure in the output below. Update every spec that uses the control or test id you changed (grep cypress/ for it), through one shared helper in cypress/support/commands.js where several specs do the same thing. Never weaken or delete an assertion."
+  fi
+  printf '\n'
+}
+
 is_limit() { printf '%s\n' "$1" | grep -q -i -E "hit your .*limit|usage limit|limit reached"; }
 wait_for_limit() {
   local secs
@@ -446,6 +460,38 @@ $AHEAD_LIST" || true
   fi
 fi
 
+# SOS-SETUP-37: what happens after a task is marked Blocked. blocked_decide runs after the status is
+# set and before the commit: the first Blocked task in a row gets its docs/STOPS.md row now, idle 0.0,
+# staged so it goes into the Blocked commit (an uncommitted ledger would fail the next task's
+# gate-files guard), and the loop goes on. A second Blocked task in a row is a stop: the EXIT trap
+# records it. blocked_notice adds the Blocked list to the notice and says which way the loop went.
+BLOCKED_IN_A_ROW=0
+LAST_BLOCKED=""
+BLOCKED_STOP=0
+blocked_decide() {
+  local category="$1" cause="$2" minutes=0
+  BLOCKED_IN_A_ROW=$((BLOCKED_IN_A_ROW + 1))
+  if [[ -n "${SELLOS_TASK_STARTED:-}" ]]; then minutes=$((($(date +%s) - SELLOS_TASK_STARTED) / 60)); fi
+  if [[ "$BLOCKED_IN_A_ROW" -ge 2 ]]; then
+    BLOCKED_STOP=1
+    stop_note "$category" "two tasks Blocked in a row ($LAST_BLOCKED, then $TASK_ID): $cause"
+  else
+    BLOCKED_STOP=0
+    python3 "$STOPS_PY" record "$STOPS_FILE" "$TASK_ID" "$category" "$cause; the loop went on to the next task" "$minutes" 0 || true
+    git add -- docs/STOPS.md >/dev/null 2>&1 || true
+  fi
+  LAST_BLOCKED="$TASK_ID"
+}
+blocked_notice() {
+  local list
+  list="$(python3 "$SCRIPT_DIR/lib/tasks.py" blocked "$TASKS_FILE" 2>/dev/null | head -10 || true)"
+  if [[ "$BLOCKED_STOP" -eq 1 ]]; then
+    printf '%s\n%s\n%s' "$1 Two tasks Blocked in a row, so the loop stops." "Blocked:" "$list"
+  else
+    printf '%s\n%s\n%s' "$1 Going on with the next eligible task, skipping the Blocked ones and everything that depends on them." "Blocked:" "$list"
+  fi
+}
+
 # A scheduled regression pause (SOS-SETUP-19): scripts/pause-loop.sh creates this file and
 # scripts/resume-loop.sh removes it. It is checked before every pick, so a running task finishes first.
 PAUSE_FILE="${SELLOS_PAUSE_FILE:-/tmp/sellos-loop.pause}"
@@ -473,11 +519,6 @@ $WAITING_LINES"
     break
   fi
 
-  if [[ "$TASK_ID" == BLOCKED_EXISTS:* ]]; then
-    stop_note blocked-exists "a Blocked task is open: ${TASK_ID#BLOCKED_EXISTS:}"
-    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: halted. Blocked task(s) still open: ${TASK_ID#BLOCKED_EXISTS:}. Fix and reset to Not Started before any new work can start."
-    break
-  fi
 
   echo "Selected task: $TASK_ID"
   STOP_TASK="$TASK_ID"
@@ -511,7 +552,7 @@ $WAITING_LINES"
   export SELLOS_TASK_STARTED="$(date +%s)"
 
   PROMPT="You are implementing one task from SellOS's TASKS.md inside the
-sellos Frappe v16 app. Never run the full test suite or the whole browser suite, and never run anything in the background. Never start, stop or touch the servers on port 8000 (BuildOS) or 8002 (Pamaa); SellOS runs only on port 8004, on the server Jayman starts with cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004. You may, and should, run the single backend test module and the single browser spec that you add or change, one at a time and in the foreground: for a module, from ~/iespl-bench, bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>; for a spec, from ~/iespl-bench, bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Fix whatever fails before you reply. The loop then runs scripts/run-tests.sh separately and blocks on its real result. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. Never run seed_regression_data, any ui_fixtures.seed_* function or scripts/prepare-regression.sh, with bench execute or any other way: only prepare-regression.sh, run by a person, seeds the regression data. Check a seed change with a backend test that calls it and reads it back. A task whose block says Browser spec: required also adds its flows to docs/regression/flows.md, one line each in the form FLOW <task id>-<n> | role | start path | steps | expected result (see that file). Add flows, never remove or change one, and if the task adds data a person sees, add it to seed_regression_data in sellos/tests/ui_fixtures.py through the production API and update its docstring.
+sellos Frappe v16 app. Never run the full test suite or the whole browser suite, and never run anything in the background. Never start, stop or touch the servers on port 8000 (BuildOS) or 8002 (Pamaa); SellOS runs only on port 8004, on the server Jayman starts with cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004. You may, and should, run the single backend test module and the single browser spec that you add or change, one at a time and in the foreground: for a module, from ~/iespl-bench, bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>; for a spec, from ~/iespl-bench, bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Fix whatever fails before you reply. When you change a control or a test id (data-testid), or what a form needs before it saves, grep cypress/ for it and update every spec that uses it, not only your own; where several specs do the same thing, change them through one shared helper in cypress/support/commands.js. The gate runs every spec that uses a test id in a screen you changed, or an API method you changed, before anything else (SOS-SETUP-37). The loop then runs scripts/run-tests.sh separately and blocks on its real result. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. Never run seed_regression_data, any ui_fixtures.seed_* function or scripts/prepare-regression.sh, with bench execute or any other way: only prepare-regression.sh, run by a person, seeds the regression data. Check a seed change with a backend test that calls it and reads it back. A task whose block says Browser spec: required also adds its flows to docs/regression/flows.md, one line each in the form FLOW <task id>-<n> | role | start path | steps | expected result (see that file). Add flows, never remove or change one, and if the task adds data a person sees, add it to seed_regression_data in sellos/tests/ui_fixtures.py through the production API and update its docstring.
 Follow SellOS's locked architecture: no ERPNext. The web app never uses
 the Frappe desk, and every customer feature is built in the SellOS web
 app. There are five roles: Platform Admin, Company Admin, Agent, Client
@@ -595,11 +636,12 @@ $TASK_BLOCK"
     echo "Preserved this attempt's work on branch $SALVAGE_BRANCH before reverting main."
     git reset --hard "$PRE_TASK_SHA" && git clean -fd
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Blocked" "$TASKS_FILE"
+    blocked_decide crash "Claude's process exited $CLAUDE_EXIT"
     git add "$TASKS_FILE"
     loop_commit -m "$TASK_ID: Claude process crashed, marking Blocked (repo reset to pre-task state)"
-    stop_note crash "Claude's process exited $CLAUDE_EXIT"
-    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID crashed Claude's process (exit $CLAUDE_EXIT). Marked Blocked, repo reset to before this task. Stopping."
-    break
+    "$SCRIPT_DIR/notify-telegram.sh" "$(blocked_notice "SellOS loop: $TASK_ID crashed Claude's process (exit $CLAUDE_EXIT). Marked Blocked, repo reset to before this task.")" || true
+    [[ "$BLOCKED_STOP" -eq 1 ]] && break
+    continue
   fi
 
   if [[ "$RESPONSE" == NEEDS_INPUT:* ]]; then
@@ -629,11 +671,12 @@ $TASK_BLOCK"
     echo "Preserved this attempt's work on branch $SALVAGE_BRANCH before reverting main."
     git reset --hard "$PRE_TASK_SHA" && git clean -fd
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Blocked" "$TASKS_FILE"
+    blocked_decide unrecognized "the reply had no IMPLEMENTATION_READY or NEEDS_INPUT line and no work"
     git add "$TASKS_FILE"
     loop_commit -m "$TASK_ID: unrecognized response, marking Blocked (repo reset to pre-task state)"
-    stop_note unrecognized "the reply had no IMPLEMENTATION_READY or NEEDS_INPUT line and no work"
-    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID gave an unrecognized response. Marked Blocked, repo reset to before this task. Stopping."
-    break
+    "$SCRIPT_DIR/notify-telegram.sh" "$(blocked_notice "SellOS loop: $TASK_ID gave an unrecognized response. Marked Blocked, repo reset to before this task.")" || true
+    [[ "$BLOCKED_STOP" -eq 1 ]] && break
+    continue
   fi
 
   SUMMARY="${RESPONSE#IMPLEMENTATION_READY: }"
@@ -666,10 +709,10 @@ $PREFLIGHT_OUT"
     GATE_RUN=$((GATE_RUN + 1))
     echo "The gate failed. Asking Claude to repair it from the failure output (gate run $GATE_RUN of $MAX_GATE_RUNS)."
     FAILCTX="$(failure_context)"
-    REPAIR_PROMPT="$(repair_head)The test gate for the task below failed. Your changes are still in the working tree, uncommitted, and nothing has been reset. Read the failure output at the end, find the cause in the code, and fix it. This is gate run $GATE_RUN of $MAX_GATE_RUNS.
+    REPAIR_PROMPT="$(repair_head)$(affected_context)The test gate for the task below failed. Your changes are still in the working tree, uncommitted, and nothing has been reset. Read the failure output at the end, find the cause in the code, and fix it. This is gate run $GATE_RUN of $MAX_GATE_RUNS.
 $GUARD_RULES
 $GUARDS_CHECK
-Rules. Fix the product code or the test you added, and never delete or weaken an assertion to make a test pass. A failing test is fixed in the code, not in the test, unless the task block says otherwise. Never use the MariaDB root account or a root password: only the provisioner account in SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD, whose values you never print, log or write. Never edit a gate file: scripts/run-tests.sh, scripts/build-loop.sh, scripts/watchdog.sh, scripts/select-next-task.sh, scripts/set-task-status.sh, scripts/make-baseline.sh, scripts/prepare-regression.sh, scripts/pause-loop.sh, scripts/resume-loop.sh, scripts/refresh-buildos-reference.sh, scripts/install-shared-helpers.sh, anything under scripts/shared, anything under scripts/lib, scripts/check_*.py, cypress.config.js, cypress/support/e2e.js, .pre-commit-config.yaml, .semgrepignore, .eslintrc, .github/workflows, docs/DEV_STRATEGY.md, docs/TESTING.md, docs/regression/README.md, scripts/check-guards.sh, sellos/testing/guards.py or docs/GUARDS.md, and never change the [tool.ruff] tables in pyproject.toml (adding a dependency there is fine). Never remove an assertion and never delete a test file. If a failing test is in a file this task did not change, follow the policy below. Read the whole failing test first, because the first failing assertion hides every later one: check every assertion against the code before you reply, and fix all of them in this pass. You may run the single backend test module or the single browser spec that you changed, one at a time and in the foreground, from ~/iespl-bench: bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>, or bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Never run the full suite, and never run anything in the background. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. Never run seed_regression_data, any ui_fixtures.seed_* function or scripts/prepare-regression.sh, with bench execute or any other way: only prepare-regression.sh, run by a person, seeds the regression data. Check a seed change with a backend test that calls it and reads it back. The word Frappe must never appear in any user facing label, screen, or error message.
+Rules. Fix the product code or the test you added, and never delete or weaken an assertion to make a test pass. A failing test is fixed in the code, not in the test, unless the task block says otherwise. Never use the MariaDB root account or a root password: only the provisioner account in SELLOS_DB_PROVISIONER_USER and SELLOS_DB_PROVISIONER_PASSWORD, whose values you never print, log or write. Never edit a gate file: scripts/run-tests.sh, scripts/build-loop.sh, scripts/watchdog.sh, scripts/select-next-task.sh, scripts/set-task-status.sh, scripts/make-baseline.sh, scripts/prepare-regression.sh, scripts/pause-loop.sh, scripts/resume-loop.sh, scripts/refresh-buildos-reference.sh, scripts/install-shared-helpers.sh, anything under scripts/shared, anything under scripts/lib, scripts/check_*.py, cypress.config.js, cypress/support/e2e.js, .pre-commit-config.yaml, .semgrepignore, .eslintrc, .github/workflows, docs/DEV_STRATEGY.md, docs/TESTING.md, docs/regression/README.md, scripts/check-guards.sh, sellos/testing/guards.py or docs/GUARDS.md, and never change the [tool.ruff] tables in pyproject.toml (adding a dependency there is fine). Never remove an assertion and never delete a test file. When you change a control or a test id, or what a form needs before it saves, grep cypress/ for it and update every spec that uses it, through one shared helper in cypress/support/commands.js where several specs do the same thing. If a failing test is in a file this task did not change, follow the policy below. Read the whole failing test first, because the first failing assertion hides every later one: check every assertion against the code before you reply, and fix all of them in this pass. You may run the single backend test module or the single browser spec that you changed, one at a time and in the foreground, from ~/iespl-bench: bench --site sellos_test.localhost run-tests --app sellos --module <dotted.module.path>, or bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/<path>. Never run the full suite, and never run anything in the background. Never run git commit, git push, git reset, git stash, git rebase, git merge, git checkout of another branch or set-task-status.sh, and never change a task's status: the loop does all of that after the gate passes. Leave your work uncommitted in the working tree. Never run seed_regression_data, any ui_fixtures.seed_* function or scripts/prepare-regression.sh, with bench execute or any other way: only prepare-regression.sh, run by a person, seeds the regression data. Check a seed change with a backend test that calls it and reads it back. The word Frappe must never appear in any user facing label, screen, or error message.
 Policy, because nobody can answer questions during a run, so never ask one. If a failing test is outside this task, you may fix that test file or the shared fixtures it uses when the cause is test data, test order or a hard coded assumption, and you must say what you changed. If a test deletes or empties shared data, make it restore what it removed, even when it fails. Never change product code that this task did not touch just to make a test pass, and never weaken or delete an assertion. If you truly cannot fix it, still reply with IMPLEMENTATION_READY and a plain account of what is failing and why.
 Respond with this as the literal first characters of your response, nothing before it:
 IMPLEMENTATION_READY: <plain English summary of what you fixed>
@@ -714,6 +757,7 @@ Decide for yourself, following the policy above, and fix it now. Do not ask agai
   done
 
   if [[ "$TEST_EXIT" -eq 0 ]]; then
+    BLOCKED_IN_A_ROW=0
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Complete" "$TASKS_FILE"
     git add -A
     # SOS-SETUP-22: the subject is "<TASK ID>: <task title>" and the agent's summary is the body, at
@@ -749,10 +793,14 @@ $RUN_SUMMARY"
     echo "Preserved this attempt's work on branch $SALVAGE_BRANCH before reverting main."
     git reset --hard "$PRE_TASK_SHA" && git clean -fd
     "$SCRIPT_DIR/set-task-status.sh" "$TASK_ID" "Blocked" "$TASKS_FILE"
+    # SOS-SETUP-37: a gate that failed on specs the task did not change is its own category.
+    BLOCK_CATEGORY=blocked
+    if grep -q -E '^AFFECTED SPECS? FAILED' "$LOG_DIR/latest.log" 2>/dev/null; then BLOCK_CATEGORY="task broke older specs"; fi
+    blocked_decide "$BLOCK_CATEGORY" "the gate still failed after $GATE_RUN gate run(s): $(grep -m1 -E "GUARDS FAILED|AFFECTED SPECS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED|TENANT TEMPLATE FAILED" "$LOG_DIR/latest.log" 2>/dev/null | cut -c1-120 || echo "see the gate log")"
     git add "$TASKS_FILE"
     loop_commit -m "$TASK_ID: tests failed, marking Blocked (repo reset to pre-task state, no broken code left on main)"
-    stop_note blocked "the gate still failed after $GATE_RUN gate run(s): $(grep -m1 -E "GUARDS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED|TENANT TEMPLATE FAILED" "$LOG_DIR/latest.log" 2>/dev/null || echo "see the gate log")"
-    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: $TASK_ID failed tests. Blocked, repo reset to before this task — main is clean. Tail: $TAIL"
-    break
+    "$SCRIPT_DIR/notify-telegram.sh" "$(blocked_notice "SellOS loop: $TASK_ID failed tests. Blocked, repo reset to before this task — main is clean. Tail: $TAIL")" || true
+    [[ "$BLOCKED_STOP" -eq 1 ]] && break
+    continue
   fi
 done

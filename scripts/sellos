@@ -251,10 +251,11 @@ PY
   in_progress="$(tasks_with_status "In Progress")"
   # docs/STOPS.md holds the last stop's row until the loop's next start commits it.
   dirty="$(git -C "$REPO_DIR" status --porcelain | grep -v ' docs/STOPS.md$' || true)"
+  # SOS-SETUP-37: a Blocked task no longer stops the loop. It is skipped with everything that depends
+  # on it, so it is reported here, not refused.
   if [ -n "$blocked" ]; then
-    fail "a task is Blocked, and the loop starts nothing while one is:
-$blocked" \
-      "find the cause, then: $SCRIPT_DIR/set-task-status.sh <ID> \"Not Started\" $TASKS_FILE && git -C $REPO_DIR commit -am \"<ID>: reset to Not Started\" && git -C $REPO_DIR push"
+    ok "Blocked task(s), skipped with everything that depends on them (reset one to Not Started once its cause is fixed):
+$(python3 "$SCRIPT_DIR/lib/tasks.py" blocked "$TASKS_FILE" | sed 's/^/    /')"
   else
     ok "no task is Blocked"
   fi
@@ -303,7 +304,17 @@ $in_progress"
 }
 
 cmd_status() {
-  local pid
+  local pid blocked
+  # SOS-SETUP-37: the loop goes on past a Blocked task, so the Blocked list comes first.
+  echo "== Blocked"
+  blocked="$(python3 "$SCRIPT_DIR/lib/tasks.py" blocked "$TASKS_FILE" 2>/dev/null)"
+  if [ -n "$blocked" ]; then
+    printf '%s\n' "$blocked" | sed 's/^/  /'
+    echo "  (the loop skips these and what depends on them; reset one to Not Started once its cause is fixed)"
+  else
+    echo "  none"
+  fi
+  echo
   echo "== Loop"
   pid="$(loop_pid)"
   if [ -n "$pid" ]; then
