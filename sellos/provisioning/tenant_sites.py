@@ -167,8 +167,19 @@ def create(tenant_id):
 	return site
 
 
+DEMO_SITE = re.compile(r"^sellos_tenant_demo[a-z0-9]*\.localhost$")
+# Only sellos.testing.demo sets this, for its own drops (SOS-DEMO-1).
+ALLOW_DEMO_DROP_ENV = "SELLOS_DEMO_ALLOW_DROP"
+
+
 def drop(tenant_id):
 	site, _ = names(tenant_id)
+	# SOS-DEMO-1: the demo sites (sellos_tenant_demo<id>.localhost) are never dropped by a gate, a test, the
+	# worker's retry or tenant-site.sh. scripts/demo.sh reset is the one way.
+	if DEMO_SITE.fullmatch(site) and os.environ.get(ALLOW_DEMO_DROP_ENV) != "1":
+		raise TenantSiteError(
+			f"Refusing to drop {site}: it is a demo site. Only scripts/demo.sh reset drops demo sites."
+		)
 	_run_frappe(["drop-site", site, "--db-root-username", provisioner_user(), "--no-backup"])
 	return site
 

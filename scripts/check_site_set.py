@@ -41,6 +41,11 @@ TENANT_DB = re.compile(r"^sellos_tenant_[a-z0-9_]+$")
 # MariaDB's limit on a database name.
 MAX_DB_NAME = 64
 GATE_SITES = {"sellos_test", "sellos_test.localhost"}
+# SOS-DEMO-1: the demo sites and their databases (sellos_tenant_demo<id>) belong to scripts/demo.sh. The gate
+# neither snapshots nor compares them, so seeding or resetting the demo while a gate runs cannot fail it,
+# and a gate can never be blamed for them or leave them behind.
+DEMO_SITE = re.compile(r"^sellos_tenant_demo[a-z0-9]*\.localhost$")
+DEMO_DB = re.compile(r"^sellos_tenant_demo[a-z0-9]*$")
 
 
 class DatabaseListError(Exception):
@@ -61,7 +66,7 @@ def sites(bench):
 	found = {}
 	for path in sorted(root.iterdir()) if root.is_dir() else []:
 		config = path / "site_config.json"
-		if path.is_dir() and config.is_file():
+		if path.is_dir() and config.is_file() and not DEMO_SITE.match(path.name):
 			found[path.name] = hashlib.sha256(config.read_bytes()).hexdigest()
 	return found
 
@@ -70,7 +75,7 @@ def tenant_db_problems(bench, after):
 	"""A tenant site whose db_name is not sellos_tenant_<id> for its own <id>."""
 	out = []
 	for name in sorted(after):
-		if not is_tenant(name):
+		if not is_tenant(name) or DEMO_SITE.match(name):
 			continue
 		expected = name.removesuffix(".localhost")
 		try:
@@ -91,7 +96,9 @@ def databases(bench):
 	fake = os.environ.get("SELLOS_CHECK_DATABASES_FILE")
 	if fake:
 		return sorted(
-			line.strip() for line in Path(fake).read_text(encoding="utf-8").splitlines() if line.strip()
+			line.strip()
+			for line in Path(fake).read_text(encoding="utf-8").splitlines()
+			if line.strip() and not DEMO_DB.match(line.strip())
 		)
 	password = os.environ.get("SELLOS_DB_PROVISIONER_PASSWORD", "")
 	if not password:
@@ -125,7 +132,11 @@ def databases(bench):
 	if result.returncode != 0:
 		# The client's message names the user and host, never the password.
 		raise DatabaseListError(result.stderr.strip().replace(password, "[provisioner password]")[:500])
-	return sorted(line.strip() for line in result.stdout.splitlines() if line.strip())
+	return sorted(
+		line.strip()
+		for line in result.stdout.splitlines()
+		if line.strip() and not DEMO_DB.match(line.strip())
+	)
 
 
 def database_problems(before, after):

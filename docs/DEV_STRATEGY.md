@@ -25,7 +25,8 @@ disagree, the rule wins. Gate files (see below) may only be changed by a human.
 The SellOS gate refuses to run against any site other than `sellos_test` or `sellos_test.localhost`,
 because it restores the baseline over that site and wipes it.
 
-Ports (Jayman's rule, always): BuildOS runs on port 8000, Pamaa on 8002, SellOS on 8004. Each
+Ports (Jayman's rule, always): BuildOS runs on port 8000, Pamaa on 8002, SellOS on 8004, and the SellOS demo
+(`docs/DEMO.md`, SOS-DEMO-1) on 8006, bound to 127.0.0.1, routing by Host header over `sellos_tenant_demo*` sites only. Every other
 server is pinned to one site with `--site`. SellOS never uses 8000 or 8002, and never starts, stops
 or touches the servers on them. `bench serve --port 8004` without `--site` falls back to
 `default_site` and serves BuildOS's site for every host name, so it is never used. The SellOS server
