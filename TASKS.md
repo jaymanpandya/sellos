@@ -626,7 +626,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 6
 - **Dependencies:** none
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-N21: Choose the Hinglish voice AI providers and disclosure line
 - **Epic:** Compliance, procurement and access
