@@ -22,3 +22,4 @@ starts again; it is 0.0 for a Blocked task the loop went on from at once (SOS-SE
 | 2026-11-17 07:52 | SOS-P1-21 | stopped | stopped by a signal (sellos stop --now, Ctrl-C or a shutdown) | 320 | 0.0 |
 | 2026-11-17 07:53 | SOS-P1-21 | crash | Claude's process exited 1; the loop went on to the next task | 0 | 0.0 |
 | 2026-11-17 09:20 | SOS-P1-17 | blocked | two tasks Blocked in a row (SOS-P1-21, then SOS-P1-17): the gate still failed after 3 gate run(s): BACKEND TESTS FAILED | 87 | 0.5 |
+| 2026-11-17 11:14 | SOS-P2-04 | blocked | the gate still failed after 3 gate run(s): see the gate log; the loop went on to the next task | 84 | 0.0 |
