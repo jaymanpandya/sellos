@@ -59,14 +59,21 @@ def secrets(env):
 	return found, short
 
 
+# SOS-DEMO-1: the demo sites (sellos_tenant_demo<id>.localhost) are not the gate's. They hold known demo
+# passwords and are never searched.
+DEMO_SITE = re.compile(r"^sellos_tenant_demo[a-z0-9]*\.localhost$")
+
+
 def files_under(path):
+	if DEMO_SITE.match(path.name) or DEMO_SITE.match(path.parent.name):
+		return
 	if path.is_file():
 		yield path
 		return
 	if not path.is_dir():
 		return
 	for root, dirs, names in os.walk(path):
-		dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+		dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not DEMO_SITE.match(d)]
 		for name in names:
 			yield Path(root) / name
 

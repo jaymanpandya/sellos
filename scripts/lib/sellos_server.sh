@@ -2,7 +2,8 @@
 # Sourced by scripts/run-tests.sh and scripts/prepare-regression.sh. Tested by
 # sellos/tests/test_sellos_server_port.py.
 #
-# The port rule (Jayman, always): BuildOS runs on 8000, Pamaa on 8002, SellOS on 8004. SellOS never
+# The port rule (Jayman, always): BuildOS runs on 8000, Pamaa on 8002, SellOS on 8004. The SellOS demo
+# (scripts/demo.sh, SOS-DEMO-1) is on 8006, a separate server that no gate uses. SellOS never
 # uses 8000 or 8002, and never starts, stops or touches the servers on them. Each server is pinned
 # to one site. The SellOS server is always started as:
 #   cd ~/iespl-bench && bench --site sellos_test.localhost serve --port 8004

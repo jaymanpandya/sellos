@@ -21,6 +21,11 @@ if ! [[ "$SITE" =~ ^(sellos_test(\.localhost)?|sellos_tenant_[a-z0-9]+\.localhos
   echo "Refusing to wipe site '$SITE'. Only sellos_test.localhost and sellos_tenant_<id>.localhost." >&2
   exit 2
 fi
+# SOS-DEMO-1: the demo sites are never wiped by a gate. scripts/demo.sh reset drops and rebuilds them.
+if [[ "$SITE" =~ ^sellos_tenant_demo[a-z0-9]*\.localhost$ ]]; then
+  echo "Refusing to wipe the demo site '$SITE'. Only scripts/demo.sh reset rebuilds demo sites." >&2
+  exit 2
+fi
 if [ ! -f "$BASELINE" ]; then
   echo "No baseline at $BASELINE." >&2
   exit 3
