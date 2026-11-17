@@ -357,7 +357,7 @@ cmd_status() {
     real="$(readlink "$latest" 2>/dev/null || true)"
     [ -n "$real" ] || real="$latest"
     if [ -f "$real" ]; then
-      age=$((now - $(stat -f %m "$real")))
+      age=$((now - $(python3 -c 'import os,sys; print(int(os.path.getmtime(sys.argv[1])))' "$real")))
       echo "  $real"
       echo "  last written $((age / 60)) min ago, $(wc -c <"$real" | tr -d ' ') bytes (also $latest)"
       if [ -d "$GATE_LOCK_DIR" ] && [ "$age" -gt 900 ]; then
