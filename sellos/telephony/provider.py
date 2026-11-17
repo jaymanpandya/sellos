@@ -13,29 +13,22 @@ on a site that allows tests. A name with no registered provider is reported as n
 as a success.
 """
 
-from abc import ABC, abstractmethod
-
 import frappe
 from frappe import _
 
+from sellos.telephony.base import (
+	CALL_STATES,
+	CallEvent,
+	PlacedCall,
+	ProviderError,
+	Recording,
+	TelephonyProvider,
+)
+from sellos.telephony.plivo import PlivoProvider
+
 DEFAULT_PROVIDER = "plivo"
 
-
-class ProviderError(Exception):
-	"""A provider failure with a message that is safe to show to a person (it never holds a key)."""
-
-
-class TelephonyProvider(ABC):
-	name = ""
-
-	def __init__(self, auth_id: str, auth_token: str):
-		self.auth_id = auth_id
-		self.auth_token = auth_token
-
-	@abstractmethod
-	def test_connection(self) -> str:
-		"""Check the keys with the provider. Return a short message on success, raise ProviderError
-		with a clear message otherwise."""
+__all__ = ["CALL_STATES", "CallEvent", "PlacedCall", "ProviderError", "Recording", "TelephonyProvider"]
 
 
 class FakeProvider(TelephonyProvider):
@@ -56,14 +49,57 @@ class FakeProvider(TelephonyProvider):
 			raise ProviderError(_("The provider refused these keys. Check the auth ID and the auth token."))
 		return _("Connected. The provider accepted the keys.")
 
+	def _check_keys(self):
+		self.test_connection()
 
-# provider name -> class. SOS-P2-02 adds "plivo".
-PROVIDERS: dict[str, type[TelephonyProvider]] = {FakeProvider.name: FakeProvider}
+	def place_call(
+		self, from_number: str, to_number: str, answer_url: str, status_url: str = ""
+	) -> PlacedCall:
+		self._check_keys()
+		if not from_number or not to_number:
+			raise ProviderError(_("Both numbers are needed to place a call."))
+		return PlacedCall(call_id=f"fake-{from_number[-6:]}-{to_number[-6:]}")
+
+	def read_webhook(self, payload: dict, url: str = "", headers: dict | None = None) -> list[CallEvent]:
+		"""The fake payload is {"call_id", "state", "duration", "from", "to", "recording_url"}."""
+		state = payload.get("state")
+		if not payload.get("call_id") or state not in CALL_STATES:
+			raise ProviderError(_("The provider sent an event that could not be read."))
+		return [
+			CallEvent(
+				call_id=payload["call_id"],
+				state=state,
+				from_number=payload.get("from", ""),
+				to_number=payload.get("to", ""),
+				duration=int(payload.get("duration") or 0),
+				recording_url=payload.get("recording_url", ""),
+				raw=dict(payload),
+			)
+		]
+
+	def fetch_recording(self, recording_url: str) -> Recording:
+		self._check_keys()
+		if not recording_url:
+			raise ProviderError(_("The recording was not found."))
+		return Recording(content=b"fake-recording:" + recording_url.encode(), content_type="audio/mpeg")
+
+
+# provider name -> class.
+PROVIDERS: dict[str, type[TelephonyProvider]] = {
+	FakeProvider.name: FakeProvider,
+	PlivoProvider.name: PlivoProvider,
+}
 
 
 def get_provider(auth_id: str, auth_token: str) -> TelephonyProvider:
 	name = frappe.db.get_single_value("Telephony Settings", "provider") or DEFAULT_PROVIDER
 	provider = PROVIDERS.get(name)
-	if provider is None or (name == FakeProvider.name and not frappe.conf.get("allow_tests")):
+	allow_tests = bool(frappe.conf.get("allow_tests"))
+	# The fake runs only on a site that allows tests. The live Plivo never runs there, so a test can
+	# not reach the real provider (SOS-P2-02); tests give PlivoProvider a recorded transport instead.
+	wrong_site = (name == FakeProvider.name and not allow_tests) or (
+		name == PlivoProvider.name and allow_tests
+	)
+	if provider is None or wrong_site:
 		raise ProviderError(_("The calling provider is not available on this site yet."))
 	return provider(auth_id, auth_token)
