@@ -25,3 +25,4 @@ starts again; it is 0.0 for a Blocked task the loop went on from at once (SOS-SE
 | 2026-11-17 11:14 | SOS-P2-04 | blocked | the gate still failed after 3 gate run(s): see the gate log; the loop went on to the next task | 84 | 0.0 |
 | 2026-11-17 19:17 | SOS-P2-01 | environment | The gate stopped before testing anything (exit 2). | 483 | 0.1 |
 | 2026-11-17 20:30 | SOS-P2-02 | stopped | stopped by a signal (sellos stop --now, Ctrl-C or a shutdown) | 26 | 0.1 |
+| 2026-11-17 20:33 | - | push-failed | unpushed commits that do not start with SOS- | 0 | 0.1 |
