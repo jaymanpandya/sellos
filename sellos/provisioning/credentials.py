@@ -77,3 +77,31 @@ def child_env(password, base=None):
 	env[PASSWORD_ENV] = password
 	env[USER_ENV] = provisioner_user()
 	return env
+
+
+def read_keychain_item(service):
+	"""(value, failure) for a login Keychain item, SOS-N21A. Exactly one of the two is None.
+
+	The failure is a short sentence that never holds the value. Nothing is printed or logged here. The
+	caller must ask only for a service name it has checked against its own list.
+	"""
+	if sys.platform != "darwin":
+		return None, "the Keychain is only read on macOS"
+	security = shutil.which("security")
+	if not security:
+		return None, "the macOS security command was not found"
+	try:
+		result = subprocess.run(
+			[security, "find-generic-password", "-s", service, "-w"],
+			stdin=subprocess.DEVNULL,
+			capture_output=True,
+			text=True,
+			timeout=30,
+			check=False,
+		)
+	except (OSError, subprocess.SubprocessError):
+		return None, "the security command could not be run"
+	value = result.stdout.rstrip("\n")
+	if result.returncode == 0 and value:
+		return value, None
+	return None, f"the security command exited {result.returncode}"
