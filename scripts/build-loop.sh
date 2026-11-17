@@ -773,6 +773,9 @@ secret), never print, echo, log or write the password, and never put it in
 a file, a fixture, an exception message or a command line. If
 get_provisioner_password() raises, reply NEEDS_INPUT with its message.
 
+Styling: once docs/UI_STYLE.md exists, every new screen follows it (its
+tokens, components and patterns) and never invents colors, spacing or fonts.
+
 Respond with either of the following as the literal first characters
 of your response, nothing before it:
 IMPLEMENTATION_READY: <plain English summary of what you built>

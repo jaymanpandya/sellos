@@ -80,6 +80,8 @@ Keys and passwords live in `site_config.json` or environment variables, never in
 
 ## Frontend
 
+* New screens follow `docs/UI_STYLE.md` once it exists (SOS-UI-1, SOS-SETUP-40): its tokens, components and patterns, not new colors, spacing or fonts of their own.
+
 See `frontend/CLAUDE.md`. The build plan is in `TASKS.md`, and the earlier brief is in `docs/legacy/`.
 
 ## Testing (the gate)
