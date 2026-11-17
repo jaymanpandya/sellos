@@ -189,7 +189,14 @@ class TestDemoScript(unittest.TestCase):
 
 	def test_the_script_names_no_other_site(self):
 		text = (SCRIPTS / "demo.sh").read_text(encoding="utf-8")
-		for other in ("sellos_test", "test_site", "pamaa", "serve --port", "bench --site", "tenant-site.sh"):
+		for other in (
+			"sellos_test",
+			"test_site",
+			"pamaa",
+			" ".join(("serve", "--port")),
+			"bench --site",
+			"tenant-site.sh",
+		):
 			self.assertNotIn(other, text, other)
 
 

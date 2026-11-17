@@ -953,7 +953,7 @@ def provision_companies(control_id, company_ids):
 						"admin_email": company_users(i)[0][0],
 					}
 				).insert()
-				frappe.get_doc({"doctype": "Provisioning Job", "tenant": tenant_id}).insert()
+				# Tenant.after_insert makes its Provisioning Job.
 				frappe.db.commit()  # nosemgrep  the worker reads these in its own transaction
 		while worker.process_next():
 			frappe.db.commit()  # nosemgrep
