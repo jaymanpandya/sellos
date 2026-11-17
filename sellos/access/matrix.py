@@ -51,6 +51,9 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.config.setup_wizard.save_stages": _ADMIN_ONLY,
 	"sellos.config.setup_wizard.add_user": _ADMIN_ONLY,
 	"sellos.config.setup_wizard.finish_setup": _ADMIN_ONLY,
+	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,
+	"sellos.telephony.settings.save_telephony_settings": _ADMIN_ONLY,
+	"sellos.telephony.settings.check_connection": _ADMIN_ONLY,
 	"sellos.access.field_history.getdoc": _OPENERS,
 	"sellos.access.field_history.get_docinfo": _OPENERS,
 }

@@ -381,6 +381,51 @@ def remove_support_grants():
 	return {"removed": True}
 
 
+TELEPHONY_FAKE_ID = "FAKEOK-REGRESSION"
+TELEPHONY_FAKE_TOKEN = "regression-telephony-token"
+TELEPHONY_SEED = 2201
+
+
+def landline_022(seed):
+	"""A 022 number for a seed: 022 and the last eight digits of the seed's fake mobile number."""
+	return "022" + phones.in_mobile(seed)[-8:]
+
+
+def use_fake_telephony_provider(on=True):
+	"""Make the test site's Telephony Settings talk to the fake provider, or stop (SOS-P2-01).
+
+	The provider is a hidden field of Telephony Settings, read from the database so the web server
+	sees the change at once. The real provider is never called from a test site, so a spec that
+	presses Test connection turns the fake on first.
+	"""
+	frappe.db.set_single_value("Telephony Settings", "provider", "fake" if on else "")
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"fake_provider": bool(on)}
+
+
+def telephony_landline():
+	"""A 022 number for a browser spec to type, so the spec holds no number of its own (SOS-P2-01)."""
+	number = landline_022(TELEPHONY_SEED)
+	stored = phones.in_mobile(TELEPHONY_SEED)[:3] + "22" + number[-8:]
+	return {"number": number, "stored": stored}
+
+
+def remove_telephony_settings():
+	"""Clear the saved Telephony Settings, keys and fake provider included (tests only, SOS-P2-01).
+
+	The keys sit in the encrypted password table, so a spec that saves them runs this in its after
+	hook and no key stays on the site for the backend tests that run next. The caches are cleared
+	too, because the web server is another process and would otherwise keep the old values.
+	"""
+	frappe.db.delete("__Auth", {"doctype": "Telephony Settings"})
+	frappe.db.delete("Singles", {"doctype": "Telephony Settings"})
+	frappe.db.delete("Version", {"ref_doctype": "Telephony Settings"})
+	frappe.db.commit()  # nosemgrep
+	frappe.clear_document_cache("Telephony Settings", "Telephony Settings")
+	frappe.clear_cache(doctype="Telephony Settings")
+	return {"removed": True}
+
+
 def remove_control_records():
 	"""Remove every Tenant, Plan and Provisioning Job on the test site (tests only, P1.01).
 
@@ -464,6 +509,9 @@ def seed_regression_data():
 	  their own agents through the lead API: Buyer One Qualified, Buyer Two Site visit booked, Buyer
 	  Three (Opted out) and Investor Four (Registered DND) Contacted, each with its warning in the
 	  stage change log, NRI Five Nurture. The rest stay on New.
+
+	* Telephony Settings (SOS-P2-01): the Plivo India account saved with fake keys, a 022 number
+	  made by landline_022(TELEPHONY_SEED), and the fake provider switched on, so Test connection reports success.
 
 	* The company setup wizard (SOS-P1-03) left half way: profile, colours and the eleven pipeline
 	  stages saved, the users step still to do, so it opens on that step.
@@ -603,6 +651,7 @@ def seed_regression_data():
 	_seed_lead_sources(admin)
 	_seed_pipeline_stages()
 	_seed_support_grants(admin)
+	_seed_telephony(admin)
 	_seed_control_site()
 	_seed_setup_wizard(admin)
 
@@ -743,6 +792,25 @@ def _seed_support_grants(admin):
 		ended = support.grant_support_access(support_user, 60, "Regression help with an import")
 		support.revoke_support_access(ended["name"])
 		support.grant_support_access(support_user, 120, "Regression walkthrough of the leads report")
+
+
+def _seed_telephony(admin):
+	"""The Plivo India account saved once (SOS-P2-01), through the production API, with the fake provider.
+
+	The keys are fake ones that the fake provider accepts, so Test connection works on the regression
+	site without the real provider. Safe to run again: an account that is already saved is left alone.
+	"""
+	from sellos.telephony import settings
+
+	use_fake_telephony_provider()
+	with _as_user(admin):
+		if settings.get_telephony_settings()["configured"]:
+			return
+		settings.save_telephony_settings(
+			auth_id=TELEPHONY_FAKE_ID,
+			auth_token=TELEPHONY_FAKE_TOKEN,
+			phone_number=landline_022(TELEPHONY_SEED),
+		)
 
 
 def _seed_setup_wizard(admin):

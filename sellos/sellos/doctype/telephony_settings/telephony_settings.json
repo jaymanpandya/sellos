@@ -1,0 +1,56 @@
+{
+ "actions": [],
+ "creation": "2026-11-17 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "auth_id",
+  "auth_token",
+  "phone_number",
+  "provider"
+ ],
+ "fields": [
+  {
+   "fieldname": "auth_id",
+   "fieldtype": "Password",
+   "label": "Auth ID"
+  },
+  {
+   "fieldname": "auth_token",
+   "fieldtype": "Password",
+   "label": "Auth token"
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "label": "022 number"
+  },
+  {
+   "description": "Empty means Plivo. The fake provider is for tests and works only on a site that allows tests.",
+   "fieldname": "provider",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Provider",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Telephony Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -7,6 +7,7 @@ const HomePage = () => import("./pages/HomePage.vue");
 const LeadsPage = () => import("./pages/LeadsPage.vue");
 const LeadPage = () => import("./pages/LeadPage.vue");
 const SupportPage = () => import("./pages/SupportPage.vue");
+const TelephonyPage = () => import("./pages/TelephonyPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
@@ -35,6 +36,12 @@ export function createAppRouter() {
 				path: "/company/support",
 				name: "support-access",
 				component: SupportPage,
+				meta: { area: "company" },
+			},
+			{
+				path: "/company/telephony",
+				name: "telephony",
+				component: TelephonyPage,
 				meta: { area: "company" },
 			},
 			{

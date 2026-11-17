@@ -105,6 +105,10 @@ SAMPLE_CALLS = {
 		"role": "SellOS Agent",
 	},
 	"sellos.config.setup_wizard.finish_setup": {},
+	# SOS-P2-01: blank values keep what is saved, so the Company Admin's call changes nothing.
+	"sellos.telephony.settings.get_telephony_settings": {},
+	"sellos.telephony.settings.save_telephony_settings": {},
+	"sellos.telephony.settings.check_connection": {},
 	"sellos.access.field_history.getdoc": {"doctype": "Client", "name": "{client}"},
 	"sellos.access.field_history.get_docinfo": {"doctype": "Client", "name": "{client}"},
 }
