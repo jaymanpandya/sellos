@@ -237,6 +237,13 @@
 						>
 					</span>
 					<span
+						v-if="lead.stage"
+						data-testid="sellos-lead-row-stage"
+						class="rounded-input border border-line px-2 py-1 text-xs text-ink-muted"
+					>
+						{{ lead.stage }}
+					</span>
+					<span
 						v-if="lead.overdue_tasks"
 						data-testid="sellos-lead-overdue"
 						class="rounded-input bg-accent px-2 py-1 text-xs text-white"

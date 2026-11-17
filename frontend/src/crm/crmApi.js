@@ -16,6 +16,8 @@ export const crmApi = {
 	listLeadSources: (includeDisabled = 0) =>
 		call("list_lead_sources", { include_disabled: includeDisabled }),
 	saveLeadSource: (values, name = null) => call("save_lead_source", { name, values }),
+	listStages: () => call("list_stages"),
+	moveLeadStage: (lead, stage) => call("move_lead_stage", { lead, stage }),
 	saveLead: (values, name = null) => call("save_lead", { name, values }),
 	addActivity: (lead, activityType, notes = "") =>
 		call("add_activity", { lead, activity_type: activityType, notes }),

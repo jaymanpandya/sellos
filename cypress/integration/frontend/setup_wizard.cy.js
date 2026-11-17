@@ -34,7 +34,7 @@ context("SOS-P1-03: setup wizard", () => {
 
 		// Step 3: the pipeline stages start from the defaults.
 		cy.getByTestId("setup-stages").should("be.visible");
-		cy.getByTestId("setup-stage-row").should("have.length", 7);
+		cy.getByTestId("setup-stage-row").should("have.length", 11);
 		cy.getByTestId("setup-stage-name").first().clear().type("Enquiry");
 		cy.getByTestId("setup-save-stages").click();
 		cy.getByTestId("setup-users").should("be.visible");
@@ -75,7 +75,7 @@ context("SOS-P1-03: setup wizard", () => {
 			expect(result.logo).to.match(/^\/files\/company-logo.*\.png$/);
 			expect(result.complete).to.eq(true);
 			expect(result.stages[0]).to.eq("Enquiry");
-			expect(result.stages).to.include("Booked");
+			expect(result.stages).to.include("Booking");
 			expect(result.users[AGENT_EMAIL]).to.include("SellOS Agent");
 		});
 

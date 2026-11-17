@@ -7,7 +7,8 @@
  "field_order": [
   "stage_name",
   "position",
-  "stage_type"
+  "stage_type",
+  "is_contact_stage"
  ],
  "fields": [
   {
@@ -33,6 +34,14 @@
    "label": "Kind",
    "options": "Open\nWon\nLost",
    "reqd": 1
+  },
+  {
+   "fieldname": "is_contact_stage",
+   "fieldtype": "Check",
+   "label": "First contact stage",
+   "default": "0",
+   "read_only": 1,
+   "description": "Moving a lead here without a live Consent Record shows a warning. It never refuses (SOS-P1-07)."
   }
  ],
  "index_web_pages_for_search": 0,
@@ -57,5 +66,6 @@
  ],
  "sort_field": "position",
  "sort_order": "ASC",
- "states": []
+ "states": [],
+ "allow_rename": 1
 }

@@ -68,6 +68,68 @@
 		</section>
 
 		<section
+			v-if="detail.pipeline"
+			data-testid="sellos-lead-stage"
+			:data-stage="detail.pipeline.stage"
+			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
+		>
+			<div class="flex flex-wrap items-center justify-between gap-2">
+				<h2 class="font-medium text-ink">Stage</h2>
+				<select
+					v-if="canLog"
+					:value="detail.pipeline.stage"
+					class="field max-w-[14rem]"
+					aria-label="Stage"
+					data-testid="sellos-lead-stage-select"
+					@change="moveStage($event.target.value)"
+				>
+					<option v-for="s in detail.pipeline.stages" :key="s.name" :value="s.name">
+						{{ s.name }}
+					</option>
+				</select>
+				<span v-else data-testid="sellos-lead-stage-name" class="text-sm text-ink-muted">{{
+					detail.pipeline.stage
+				}}</span>
+			</div>
+			<p
+				v-if="stageWarning"
+				role="alert"
+				data-testid="sellos-lead-stage-warning"
+				:data-level="stageWarning.level"
+				class="rounded-input border px-3 py-2 text-sm"
+				:class="
+					stageWarning.level === 'red'
+						? 'border-[#c0392b] bg-[#fdecea] text-[#8e1f14]'
+						: 'border-[#e8954a] bg-[#fdf1e3] text-[#7a4a10]'
+				"
+			>
+				{{ stageWarning.message }}
+			</p>
+			<p
+				v-if="stageError"
+				role="alert"
+				data-testid="sellos-lead-stage-error"
+				class="text-sm text-accent"
+			>
+				{{ stageError }}
+			</p>
+			<ul v-if="detail.pipeline.log.length" data-testid="sellos-lead-stage-log">
+				<li
+					v-for="(row, i) in detail.pipeline.log"
+					:key="i"
+					data-testid="sellos-lead-stage-change"
+					class="text-sm text-ink-muted"
+				>
+					{{ row.from_stage || "No stage" }} to {{ row.to_stage }},
+					{{ String(row.changed_on).slice(0, 16) }}, {{ row.changed_by }}
+					<span v-if="row.warning" data-testid="sellos-lead-stage-change-warning">
+						. {{ row.warning }}</span
+					>
+				</li>
+			</ul>
+		</section>
+
+		<section
 			v-if="detail.consent"
 			data-testid="sellos-lead-consent"
 			:data-status="detail.consent.status"
@@ -501,6 +563,23 @@ async function load() {
 		await loadMergeChoices();
 	} catch (e) {
 		error.value = "This lead could not be opened.";
+	}
+}
+
+// The stage warning (SOS-P1-07): the one a move just returned, else the one the lead screen computes.
+const movedWarning = ref(null);
+const stageError = ref("");
+const stageWarning = computed(() => movedWarning.value || detail.value?.pipeline?.warning || null);
+
+async function moveStage(stage) {
+	stageError.value = "";
+	try {
+		const result = await crmApi.moveLeadStage(route.params.name, stage);
+		movedWarning.value = result.warning;
+		await load();
+	} catch (e) {
+		stageError.value = serverMessage(e, "The lead could not be moved.");
+		await load();
 	}
 }
 

@@ -10,6 +10,7 @@
   "source",
   "campaign",
   "assigned_to",
+  "stage",
   "notes",
   "section_requirements",
   "budget_from",
@@ -26,6 +27,8 @@
   "opted_out_source",
   "dnd_registered",
   "dnd_checked_on",
+  "section_stage_log",
+  "stage_log",
   "section_archive",
   "archived",
   "archived_on",
@@ -69,6 +72,16 @@
    "options": "User",
    "in_list_view": 1,
    "in_standard_filter": 1
+  },
+  {
+   "fieldname": "stage",
+   "fieldtype": "Link",
+   "label": "Stage",
+   "options": "Pipeline Stage",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Moved through the stage list on the lead. Any consent status may move to any stage (SOS-P1-07)."
   },
   {
    "fieldname": "notes",
@@ -168,6 +181,19 @@
    "fieldname": "dnd_checked_on",
    "fieldtype": "Datetime",
    "label": "Do not call result known on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_stage_log",
+   "fieldtype": "Section Break",
+   "label": "Stage change log",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "stage_log",
+   "fieldtype": "Table",
+   "label": "Stage change log",
+   "options": "Lead Stage Change",
    "read_only": 1
   },
   {

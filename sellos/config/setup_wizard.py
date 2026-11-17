@@ -12,10 +12,12 @@ import re
 
 import frappe
 from frappe import _
+from frappe.model.rename_doc import rename_doc
 from frappe.utils import cint, validate_email_address
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, ROLES
+from sellos.crm import pipeline
 from sellos.provisioning.tenant_setup import LIMITS_KEY
 
 SETTINGS = "SellOS Settings"
@@ -27,15 +29,8 @@ REQUIRED_BEFORE_FINISH = ["profile", "branding", "stages"]
 # from a lead, not here.
 GRANTABLE_ROLES = [COMPANY_ADMIN, AGENT, CHANNEL_PARTNER]
 
-DEFAULT_STAGES = [
-	{"stage_name": "New", "stage_type": "Open"},
-	{"stage_name": "Contacted", "stage_type": "Open"},
-	{"stage_name": "Site visit scheduled", "stage_type": "Open"},
-	{"stage_name": "Site visit done", "stage_type": "Open"},
-	{"stage_name": "Negotiation", "stage_type": "Open"},
-	{"stage_name": "Booked", "stage_type": "Won"},
-	{"stage_name": "Lost", "stage_type": "Lost"},
-]
+# The eleven buyer pipeline stages (SOS-P1-07). They live in sellos.crm.pipeline with the rules that use them.
+DEFAULT_STAGES = pipeline.DEFAULT_STAGES
 STAGE_TYPES = ["Open", "Won", "Lost"]
 MAX_STAGES = 20
 
@@ -83,6 +78,21 @@ def _stages() -> list[dict]:
 	)
 
 
+def _stage_rows(stages) -> list[dict]:
+	"""The stages as the wizard lists them: the name each had when it was loaded (so a rename keeps its
+	leads) and how many leads it holds (SOS-P1-07)."""
+	counts = {s["name"]: s["leads"] for s in pipeline.list_stages()}
+	return [
+		{
+			"stage_name": s.stage_name,
+			"stage_type": s.stage_type,
+			"original": s.stage_name,
+			"leads": counts.get(s.stage_name, 0),
+		}
+		for s in stages
+	]
+
+
 def _users() -> list[dict]:
 	"""Everyone on this site who holds one of the five roles, with the roles they hold."""
 	rows = frappe.get_all(
@@ -119,8 +129,7 @@ def get_setup_state():
 		"next_step": _next_step(done),
 		"profile": {field: settings.get(field) or "" for field in PROFILE_FIELDS},
 		"branding": {"logo": settings.logo or "", "brand_color": settings.brand_color or DEFAULT_BRAND_COLOR},
-		"stages": [{"stage_name": s.stage_name, "stage_type": s.stage_type} for s in stages]
-		or DEFAULT_STAGES,
+		"stages": _stage_rows(stages) or DEFAULT_STAGES,
 		"stages_saved": bool(stages),
 		"users": _users(),
 		"grantable_roles": GRANTABLE_ROLES,
@@ -213,26 +222,79 @@ def _clean_stages(stages) -> list[dict]:
 		if name.lower() in seen:
 			frappe.throw(_("Two stages are named {0}. Each stage needs its own name.").format(name))
 		seen.add(name.lower())
-		clean.append({"stage_name": name, "stage_type": kind})
+		original = re.sub(r"\s+", " ", str(stage.get("original") or "")).strip()
+		clean.append({"stage_name": name, "stage_type": kind, "original": original})
 	kinds = {s["stage_type"] for s in clean}
 	if "Won" not in kinds or "Lost" not in kinds:
 		frappe.throw(_("The pipeline needs at least one Won stage and one Lost stage."))
 	return clean
 
 
+def _match_existing(clean, existing) -> list[str | None]:
+	"""For each stage in the list, the stage record it is: the one it was loaded as, or one of the same
+	name. A stage that matches none is new."""
+	matched: list[str | None] = [None] * len(clean)
+	used: set[str] = set()
+	for i, stage in enumerate(clean):
+		key = stage["original"].lower()
+		if key and key in existing and key not in used:
+			matched[i] = existing[key]
+			used.add(key)
+	for i, stage in enumerate(clean):
+		key = stage["stage_name"].lower()
+		if matched[i] is None and key in existing and key not in used:
+			matched[i] = existing[key]
+			used.add(key)
+	return matched
+
+
 @sellos_api(COMPANY_ADMIN)
 def save_stages(stages):
-	"""Replace the pipeline stages with the list given, in order."""
+	"""Replace the pipeline stages with the list given, in order (SOS-P1-03, SOS-P1-07).
+
+	A stage that was loaded keeps its record, and so its leads, when it is renamed or moved. A stage
+	left out is deleted, and one that has leads is refused with how many. Nothing is changed when
+	any stage is refused."""
 	clean = _clean_stages(stages)
 	existing = {s.stage_name.lower(): s.stage_name for s in _stages()}
-	keep = {s["stage_name"].lower() for s in clean}
-	for key, name in existing.items():
-		if key not in keep:
-			frappe.delete_doc(STAGE, name, ignore_permissions=True)
-	for position, stage in enumerate(clean, start=1):
-		name = existing.get(stage["stage_name"].lower())
-		doc = frappe.get_doc(STAGE, name) if name else frappe.new_doc(STAGE)
-		doc.update({**stage, "position": position})
+	matched = _match_existing(clean, existing)
+	kept = {name for name in matched if name}
+	dropped = [name for name in existing.values() if name not in kept]
+	for name in dropped:
+		pipeline.ensure_deletable(name)
+	for name in dropped:
+		frappe.delete_doc(STAGE, name, ignore_permissions=True)
+	# Rename in two steps, so two stages may swap names.
+	renames = [
+		(old, stage["stage_name"])
+		for old, stage in zip(matched, clean, strict=True)
+		if old and old != stage["stage_name"]
+	]
+	for i, (old, _new) in enumerate(renames):
+		rename_doc(
+			STAGE,
+			old,
+			f"__renaming_{i}",
+			force=True,
+			ignore_permissions=True,
+			rebuild_search=False,
+			show_alert=False,
+		)
+	for i, (_old, new) in enumerate(renames):
+		rename_doc(
+			STAGE,
+			f"__renaming_{i}",
+			new,
+			force=True,
+			ignore_permissions=True,
+			rebuild_search=False,
+			show_alert=False,
+		)
+	for position, (old, stage) in enumerate(zip(matched, clean, strict=True), start=1):
+		doc = frappe.get_doc(STAGE, stage["stage_name"]) if old else frappe.new_doc(STAGE)
+		doc.update(
+			{"stage_name": stage["stage_name"], "stage_type": stage["stage_type"], "position": position}
+		)
 		doc.save(ignore_permissions=True)
 	settings = _settings()
 	_mark_done(settings, "stages")

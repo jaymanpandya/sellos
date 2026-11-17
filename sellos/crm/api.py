@@ -12,7 +12,7 @@ from frappe.utils import cint, now_datetime
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
-from sellos.crm import consent, duplicates, lead_sources
+from sellos.crm import consent, duplicates, lead_sources, pipeline
 from sellos.crm.base import is_overdue
 from sellos.crm.requirements import REQUIREMENT_FIELDS, has_filters, join_values, matches, requirements_view
 
@@ -219,6 +219,7 @@ def list_leads(
 			"source",
 			"campaign",
 			"assigned_to",
+			"stage",
 			"archived",
 			"modified",
 			*REQUIREMENT_FIELDS,
@@ -277,6 +278,21 @@ def delete_lead_source(name):
 
 
 @sellos_api(*READERS)
+def list_stages():
+	"""The buyer pipeline's stages in order, each with its kind and how many leads it holds (SOS-P1-07)."""
+	return pipeline.list_stages()
+
+
+@sellos_api(*LOGGERS)
+def move_lead_stage(lead, stage):
+	"""Move a lead to any stage (SOS-P1-07), whatever its consent status, and log the move. Moving it to
+	Contacted without a live Consent Record returns a warning, writes it to the stage change log and
+	goes ahead. Only a stage that does not exist is refused."""
+	_writable_lead(lead)
+	return pipeline.move_lead(lead, stage)
+
+
+@sellos_api(*READERS)
 def save_lead(name=None, values=None):
 	doc = _save("Lead", name, values, LEAD_FIELDS)
 	return get_lead(doc.name)
@@ -294,6 +310,7 @@ def get_lead(name):
 		"can_merge": COMPANY_ADMIN in frappe.get_roles(),
 		"timeline": _timeline(name),
 		"consent": consent.consent_view(name),
+		"pipeline": pipeline.stage_view(lead),
 	}
 
 

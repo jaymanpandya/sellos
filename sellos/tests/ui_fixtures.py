@@ -11,6 +11,7 @@ import frappe
 from frappe.utils import add_days, add_to_date, now_datetime, today
 
 from sellos.config.company_site import configure_company_site
+from sellos.crm import pipeline
 from sellos.testing.users import (
 	PASSWORD,
 	TEST_USERS,
@@ -256,6 +257,8 @@ def remove_seeded_leads():
 	if not clients:
 		return {"clients": 0, "leads": 0}
 	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name")
+	if leads:
+		frappe.db.delete("Lead Stage Change", {"parent": ["in", leads]})
 	for doctype in ("Lead Activity", "Lead Task", "Site Visit", "Consent Record"):
 		if leads and frappe.get_meta(doctype).has_field("lead"):
 			frappe.db.delete(doctype, {"lead": ["in", leads]})
@@ -272,6 +275,8 @@ def remove_gate_lead_sources():
 	the sources named Gate Source. The CRM refuses a delete through the app, so this goes to the tables."""
 	clients = frappe.get_all("Client", filters={"client_name": ["like", "Gate Source %"]}, pluck="name")
 	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name") if clients else []
+	if leads:
+		frappe.db.delete("Lead Stage Change", {"parent": ["in", leads]})
 	for doctype, names in (("Lead", leads), ("Client", clients)):
 		if names:
 			frappe.db.delete("Version", {"ref_doctype": doctype, "docname": ["in", names]})
@@ -309,7 +314,14 @@ def reset_setup_wizard(company_name="Pandya Realtors"):
 		}
 	)
 	settings.save(ignore_permissions=True)
+	# SOS-P1-07: every lead has a stage, so the stages go back to the eleven and a lead whose stage was
+	# renamed or removed goes back to New.
 	frappe.db.delete("Pipeline Stage")
+	pipeline.ensure_default_stages()
+	frappe.db.sql(
+		"update `tabLead` set stage = %s where stage is null or stage not in (select name from `tabPipeline Stage`)",
+		(pipeline.first_stage(),),
+	)
 	frappe.db.delete("File", {"attached_to_doctype": "SellOS Settings"})
 	for email in frappe.get_all("User", filters={"name": ["like", f"{WIZARD_USER_PREFIX}%"]}, pluck="name"):
 		frappe.delete_doc("User", email, force=True, ignore_permissions=True)
@@ -448,7 +460,12 @@ def seed_regression_data():
 	  Roadshow source under the campaign Diwali 2026 hoardings. Seller Seven came by Missed call and the
 	  two partner leads by Channel partner.
 
-	* The company setup wizard (SOS-P1-03) left half way: profile, colours and the default pipeline
+	* The buyer pipeline (SOS-P1-07): the eleven stages, and the regression leads moved along them by
+	  their own agents through the lead API: Buyer One Qualified, Buyer Two Site visit booked, Buyer
+	  Three (Opted out) and Investor Four (Registered DND) Contacted, each with its warning in the
+	  stage change log, NRI Five Nurture. The rest stay on New.
+
+	* The company setup wizard (SOS-P1-03) left half way: profile, colours and the eleven pipeline
 	  stages saved, the users step still to do, so it opens on that step.
 
 	* One plan and four tenants on the control site (SOS-P1-01), regressionone to regressionfour, one
@@ -469,6 +486,7 @@ def seed_regression_data():
 		_seed_requirements(agent_one, agent_two)
 		_seed_twin_clients(admin, agent_one)
 		_seed_lead_sources(admin)
+		_seed_pipeline_stages()
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -583,6 +601,7 @@ def seed_regression_data():
 	_seed_requirements(agent_one, agent_two)
 	_seed_twin_clients(admin, agent_one)
 	_seed_lead_sources(admin)
+	_seed_pipeline_stages()
 	_seed_support_grants(admin)
 	_seed_control_site()
 	_seed_setup_wizard(admin)
@@ -688,6 +707,33 @@ def _seed_lead_sources(admin):
 			)
 
 
+def _seed_pipeline_stages():
+	"""Move some regression leads along the buyer pipeline (SOS-P1-07), through the production API as
+	each lead's own agent. A lead that has left the first stage is left alone, so it is safe to run again."""
+	from sellos.crm import api as crm
+
+	first = pipeline.first_stage()
+	plan = {
+		"Buyer One": ["Contacted", "Qualified"],
+		"Buyer Two": ["Site visit booked"],
+		"Buyer Three": ["Contacted"],
+		"Investor Four": ["Contacted"],
+		"NRI Five": ["Nurture"],
+	}
+	for title, stages in plan.items():
+		lead = frappe.db.get_value(
+			"Lead",
+			{"lead_title": ["like", f"{REGRESSION_PREFIX}{title}%"]},
+			["name", "assigned_to", "stage"],
+			as_dict=True,
+		)
+		if not lead or lead.stage != first:
+			continue
+		with _as_user(lead.assigned_to):
+			for stage in stages:
+				crm.move_lead_stage(lead.name, stage)
+
+
 def _seed_support_grants(admin):
 	"""Two support grants, through the production API (SOS-P1-13): one ended early, one still active."""
 	from sellos.access import support
@@ -707,7 +753,8 @@ def _seed_setup_wizard(admin):
 	"""
 	from sellos.config import setup_wizard
 
-	if frappe.db.count("Pipeline Stage") or setup_wizard.is_setup_complete():
+	done = frappe.db.get_single_value("SellOS Settings", "setup_steps_done") or ""
+	if "stages" in done.split(",") or setup_wizard.is_setup_complete():
 		return
 	with _as_user(admin):
 		name = frappe.db.get_single_value("SellOS Settings", "company_name")

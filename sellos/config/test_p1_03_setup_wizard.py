@@ -36,6 +36,9 @@ class TestSetupWizard(IntegrationTestCase):
 		settings = frappe.get_doc("SellOS Settings")
 		settings.update({"setup_steps_done": "", "setup_complete": 0, "brand_color": "", "logo": ""})
 		settings.save(ignore_permissions=True)
+		# SOS-P1-07: a stage with leads is never deleted, so the leads of this site come off their stages
+		# first. The class's transaction is rolled back, so the leads get theirs again.
+		frappe.db.set_value("Lead", {"stage": ["is", "set"]}, "stage", None, update_modified=False)
 		for name in frappe.get_all(wizard.STAGE, pluck="name"):
 			frappe.delete_doc(wizard.STAGE, name, ignore_permissions=True)
 
@@ -56,7 +59,8 @@ class TestSetupWizard(IntegrationTestCase):
 		self.assertFalse(state["complete"])
 		self.assertEqual(state["next_step"], "profile")
 		self.assertEqual(state["steps_done"], [])
-		self.assertEqual([s["stage_name"] for s in state["stages"]][:2], ["New", "Contacted"])
+		self.assertEqual([s["stage_name"] for s in state["stages"]][:2], ["New", "Consent pending"])
+		self.assertEqual(len(state["stages"]), 11)  # SOS-P1-07: the eleven buyer stages
 		self.assertFalse(state["stages_saved"])
 
 	def test_the_wizard_collects_all_four_areas_and_the_result_is_read_back(self):
@@ -72,7 +76,7 @@ class TestSetupWizard(IntegrationTestCase):
 			frappe.get_all(wizard.STAGE, pluck="name", order_by="position asc"),
 			[s["stage_name"] for s in wizard.DEFAULT_STAGES],
 		)
-		self.assertEqual(frappe.db.get_value(wizard.STAGE, "Booked", "stage_type"), "Won")
+		self.assertEqual(frappe.db.get_value(wizard.STAGE, "Booking", "stage_type"), "Won")
 		self.assertEqual(frappe.get_roles(self.agent).count(AGENT), 1)
 		self.assertTrue(wizard.is_setup_complete())
 
@@ -108,11 +112,11 @@ class TestSetupWizard(IntegrationTestCase):
 		state = wizard.save_stages(
 			[
 				{"stage_name": "Enquiry", "stage_type": "Open"},
-				{"stage_name": "Booked", "stage_type": "Won"},
-				{"stage_name": "Lost", "stage_type": "Lost"},
+				{"stage_name": "Booking", "stage_type": "Won"},
+				{"stage_name": "Closed lost", "stage_type": "Lost"},
 			]
 		)
-		self.assertEqual([s["stage_name"] for s in state["stages"]], ["Enquiry", "Booked", "Lost"])
+		self.assertEqual([s["stage_name"] for s in state["stages"]], ["Enquiry", "Booking", "Closed lost"])
 
 	def test_bad_input_is_refused_with_a_clear_message(self):
 		bad_stages = [

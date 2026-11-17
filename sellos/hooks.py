@@ -103,7 +103,11 @@ role_home_page = {
 
 # before_install = "sellos.install.before_install"
 after_install = "sellos.access.roles.after_install"
-after_migrate = ["sellos.access.roles.after_migrate", "sellos.crm.lead_sources.ensure_default_sources"]
+after_migrate = [
+	"sellos.access.roles.after_migrate",
+	"sellos.crm.lead_sources.ensure_default_sources",
+	"sellos.crm.pipeline.ensure_default_stages",
+]
 
 # Uninstallation
 # ------------

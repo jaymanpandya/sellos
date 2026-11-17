@@ -23,6 +23,7 @@ from sellos.access.registry import (
 )
 from sellos.access.roles import ROLES, ensure_roles
 from sellos.access.test_permission_matrix import import_all_sellos_modules, matrix_problems
+from sellos.crm.pipeline import DEFAULT_STAGES
 from sellos.testing.users import TEST_USERS, create_test_users
 from sellos.tests import phones
 
@@ -62,6 +63,8 @@ SAMPLE_CALLS = {
 	"sellos.crm.api.list_lead_sources": {},
 	"sellos.crm.api.save_lead_source": {"name": "{spare_source}", "values": {"enabled": 0}},
 	"sellos.crm.api.delete_lead_source": {"name": "{spare_source}"},
+	"sellos.crm.api.list_stages": {},
+	"sellos.crm.api.move_lead_stage": {"lead": "{lead}", "stage": "Contacted"},
 	"sellos.crm.api.save_lead": {"name": "{lead}", "values": {"notes": "p105 edit"}},
 	"sellos.crm.api.get_lead": {"name": "{lead}"},
 	"sellos.crm.api.add_activity": {"lead": "{lead}", "activity_type": "Note", "notes": "p105 added"},
@@ -91,11 +94,10 @@ SAMPLE_CALLS = {
 	"sellos.config.setup_wizard.get_setup_state": {},
 	"sellos.config.setup_wizard.save_profile": {"values": {"company_name": "P105 Realty"}},
 	"sellos.config.setup_wizard.save_branding": {"brand_color": "#0f4c35"},
+	# SOS-P1-07: a stage with leads is never deleted, and the test makes a lead, so the call keeps the
+	# eleven stages and adds one.
 	"sellos.config.setup_wizard.save_stages": {
-		"stages": [
-			{"stage_name": "P105 Open", "stage_type": "Won"},
-			{"stage_name": "P105 Lost", "stage_type": "Lost"},
-		]
+		"stages": [*DEFAULT_STAGES, {"stage_name": "P105 Open", "stage_type": "Open"}]
 	},
 	"sellos.config.setup_wizard.add_user": {
 		"email": "p105_wizard_user@example.com",

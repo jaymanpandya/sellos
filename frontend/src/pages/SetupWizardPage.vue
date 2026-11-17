@@ -191,7 +191,8 @@
 				>
 					<p class="text-sm text-ink-muted">
 						These are the stages a lead moves through. Rename them, reorder them or add
-						your own. Keep at least one Won and one Lost stage.
+						your own. Keep at least one Won and one Lost stage. A stage that has leads
+						cannot be removed: move its leads first.
 					</p>
 					<ul class="space-y-2">
 						<li
@@ -217,6 +218,13 @@
 								<option>Won</option>
 								<option>Lost</option>
 							</select>
+							<span
+								v-if="s.leads"
+								class="whitespace-nowrap text-xs text-ink-muted"
+								data-testid="sellos-setup-stage-leads"
+							>
+								{{ s.leads }} {{ s.leads === 1 ? "lead" : "leads" }}
+							</span>
 							<button
 								type="button"
 								class="px-2 text-ink-muted"
