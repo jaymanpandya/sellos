@@ -716,7 +716,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 2
 - **Dependencies:** none
-- **Status:** In Progress
+- **Status:** Complete
 
 ### SOS-P0-05D: Run the wildcard DNS and certificate setup on the real domain
 - **Epic:** Platform foundations and DevOps
