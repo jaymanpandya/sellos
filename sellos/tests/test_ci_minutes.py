@@ -207,4 +207,31 @@ class Wiring(unittest.TestCase):
 	def test_the_loop_names_a_run_whose_jobs_never_started(self):
 		loop = LOOP.read_text(encoding="utf-8")
 		self.assertIn('ci_minutes.py" never-started "$id"', loop)
-		self.assertEqual(loop.count("${CI_RED_REASON:+ $CI_RED_REASON}"), 2)
+
+		def body(name):
+			begin = loop.index(f"\n{name}() {{\n")
+			return loop[begin : loop.index("\n}\n", begin)]
+
+		# SOS-SETUP-38: the reason no longer goes straight into the stop lines. ci_green hands it to
+		# ci_until_green as the environment reason ...
+		green = body("ci_green")
+		self.assertIn('CI_RED_REASON="CI run $id: these jobs never started ($unstarted).', green)
+		self.assertIn('CI_ENV_REASON="$CI_RED_REASON"', green)
+		self.assertIn('CI_KIND="environment $CI_ENV_REASON"', body("ci_read_failures"))
+		# ... which names it in the rerun message, the stop cause and the stop notice ...
+		until = body("ci_until_green")
+		self.assertIn('local why="${CI_KIND#environment }"', until)
+		env_branch = until[until.index('if [[ "$CI_KIND" == environment* ]]; then') :]
+		env_branch = env_branch[: env_branch.index("      return 1\n")]
+		self.assertRegex(env_branch, r'ci_notify "CI is red on [^\n]*: \$why\. Rerunning')
+		self.assertRegex(env_branch, r'CI_STOP_CAUSE="[^\n]*: \$why"')
+		self.assertRegex(env_branch, r'CI_STOP_NOTICE="[^\n]*: \$why\. Stopping')
+		# ... and every place that waits for CI records that cause and sends that notice when it stops.
+		calls = re.findall(r"if ! ci_until_green [^\n]*; then\n", loop)
+		self.assertTrue(calls)
+		recorded = re.findall(
+			r'if ! ci_until_green [^\n]*; then\n\s*stop_note "\$CI_STOP_CATEGORY" "\$CI_STOP_CAUSE"\n'
+			r'\s*ci_notify "\$CI_STOP_NOTICE"\n',
+			loop,
+		)
+		self.assertEqual(len(recorded), len(calls))

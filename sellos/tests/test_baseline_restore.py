@@ -277,8 +277,30 @@ class TestGateWiring(UnitTestCase):
 		rule = (
 			"Never run seed_regression_data, any ui_fixtures.seed_* function or scripts/prepare-regression.sh"
 		)
-		# Both prompts: the task prompt and the repair prompt.
-		self.assertEqual(text.count(rule), 2)
+		# Every prompt the loop gives an agent carries the rule, named one by one (SOS-SETUP-38 added
+		# the CI repair prompt). Each prompt is the text from its start to the call that sends it.
+		ci_start = 'claude -p "The CI run on the pushed commit'
+		prompts = {
+			"build": ('  PROMPT="You are implementing', 'claude -p "$PROMPT"'),
+			"repair": ('REPAIR_PROMPT="', 'claude -p "$REPAIR_PROMPT"'),
+			"CI repair": (ci_start, "--dangerously-skip-permissions)"),
+		}
+		for name, (start, end) in prompts.items():
+			with self.subTest(prompt=name):
+				self.assertEqual(text.count(start), 1, f"the {name} prompt's start was not found once")
+				begin = text.index(start)
+				body = text[begin : text.index(end, begin + len(start))]
+				self.assertIn(rule, body)
+		# No agent is called with a prompt outside that list.
+		calls = re.findall(r'(?m)^(?!\s*#).*claude -p "([^\n]*)', text)
+		self.assertTrue(calls)
+		for call in calls:
+			with self.subTest(call=call[:60]):
+				self.assertTrue(
+					call.startswith(('$PROMPT"', "$REPAIR_PROMPT"))
+					or ('claude -p "' + call).startswith(ci_start),
+					f"an agent prompt the test does not check: {call[:80]}",
+				)
 
 	def test_the_loop_starts_with_default_signals(self):
 		text = SELLOS_CLI.read_text(encoding="utf-8")
