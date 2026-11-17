@@ -47,11 +47,16 @@ class TestSiteNameCheck(unittest.TestCase):
 	def test_seed_functions_refuse_the_gate_site(self):
 		import frappe
 
-		with mock.patch.object(frappe.local, "site", "sellos_test.localhost", create=True):
+		# Set and restore the site by hand: patching frappe.local would unset it for the tests after this one.
+		old = getattr(frappe.local, "site", None)
+		try:
+			frappe.local.site = "sellos_test.localhost"
 			with self.assertRaises(demo.DemoRefused):
 				demo.seed_company(0)
 			with self.assertRaises(demo.DemoRefused):
 				demo.setup_control()
+		finally:
+			frappe.local.site = old
 
 	def test_ids_must_start_with_demo(self):
 		for bad in ("alpha", "regressionfour", "democontrol.localhost", "demo-x", "Demo1"):
