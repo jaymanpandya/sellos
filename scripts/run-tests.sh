@@ -70,6 +70,8 @@ source "$REPO_DIR/scripts/lib/sellos_server.sh"
 # the end of the run fails if the password is in any log, the repository or a tenant site.
 # shellcheck source=lib/db_secrets.sh
 source "$REPO_DIR/scripts/lib/db_secrets.sh"
+# shellcheck source=lib/transcript_leak.sh
+source "$REPO_DIR/scripts/lib/transcript_leak.sh"
 # SOS-SETUP-22: on a hand run the password may be only in the Keychain. Load it (never shown) so the
 # redaction and the leak check below know it. Nothing fails when it is not available.
 sellos_load_provisioner_password || true
@@ -323,7 +325,10 @@ python3 "$REPO_DIR/scripts/check_site_set.py" compare "$BENCH_DIR" "$SITES_SNAPS
 echo "--- No secret (provisioner password, Telegram, BuildOS) is in a log ---"
 python3 "$REPO_DIR/scripts/check_no_secret_leak.py" --since "${SELLOS_TASK_STARTED:-$GATE_START}" \
   "$LOG_DIR" "$BENCH_DIR/logs" "$BENCH_DIR/sites/common_site_config.json" "$BENCH_DIR/sites/archived_sites" \
-  "$REPO_DIR" "$CLAUDE_TRANSCRIPTS"
+  "$REPO_DIR"
+# A secret in an interactive session's transcript is an environment fault (scripts/lib/transcript_leak.sh):
+# scrubbed in place, sent to Telegram by name only, the gate stops with exit 3.
+sellos_transcript_leak_check "${SELLOS_TASK_STARTED:-$GATE_START}" "$CLAUDE_TRANSCRIPTS"
 python3 "$REPO_DIR/scripts/check_no_secret_leak.py" "$BENCH_DIR"/sites/sellos_tenant_*
 echo "--- GATE PASSED ---"
 } 2>&1 | sellos_redact | tee "$LOG_FILE"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fails when a loop secret is in a file it must never reach (SOS-SETUP-18, SOS-SETUP-29).
 
-Usage: check_no_secret_leak.py [--since EPOCH] PATH [PATH ...]
+Usage: check_no_secret_leak.py [--since EPOCH] [--transcripts DIR] PATH [PATH ...]
 
 The secrets are the values of these environment variables, read from the environment, never from
 argv:
@@ -19,6 +19,13 @@ everywhere; the check says so by name.
 Every file under each PATH (a file or a folder; a missing one is skipped) is searched, except .git
 and node_modules folders. With --since, only files changed at or after that time are searched, so
 a log that was clean when the task started is searched only if something wrote to it.
+
+A secret in a transcript of an INTERACTIVE Claude Code session (a *.jsonl under --transcripts DIR
+whose entrypoint is "cli", not the loop agent's "sdk-cli") is an environment fault, not a task's
+fault. It is overwritten in place with the same number of "*" (the file's size does not change),
+the file and variable name are printed (never the value), and the check exits 3, so the gate stops
+as an environment problem and no task is repaired or Blocked for it. A loop agent's transcript is
+searched like any other file.
 
 A hit prints the file, line number and variable name, never the value, and exits 1. With none of
 them set there is nothing to find, and it exits 0. scripts/run-tests.sh runs it at the end of every
@@ -109,12 +116,57 @@ def leaks(paths, needles, since=None):
 	return found
 
 
+def is_interactive(path):
+	"""True for a Claude Code transcript written by an interactive session (not `claude -p`)."""
+	if path.suffix != ".jsonl":
+		return False
+	try:
+		# A path found under the transcripts folder, not user input.
+		with open(path, "rb") as f:  # nosemgrep
+			head = f.read(CHUNK)
+	except OSError:
+		return False
+	return b'"entrypoint":"cli"' in head and b'"entrypoint":"sdk-cli"' not in head
+
+
+def scrub(path, needles):
+	"""Overwrite every needle in path with "*" of the same length. Returns the variable names hit."""
+	try:
+		# A path found under the transcripts folder, not user input.
+		with open(path, "rb+") as f:  # nosemgrep
+			data = f.read()
+			names = []
+			for name, needle in needles.items():
+				if needle in data:
+					data = data.replace(needle, b"*" * len(needle))
+					names.append(name)
+			if names:
+				f.seek(0)
+				f.write(data)
+	except OSError:
+		return []
+	return names
+
+
+def scrub_interactive(top, needles):
+	"""[(file, name)] scrubbed from interactive transcripts under top."""
+	done = []
+	for path in files_under(Path(top)):
+		if is_interactive(path):
+			done += [(str(path), n) for n in scrub(path, needles)]
+	return done
+
+
 def main(argv):
 	since = None
-	if argv[:1] == ["--since"]:
-		since = float(argv[1])
+	transcripts = None
+	while argv[:1] in (["--since"], ["--transcripts"]):
+		if argv[0] == "--since":
+			since = float(argv[1])
+		else:
+			transcripts = argv[1]
 		argv = argv[2:]
-	if not argv:
+	if not argv and not transcripts:
 		print(__doc__.split("\n\n")[1])
 		return 2
 	needles, short = secrets(os.environ)
@@ -128,7 +180,14 @@ def main(argv):
 			" credentials are not set, so there is nothing to find."
 		)
 		return 0
+	scrubbed = scrub_interactive(transcripts, needles) if transcripts else []
+	if transcripts:
+		argv = [*argv, transcripts]
 	found = leaks(argv, needles, since)
+	if scrubbed:
+		print("ENVIRONMENT FAULT: a secret was in an interactive session's transcript. Overwritten in place:")
+		for place, name in scrubbed:
+			print(f"  {place} (the value of {name})")
 	if found:
 		print("Secret leak check FAILED. A secret's value is written in:")
 		for place, name in found:
@@ -148,6 +207,8 @@ def main(argv):
 				" those files."
 			)
 		return 1
+	if scrubbed:
+		return 3
 	print(f"Secret leak check: none of {', '.join(needles)} is in the searched files.")
 	return 0
 
