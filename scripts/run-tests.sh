@@ -41,7 +41,21 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="$LOG_DIR/run-$STAMP.log"
 UI_LOG="$LOG_DIR/ui-$STAMP.log"
 export SELLOS_FLAKY_LOG="$BASELINE_DIR/sellos-flaky.log"
-rm -f "$LOG_DIR/latest.log"
+# SOS-SETUP-39: latest.log points at this run's log from the first line on, not only at the end, so
+# "sellos status" and anyone tailing it can always find the log of a gate that is running or hung.
+: >"$LOG_FILE"
+ln -sf "$LOG_FILE" "$LOG_DIR/latest.log"
+# SOS-SETUP-39: hard time limits, in seconds, chosen from the gate's measured times (docs/STOPS.md, the
+# row "machine slept or gate hung"): a spec 15 min (normally 67 to 85 s), the whole Cypress suite and the
+# backend suite 45 min each (normally 6 to 7 min and 12 to 14 min). Past a limit the command's process
+# tree is killed and the gate exits 4, a gate timeout: an environment fault, never repaired as code.
+# The tag lets the loop find this gate's leftover Cypress and Chrome processes and nobody else's.
+# shellcheck source=lib/gate_limits.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/gate_limits.sh"
+export SELLOS_GATE_LIMITS=1
+export SELLOS_GATE_TAG="${SELLOS_GATE_TAG:-hand-run-$$}"
+export SELLOS_GATE_FAULT_FILE="${SELLOS_GATE_FAULT_FILE:-$LOG_DIR/gate-fault.txt}"
+rm -f "$SELLOS_GATE_FAULT_FILE"
 # Exit 2 and 3 mean an environment problem, and the build loop never repairs, resets or Blocks a
 # task for one (SOS-SETUP-14). Only the preflight's own exits, recorded by sellos_env_exit, keep a
 # 2 or 3. Any other failure ends as 1, whatever status the failing command returned: under set -e
@@ -315,10 +329,10 @@ echo "--- GATE PASSED ---"
 } 2>&1 | sellos_redact | tee "$LOG_FILE"
 
 STATUS="${PIPESTATUS[0]}"
+# Status 4 (a gate timeout, SOS-SETUP-39) is kept as it is: only gate_limits.sh produces it.
 if [[ "$STATUS" -eq 2 || "$STATUS" -eq 3 ]] && [ "$(cat "$SELLOS_ENV_EXIT_FILE" 2>/dev/null)" != "$STATUS" ]; then
   echo "The gate failed with status $STATUS from a command, not from its preflight. Reporting it as a test failure (1)." | tee -a "$LOG_FILE"
   STATUS=1
 fi
 rm -f "$SELLOS_ENV_EXIT_FILE"
-ln -sf "$LOG_FILE" "$LOG_DIR/latest.log"
 exit "$STATUS"

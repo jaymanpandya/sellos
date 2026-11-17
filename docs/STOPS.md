@@ -7,9 +7,18 @@ repairs), `task broke older specs` (the gate failed on a spec the task did not c
 `needs-input`, `crash`, `unrecognized`, `environment`, `ci-red`, `push-failed`, `blocked-exists`
 (before SOS-SETUP-37), `no-work`, `start` (a check before any task), `unexpected`, `gate hole` (a hole
 in the gate found by a stop, recorded by hand), `test pins a moving value` (a test asserted something
-the loop changes, such as a real task's status, SOS-SETUP-38), and the planned ones, `paused` and `stopped`. "Attempt
+the loop changes, such as a real task's status, SOS-SETUP-38), `gate timeout` (a limit or the stall watchdog killed the gate twice in a row, SOS-SETUP-39), `machine slept or gate hung` (the 17 November 2026 hang, recorded by hand), and the planned ones, `paused` and `stopped`. "Attempt
 lost" is the time from the task's start to the stop. "Idle until restart" is filled in when the loop
 starts again; it is 0.0 for a Blocked task the loop went on from at once (SOS-SETUP-37).
+
+Gate limits (SOS-SETUP-39), chosen from the times the gate measured in /tmp/sellos-test-logs on 16 and 17
+November 2026. A spec took 67 to 85 s (two slow runs took 684 s and 1827 s), the whole Cypress suite 6 to 7 min,
+the backend suite 12 to 14 min (26 once) and a whole gate run 31 to 51 min, plus up to 90 min waiting for the
+bench lock. So: a spec 15 min, the Cypress suite and the backend suite 45 min each, the whole gate 150 min,
+and 15 min without a new line in the loop log. Each is an environment variable (SELLOS_SPEC_TIMEOUT,
+SELLOS_UI_SUITE_TIMEOUT, SELLOS_BACKEND_TIMEOUT, SELLOS_GATE_TIMEOUT and SELLOS_STALL_TIMEOUT, in seconds). Past one,
+SellOS's own process tree is killed, the bench lock is released, Telegram is told, and the gate runs once more; a
+second timeout stops the loop with the category `gate timeout`. A timeout is never handed to the repair agent.
 
 | Time (UTC) | Task | Category | Cause | Attempt lost (min) | Idle until restart (h) |
 | --- | --- | --- | --- | --- | --- |
@@ -19,5 +28,5 @@ starts again; it is 0.0 for a Blocked task the loop went on from at once (SOS-SE
 | 2026-11-14 07:25 | SOS-P1-20 | task broke older specs | the gate still failed after 3 gate run(s): UI TESTS FAILED. The task made the lead form's Source a required select and updated only leads_screen.cy.js; leads_by_role.cy.js and duplicate_warning.cy.js made a lead without a source and failed only in the whole suite. Blocked at 12:55 IST and the loop stood idle (recategorised by hand by SOS-SETUP-37; finished by hand in 08b6a92) | 42 | 56.5 |
 | 2026-11-16 17:46 | SOS-P1-07 | stopped | stopped by a signal (sellos stop --now, Ctrl-C or a shutdown) | 109 | 3.1 |
 | 2026-11-16 21:00 | SOS-P1-07 | test pins a moving value | CI run 43954312044 on 757df9c, red on two jobs. Server: test_tasks_selection.py asserted that the real SOS-P1-07 was Not Started, and the loop had marked it In Progress (SOS-N21 was pinned to Waiting the same way). UI: frontend/route_access.cy.js reached 3 in the flaky log (CI runs 43897848128, 43902088789, 43954312044), each time "list_lead_sources failed Failed to fetch" in the after each hook of the test after the one that left a real, unstubbed list_lead_sources call running. Recategorised by hand from ci-red by SOS-SETUP-38; P1-07's work stayed In Progress in the tree | 0 | 3.9 |
-| 2026-11-17 07:52 | SOS-P1-21 | stopped | stopped by a signal (sellos stop --now, Ctrl-C or a shutdown) | 320 | 0.0 |
+| 2026-11-17 07:52 | SOS-P1-21 | machine slept or gate hung | the gate (run-tests.sh, started 08:17 IST) held the bench lock for 5 hours after the Mac slept on battery power, inside the changed spec crm/buyer_pipeline.cy.js (run 1), with no output, no Telegram message and no latest.log (it was linked only when a gate ended). Stopped by hand with sellos stop --now. Recategorised by hand from stopped by SOS-SETUP-39, which adds the limits, the stall watchdog, caffeinate and the leftover cleanup | 320 | 0.0 |
 | 2026-11-17 07:53 | SOS-P1-21 | crash | Claude's process exited 1; the loop went on to the next task | 0 | 0.0 |

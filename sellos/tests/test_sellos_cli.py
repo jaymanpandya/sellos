@@ -106,7 +106,8 @@ class TheChecksUpMakes(unittest.TestCase):
 			"never-started",
 			"df -Pk",
 			"tasks_with_status Blocked",
-			'nohup "$SCRIPT_DIR/build-loop.sh" >>"$LOOP_LOG"',
+			'nohup "${SELLOS_CAFFEINATE:-/usr/bin/caffeinate}" -i -m -s',
+			'"$SCRIPT_DIR/build-loop.sh" >>"$LOOP_LOG"',
 		):
 			self.assertIn(needle, text)
 		# It never starts or stops the shared bench's servers or Redis.

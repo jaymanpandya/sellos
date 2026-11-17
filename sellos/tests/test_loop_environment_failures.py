@@ -168,6 +168,11 @@ class Sandbox(unittest.TestCase):
 		# SOS-SETUP-22: the loop and the gate look for the provisioner password in the Keychain.
 		self.write(self.bin / "security", FAKE_SECURITY, 0o755)
 		self.write(self.fake / "keychain", KEYCHAIN_PASSWORD)
+		# SOS-SETUP-39: the loop warns when the Mac is on battery or low. Never the real battery.
+		self.write(
+			self.fake / "pmset.txt",
+			"Now drawing from 'AC Power'\n -InternalBattery-0 (id=1)\t100%; charged; 0:00 remaining\n",
+		)
 
 	def serve(self, sellos_status):
 		handler = type("H", (Handler,), {"sellos_status": sellos_status})
@@ -201,6 +206,7 @@ class Sandbox(unittest.TestCase):
 			"PATH": f"{self.bin}:{os.environ.get('PATH', '/usr/bin:/bin')}",
 			"HOME": str(self.root),
 			"FAKE_DIR": str(self.fake),
+			"SELLOS_PMSET_FILE": str(self.fake / "pmset.txt"),
 			"SELLOS_BENCH_DIR": str(self.bench),
 			"SELLOS_TEST_SITE": SITE,
 			"SELLOS_LOG_DIR": str(self.logs),
@@ -245,7 +251,7 @@ class LoopSandbox(Sandbox):
 		)
 		self.write(self.bench / "apps/buildos/buildos/hooks.py", "app_name = 'buildos'\n")
 		# SOS-SETUP-33: the loop records every stop in docs/STOPS.md with lib/stops.py.
-		for name in ("tasks.py", "db_secrets.sh", "stops.py", "commit_message.py"):
+		for name in ("tasks.py", "db_secrets.sh", "stops.py", "commit_message.py", "gate_watch.py"):
 			shutil.copy2(SCRIPTS / "lib" / name, self.repo / "scripts" / "lib" / name)
 		self.write(self.repo / "scripts/run-tests.sh", FAKE_GATE, 0o755)
 		self.write(self.repo / "scripts/notify-telegram.sh", FAKE_NOTIFY, 0o755)
@@ -459,6 +465,8 @@ class GateSandbox(Sandbox):
 			"prepare_test_site.sh",
 			"restore_baseline.sh",
 			"check_clean_site.sh",
+			"gate_limits.sh",
+			"gate_watch.py",
 		):
 			shutil.copy2(SCRIPTS / "lib" / name, self.repo / "scripts" / "lib" / name)
 		shutil.copy2(SCRIPTS / "check_no_secret_leak.py", self.repo / "scripts" / "check_no_secret_leak.py")

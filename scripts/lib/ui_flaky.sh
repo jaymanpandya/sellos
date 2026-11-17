@@ -23,6 +23,9 @@
 # Returns 0 when the run passes and 1 when it fails.
 
 SELLOS_UI_FLAKY_PY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ui_flaky.py"
+# SOS-SETUP-39: a spec, or the whole suite, past its time limit is killed and ends the gate (status 4).
+# shellcheck source=gate_limits.sh
+source "$(dirname "${BASH_SOURCE[0]}")/gate_limits.sh"
 
 _sellos_ui_filter() {
   if declare -F sellos_redact >/dev/null; then sellos_redact; else cat; fi
@@ -36,14 +39,21 @@ _sellos_ui_summary() {
 # _sellos_ui_run <log> [spec]: one Cypress run, its output through the filter into <log> and stdout.
 # Prints nothing of its own. Returns Cypress's exit status, not the filter's.
 _sellos_ui_run() {
-  local log="$1" spec="${2:-}" status
-  if [ -n "$spec" ]; then
-    bench --site "$SITE" run-ui-tests "$APP" --headless --spec "cypress/integration/$spec" 2>&1 \
+  local log="$1" spec="${2:-}" status limit label
+  limit="${SELLOS_SPEC_TIMEOUT:-900}"
+  label="the Cypress spec $spec"
+  if [ -z "$spec" ]; then
+    limit="${SELLOS_UI_SUITE_TIMEOUT:-2700}"
+    label="the whole Cypress suite"
+    sellos_limited "$label" "$limit" bench --site "$SITE" run-ui-tests "$APP" --headless 2>&1 \
       | _sellos_ui_filter | tee "$log"
   else
-    bench --site "$SITE" run-ui-tests "$APP" --headless 2>&1 | _sellos_ui_filter | tee "$log"
+    sellos_limited "$label" "$limit" \
+      bench --site "$SITE" run-ui-tests "$APP" --headless --spec "cypress/integration/$spec" 2>&1 \
+      | _sellos_ui_filter | tee "$log"
   fi
   status="${PIPESTATUS[0]}"
+  sellos_limit_check "$status" "$label"
   return "$status"
 }
 
