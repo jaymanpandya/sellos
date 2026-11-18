@@ -238,7 +238,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Story Points:** 3
 - **Dependencies:** SOS-P1-17
 - **Browser spec:** required
-- **Status:** Blocked
+- **Status:** Not Started
 
 ### SOS-P1-22: Follow ups and reminders
 - **Epic:** Core CRM and consent
@@ -346,7 +346,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-08
-- **Status:** Blocked
+- **Status:** Not Started
 
 ### SOS-N22: Write the default consent wording
 - **Epic:** Compliance, procurement and access

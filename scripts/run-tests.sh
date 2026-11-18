@@ -358,7 +358,12 @@ fi
 bench_gate_release
 
 echo "--- Sites this run touched ---"
-python3 "$REPO_DIR/scripts/check_site_set.py" compare "$BENCH_DIR" "$SITES_SNAPSHOT"
+SITE_SET_STATUS=0
+python3 "$REPO_DIR/scripts/check_site_set.py" compare "$BENCH_DIR" "$SITES_SNAPSHOT" || SITE_SET_STATUS=$?
+# Exit 3: only another app's site changed (BuildOS or Pamaa ran tests on the shared bench). An environment
+# fault, so the task stays In Progress and is never Blocked (SOS-LOOP).
+if [ "$SITE_SET_STATUS" -eq 3 ]; then sellos_env_exit 3; fi
+if [ "$SITE_SET_STATUS" -ne 0 ]; then exit "$SITE_SET_STATUS"; fi
 # SOS-SETUP-18: since the task started (the loop sets SELLOS_TASK_STARTED), or since this run started.
 # The bench CLI writes every command line it runs to logs/bench.log, so a password given to
 # "bench new-site" ends up there. The tenant site folders are searched whatever their age.

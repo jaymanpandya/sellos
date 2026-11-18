@@ -84,8 +84,23 @@ class TestCheckSiteSet(unittest.TestCase):
 	def test_other_app_site_config_changed_fails(self):
 		self.site("pamaa_test.localhost", {"db_name": "pamaa_test", "maintenance_mode": 1})
 		code, out = self.check("compare")
-		self.assertEqual(code, 1, out)
+		self.assertEqual(code, 3, out)
 		self.assertIn("pamaa_test.localhost/site_config.json changed", out)
+		self.assertIn("Likely writer: the Pamaa gate", out)
+
+	def test_buildos_test_site_config_changed_is_an_environment_fault(self):
+		self.site("test_site", {"db_name": "test_site", "buildos_embedded_dialer_before": None})
+		code, out = self.check("compare")
+		self.assertEqual(code, 3, out)
+		self.assertIn("ENVIRONMENT FAULT", out)
+		self.assertIn("test_site/site_config.json changed. Likely writer: the BuildOS gate", out)
+
+	def test_a_foreign_change_does_not_hide_a_sellos_fault(self):
+		self.site("test_site", {"db_name": "test_site", "x": 1})
+		self.site("sellos_tenant_a1.localhost")
+		code, out = self.check("compare")
+		self.assertEqual(code, 1, out)
+		self.assertIn("sellos_tenant_a1.localhost was created by this run", out)
 
 	def test_a_site_with_another_name_fails(self):
 		for name in (

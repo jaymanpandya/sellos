@@ -3,6 +3,18 @@
 context("SOS-P1-06A: leads by role", () => {
 	const unique = (label) => `${label} ${Date.now()}`;
 
+	// The screen asks for the filter boxes, the stages and the sources beside the leads (SOS-P1-24).
+	// A test that stops once the lead row shows can end while one of those is in flight, and the next
+	// page load cuts it off: "list_lead_sources failed Failed to fetch" in the console, in the after
+	// each hook, one run in five (SOS-LOOP). Watch the three calls before the visit and wait until each
+	// has been answered, so the page has asked for everything and nothing is left in flight.
+	const watchPageCalls = () => {
+		cy.intercept("**/sellos.crm.api.lead_filter_options*").as("filterOptions");
+		cy.intercept("**/sellos.crm.api.list_stages*").as("stages");
+		cy.intercept("**/sellos.crm.api.list_lead_sources*").as("sources");
+	};
+	const pageCallsAnswered = () => cy.wait(["@filterOptions", "@stages", "@sources"]);
+
 	// seed_agent_leads commits its leads, so a rollback never removes them. Left behind, they sit in
 	// the agent's list and the backend tests that expect only their own leads fail (SOS-SETUP-24).
 	after(() => {
@@ -13,7 +25,9 @@ context("SOS-P1-06A: leads by role", () => {
 		const name = unique("Gate Buyer");
 		cy.signInFresh("company_admin");
 		cy.bench("sellos.tests.ui_fixtures.fresh_phone", { seed: 11 }).then(({ phone }) => {
+			watchPageCalls();
 			cy.visit("/sellos/crm/leads");
+			pageCallsAnswered();
 			cy.fillNewLead({ name, phone });
 			cy.getByTestId("lead-form-save").click();
 			cy.getByTestId("lead-form-error").should("not.exist");
@@ -31,8 +45,10 @@ context("SOS-P1-06A: leads by role", () => {
 			body: { exc_type: "ValidationError" },
 		}).as("listLeads");
 		cy.expectConsoleError("list_leads");
+		watchPageCalls();
 		cy.visit("/sellos/crm/leads");
 		cy.wait("@listLeads").its("response.statusCode").should("eq", 500);
+		pageCallsAnswered();
 		cy.getByTestId("leads-error").should("be.visible");
 		cy.getByTestId("leads-empty").should("not.exist");
 	});
@@ -40,7 +56,9 @@ context("SOS-P1-06A: leads by role", () => {
 	it("an agent sees only their own leads", () => {
 		cy.bench("sellos.tests.ui_fixtures.seed_agent_leads").then(({ own, others }) => {
 			cy.signInFresh("agent");
+			watchPageCalls();
 			cy.visit("/sellos/crm/leads");
+			pageCallsAnswered();
 			cy.getByTestId("lead-row").contains(own).should("be.visible");
 			others.forEach((name) =>
 				cy.getByTestId("lead-row").contains(name).should("not.exist")

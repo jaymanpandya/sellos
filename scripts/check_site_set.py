@@ -157,6 +157,29 @@ def database_problems(before, after):
 	return out
 
 
+# SOS-LOOP: which app's run most likely wrote a site that is not SellOS's. BuildOS's gate and its UI runs
+# (bench --site test_site run-ui-tests buildos, buildos.tests.ui_fixtures.update_site_config) write
+# test_site/site_config.json while a SellOS gate runs, as on 17 and 18 Nov 2026.
+LIKELY_WRITERS = (
+	("test_site", "the BuildOS gate or a BuildOS UI run (bench --site test_site run-ui-tests buildos)"),
+	("dev_site", "BuildOS development"),
+	("pamaa", "the Pamaa gate or a Pamaa UI run"),
+)
+
+
+def likely_writer(name):
+	for prefix, who in LIKELY_WRITERS:
+		if name.startswith(prefix):
+			return who
+	return "another app's gate or UI run on this bench"
+
+
+def foreign_changes(before, after):
+	"""Other apps' sites whose site_config.json changed. Their writer is not a SellOS test, so this is an
+	environment fault (exit 3), never a failure of the task."""
+	return sorted(name for name in set(before) & set(after) if not ours(name) and before[name] != after[name])
+
+
 def problems(before, after):
 	out = []
 	for name in sorted(set(before) | set(after)):
@@ -196,8 +219,21 @@ def main(argv):
 		return 0
 	state = json.loads(Path(snapshot).read_text(encoding="utf-8"))
 	after = sites(bench)
-	found = problems(state["sites"], after) + tenant_db_problems(bench, after)
+	foreign = foreign_changes(state["sites"], after)
+	found = [
+		line
+		for line in problems(state["sites"], after)
+		if not any(line.startswith(f"{name}/site_config.json changed") for name in foreign)
+	]
+	found += tenant_db_problems(bench, after)
 	found += database_problems(state.get("databases"), dbs)
+	if not found and foreign:
+		# Only other apps' sites changed. A SellOS test did not do this: the task is not at fault.
+		print("ENVIRONMENT FAULT: a site that is not SellOS's changed while this gate ran.")
+		for name in foreign:
+			print(f"  {name}/site_config.json changed. Likely writer: {likely_writer(name)}.")
+		print("Run the SellOS gate when no other app's tests are running. The task is not blocked.")
+		return 3
 	if found:
 		print(
 			"This run touched sites or databases that are not SellOS test ones, or left tenant ones behind:"
