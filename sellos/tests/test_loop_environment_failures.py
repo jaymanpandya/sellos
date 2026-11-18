@@ -467,6 +467,7 @@ class GateSandbox(Sandbox):
 			"check_clean_site.sh",
 			"gate_limits.sh",
 			"gate_watch.py",
+			"transcript_leak.sh",
 		):
 			shutil.copy2(SCRIPTS / "lib" / name, self.repo / "scripts" / "lib" / name)
 		shutil.copy2(SCRIPTS / "check_no_secret_leak.py", self.repo / "scripts" / "check_no_secret_leak.py")
