@@ -29,7 +29,16 @@ case "$1 $2" in
     o="$(head -n 1 "$F/ci_plan")"; tail -n +2 "$F/ci_plan" >"$F/ci_plan.rest"; mv "$F/ci_plan.rest" "$F/ci_plan"
     echo "${o:-green}" >"$F/ci_last"
     [ "${o:-green}" = green ] ;;
-  "run view") if [ "$(cat "$F/ci_last")" = env ]; then cat "$F/env.log"; else cat "$F/red.log"; fi ;;
+  "run view")
+    # SOS-SETUP-43: while "$F/in_progress" holds a number above 0, the run is not complete: each status
+    # poll counts it down, a log read says what GitHub says then and prints no log.
+    n="$(cat "$F/in_progress" 2>/dev/null || echo 0)"
+    case "$*" in
+      *--json*) if [ "$n" -gt 0 ]; then echo $((n - 1)) >"$F/in_progress"; echo in_progress; else echo completed; fi ;;
+      *) echo "$*" >>"$F/log_reads"
+         if [ "$n" -gt 0 ]; then echo "run $3 is still in progress; logs will be available when it is complete"; exit 0; fi
+         if [ "$(cat "$F/ci_last")" = env ]; then cat "$F/env.log"; else cat "$F/red.log"; fi ;;
+    esac ;;
   "run rerun") echo "$*" >>"$F/gh_reruns" ;;
   *) exit 0 ;;
 esac
@@ -72,7 +81,12 @@ class CiSandbox(loop_env.LoopSandbox):
 
 	def run_ci(self, codes, plan):
 		self.write(self.fake / "ci_plan", "".join(f"{p}\n" for p in plan))
-		env = {"ORIGIN": str(self.origin), "SELLOS_CI_FIRST_WAIT": "0"}
+		env = {
+			"ORIGIN": str(self.origin),
+			"SELLOS_CI_FIRST_WAIT": "0",
+			"SELLOS_CI_LOG_POLL": "0.2",
+			"SELLOS_CI_LOG_WAIT": "2",
+		}
 		return self.run_loop(codes, max_runs=1, extra_env=env)
 
 	def notices(self):
@@ -144,6 +158,30 @@ class ARedCiIsRepaired(CiSandbox):
 		self.assertRegex(
 			self.ledger(), r"\| SOS-X-1 \| environment \| CI red on [0-9a-f]+ .*still red after one rerun"
 		)
+
+
+class ARunStillInProgressIsWaitedFor(CiSandbox):
+	"""SOS-SETUP-43: run 44391986098 was read while in progress, GitHub gave no log, and both repairs
+	changed nothing."""
+
+	def test_the_log_is_read_only_once_the_run_is_complete(self):
+		self.write(self.fake / "in_progress", "3\n")
+		code = self.run_ci([0, 0], ["red", "green"])
+		self.assertEqual(code, 0, self.out)
+		self.assertEqual(self.read("in_progress").strip(), "0", "every poll was answered in_progress")
+		reads = self.read("log_reads").splitlines()
+		self.assertEqual(len(reads), 1, "the log was read once, after the run completed")
+		self.assertEqual(self.calls("claude_calls"), 2, "the task's agent, then one repair")
+		self.assertIn("AssertionError: 'In Progress' != 'Not Started'", self.read("prompt-2"))
+		self.assertNotIn("still in progress", self.read("prompt-2"))
+
+	def test_a_log_that_never_arrives_is_not_a_repair_attempt(self):
+		self.write(self.fake / "in_progress", "1000\n")
+		code = self.run_ci([0], ["red", "green"])
+		self.assertEqual(code, 0, self.out)
+		self.assertEqual(self.calls("claude_calls"), 1, "no repair agent ran on a log nobody could read")
+		self.assertEqual(self.read("gh_reruns").splitlines(), ["run rerun 101 --failed"])
+		self.assertNotIn("Repair attempt", "\n".join(self.notices()))
 
 
 class StatusCommitsAreNotPushedAlone(CiSandbox):

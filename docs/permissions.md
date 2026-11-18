@@ -72,6 +72,9 @@ on a company site, because the data scope above is "none".
 | `sellos.telephony.settings.get_telephony_settings`, `save_telephony_settings`, `check_connection` (SOS-P2-01, the Plivo India account: the auth ID and token are encrypted and never returned, only whether each is set) | Company Admin |
 | `sellos.crm.api.find_duplicates` (P1.16, the clients that already have a phone or email, masked as the viewer's role requires) | Company Admin, Agent, Sales Manager |
 | `sellos.crm.api.merge_clients` (P1.16, moves a client's leads to the one kept, nothing deleted, logged) | Company Admin |
+| `sellos.crm.api.complete_follow_up`, `list_follow_ups` (SOS-P1-22, mark a follow up done with a call outcome or a note, and list the signed in user's follow ups, or those of every lead they may see) | Company Admin, Agent, Sales Manager |
+| `sellos.crm.api.get_follow_up_settings` (SOS-P1-22, the days after which a lead with no open follow up is untouched) | Company Admin, Agent, Sales Manager, Channel Partner |
+| `sellos.crm.api.save_follow_up_settings` (SOS-P1-22, a Company Admin sets those days) | Company Admin |
 | `sellos.crm.api.add_activity`, `save_task`, `save_site_visit` | Company Admin, Agent, Sales Manager |
 | `sellos.crm.api.record_consent`, `record_opt_out`, `record_dnd_result` (P1.08, the Consent Record; consent never blocks) | Company Admin, Agent, Sales Manager |
 | `sellos.access.support.list_support_users`, `grant_support_access`, `revoke_support_access`, `list_support_grants`, `support_access_log` (P1.13) | Company Admin |

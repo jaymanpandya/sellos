@@ -362,18 +362,51 @@ CI_STOP_NOTICE=""
 CI_FAILURES=""
 CI_KIND=""
 
+# SOS-SETUP-43: GitHub gives no log for a run, or a job, that has not completed ("run N is still in
+# progress; logs will be available when it is complete"). On 18 November 2026 the loop read run
+# 44391986098 in that state, saw no failing test, and spent both repair attempts on nothing. So wait
+# for the run to complete, then read the failed jobs' log (gh run view --log-failed, the same text as
+# gh api repos/<repo>/actions/jobs/<id>/logs), and treat the "not available yet" text as a reason to
+# wait again, never as a log. 1 when no log could be read within SELLOS_CI_LOG_WAIT seconds.
+CI_LOG_WAIT="${SELLOS_CI_LOG_WAIT:-1800}"
+CI_LOG_POLL="${SELLOS_CI_LOG_POLL:-20}"
+ci_log_pending() { grep -qiE 'still in progress|logs will be available|log not found|logs? (is|are) not available' "$1"; }
+ci_read_run_log() {
+  local id="$1" log="$2" status out started=$SECONDS
+  out="$(mktemp)"
+  while true; do
+    status="$(gh run view "$id" --json status --jq .status 2>/dev/null || true)"
+    if [[ "$status" == completed ]]; then
+      gh run view "$id" --log-failed >"$out" 2>&1 || true
+      if [[ -s "$out" ]] && ! ci_log_pending "$out"; then
+        cat "$out" >>"$log"
+        rm -f "$out"
+        return 0
+      fi
+    fi
+    if [[ $((SECONDS - started)) -ge "$CI_LOG_WAIT" ]]; then
+      rm -f "$out"
+      return 1
+    fi
+    sleep "$CI_LOG_POLL"
+  done
+}
+
 # The failed jobs' logs of CI_FAILED_IDS, then CI_FAILURES (the failing tests and their messages) and
 # CI_KIND ("code", or "environment <why>").
 ci_read_failures() {
-  local id log="$LOG_DIR/ci-failed.log"
+  local id log="$LOG_DIR/ci-failed.log" unread=""
   mkdir -p "$LOG_DIR"
   : >"$log"
   for id in $CI_FAILED_IDS; do
-    gh run view "$id" --log-failed >>"$log" 2>&1 || true
+    ci_read_run_log "$id" "$log" || unread="${unread:+$unread, }$id"
   done
   CI_FAILURES="$(sellos_redact_text "$(python3 "$SCRIPT_DIR/lib/ci_failures.py" extract "$log" 2>/dev/null || true)")"
   if [[ -n "$CI_ENV_REASON" ]]; then
     CI_KIND="environment $CI_ENV_REASON"
+  elif [[ -n "$unread" ]]; then
+    # SOS-SETUP-43: no log is no evidence. It is never a failure to repair, so it never costs a repair attempt.
+    CI_KIND="environment the log of CI run $unread was still not readable after ${CI_LOG_WAIT}s"
   else
     CI_KIND="$(python3 "$SCRIPT_DIR/lib/ci_failures.py" kind "$log" 2>/dev/null || echo code)"
   fi
