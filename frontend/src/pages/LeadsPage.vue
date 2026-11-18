@@ -300,6 +300,31 @@
 					@input="load"
 				/>
 			</label>
+			<select
+				v-model="filters.follow_up"
+				data-testid="sellos-leads-filter-follow-up"
+				aria-label="Follow up"
+				class="field w-auto"
+				@change="load"
+			>
+				<option value="">Any follow up</option>
+				<option value="overdue">Overdue follow up</option>
+				<option value="open">Has an open follow up</option>
+				<option value="none">No open follow up</option>
+				<option value="untouched">
+					Untouched, no follow up for {{ followUpDays }} days
+				</option>
+			</select>
+			<select
+				v-model="filters.sort"
+				data-testid="sellos-leads-sort"
+				aria-label="Sort"
+				class="field w-auto"
+				@change="load"
+			>
+				<option value="">Newest change first</option>
+				<option value="next_follow_up">Next follow up first</option>
+			</select>
 			<label class="flex items-center gap-1 text-sm text-ink-muted">
 				<input
 					v-model="untouchedOnly"
@@ -376,6 +401,28 @@
 						No activity for {{ untouchedDays }} days
 					</span>
 					<span
+						v-if="lead.next_follow_up"
+						data-testid="sellos-lead-next-follow-up"
+						:data-state="lead.follow_up_state"
+						class="text-xs text-ink-muted"
+					>
+						Next follow up {{ shortWhen(lead.next_follow_up) }}
+					</span>
+					<span
+						v-if="lead.follow_up_state === 'overdue'"
+						data-testid="sellos-follow-up-overdue"
+						class="rounded-input bg-accent px-2 py-1 text-xs text-white"
+					>
+						Follow up overdue
+					</span>
+					<span
+						v-if="lead.follow_up_untouched"
+						data-testid="sellos-follow-up-untouched"
+						class="rounded-input border border-accent px-2 py-1 text-xs text-accent"
+					>
+						Untouched, no follow up for {{ followUpDays }} days
+					</span>
+					<span
 						v-if="lead.overdue_tasks"
 						data-testid="sellos-lead-overdue"
 						class="rounded-input bg-accent px-2 py-1 text-xs text-white"
@@ -421,10 +468,13 @@ const emptyFilters = () => ({
 	consent_status: "",
 	last_contacted_from: "",
 	last_contacted_to: "",
+	follow_up: "",
+	sort: "",
 });
 const filters = reactive(emptyFilters());
 const untouchedOnly = ref(false);
 const untouchedDays = ref(7);
+const followUpDays = ref(3);
 const stages = ref([]);
 const options = reactive({ agents: [], teams: [], consent_statuses: [] });
 const filterSources = ref([]);
@@ -469,6 +519,7 @@ async function loadOptions() {
 			consent_statuses: opts.consent_statuses || [],
 		});
 		untouchedDays.value = opts.untouched_days || 7;
+		followUpDays.value = opts.follow_up_untouched_days || 3;
 		stages.value = st || [];
 		filterSources.value = so.sources || [];
 	} catch (e) {
@@ -550,6 +601,16 @@ async function load() {
 	} finally {
 		loading.value = false;
 	}
+}
+
+// A follow up's day, and its time when it has one: "2030-03-04 10:30" shows as "4 Mar, 10:30".
+function shortWhen(value) {
+	const text = String(value || "");
+	const [day, time] = text.split(/[ T]/);
+	const date = new Date(`${day}T00:00:00`);
+	if (Number.isNaN(date.getTime())) return text;
+	const label = date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+	return time && time !== "00:00:00" ? `${label}, ${time.slice(0, 5)}` : label;
 }
 
 const duplicates = ref([]);

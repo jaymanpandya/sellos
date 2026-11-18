@@ -88,6 +88,11 @@ SAMPLE_CALLS = {
 		"values": {"lead": "{lead}", "project_name": "P105 Tower", "visit_datetime": "2030-01-01 10:00:00"}
 	},
 	"sellos.crm.api.set_archived": {"doctype": "Lead", "name": "{lead}", "archived": 0},
+	# SOS-P1-22: a follow up made for the test, completed with a note. The setting is the Company Admin's.
+	"sellos.crm.api.complete_follow_up": {"name": "{task}", "notes": "p122 done"},
+	"sellos.crm.api.list_follow_ups": {},
+	"sellos.crm.api.get_follow_up_settings": {},
+	"sellos.crm.api.save_follow_up_settings": {"untouched_days": 3},
 	# SOS-P1-23: a user's own notifications. Marking all read touches only the caller's.
 	"sellos.crm.api.list_notifications": {},
 	"sellos.crm.api.mark_notification_read": {"name": "{notification}"},
@@ -251,6 +256,14 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"manager": TEST_USERS["sales_manager"]["email"],
 			}
 		).insert()
+		task = frappe.get_doc(
+			{
+				"doctype": "Lead Task",
+				"lead": lead.name,
+				"title": "P122 spare follow up",
+				"due_date": "2030-01-01",
+			}
+		).insert()
 		frappe.get_doc(
 			{
 				"doctype": "Lead Activity",
@@ -270,6 +283,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		)
 		self.names = {
 			"notification": notification,
+			"task": task.name,
 			"client": client.name,
 			"client_other": other.name,
 			"lead": lead.name,

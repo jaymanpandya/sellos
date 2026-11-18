@@ -37,6 +37,13 @@ export const crmApi = {
 	addActivity: (lead, activityType, notes = "") =>
 		call("add_activity", { lead, activity_type: activityType, notes }),
 	saveTask: (values, name = null) => call("save_task", { name, values }),
+	// Follow ups (SOS-P1-22). Marking one done needs the call outcome or a note.
+	completeFollowUp: (name, values) => call("complete_follow_up", { name, ...values }),
+	listFollowUps: (status = "Open", everyone = 0) =>
+		call("list_follow_ups", { status, everyone }),
+	getFollowUpSettings: () => call("get_follow_up_settings"),
+	saveFollowUpSettings: (untouchedDays) =>
+		call("save_follow_up_settings", { untouched_days: untouchedDays }),
 	saveSiteVisit: (values, name = null) => call("save_site_visit", { name, values }),
 	recordConsent: (lead, basis, evidenceLink) =>
 		call("record_consent", { lead, basis, evidence_link: evidenceLink }),

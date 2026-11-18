@@ -11,6 +11,7 @@
   "contact_email",
   "city",
   "address",
+  "untouched_days",
   "setup_steps_done",
   "setup_complete"
  ],
@@ -49,6 +50,13 @@
    "fieldname": "address",
    "fieldtype": "Small Text",
    "label": "Address"
+  },
+  {
+   "fieldname": "untouched_days",
+   "fieldtype": "Int",
+   "label": "Days before a lead with no follow up is untouched",
+   "default": "3",
+   "description": "A lead in an Open stage with no open follow up is flagged untouched after this many days (SOS-P1-22)."
   },
   {
    "fieldname": "setup_steps_done",

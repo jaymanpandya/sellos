@@ -128,6 +128,40 @@
 				</button>
 			</form>
 		</section>
+
+		<section class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4">
+			<h2 class="font-medium text-ink">Untouched leads</h2>
+			<p class="text-sm text-ink-muted">
+				A lead in an open stage with no open follow up is flagged untouched after this many
+				days.
+			</p>
+			<form
+				class="flex flex-wrap items-center gap-2"
+				data-testid="sellos-calllists-untouched-form"
+				@submit.prevent="saveUntouched"
+			>
+				<input
+					v-model.number="untouchedDays"
+					required
+					type="number"
+					min="1"
+					max="365"
+					aria-label="Days before a lead is untouched"
+					data-testid="sellos-calllists-untouched-days"
+					class="field w-28"
+				/>
+				<button type="submit" class="btn" data-testid="sellos-calllists-untouched-save">
+					Save days
+				</button>
+				<span
+					v-if="untouchedSaved"
+					role="status"
+					data-testid="sellos-calllists-untouched-saved"
+					class="text-sm text-ink-muted"
+					>Saved.</span
+				>
+			</form>
+		</section>
 	</div>
 </template>
 
@@ -143,14 +177,18 @@ const stages = ref([]);
 const error = ref("");
 const newOutcome = reactive({ name: "", needs_follow_up: false, suggested_stage: "" });
 const newReason = ref("");
+const untouchedDays = ref(3);
+const untouchedSaved = ref(false);
 
 async function load() {
 	try {
-		const [o, r, s] = await Promise.all([
+		const [o, r, s, f] = await Promise.all([
 			crmApi.listCallOutcomes(1),
 			crmApi.listLostReasons(1),
 			crmApi.listStages(),
+			crmApi.getFollowUpSettings(),
 		]);
+		untouchedDays.value = f.untouched_days;
 		outcomes.value = o.outcomes;
 		reasons.value = r.lost_reasons;
 		stages.value = s;
@@ -171,6 +209,19 @@ async function run(action, fallback) {
 
 const saveOutcome = (outcome, values) =>
 	run(() => crmApi.saveCallOutcome(values, outcome.name), "The outcome could not be saved.");
+
+// The number of days after which a lead with no open follow up is untouched (SOS-P1-22).
+async function saveUntouched() {
+	untouchedSaved.value = false;
+	error.value = "";
+	try {
+		const saved = await crmApi.saveFollowUpSettings(untouchedDays.value);
+		untouchedDays.value = saved.untouched_days;
+		untouchedSaved.value = true;
+	} catch (e) {
+		error.value = serverMessage(e, "The number of days could not be saved.");
+	}
+}
 
 const saveReason = (reason, enabled) =>
 	run(() => crmApi.saveLostReason({ enabled }, reason.name), "The reason could not be saved.");

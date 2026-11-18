@@ -15,7 +15,7 @@ stage whatever it is (SOS-P1-07, `pipeline.move_lead`).
 import frappe
 from frappe.utils import add_days, cint, flt, get_datetime, getdate, now_datetime, today
 
-from sellos.crm import consent, pipeline
+from sellos.crm import consent, follow_ups, pipeline
 from sellos.crm.requirements import REQUIREMENT_FIELDS, has_filters, matches, requirements_view
 
 # A lead with no activity for this many days is marked untouched on the list and the board.
@@ -36,6 +36,8 @@ FILTER_KEYS = (
 	"last_contacted_from",
 	"last_contacted_to",
 	"untouched",
+	"follow_up",
+	"sort",
 )
 
 
@@ -86,9 +88,18 @@ def visible_leads(
 	last_contacted_to=None,
 	untouched=0,
 	include_archived=0,
+	follow_up=None,
+	sort=None,
+	now=None,
 ) -> list[dict]:
 	"""The leads the user may see that satisfy every filter given, newest change first, each with its
-	client name, consent status, requirements, last contact and untouched mark."""
+	client name, consent status, requirements, last contact and untouched mark.
+
+	SOS-P1-22: each lead also carries its next open follow up (see sellos.crm.follow_ups.annotate).
+	`follow_up` keeps the leads whose follow up is overdue, who have one open, who have none, or who are
+	flagged untouched for having none. `sort="next_follow_up"` lists the soonest follow up first, the
+	overdue ones leading, and the leads with none last. `now` fixes the clock for a test."""
+	follow_ups.check_filter(follow_up, sort)
 	filters = {} if cint(include_archived) else {"archived": 0}
 	for field, value in (("stage", stage), ("assigned_to", assigned_to), ("source", source)):
 		if value:
@@ -146,6 +157,7 @@ def visible_leads(
 		if leads
 		else []
 	)
+	follow_ups.annotate(leads, now=now)
 	cutoff = get_datetime(add_days(now_datetime(), -UNTOUCHED_DAYS))
 	start = getdate(last_contacted_from) if last_contacted_from else None
 	end = getdate(last_contacted_to) if last_contacted_to else None
@@ -157,6 +169,8 @@ def visible_leads(
 		if end and contacted and contacted.date() > end:
 			continue  # a lead never contacted was not contacted by that date either
 		touched = max(last_any.get(lead.name, cutoff.min), get_datetime(lead.creation))
+		if follow_up and not follow_ups.matches_filter(lead, follow_up):
+			continue
 		lead["untouched"] = touched < cutoff
 		if cint(untouched) and not lead["untouched"]:
 			continue
@@ -169,7 +183,7 @@ def visible_leads(
 		lead["last_contacted"] = contacted
 		lead["budget"] = card_budget(lead)
 		result.append(lead)
-	return result
+	return follow_ups.sort_by_next_follow_up(result) if sort == "next_follow_up" else result
 
 
 def board(**filters) -> dict:
@@ -195,6 +209,7 @@ def board(**filters) -> dict:
 		"columns": columns,
 		"total": sum(column["count"] for column in columns),
 		"untouched_days": UNTOUCHED_DAYS,
+		"follow_up_untouched_days": follow_ups.untouched_days(),
 		"today": today(),
 	}
 
@@ -219,4 +234,5 @@ def filter_options() -> dict:
 		],
 		"consent_statuses": list(consent.STATUSES),
 		"untouched_days": UNTOUCHED_DAYS,
+		"follow_up_untouched_days": follow_ups.untouched_days(),
 	}

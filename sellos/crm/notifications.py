@@ -23,6 +23,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, add_to_date, cint, get_datetime, get_fullname, getdate, now_datetime
 
+from sellos.crm import follow_ups
+
 DOCTYPE = "App Notification"
 LEAD_ASSIGNED = "Lead assigned"
 LEAD_REASSIGNED_AWAY = "Lead reassigned away"
@@ -30,7 +32,7 @@ FOLLOW_UP_DUE = "Follow up due"
 FOLLOW_UP_OVERDUE = "Follow up overdue"
 SITE_VISIT_TOMORROW = "Site visit tomorrow"
 # A follow up is "due" from this many minutes before its time.
-DUE_WINDOW_MINUTES = 15
+DUE_WINDOW_MINUTES = follow_ups.DUE_WINDOW_MINUTES
 # The bell lists this many, newest first. The unread count is of all of them.
 LIST_LIMIT = 50
 
@@ -133,16 +135,12 @@ def notify_follow_ups(now=None) -> int:
 	)
 	leads, made = {}, 0
 	for task in tasks:
+		state = follow_ups.due_state(task.due_at, task.due_date, now)
+		event = FOLLOW_UP_OVERDUE if state == follow_ups.OVERDUE else FOLLOW_UP_DUE if state else None
 		if task.due_at:
-			due = get_datetime(task.due_at)
-			event = FOLLOW_UP_OVERDUE if due < now else FOLLOW_UP_DUE if due <= soon else None
-			when = due.strftime("%d %b, %I:%M %p")
+			when = get_datetime(task.due_at).strftime("%d %b, %I:%M %p")
 		else:
-			day = getdate(task.due_date)
-			event = (
-				FOLLOW_UP_OVERDUE if day < getdate(now) else FOLLOW_UP_DUE if day == getdate(now) else None
-			)
-			when = day.strftime("%d %b")
+			when = getdate(task.due_date).strftime("%d %b")
 		lead = _lead_row(task.lead, leads)
 		recipient = task.assigned_to or (lead and lead.assigned_to)
 		if not event or not recipient or not lead or lead.archived:

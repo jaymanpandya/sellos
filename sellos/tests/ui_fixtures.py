@@ -232,6 +232,14 @@ def seed_board_leads():
 	}
 
 
+def reset_follow_up_settings():
+	"""Put the untouched days back to the default (tests only, SOS-P1-22): the follow up spec changes the
+	company's setting through the screen and restores it here, even when it fails."""
+	frappe.db.set_single_value("SellOS Settings", "untouched_days", 0)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"untouched_days": 3}
+
+
 def seed_duplicate_clients():
 	"""Make what the duplicate spec needs (SOS-P1-16), through sellos.crm.api as the company admin.
 
@@ -653,6 +661,12 @@ def seed_regression_data():
 	  Buyer One, and the scheduler's follow up and site visit functions are run once, so the gate agent's
 	  bell holds Lead assigned, Follow up due or overdue and Site visit tomorrow notifications.
 
+	* Follow ups (SOS-P1-22): the gate agent has an overdue follow up on Regression Buyer Two (Regression
+	  chase the site visit, two hours ago) and one due in ten minutes on Regression Buyer One (Regression
+	  ring back soon), so the leads list shows them, the Overdue filter finds Buyer Two, and the
+	  scheduler's reminder function tells the agent of both. Regression Dormant Eight has no open follow up
+	  and is flagged untouched after the Company Admin's number of days (3).
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -672,6 +686,7 @@ def seed_regression_data():
 		_seed_call_outcomes(admin, agent_one)
 		_seed_users(admin)
 		_seed_dormant_lead(admin, agent_one)
+		_seed_follow_ups(agent_one)
 		_seed_notifications(agent_one)
 		return _regression_summary()
 
@@ -796,6 +811,7 @@ def seed_regression_data():
 	_seed_control_site()
 	_seed_setup_wizard(admin)
 	_seed_sales_teams(admin, agent_one, agent_two, agent_three)
+	_seed_follow_ups(agent_one)
 	_seed_notifications(agent_one)
 
 	# bench execute is not a request, and the regression site is read by another process.
@@ -896,6 +912,32 @@ def _seed_lead_sources(admin):
 		if lead:
 			crm.save_lead(
 				name=lead, values={"source": "Regression Roadshow", "campaign": "Diwali 2026 hoardings"}
+			)
+
+
+def _seed_follow_ups(agent_one):
+	"""An overdue follow up on Buyer Two and one due in ten minutes on Buyer One (SOS-P1-22), saved through
+	the task API by their agent. Safe to run again: a follow up that exists is left alone. The times are
+	relative to the run, so a run later in the day finds them overdue."""
+	from sellos.crm import api as crm
+
+	plan = (
+		("Buyer Two", "Regression chase the site visit", add_to_date(now_datetime(), hours=-2)),
+		("Buyer One", "Regression ring back soon", add_to_date(now_datetime(), minutes=10)),
+	)
+	for who, title, when in plan:
+		lead = frappe.db.get_value("Lead", {"lead_title": ["like", f"{REGRESSION_PREFIX}{who}%"]}, "name")
+		if not lead or frappe.db.exists("Lead Task", {"lead": lead, "title": title}):
+			continue
+		with _as_user(agent_one):
+			crm.save_task(
+				values={
+					"lead": lead,
+					"title": title,
+					"due_at": when,
+					"status": "Open",
+					"assigned_to": agent_one,
+				}
 			)
 
 

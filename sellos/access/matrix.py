@@ -55,6 +55,11 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.add_activity": _LOGGERS,
 	"sellos.crm.api.save_task": _LOGGERS,
 	"sellos.crm.api.save_site_visit": _LOGGERS,
+	# SOS-P1-22: follow ups. The untouched setting is the Company Admin's.
+	"sellos.crm.api.complete_follow_up": _LOGGERS,
+	"sellos.crm.api.list_follow_ups": _LOGGERS,
+	"sellos.crm.api.get_follow_up_settings": _READERS,
+	"sellos.crm.api.save_follow_up_settings": _ADMIN_ONLY,
 	"sellos.crm.api.set_archived": _READERS,
 	# SOS-P1-23: the bell, for every role that has leads. Each reads and changes its own only.
 	"sellos.crm.api.list_notifications": _READERS,

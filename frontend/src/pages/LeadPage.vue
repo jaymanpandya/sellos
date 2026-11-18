@@ -419,6 +419,36 @@
 		</section>
 
 		<section
+			data-testid="sellos-lead-follow-up"
+			:data-state="followUp.follow_up_state || 'none'"
+			class="mt-6 flex flex-wrap items-center gap-3 rounded-input border border-line bg-surface p-4"
+		>
+			<h2 class="font-medium text-ink">Next follow up</h2>
+			<span
+				v-if="followUp.next_follow_up"
+				data-testid="sellos-lead-next-follow-up"
+				class="text-ink"
+			>
+				{{ followUp.next_follow_up_title }}, {{ whenLabel(followUp.next_follow_up) }}
+			</span>
+			<span v-else data-testid="sellos-lead-next-follow-up" class="text-ink-muted">
+				No open follow up
+			</span>
+			<span
+				v-if="followUp.follow_up_state === 'overdue'"
+				data-testid="sellos-lead-follow-up-overdue"
+				class="rounded-input bg-accent px-2 py-1 text-xs text-white"
+				>Overdue</span
+			>
+			<span
+				v-if="followUp.follow_up_untouched"
+				data-testid="sellos-lead-follow-up-untouched"
+				class="rounded-input border border-accent px-2 py-1 text-xs text-accent"
+				>Untouched, no follow up for {{ followUp.untouched_days }} days</span
+			>
+		</section>
+
+		<section
 			v-if="canLog"
 			data-testid="sellos-lead-call"
 			class="mt-6 space-y-3 rounded-input border border-line bg-surface p-4"
@@ -562,14 +592,15 @@
 					class="field flex-1"
 				/>
 				<input
-					v-model="task.due_date"
+					v-model="task.due_at"
 					data-testid="sellos-lead-task-due"
 					required
-					type="date"
+					type="datetime-local"
+					aria-label="Follow up date and time"
 					class="field w-auto"
 				/>
 				<button type="submit" class="btn" data-testid="sellos-lead-task-save">
-					Add task
+					Add follow up
 				</button>
 			</form>
 			<form
@@ -639,10 +670,75 @@
 					v-if="canLog && item.kind === 'task' && item.status !== 'Done'"
 					type="button"
 					class="mt-2 text-sm text-ink-muted underline"
-					@click="done(item)"
+					data-testid="sellos-lead-task-done"
+					@click="startDone(item)"
 				>
 					Mark done
 				</button>
+				<form
+					v-if="doing === item.name"
+					class="mt-2 space-y-2"
+					data-testid="sellos-lead-done-form"
+					@submit.prevent="finishDone(item)"
+				>
+					<p class="text-sm text-ink-muted">
+						Choose how the call went, or write a note.
+					</p>
+					<div class="flex flex-wrap gap-2">
+						<select
+							v-model="doneForm.outcome"
+							aria-label="Call outcome"
+							data-testid="sellos-lead-done-outcome"
+							class="field w-auto"
+						>
+							<option value="">No outcome, a note only</option>
+							<option v-for="o in outcomes" :key="o.name" :value="o.name">
+								{{ o.name }}
+							</option>
+						</select>
+						<input
+							v-model="doneForm.notes"
+							placeholder="Note"
+							aria-label="Note"
+							data-testid="sellos-lead-done-notes"
+							class="field flex-1"
+						/>
+					</div>
+					<label
+						v-if="doneOutcome?.needs_follow_up"
+						class="block text-sm text-ink-muted"
+					>
+						Next follow up on
+						<input
+							v-model="doneForm.followUp"
+							required
+							type="datetime-local"
+							data-testid="sellos-lead-done-follow-up"
+							class="field w-auto"
+						/>
+					</label>
+					<p
+						v-if="doneError"
+						role="alert"
+						data-testid="sellos-lead-done-error"
+						class="text-sm text-accent"
+					>
+						{{ doneError }}
+					</p>
+					<div class="flex gap-2">
+						<button type="submit" class="btn" data-testid="sellos-lead-done-save">
+							Done
+						</button>
+						<button
+							type="button"
+							class="btn"
+							data-testid="sellos-lead-done-cancel"
+							@click="doing = ''"
+						>
+							Cancel
+						</button>
+					</div>
+				</form>
 			</li>
 		</ul>
 	</div>
@@ -677,7 +773,22 @@ const listPath = computed(() => (partner.value ? "/partner/leads" : "/crm/leads"
 const detail = ref(null);
 const error = ref("");
 const activity = reactive({ type: "Call", notes: "" });
-const task = reactive({ title: "", due_date: "" });
+const task = reactive({ title: "", due_at: "" });
+const followUp = computed(() => detail.value?.follow_up || {});
+// "2030-03-04 10:30:00" shows as "4 Mar 2030, 10:30". A follow up with only a day shows the day.
+function whenLabel(value) {
+	const [day, time] = String(value || "").split(/[ T]/);
+	const date = new Date(`${day}T00:00:00`);
+	if (Number.isNaN(date.getTime())) return String(value || "");
+	const label = date.toLocaleDateString("en-IN", {
+		day: "numeric",
+		month: "short",
+		year: "numeric",
+	});
+	return time && followUp.value.next_follow_up_has_time
+		? `${label}, ${time.slice(0, 5)}`
+		: label;
+}
 const visit = reactive({ project_name: "", visit_datetime: "" });
 
 const req = reactive({
@@ -889,7 +1000,7 @@ async function logActivity() {
 async function addTask() {
 	await crmApi.saveTask({ lead: route.params.name, ...task });
 	task.title = "";
-	task.due_date = "";
+	task.due_at = "";
 	await load();
 }
 
@@ -900,9 +1011,35 @@ async function addVisit() {
 	await load();
 }
 
-async function done(item) {
-	await crmApi.saveTask({ status: "Done" }, item.name);
-	await load();
+// Marking a follow up done asks for the call outcome or a note (SOS-P1-22).
+const doing = ref("");
+const doneForm = reactive({ outcome: "", notes: "", followUp: "" });
+const doneError = ref("");
+const doneOutcome = computed(() => outcomes.value.find((o) => o.name === doneForm.outcome));
+
+function startDone(item) {
+	doing.value = item.name;
+	doneError.value = "";
+	Object.assign(doneForm, { outcome: "", notes: "", followUp: "" });
+}
+
+async function finishDone(item) {
+	doneError.value = "";
+	if (!doneForm.outcome && !doneForm.notes.trim()) {
+		doneError.value = "Choose the call outcome or write a note.";
+		return;
+	}
+	try {
+		await crmApi.completeFollowUp(item.name, {
+			outcome: doneForm.outcome,
+			notes: doneForm.notes,
+			follow_up_at: doneOutcome.value?.needs_follow_up ? doneForm.followUp : null,
+		});
+		doing.value = "";
+		await load();
+	} catch (e) {
+		doneError.value = serverMessage(e, "The follow up could not be marked done.");
+	}
 }
 
 const mergeFrom = ref("");

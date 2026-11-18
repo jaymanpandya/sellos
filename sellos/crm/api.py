@@ -12,8 +12,16 @@ from frappe.utils import cint, now_datetime
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER
-from sellos.crm import board, call_outcomes, consent, duplicates, lead_sources, notifications, pipeline
-from sellos.crm.base import is_overdue
+from sellos.crm import (
+	board,
+	call_outcomes,
+	consent,
+	duplicates,
+	follow_ups,
+	lead_sources,
+	notifications,
+	pipeline,
+)
 from sellos.crm.requirements import REQUIREMENT_FIELDS, join_values, requirements_view
 
 # SOS-P1-18: a Sales Manager works like an Agent, on the leads of their team, with masked phone numbers.
@@ -35,8 +43,17 @@ CLIENT_FIELDS = (
 )
 LEAD_FIELDS = ("client", "source", "campaign", "assigned_to", "notes", *REQUIREMENT_FIELDS)
 ACTIVITY_FIELDS = ("lead", "activity_type", "activity_date", "notes")
-TASK_FIELDS = ("lead", "title", "due_date", "status", "assigned_to", "notes")
+TASK_FIELDS = ("lead", "title", "due_date", "due_at", "status", "assigned_to", "notes")
 VISIT_FIELDS = ("lead", "project_name", "visit_datetime", "status", "notes")
+FOLLOW_UP_KEYS = (
+	"next_follow_up",
+	"next_follow_up_name",
+	"next_follow_up_title",
+	"next_follow_up_has_time",
+	"follow_up_state",
+	"open_follow_ups",
+	"follow_up_untouched",
+)
 MULTI_VALUE_FIELDS = ("configuration", "preferred_localities")
 ARCHIVABLE = ("Client", "Lead", "Lead Activity", "Lead Task", "Site Visit")
 
@@ -207,10 +224,14 @@ def list_leads(
 	last_contacted_from=None,
 	last_contacted_to=None,
 	untouched=0,
+	follow_up=None,
+	sort=None,
 ):
 	"""The leads the user may see, up to 100, narrowed by every filter given (SOS-P1-24 and SOS-P1-15):
 	stage, agent, team, source, consent status, budget range, configuration, locality, timeline, last
-	contacted dates and untouched. See sellos.crm.board.visible_leads. Each lead says whether it is untouched."""
+	contacted dates and untouched. See sellos.crm.board.visible_leads. Each lead says whether it is untouched.
+	SOS-P1-22: `follow_up` (overdue, open, none or untouched) filters by the lead's follow up, `sort`
+	("next_follow_up") lists the soonest first, and each lead carries its next open follow up."""
 	leads = board.visible_leads(
 		search=search,
 		include_archived=include_archived,
@@ -227,13 +248,19 @@ def list_leads(
 		last_contacted_from=last_contacted_from,
 		last_contacted_to=last_contacted_to,
 		untouched=untouched,
+		follow_up=follow_up,
+		sort=sort,
 	)[:100]
 	for lead in leads:
 		tasks = frappe.get_all(
-			"Lead Task", filters={"lead": lead.name, "archived": 0, "status": "Open"}, fields=["due_date"]
+			"Lead Task",
+			filters={"lead": lead.name, "archived": 0, "status": "Open"},
+			fields=["due_date", "due_at"],
 		)
 		lead["open_tasks"] = len(tasks)
-		lead["overdue_tasks"] = sum(is_overdue(t.due_date, "Open") for t in tasks)
+		lead["overdue_tasks"] = sum(
+			follow_ups.due_state(t.due_at, t.due_date) == follow_ups.OVERDUE for t in tasks
+		)
 	return leads
 
 
@@ -253,6 +280,8 @@ def get_board(
 	last_contacted_from=None,
 	last_contacted_to=None,
 	untouched=0,
+	follow_up=None,
+	sort=None,
 ):
 	"""The pipeline board (SOS-P1-24): one column per stage with the leads the user may see, the count
 	and the total budget, under the same filters as the list. A card moves with move_lead_stage."""
@@ -271,6 +300,8 @@ def get_board(
 		last_contacted_from=last_contacted_from,
 		last_contacted_to=last_contacted_to,
 		untouched=untouched,
+		follow_up=follow_up,
+		sort=sort,
 	)
 
 
@@ -462,6 +493,7 @@ def get_lead(name):
 		"client": client_view(frappe.get_doc("Client", lead.client)),
 		"can_merge": COMPANY_ADMIN in frappe.get_roles(),
 		"timeline": _timeline(name),
+		"follow_up": _next_follow_up(lead),
 		"consent": consent.consent_view(name),
 		"pipeline": pipeline.stage_view(lead),
 		"call_lists": {
@@ -469,6 +501,13 @@ def get_lead(name):
 			"lost_reasons": call_outcomes.list_lost_reasons(),
 		},
 	}
+
+
+def _next_follow_up(lead) -> dict:
+	"""The lead's next open follow up and whether it is untouched (SOS-P1-22)."""
+	row = frappe._dict(name=lead.name, stage=lead.stage, archived=lead.archived, creation=lead.creation)
+	follow_ups.annotate([row])
+	return {key: row[key] for key in FOLLOW_UP_KEYS} | {"untouched_days": follow_ups.untouched_days()}
 
 
 def _timeline(lead):
@@ -488,7 +527,8 @@ def _timeline(lead):
 			{
 				"kind": "task",
 				"when": row.due_at or row.due_date,
-				"overdue": is_overdue(row.due_date, row.status),
+				"overdue": row.status == "Open"
+				and follow_ups.due_state(row.due_at, row.due_date) == follow_ups.OVERDUE,
 				**row,
 			}
 		)
@@ -515,6 +555,35 @@ def add_activity(lead, activity_type, notes=None, activity_date=None):
 @sellos_api(*LOGGERS)
 def save_task(name=None, values=None):
 	return _save("Lead Task", name, values, TASK_FIELDS).as_dict()
+
+
+@sellos_api(*LOGGERS)
+def complete_follow_up(
+	name, outcome=None, notes=None, duration_seconds=None, follow_up_at=None, stage=None, lost_reason=None
+):
+	"""Mark a follow up done (SOS-P1-22). It needs the call outcome (SOS-P1-21) or a note. An outcome logs
+	the call on the lead and, when it needs one, the next follow up at `follow_up_at`."""
+	_writable_lead(frappe.db.get_value("Lead Task", name, "lead"))
+	return follow_ups.complete(name, outcome, notes, duration_seconds, follow_up_at, stage, lost_reason)
+
+
+@sellos_api(*LOGGERS)
+def list_follow_ups(status="Open", everyone=0):
+	"""The follow ups of the signed in user, soonest first, each marked due or overdue (SOS-P1-22).
+	`everyone` lists those of every lead the user may see."""
+	return follow_ups.list_follow_ups(status=status, everyone=cint(everyone))
+
+
+@sellos_api(*READERS)
+def get_follow_up_settings():
+	"""The days after which a lead in an Open stage with no open follow up is untouched (SOS-P1-22)."""
+	return {"untouched_days": follow_ups.untouched_days()}
+
+
+@sellos_api(COMPANY_ADMIN)
+def save_follow_up_settings(untouched_days):
+	"""A Company Admin sets the number of days for the untouched flag (SOS-P1-22)."""
+	return {"untouched_days": follow_ups.set_untouched_days(untouched_days)}
 
 
 @sellos_api(*LOGGERS)
