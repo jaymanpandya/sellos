@@ -142,11 +142,25 @@ def contact_warning(lead, stage, moved=True) -> dict | None:
 	return {"level": level, "status": status, "message": f"{lead_part.format(stage)} {message}"}
 
 
-def move_lead(lead, stage) -> dict:
+def check_lost_reason(stage, lost_reason) -> str | None:
+	"""A move to a Lost stage asks for a reason from the Lost Reason list (SOS-P1-21), and a new choice
+	must be an enabled one. Returns the reason to record, or None for a stage that is not a Lost stage.
+	This is the only thing besides a missing stage that refuses a move, and it never looks at consent."""
+	if frappe.db.get_value(STAGE, stage, "stage_type") != "Lost":
+		return None
+	if not lost_reason:
+		frappe.throw(_("Choose a lost reason to move the lead to {0}.").format(stage), frappe.MandatoryError)
+	if not frappe.db.get_value("Lost Reason", lost_reason, "enabled"):
+		frappe.throw(_("{0} is not an available lost reason. Choose another.").format(lost_reason))
+	return lost_reason
+
+
+def move_lead(lead, stage, lost_reason=None) -> dict:
 	"""Move a lead to any stage, whatever its consent status, and log the move.
 
-	The caller has checked the user may write the lead. A stage that does not exist is the only thing
-	refused. Returns {"lead", "previous", "stage", "moved", "warning"}."""
+	The caller has checked the user may write the lead. A stage that does not exist is refused, and so is
+	a move to a Lost stage with no lost reason (SOS-P1-21). Returns {"lead", "previous", "stage", "moved",
+	"warning"}."""
 	doc = frappe.get_doc("Lead", lead)
 	if not frappe.db.exists(STAGE, stage):
 		frappe.throw(_("{0} is not a stage of the pipeline.").format(stage))
@@ -154,8 +168,10 @@ def move_lead(lead, stage) -> dict:
 	previous = doc.stage
 	if previous == stage:
 		return {"lead": lead, "previous": previous, "stage": stage, "moved": False, "warning": None}
+	reason = check_lost_reason(stage, lost_reason)
 	warning = contact_warning(lead, stage, moved=True)
 	doc.stage = stage
+	doc.lost_reason = reason  # cleared when the lead leaves a Lost stage
 	doc.append(
 		"stage_log",
 		{
@@ -163,6 +179,7 @@ def move_lead(lead, stage) -> dict:
 			"changed_by": frappe.session.user,
 			"from_stage": previous or "",
 			"to_stage": stage,
+			"lost_reason": reason or "",
 			"warning": warning["message"] if warning else "",
 		},
 	)
@@ -179,12 +196,14 @@ def stage_view(doc) -> dict:
 			"changed_by": row.changed_by,
 			"from_stage": row.from_stage,
 			"to_stage": row.to_stage,
+			"lost_reason": row.lost_reason or "",
 			"warning": row.warning or "",
 		}
 		for row in sorted(doc.stage_log, key=lambda r: (str(r.changed_on), r.idx), reverse=True)
 	]
 	return {
 		"stage": doc.stage,
+		"lost_reason": doc.lost_reason or "",
 		"warning": contact_warning(doc.name, doc.stage, moved=False) if doc.stage else None,
 		"log": log,
 		"stages": list_stages(),

@@ -65,6 +65,14 @@ SAMPLE_CALLS = {
 	"sellos.crm.api.delete_lead_source": {"name": "{spare_source}"},
 	"sellos.crm.api.list_stages": {},
 	"sellos.crm.api.move_lead_stage": {"lead": "{lead}", "stage": "Contacted"},
+	# SOS-P1-21: Wrong number needs no follow up, so the call is one write.
+	"sellos.crm.api.list_call_outcomes": {},
+	"sellos.crm.api.save_call_outcome": {"name": "{spare_outcome}", "values": {"enabled": 0}},
+	"sellos.crm.api.delete_call_outcome": {"name": "{spare_outcome}"},
+	"sellos.crm.api.list_lost_reasons": {},
+	"sellos.crm.api.save_lost_reason": {"name": "{spare_reason}", "values": {"enabled": 0}},
+	"sellos.crm.api.delete_lost_reason": {"name": "{spare_reason}"},
+	"sellos.crm.api.log_call": {"lead": "{lead}", "outcome": "Wrong number", "notes": "p121 call"},
 	"sellos.crm.api.save_lead": {"name": "{lead}", "values": {"notes": "p105 edit"}},
 	"sellos.crm.api.get_lead": {"name": "{lead}"},
 	"sellos.crm.api.add_activity": {"lead": "{lead}", "activity_type": "Note", "notes": "p105 added"},
@@ -195,6 +203,10 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		).insert()
 		lead = frappe.get_doc({"doctype": "Lead", "client": client.name, "source": "Website"}).insert()
 		spare = frappe.get_doc({"doctype": "Lead Source", "source_name": "P120 Spare Source"}).insert()
+		spare_outcome = frappe.get_doc(
+			{"doctype": "Call Outcome", "outcome_name": "P121 Spare Outcome"}
+		).insert()
+		spare_reason = frappe.get_doc({"doctype": "Lost Reason", "reason_name": "P121 Spare Reason"}).insert()
 		frappe.get_doc(
 			{
 				"doctype": "Lead Activity",
@@ -213,6 +225,8 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"client_other": other.name,
 			"lead": lead.name,
 			"spare_source": spare.name,
+			"spare_outcome": spare_outcome.name,
+			"spare_reason": spare_reason.name,
 			"support_user": support_user,
 			"grant": grant["name"],
 		}

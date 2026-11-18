@@ -58,6 +58,9 @@ on a company site, because the data scope above is "none".
 | `sellos.crm.api.save_lead_source`, `delete_lead_source` (P1.20, extend, disable or delete a source. A source in use is never deleted) | Company Admin |
 | `sellos.crm.api.list_stages` (SOS-P1-07, the buyer pipeline's stages with their lead counts) | Company Admin, Agent, Channel Partner |
 | `sellos.crm.api.move_lead_stage` (SOS-P1-07, move a lead to any stage whatever its consent status, logged, with a warning and no refusal when Contacted has no live Consent Record) | Company Admin, Agent |
+| `sellos.crm.api.list_call_outcomes`, `list_lost_reasons` (SOS-P1-21, the lists for the call form and the move to Closed lost. A Company Admin also sees the disabled ones) | Company Admin, Agent |
+| `sellos.crm.api.log_call` (SOS-P1-21, a call logged by hand with its outcome, notes and duration, and the follow up the outcome needs. Whatever the consent status) | Company Admin, Agent |
+| `sellos.crm.api.save_call_outcome`, `delete_call_outcome`, `save_lost_reason`, `delete_lost_reason` (SOS-P1-21, edit the two lists. One in use is never deleted) | Company Admin |
 | `sellos.telephony.settings.get_telephony_settings`, `save_telephony_settings`, `check_connection` (SOS-P2-01, the Plivo India account: the auth ID and token are encrypted and never returned, only whether each is set) | Company Admin |
 | `sellos.crm.api.find_duplicates` (P1.16, the clients that already have a phone or email, masked as the viewer's role requires) | Company Admin, Agent |
 | `sellos.crm.api.merge_clients` (P1.16, moves a client's leads to the one kept, nothing deleted, logged) | Company Admin |

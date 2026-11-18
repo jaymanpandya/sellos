@@ -8,6 +8,7 @@ const LeadsPage = () => import("./pages/LeadsPage.vue");
 const LeadPage = () => import("./pages/LeadPage.vue");
 const SupportPage = () => import("./pages/SupportPage.vue");
 const TelephonyPage = () => import("./pages/TelephonyPage.vue");
+const CallListsPage = () => import("./pages/CallListsPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
@@ -42,6 +43,12 @@ export function createAppRouter() {
 				path: "/company/telephony",
 				name: "telephony",
 				component: TelephonyPage,
+				meta: { area: "company" },
+			},
+			{
+				path: "/company/call-lists",
+				name: "call-lists",
+				component: CallListsPage,
 				meta: { area: "company" },
 			},
 			{

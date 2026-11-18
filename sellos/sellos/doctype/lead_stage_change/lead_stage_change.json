@@ -9,6 +9,7 @@
   "changed_by",
   "from_stage",
   "to_stage",
+  "lost_reason",
   "warning"
  ],
  "fields": [
@@ -39,6 +40,12 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "To stage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lost_reason",
+   "fieldtype": "Data",
+   "label": "Lost reason",
    "read_only": 1
   },
   {

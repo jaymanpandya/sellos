@@ -33,6 +33,11 @@ context("SOS-P1-07: the buyer pipeline", () => {
 	const move = (stage) => {
 		cy.intercept("POST", "**/api/method/sellos.crm.api.move_lead_stage*").as("move");
 		cy.getByTestId("lead-stage-select").select(stage);
+		// SOS-P1-21: a move to Closed lost asks for a reason from the Company Admin's list first.
+		if (stage === "Closed lost") {
+			cy.getByTestId("lead-lost-reason").select("Other");
+			cy.getByTestId("lead-lost-save").click();
+		}
 		cy.wait("@move").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("lead-stage").should("have.attr", "data-stage", stage);
 	};

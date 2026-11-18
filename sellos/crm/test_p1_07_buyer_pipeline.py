@@ -5,7 +5,7 @@ import frappe
 from frappe.model.rename_doc import rename_doc
 
 from sellos.config import setup_wizard as wizard
-from sellos.crm import api, consent, pipeline
+from sellos.crm import api, call_outcomes, consent, pipeline
 from sellos.crm.test_crm import CrmCase, as_user
 from sellos.patches import p1_07_buyer_pipeline
 
@@ -59,6 +59,11 @@ def make_old_stages():
 
 
 class PipelineCase(CrmCase):
+	def setUp(self):
+		super().setUp()
+		# SOS-P1-21: a move to Closed lost asks for a reason from the Lost Reason list.
+		call_outcomes.ensure_default_lost_reasons()
+
 	def lead_with_status(self, status, user="company_admin"):
 		"""A lead on the first stage whose consent status is `status`, made through the CRM API."""
 		as_user(user)
@@ -159,7 +164,7 @@ class TestMovesIgnoreConsent(PipelineCase):
 			lead = self.lead_with_status(status, "agent")
 			for name, _kind in ELEVEN:
 				with self.subTest(status=status, stage=name):
-					api.move_lead_stage(lead, name)
+					api.move_lead_stage(lead, name, lost_reason="Other")
 					self.assertEqual(frappe.db.get_value("Lead", lead, "stage"), name)
 		# Consent pending is a stage like any other: nothing put a lead there, and nothing holds it there.
 		lead = self.lead_with_status("Consented", "agent")
@@ -174,7 +179,7 @@ class TestMovesIgnoreConsent(PipelineCase):
 		lead = self.lead_with_status("Unknown", "agent")
 		for name, _kind in ELEVEN:
 			if name != "Contacted":
-				self.assertIsNone(api.move_lead_stage(lead, name)["warning"], name)
+				self.assertIsNone(api.move_lead_stage(lead, name, lost_reason="Other")["warning"], name)
 		self.assertTrue(all(not row["warning"] for row in api.get_lead(lead)["pipeline"]["log"]))
 
 	def test_the_warning_follows_the_stage_not_its_name(self):

@@ -107,6 +107,7 @@ after_migrate = [
 	"sellos.access.roles.after_migrate",
 	"sellos.crm.lead_sources.ensure_default_sources",
 	"sellos.crm.pipeline.ensure_default_stages",
+	"sellos.crm.call_outcomes.ensure_defaults",  # SOS-P1-21, after the stages it suggests
 ]
 
 # Uninstallation

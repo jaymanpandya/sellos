@@ -510,6 +510,11 @@ def seed_regression_data():
 	  Three (Opted out) and Investor Four (Registered DND) Contacted, each with its warning in the
 	  stage change log, NRI Five Nurture. The rest stay on New.
 
+	* Call outcomes (SOS-P1-21): the seven standard outcomes and the standard lost reasons, Regression
+	  Sent brochure (an outcome the company added: it needs a follow up and suggests Contacted),
+	  Regression Price too high (a lost reason the company added), and one call Buyer Two's agent
+	  logged by hand on Regression Buyer Two (Busy, two minutes, with its follow up tomorrow).
+
 	* Telephony Settings (SOS-P2-01): the Plivo India account saved with fake keys, a 022 number
 	  made by landline_022(TELEPHONY_SEED), and the fake provider switched on, so Test connection reports success.
 
@@ -535,6 +540,7 @@ def seed_regression_data():
 		_seed_twin_clients(admin, agent_one)
 		_seed_lead_sources(admin)
 		_seed_pipeline_stages()
+		_seed_call_outcomes(admin, agent_one)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -650,6 +656,7 @@ def seed_regression_data():
 	_seed_twin_clients(admin, agent_one)
 	_seed_lead_sources(admin)
 	_seed_pipeline_stages()
+	_seed_call_outcomes(admin, agent_one)
 	_seed_support_grants(admin)
 	_seed_telephony(admin)
 	_seed_control_site()
@@ -781,6 +788,53 @@ def _seed_pipeline_stages():
 		with _as_user(lead.assigned_to):
 			for stage in stages:
 				crm.move_lead_stage(lead.name, stage)
+
+
+def _seed_call_outcomes(admin, agent_one):
+	"""The call outcome and lost reason lists and one call logged by hand (SOS-P1-21), through the CRM
+	API: the Company Admin adds an outcome and a lost reason, and the first agent logs a call on
+	Regression Buyer Two. Safe to run again: each is looked up first."""
+	from sellos.crm import api as crm
+	from sellos.crm import call_outcomes
+
+	call_outcomes.ensure_defaults()
+	with _as_user(admin):
+		have = {row["name"] for row in crm.list_call_outcomes(include_disabled=1)["outcomes"]}
+		if "Regression Sent brochure" not in have:
+			crm.save_call_outcome(
+				values={
+					"outcome_name": "Regression Sent brochure",
+					"needs_follow_up": 1,
+					"suggested_stage": "Contacted",
+				}
+			)
+		have = {row["name"] for row in crm.list_lost_reasons(include_disabled=1)["lost_reasons"]}
+		if "Regression Price too high" not in have:
+			crm.save_lost_reason(values={"reason_name": "Regression Price too high"})
+	client = frappe.db.get_value("Client", {"client_name": f"{REGRESSION_PREFIX}Buyer Two"}, "name")
+	lead = frappe.db.get_value("Lead", {"client": client}, "name") if client else None
+	if lead and not frappe.db.exists("Lead Activity", {"lead": lead, "outcome": "Busy"}):
+		with _as_user(agent_one):
+			crm.log_call(
+				lead,
+				"Busy",
+				notes="Regression call, in a meeting",
+				duration_seconds=120,
+				follow_up_at=add_to_date(now_datetime(), days=1),
+			)
+
+
+def remove_gate_call_lists():
+	"""Remove what the call outcome spec committed (tests only, SOS-P1-21): the outcomes named Gate Outcome
+	and the lost reasons named Gate Reason. Run remove_seeded_leads first, so no call still names them."""
+	outcomes = frappe.get_all("Call Outcome", filters={"name": ["like", "Gate Outcome %"]}, pluck="name")
+	reasons = frappe.get_all("Lost Reason", filters={"name": ["like", "Gate Reason %"]}, pluck="name")
+	for doctype, names in (("Call Outcome", outcomes), ("Lost Reason", reasons)):
+		if names:
+			frappe.db.delete("Version", {"ref_doctype": doctype, "docname": ["in", names]})
+			frappe.db.delete(doctype, {"name": ["in", names]})
+	frappe.db.commit()  # nosemgrep
+	return {"outcomes": len(outcomes), "lost_reasons": len(reasons)}
 
 
 def _seed_support_grants(admin):

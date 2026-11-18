@@ -729,7 +729,7 @@ def _ensure_lead(row, client, users, admin):
 	frappe.db.set_value("Lead", doc.name, "owner", owner, update_modified=False)
 	_consent(doc.name, kind, days)
 	if stage != pipeline.first_stage():
-		pipeline.move_lead(doc.name, stage)
+		pipeline.move_lead(doc.name, stage, lost_reason="Budget too low")  # SOS-P1-21, used on a Lost stage
 	created = add_days(now_datetime(), -days)
 	frappe.db.set_value("Lead", doc.name, "creation", created, update_modified=False)
 	return doc.name, True
@@ -831,13 +831,14 @@ def seed_company(index=0):
 	import frappe
 
 	from sellos.access.roles import ensure_roles
-	from sellos.crm import lead_sources, pipeline
+	from sellos.crm import call_outcomes, lead_sources, pipeline
 
 	site = check_demo_site()
 	data = COMPANIES[int(index) % len(COMPANIES)]
 	ensure_roles()
 	pipeline.ensure_default_stages()
 	lead_sources.ensure_default_sources()
+	call_outcomes.ensure_defaults()  # SOS-P1-21: a lead moved to Closed lost records a reason
 	for extra, enabled in (("Hoarding campaign", 1), ("Old newspaper ad", 0)):
 		if not frappe.db.exists("Lead Source", extra):
 			frappe.get_doc({"doctype": "Lead Source", "source_name": extra, "enabled": enabled}).insert(

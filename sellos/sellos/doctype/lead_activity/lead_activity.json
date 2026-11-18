@@ -8,6 +8,8 @@
   "lead",
   "activity_type",
   "activity_date",
+  "outcome",
+  "duration_seconds",
   "notes",
   "section_archive",
   "archived",
@@ -38,6 +40,20 @@
    "label": "When",
    "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Link",
+   "label": "Call outcome",
+   "options": "Call Outcome",
+   "in_standard_filter": 1,
+   "description": "What happened on a call (SOS-P1-21). Set for a Call."
+  },
+  {
+   "fieldname": "duration_seconds",
+   "fieldtype": "Int",
+   "label": "Duration (seconds)",
+   "non_negative": 1
   },
   {
    "fieldname": "notes",

@@ -12,7 +12,7 @@ from frappe.utils import cint, now_datetime
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
-from sellos.crm import consent, duplicates, lead_sources, pipeline
+from sellos.crm import call_outcomes, consent, duplicates, lead_sources, pipeline
 from sellos.crm.base import is_overdue
 from sellos.crm.requirements import REQUIREMENT_FIELDS, has_filters, join_values, matches, requirements_view
 
@@ -284,12 +284,116 @@ def list_stages():
 
 
 @sellos_api(*LOGGERS)
-def move_lead_stage(lead, stage):
+def move_lead_stage(lead, stage, lost_reason=None):
 	"""Move a lead to any stage (SOS-P1-07), whatever its consent status, and log the move. Moving it to
 	Contacted without a live Consent Record returns a warning, writes it to the stage change log and
-	goes ahead. Only a stage that does not exist is refused."""
+	goes ahead. A stage that does not exist is refused, and so is a Lost stage with no lost reason
+	from the Company Admin's list (SOS-P1-21)."""
 	_writable_lead(lead)
-	return pipeline.move_lead(lead, stage)
+	return pipeline.move_lead(lead, stage, lost_reason=lost_reason)
+
+
+@sellos_api(*LOGGERS)
+def list_call_outcomes(include_disabled=0):
+	"""The call outcomes for a picker (SOS-P1-21): each with its suggested stage and whether it needs a
+	follow up. SOS-P2-07's outcome form and SOS-P2-05's Call Log read this list. Only a Company Admin
+	is shown, and may manage, the disabled ones."""
+	manage = COMPANY_ADMIN in frappe.get_roles()
+	outcomes = call_outcomes.list_outcomes(include_disabled=bool(cint(include_disabled)) and manage)
+	return {"outcomes": outcomes, "can_manage": manage}
+
+
+@sellos_api(COMPANY_ADMIN)
+def save_call_outcome(name=None, values=None):
+	"""Add an outcome, or change whether it is enabled, needs a follow up or suggests a stage. An outcome
+	keeps its name, because reports group by it."""
+	values = _values(values, ("outcome_name", "enabled", "needs_follow_up", "suggested_stage"))
+	if name:
+		doc = frappe.get_doc("Call Outcome", name)
+		doc.check_permission("write")
+		for field in ("enabled", "needs_follow_up"):
+			if field in values:
+				setattr(doc, field, cint(values[field]))
+		if "suggested_stage" in values:
+			doc.suggested_stage = values["suggested_stage"] or None
+		doc.save()
+	else:
+		doc = frappe.get_doc({"doctype": "Call Outcome", **values})
+		doc.check_permission("create")
+		doc.insert()
+	return {
+		"name": doc.name,
+		"enabled": cint(doc.enabled),
+		"needs_follow_up": cint(doc.needs_follow_up),
+		"suggested_stage": doc.suggested_stage or "",
+	}
+
+
+@sellos_api(COMPANY_ADMIN)
+def delete_call_outcome(name):
+	"""Delete an outcome no call used. One in use is refused, and is disabled instead."""
+	doc = frappe.get_doc("Call Outcome", name)
+	doc.check_permission("delete")
+	call_outcomes.ensure_outcome_deletable(name)
+	frappe.delete_doc("Call Outcome", name)
+	return {"deleted": name}
+
+
+@sellos_api(*LOGGERS)
+def list_lost_reasons(include_disabled=0):
+	"""The lost reasons for the move to a Lost stage (SOS-P1-21). Only a Company Admin is shown, and may
+	manage, the disabled ones."""
+	manage = COMPANY_ADMIN in frappe.get_roles()
+	reasons = call_outcomes.list_lost_reasons(include_disabled=bool(cint(include_disabled)) and manage)
+	return {"lost_reasons": reasons, "can_manage": manage}
+
+
+@sellos_api(COMPANY_ADMIN)
+def save_lost_reason(name=None, values=None):
+	"""Add a lost reason, or enable or disable one. A reason keeps its name, because reports group by it."""
+	values = _values(values, ("reason_name", "enabled"))
+	if name:
+		doc = frappe.get_doc("Lost Reason", name)
+		doc.check_permission("write")
+		if "enabled" in values:
+			doc.enabled = cint(values["enabled"])
+		doc.save()
+	else:
+		doc = frappe.get_doc({"doctype": "Lost Reason", **values})
+		doc.check_permission("create")
+		doc.insert()
+	return {"name": doc.name, "enabled": cint(doc.enabled)}
+
+
+@sellos_api(COMPANY_ADMIN)
+def delete_lost_reason(name):
+	"""Delete a lost reason no lead used. One in use is refused, and is disabled instead."""
+	doc = frappe.get_doc("Lost Reason", name)
+	doc.check_permission("delete")
+	call_outcomes.ensure_reason_deletable(name)
+	frappe.delete_doc("Lost Reason", name)
+	return {"deleted": name}
+
+
+@sellos_api(*LOGGERS)
+def log_call(
+	lead,
+	outcome,
+	notes=None,
+	duration_seconds=None,
+	follow_up_at=None,
+	stage=None,
+	lost_reason=None,
+	called_at=None,
+):
+	"""Log a call made by hand on a lead (SOS-P1-21): a Call activity with its outcome, notes and
+	duration. An outcome that needs a follow up needs `follow_up_at` and creates the follow up. `stage`
+	is the agent's own choice of any stage, and the outcome's suggested stage comes back as
+	`suggested_stage` to be offered, never applied. Whatever the lead's consent status, it is logged."""
+	_writable_lead(lead)
+	return call_outcomes.log_call(
+		lead, outcome, notes, duration_seconds, follow_up_at, stage, lost_reason, called_at
+	)
 
 
 @sellos_api(*READERS)
@@ -311,6 +415,10 @@ def get_lead(name):
 		"timeline": _timeline(name),
 		"consent": consent.consent_view(name),
 		"pipeline": pipeline.stage_view(lead),
+		"call_lists": {
+			"outcomes": call_outcomes.list_outcomes(),
+			"lost_reasons": call_outcomes.list_lost_reasons(),
+		},
 	}
 
 
@@ -319,16 +427,21 @@ def _timeline(lead):
 	for row in frappe.get_list(
 		"Lead Activity",
 		filters={"lead": lead, "archived": 0},
-		fields=["name", "activity_type", "activity_date", "notes", "owner"],
+		fields=["name", "activity_type", "activity_date", "outcome", "duration_seconds", "notes", "owner"],
 	):
 		items.append({"kind": "activity", "when": row.activity_date, "title": row.activity_type, **row})
 	for row in frappe.get_list(
 		"Lead Task",
 		filters={"lead": lead, "archived": 0},
-		fields=["name", "title", "due_date", "status", "assigned_to", "notes"],
+		fields=["name", "title", "due_date", "due_at", "status", "assigned_to", "notes"],
 	):
 		items.append(
-			{"kind": "task", "when": row.due_date, "overdue": is_overdue(row.due_date, row.status), **row}
+			{
+				"kind": "task",
+				"when": row.due_at or row.due_date,
+				"overdue": is_overdue(row.due_date, row.status),
+				**row,
+			}
 		)
 	for row in frappe.get_list(
 		"Site Visit",

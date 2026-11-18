@@ -77,11 +77,12 @@
 				<h2 class="font-medium text-ink">Stage</h2>
 				<select
 					v-if="canLog"
+					:key="stageSelectKey"
 					:value="detail.pipeline.stage"
 					class="field max-w-[14rem]"
 					aria-label="Stage"
 					data-testid="sellos-lead-stage-select"
-					@change="moveStage($event.target.value)"
+					@change="chooseStage($event.target.value)"
 				>
 					<option v-for="s in detail.pipeline.stages" :key="s.name" :value="s.name">
 						{{ s.name }}
@@ -91,6 +92,46 @@
 					detail.pipeline.stage
 				}}</span>
 			</div>
+			<form
+				v-if="lostStage"
+				class="flex flex-wrap items-center gap-2"
+				data-testid="sellos-lead-lost-form"
+				@submit.prevent="confirmLost"
+			>
+				<label class="text-sm text-ink-muted" for="sellos-lead-lost-reason">
+					Why is this lead going to {{ lostStage }}?
+				</label>
+				<select
+					id="sellos-lead-lost-reason"
+					v-model="lostReason"
+					required
+					class="field w-auto"
+					data-testid="sellos-lead-lost-reason"
+				>
+					<option value="">Choose a lost reason</option>
+					<option v-for="r in lostReasons" :key="r.name" :value="r.name">
+						{{ r.name }}
+					</option>
+				</select>
+				<button type="submit" class="btn" data-testid="sellos-lead-lost-save">
+					Move to {{ lostStage }}
+				</button>
+				<button
+					type="button"
+					class="text-sm text-ink-muted underline"
+					data-testid="sellos-lead-lost-cancel"
+					@click="cancelLost"
+				>
+					Cancel
+				</button>
+			</form>
+			<p
+				v-if="detail.pipeline.lost_reason"
+				data-testid="sellos-lead-lost-reason-shown"
+				class="text-sm text-ink-muted"
+			>
+				Lost reason: {{ detail.pipeline.lost_reason }}
+			</p>
 			<p
 				v-if="stageWarning"
 				role="alert"
@@ -122,6 +163,9 @@
 				>
 					{{ row.from_stage || "No stage" }} to {{ row.to_stage }},
 					{{ String(row.changed_on).slice(0, 16) }}, {{ row.changed_by }}
+					<span v-if="row.lost_reason" data-testid="sellos-lead-stage-change-reason">
+						. Lost reason: {{ row.lost_reason }}</span
+					>
 					<span v-if="row.warning" data-testid="sellos-lead-stage-change-warning">
 						. {{ row.warning }}</span
 					>
@@ -342,6 +386,109 @@
 
 		<section
 			v-if="canLog"
+			data-testid="sellos-lead-call"
+			class="mt-6 space-y-3 rounded-input border border-line bg-surface p-4"
+		>
+			<h2 class="font-medium text-ink">Log a call</h2>
+			<form class="space-y-3" data-testid="sellos-lead-call-form" @submit.prevent="logCall">
+				<div class="flex flex-wrap gap-2">
+					<select
+						v-model="call.outcome"
+						required
+						aria-label="Outcome"
+						data-testid="sellos-lead-call-outcome"
+						class="field w-auto"
+					>
+						<option value="">Outcome</option>
+						<option v-for="o in outcomes" :key="o.name" :value="o.name">
+							{{ o.name }}
+						</option>
+					</select>
+					<input
+						v-model.number="call.minutes"
+						type="number"
+						min="0"
+						step="any"
+						aria-label="Duration in minutes"
+						placeholder="Minutes"
+						data-testid="sellos-lead-call-minutes"
+						class="field w-28"
+					/>
+					<input
+						v-model="call.notes"
+						placeholder="Notes"
+						data-testid="sellos-lead-call-notes"
+						class="field flex-1"
+					/>
+				</div>
+				<label v-if="chosenOutcome?.needs_follow_up" class="block text-sm text-ink-muted">
+					Follow up on
+					<input
+						v-model="call.followUp"
+						required
+						type="datetime-local"
+						data-testid="sellos-lead-call-follow-up"
+						class="field w-auto"
+					/>
+				</label>
+				<div class="flex flex-wrap items-center gap-2">
+					<select
+						v-model="call.stage"
+						aria-label="Stage after this call"
+						data-testid="sellos-lead-call-stage"
+						class="field w-auto"
+					>
+						<option value="">Keep the stage ({{ detail.pipeline?.stage }})</option>
+						<option v-for="s in otherStages" :key="s.name" :value="s.name">
+							{{ s.name }}{{ s.name === suggestedStage ? " (suggested)" : "" }}
+						</option>
+					</select>
+					<button
+						v-if="suggestedStage && call.stage !== suggestedStage"
+						type="button"
+						class="text-sm text-ink-muted underline"
+						data-testid="sellos-lead-call-suggestion"
+						@click="call.stage = suggestedStage"
+					>
+						Suggested stage: {{ suggestedStage }}. Use it
+					</button>
+					<select
+						v-if="callStageIsLost"
+						v-model="call.lostReason"
+						required
+						aria-label="Lost reason"
+						data-testid="sellos-lead-call-lost-reason"
+						class="field w-auto"
+					>
+						<option value="">Choose a lost reason</option>
+						<option v-for="r in lostReasons" :key="r.name" :value="r.name">
+							{{ r.name }}
+						</option>
+					</select>
+				</div>
+				<p
+					v-if="callError"
+					role="alert"
+					data-testid="sellos-lead-call-error"
+					class="text-sm text-accent"
+				>
+					{{ callError }}
+				</p>
+				<p
+					v-if="callSaved"
+					data-testid="sellos-lead-call-saved"
+					class="text-sm text-ink-muted"
+				>
+					{{ callSaved }}
+				</p>
+				<button type="submit" class="btn" data-testid="sellos-lead-call-save">
+					Log call
+				</button>
+			</form>
+		</section>
+
+		<section
+			v-if="canLog"
 			data-testid="sellos-lead-log"
 			class="mt-6 space-y-3 rounded-input border border-line bg-surface p-4"
 		>
@@ -435,6 +582,12 @@
 					<span class="font-medium text-ink">
 						<span class="mr-2 text-xs uppercase text-ink-muted">{{ item.kind }}</span
 						>{{ item.title }}
+						<span
+							v-if="item.outcome"
+							data-testid="sellos-lead-timeline-outcome"
+							class="ml-1 text-sm text-ink-muted"
+							>{{ item.outcome }}{{ callLength(item) }}</span
+						>
 					</span>
 					<span
 						v-if="item.overdue"
@@ -571,15 +724,97 @@ const movedWarning = ref(null);
 const stageError = ref("");
 const stageWarning = computed(() => movedWarning.value || detail.value?.pipeline?.warning || null);
 
-async function moveStage(stage) {
+async function moveStage(stage, reason = null) {
 	stageError.value = "";
 	try {
-		const result = await crmApi.moveLeadStage(route.params.name, stage);
+		const result = await crmApi.moveLeadStage(route.params.name, stage, reason);
 		movedWarning.value = result.warning;
 		await load();
 	} catch (e) {
 		stageError.value = serverMessage(e, "The lead could not be moved.");
 		await load();
+	}
+}
+
+// Moving to a Lost stage asks for a reason from the Company Admin's list (SOS-P1-21).
+const lostStage = ref("");
+const lostReason = ref("");
+const stageSelectKey = ref(0);
+const outcomes = computed(() => detail.value?.call_lists?.outcomes || []);
+const lostReasons = computed(() => detail.value?.call_lists?.lost_reasons || []);
+const isLost = (name) =>
+	(detail.value?.pipeline?.stages || []).find((s) => s.name === name)?.stage_type === "Lost";
+
+function chooseStage(stage) {
+	if (isLost(stage) && stage !== detail.value.pipeline.stage) {
+		lostStage.value = stage;
+		lostReason.value = "";
+		stageError.value = "";
+		return;
+	}
+	return moveStage(stage);
+}
+
+function cancelLost() {
+	lostStage.value = "";
+	stageSelectKey.value += 1; // puts the stage box back on the lead's own stage
+}
+
+async function confirmLost() {
+	const stage = lostStage.value;
+	lostStage.value = "";
+	await moveStage(stage, lostReason.value);
+	stageSelectKey.value += 1;
+}
+
+// Logging a call by hand (SOS-P1-21). The outcome's suggested stage is offered, never applied.
+const call = reactive({
+	outcome: "",
+	minutes: "",
+	notes: "",
+	followUp: "",
+	stage: "",
+	lostReason: "",
+});
+const callError = ref("");
+const callSaved = ref("");
+const chosenOutcome = computed(() => outcomes.value.find((o) => o.name === call.outcome));
+const suggestedStage = computed(() => {
+	const stage = chosenOutcome.value?.suggested_stage;
+	return stage && stage !== detail.value?.pipeline?.stage ? stage : "";
+});
+const otherStages = computed(() =>
+	(detail.value?.pipeline?.stages || []).filter((s) => s.name !== detail.value.pipeline.stage)
+);
+const callStageIsLost = computed(() => Boolean(call.stage) && isLost(call.stage));
+const callLength = (item) =>
+	item.duration_seconds ? `, ${Math.round((item.duration_seconds / 60) * 10) / 10} min` : "";
+
+async function logCall() {
+	callError.value = "";
+	callSaved.value = "";
+	try {
+		const result = await crmApi.logCall(route.params.name, {
+			outcome: call.outcome,
+			notes: call.notes,
+			duration_seconds: call.minutes ? Math.round(call.minutes * 60) : 0,
+			follow_up_at: chosenOutcome.value?.needs_follow_up ? call.followUp : null,
+			stage: call.stage || null,
+			lost_reason: callStageIsLost.value ? call.lostReason : null,
+		});
+		movedWarning.value = result.warning;
+		callSaved.value = result.follow_up ? "Call logged and follow up set." : "Call logged.";
+		Object.assign(call, {
+			outcome: "",
+			minutes: "",
+			notes: "",
+			followUp: "",
+			stage: "",
+			lostReason: "",
+		});
+		await load();
+	} catch (e) {
+		callError.value = serverMessage(e, "The call could not be logged.");
 	}
 }
 

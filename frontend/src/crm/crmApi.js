@@ -17,7 +17,19 @@ export const crmApi = {
 		call("list_lead_sources", { include_disabled: includeDisabled }),
 	saveLeadSource: (values, name = null) => call("save_lead_source", { name, values }),
 	listStages: () => call("list_stages"),
-	moveLeadStage: (lead, stage) => call("move_lead_stage", { lead, stage }),
+	moveLeadStage: (lead, stage, lostReason = null) =>
+		call("move_lead_stage", { lead, stage, lost_reason: lostReason }),
+	// The call outcome and lost reason lists a Company Admin edits (SOS-P1-21).
+	listCallOutcomes: (includeDisabled = 0) =>
+		call("list_call_outcomes", { include_disabled: includeDisabled }),
+	saveCallOutcome: (values, name = null) => call("save_call_outcome", { name, values }),
+	deleteCallOutcome: (name) => call("delete_call_outcome", { name }),
+	listLostReasons: (includeDisabled = 0) =>
+		call("list_lost_reasons", { include_disabled: includeDisabled }),
+	saveLostReason: (values, name = null) => call("save_lost_reason", { name, values }),
+	deleteLostReason: (name) => call("delete_lost_reason", { name }),
+	// A call logged by hand: outcome, notes, duration and the follow up the outcome needs.
+	logCall: (lead, values) => call("log_call", { lead, ...values }),
 	saveLead: (values, name = null) => call("save_lead", { name, values }),
 	addActivity: (lead, activityType, notes = "") =>
 		call("add_activity", { lead, activity_type: activityType, notes }),
