@@ -4,6 +4,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 from unittest import TestCase, mock
 
@@ -59,12 +60,15 @@ class TestP008DryRun(TestCase):
 		self.assertIn("Step 3 failed", lines[-1])
 
 	def test_scripts_dry_run_end_to_end(self):
+		# The scripts default to the bench's own Python under the home folder; CI's bench lives elsewhere.
+		env_vars = {**os.environ, "SELLOS_DEPLOY_PYTHON": sys.executable}
 		for script, env in (("deploy", "staging"), ("promote", "production")):
 			result = subprocess.run(
 				[str(REPO_ROOT / "deploy" / f"{script}.sh"), "v2.0.0", "--dry-run"],
 				capture_output=True,
 				text=True,
 				check=False,
+				env=env_vars,
 			)
 			self.assertEqual(result.returncode, 0, result.stderr)
 			self.assertIn(f"Dry run: release v2.0.0 to {env}", result.stdout)
@@ -73,6 +77,7 @@ class TestP008DryRun(TestCase):
 			capture_output=True,
 			text=True,
 			check=False,
+			env=env_vars,
 		)
 		self.assertEqual(bad.returncode, 2)
 
