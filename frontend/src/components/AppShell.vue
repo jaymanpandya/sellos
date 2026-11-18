@@ -8,6 +8,7 @@
 			data-testid="sellos-phone-topbar"
 		>
 			<CompanyBrand />
+			<NotificationBell />
 			<button
 				type="button"
 				class="rounded-input px-3 py-1 text-sm text-ink-muted hover:bg-brand-light"
@@ -18,7 +19,8 @@
 			</button>
 		</header>
 		<aside class="hidden w-56 shrink-0 flex-col border-r border-line bg-surface p-4 sm:flex">
-			<div class="mb-6"><CompanyBrand /></div>
+			<div class="mb-2"><CompanyBrand /></div>
+			<div class="mb-4"><NotificationBell /></div>
 			<nav class="flex-1 space-y-1" aria-label="Main" data-testid="sellos-nav">
 				<router-link
 					v-for="item in nav"
@@ -64,6 +66,7 @@
 import { computed } from "vue";
 
 import CompanyBrand from "./CompanyBrand.vue";
+import NotificationBell from "./NotificationBell.vue";
 import { session, signOut } from "../session";
 import { navFor, personaFor } from "../personas";
 

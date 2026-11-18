@@ -8,7 +8,7 @@ purpose: the spec that needs it then fails loudly instead of passing on nothing.
 from contextlib import contextmanager
 
 import frappe
-from frappe.utils import add_days, add_to_date, now_datetime, today
+from frappe.utils import add_days, add_to_date, get_datetime, now_datetime, today
 
 from sellos.config.company_site import configure_company_site
 from sellos.crm import pipeline
@@ -302,6 +302,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Buyer %"],
 			["client_name", "like", "Gate Team %"],
 			["client_name", "like", "Gate Board %"],
+			["client_name", "like", "Gate Notify %"],
 		],
 		pluck="name",
 	)
@@ -310,6 +311,7 @@ def remove_seeded_leads():
 	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name")
 	if leads:
 		frappe.db.delete("Lead Stage Change", {"parent": ["in", leads]})
+		frappe.db.delete("App Notification", {"lead": ["in", leads]})  # SOS-P1-23
 	for doctype in ("Lead Activity", "Lead Task", "Site Visit", "Consent Record"):
 		if leads and frappe.get_meta(doctype).has_field("lead"):
 			frappe.db.delete(doctype, {"lead": ["in", leads]})
@@ -319,6 +321,63 @@ def remove_seeded_leads():
 			frappe.db.delete(doctype, {"name": ["in", names]})
 	frappe.db.commit()  # nosemgrep
 	return {"clients": len(clients), "leads": len(leads)}
+
+
+def _remove_notifications_of_test_users():
+	emails = [spec["email"] for spec in TEST_USERS.values()]
+	frappe.db.delete("App Notification", {"recipient": ["in", emails]})
+
+
+def seed_notifications():
+	"""Make the notifications the bell spec needs (SOS-P1-23), through sellos.crm.api, so each one is the
+	one the production code made. The test agent is given Gate Notify A and then Gate Notify B by the
+	company admin (two Lead assigned notifications, B the newer). The test agent then gives the company
+	admin Gate Notify C, which notifies the admin and not the agent. Returns the client names and leads.
+	Every notification of the test users is cleared first. remove_gate_notifications removes what this makes."""
+	from sellos.crm import api as crm
+
+	_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	_remove_notifications_of_test_users()
+	tag = frappe.generate_hash(length=6)
+	made = {}
+	for key, maker, assignee, seed in (
+		("a", admin, agent, 61),
+		("b", admin, agent, 62),
+		("c", agent, admin, 63),
+	):
+		name = f"Gate Notify {key.upper()} {tag}"
+		with _as_user(maker):
+			client = crm.save_client(
+				values={"client_name": name, "client_type": "Buyer", "phone": phones.in_mobile(seed)}
+			)
+			lead = crm.save_lead(
+				values={"client": client["name"], "source": "Website", "assigned_to": assignee}
+			)
+		made[key] = {"client_name": name, "lead": lead["lead"]["name"]}
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return made
+
+
+def reassign_gate_notify_lead(lead):
+	"""As the company admin, give a seeded lead to the test channel partner (SOS-P1-23), so its agent loses
+	it and is told it was reassigned away."""
+	from sellos.crm import api as crm
+
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		crm.reassign_lead(lead, TEST_USERS["channel_partner"]["email"])
+	frappe.db.commit()  # nosemgrep
+	return {"lead": lead}
+
+
+def remove_gate_notifications():
+	"""Remove what seed_notifications committed (tests only, SOS-P1-23): the leads, and every
+	notification of the test users."""
+	removed = remove_seeded_leads()
+	_remove_notifications_of_test_users()
+	frappe.db.commit()  # nosemgrep
+	return removed
 
 
 def remove_gate_lead_sources():
@@ -589,6 +648,11 @@ def seed_regression_data():
 	  one is marked. The board and the filters use the stages, budgets, sources, consent statuses and
 	  teams above.
 
+	* In-app notifications (SOS-P1-23): the leads the Company Admin gave the agents above each notified
+	  their agent (Lead assigned), a Regression Tomorrow Heights site visit is scheduled tomorrow on
+	  Buyer One, and the scheduler's follow up and site visit functions are run once, so the gate agent's
+	  bell holds Lead assigned, Follow up due or overdue and Site visit tomorrow notifications.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -608,6 +672,7 @@ def seed_regression_data():
 		_seed_call_outcomes(admin, agent_one)
 		_seed_users(admin)
 		_seed_dormant_lead(admin, agent_one)
+		_seed_notifications(agent_one)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -731,6 +796,7 @@ def seed_regression_data():
 	_seed_control_site()
 	_seed_setup_wizard(admin)
 	_seed_sales_teams(admin, agent_one, agent_two, agent_three)
+	_seed_notifications(agent_one)
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -831,6 +897,29 @@ def _seed_lead_sources(admin):
 			crm.save_lead(
 				name=lead, values={"source": "Regression Roadshow", "campaign": "Diwali 2026 hoardings"}
 			)
+
+
+def _seed_notifications(agent_one):
+	"""A site visit tomorrow on Buyer One, scheduled by its agent through the visit API, and one run of the
+	scheduler's notification functions (SOS-P1-23). Safe to run again: a visit that exists is left alone and
+	a notification is never made twice."""
+	from sellos.crm import api as crm
+	from sellos.crm import notifications
+
+	lead = frappe.db.get_value("Lead", {"lead_title": ["like", f"{REGRESSION_PREFIX}Buyer One%"]}, "name")
+	project = f"{REGRESSION_PREFIX}Tomorrow Heights"
+	if lead and not frappe.db.exists("Site Visit", {"lead": lead, "project_name": project}):
+		with _as_user(agent_one):
+			crm.save_site_visit(
+				values={
+					"lead": lead,
+					"project_name": project,
+					"visit_datetime": add_to_date(get_datetime(add_days(today(), 1)), hours=11),
+					"status": "Scheduled",
+				}
+			)
+	notifications.notify_follow_ups()
+	notifications.notify_site_visits()
 
 
 def _seed_dormant_lead(admin, agent_one):

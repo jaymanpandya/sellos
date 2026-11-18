@@ -23,6 +23,7 @@ from sellos.access.registry import (
 )
 from sellos.access.roles import ROLES, ensure_roles
 from sellos.access.test_permission_matrix import import_all_sellos_modules, matrix_problems
+from sellos.crm import notifications
 from sellos.crm.pipeline import DEFAULT_STAGES
 from sellos.testing.users import TEST_USERS, create_test_users
 from sellos.tests import phones
@@ -87,6 +88,10 @@ SAMPLE_CALLS = {
 		"values": {"lead": "{lead}", "project_name": "P105 Tower", "visit_datetime": "2030-01-01 10:00:00"}
 	},
 	"sellos.crm.api.set_archived": {"doctype": "Lead", "name": "{lead}", "archived": 0},
+	# SOS-P1-23: a user's own notifications. Marking all read touches only the caller's.
+	"sellos.crm.api.list_notifications": {},
+	"sellos.crm.api.mark_notification_read": {"name": "{notification}"},
+	"sellos.crm.api.mark_all_notifications_read": {},
 	"sellos.crm.api.record_consent": {
 		"lead": "{lead}",
 		"basis": "Inquiry",
@@ -259,7 +264,12 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		support_user = TEST_USERS["platform_admin"]["email"]
 		grant = support.grant_support_access(support_user, 60)
 		support.revoke_support_access(grant["name"])
+		# SOS-P1-23: the Company Admin's own notification. Any other user is told it is not found.
+		notification = notifications.notify(
+			TEST_USERS[ADMIN]["email"], notifications.LEAD_ASSIGNED, "P123 permission suite"
+		)
 		self.names = {
+			"notification": notification,
 			"client": client.name,
 			"client_other": other.name,
 			"lead": lead.name,

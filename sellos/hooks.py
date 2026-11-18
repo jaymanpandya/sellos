@@ -197,8 +197,14 @@ has_permission = {
 
 # P1.13 mark ended support grants as Expired. Access ends at expiry without it.
 scheduler_events = {
-	"all": ["sellos.access.support.expire_due_grants"],
-	"hourly": ["sellos.crm.consent.expire_due_records"],
+	"all": [
+		"sellos.access.support.expire_due_grants",
+		"sellos.crm.notifications.notify_follow_ups",  # SOS-P1-23
+	],
+	"hourly": [
+		"sellos.crm.consent.expire_due_records",
+		"sellos.crm.notifications.notify_site_visits",  # SOS-P1-23
+	],
 }
 # scheduler_events = {
 # 	"all": [

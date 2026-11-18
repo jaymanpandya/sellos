@@ -12,7 +12,7 @@ from frappe.utils import cint, now_datetime
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER
-from sellos.crm import board, call_outcomes, consent, duplicates, lead_sources, pipeline
+from sellos.crm import board, call_outcomes, consent, duplicates, lead_sources, notifications, pipeline
 from sellos.crm.base import is_overdue
 from sellos.crm.requirements import REQUIREMENT_FIELDS, join_values, requirements_view
 
@@ -570,3 +570,21 @@ def set_archived(doctype, name, archived=1):
 	doc.flags.ignore_permissions = True
 	doc.save()
 	return {"name": doc.name, "archived": doc.archived}
+
+
+@sellos_api(*READERS)
+def list_notifications():
+	"""The signed in user's unread notifications, newest first, with the unread count (SOS-P1-23)."""
+	return notifications.unread_for()
+
+
+@sellos_api(*READERS)
+def mark_notification_read(name):
+	"""Mark one of the user's own notifications read. Another user's is reported as not found."""
+	return notifications.mark_read(name)
+
+
+@sellos_api(*READERS)
+def mark_all_notifications_read():
+	"""Mark every notification of the signed in user read."""
+	return notifications.mark_all_read()

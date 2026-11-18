@@ -6,6 +6,7 @@ from sellos.access.lead_permissions import check_assignee_in_team
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
 from sellos.crm.base import ArchiveOnly, stamp_archive
 from sellos.crm.lead_sources import check_usable
+from sellos.crm.notifications import notify_lead_assignment
 from sellos.crm.pipeline import first_stage
 from sellos.crm.requirements import validate_requirements
 
@@ -30,3 +31,6 @@ class Lead(ArchiveOnly):
 	def _check_assignee(self):
 		if not (set(frappe.get_roles(self.assigned_to)) & CAN_BE_ASSIGNED):
 			frappe.throw(_("{0} cannot be assigned leads.").format(self.assigned_to))
+
+	def on_update(self):
+		notify_lead_assignment(self)  # SOS-P1-23

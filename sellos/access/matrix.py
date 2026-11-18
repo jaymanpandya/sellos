@@ -56,6 +56,10 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.save_task": _LOGGERS,
 	"sellos.crm.api.save_site_visit": _LOGGERS,
 	"sellos.crm.api.set_archived": _READERS,
+	# SOS-P1-23: the bell, for every role that has leads. Each reads and changes its own only.
+	"sellos.crm.api.list_notifications": _READERS,
+	"sellos.crm.api.mark_notification_read": _READERS,
+	"sellos.crm.api.mark_all_notifications_read": _READERS,
 	"sellos.crm.api.record_consent": _LOGGERS,
 	"sellos.crm.api.record_opt_out": _LOGGERS,
 	"sellos.crm.api.record_dnd_result": _LOGGERS,
