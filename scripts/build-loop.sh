@@ -458,7 +458,7 @@ $(tail -n 15 "$GATE_OUT")"
     fi
     if [[ "$gate_exit" -ne 0 ]]; then
       ci_notify "CI repair attempt $attempt of $MAX_CI_REPAIRS on $label failed the gate, so nothing was pushed. Its changes stay in the working tree for the next attempt.
-$(grep -m3 -E 'GUARDS FAILED|AFFECTED SPECS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED' "$GATE_OUT" 2>/dev/null || tail -n 5 "$GATE_OUT")"
+$(grep -m3 -E 'GUARDS FAILED|AFFECTED SPECS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED|SMOKE TESTS FAILED' "$GATE_OUT" 2>/dev/null || tail -n 5 "$GATE_OUT")"
       continue
     fi
     git add -A
@@ -535,7 +535,7 @@ CONNECTION_ERROR_RE='ECONNREFUSED|ECONNRESET|ESOCKETTIMEDOUT|socket hang up|fail
 # Lines that report a failure. Summary lines (counts, "failed again", the run table) only repeat
 # the failures above them, so they are not causes.
 FAILURE_LINE_RE='Error|Exception|Traceback|AssertionError|expected .* to |FAIL:|ERROR:'
-SUMMARY_LINE_RE='FAILED \(|FAILED AGAIN|SPEC FAILED|UI tests failed|Failing:|[0-9]+ of [0-9]+ failed|│|GATE PASSED'
+SUMMARY_LINE_RE='FAILED \(|FAILED AGAIN|SPEC FAILED|SMOKE TEST|UI tests failed|Failing:|[0-9]+ of [0-9]+ failed|│|GATE PASSED'
 
 # True when the gate's output has a connection error to the SellOS server and every failure line
 # in it is a connection error, as when the server dies in the middle of a Cypress run.
@@ -978,7 +978,7 @@ $RUN_SUMMARY"
     # SOS-SETUP-37: a gate that failed on specs the task did not change is its own category.
     BLOCK_CATEGORY=blocked
     if grep -q -E '^AFFECTED SPECS? FAILED' "$LOG_DIR/latest.log" 2>/dev/null; then BLOCK_CATEGORY="task broke older specs"; fi
-    blocked_decide "$BLOCK_CATEGORY" "the gate still failed after $GATE_RUN gate run(s): $(grep -m1 -E "GUARDS FAILED|AFFECTED SPECS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED|TENANT TEMPLATE FAILED" "$LOG_DIR/latest.log" 2>/dev/null | cut -c1-120 || echo "see the gate log")"
+    blocked_decide "$BLOCK_CATEGORY" "the gate still failed after $GATE_RUN gate run(s): $(grep -m1 -E "GUARDS FAILED|AFFECTED SPECS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED|SMOKE TESTS FAILED|TENANT TEMPLATE FAILED" "$LOG_DIR/latest.log" 2>/dev/null | cut -c1-120 || echo "see the gate log")"
     git add "$TASKS_FILE"
     loop_commit -m "$TASK_ID: tests failed, marking Blocked (repo reset to pre-task state, no broken code left on main)"
     "$SCRIPT_DIR/notify-telegram.sh" "$(blocked_notice "SellOS loop: $TASK_ID failed tests. Blocked, repo reset to before this task — main is clean. Tail: $TAIL")" || true

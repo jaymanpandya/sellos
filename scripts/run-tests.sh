@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
+# SOS-SETUP-42: the default is the FAST gate, which stops short of the whole backend suite and the whole
+# Cypress suite and runs the smoke set (scripts/smoke-set.txt) in their place. Those two suites run in
+# CI on every push, and the loop waits for CI to go green. `scripts/run-tests.sh --full` (or
+# SELLOS_GATE_FULL=1) is the full gate described below, for a person to run by hand. Everything before
+# the whole suites is the same in both modes.
+#
 # Order: new files marked intent-to-add, the guards (scripts/check-guards.sh --all: lint, Semgrep and the task guards, SOS-SETUP-33), preflight (CI parity, a snapshot of the bench's sites and databases), build the web app, put the clean baseline back
 # over a wiped database, migrate, prepare_clean_site (code, every run), a check that the site is clean (exit 3, SOS-SETUP-36), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the specs the task did not change but uses, each run once (SOS-SETUP-37, scripts/lib/affected_specs.py; a failure stops the gate), the test files the task changed first, each run 5, 3 or 2 times by the time of its first run, with the repeats capped at 10 minutes, where one failed run fails it (SOS-SETUP-33 and SOS-SETUP-34, scripts/lib/flake_check.sh; a failure stops the gate at once), the same reset and check again when a changed spec ran, the
 # whole backend suite (a module that failed on a MariaDB 1020 or deadlock is rerun once, alone, and
@@ -14,6 +20,17 @@
 # The build loop sets SELLOS_TASK_ID, SELLOS_BASE_SHA and SELLOS_TASK_BLOCK_FILE so the task
 # guards run. A human running the gate by hand leaves them unset and the guards are skipped.
 set -euo pipefail
+
+# SOS-SETUP-42: --full runs the whole backend and Cypress suites after the changed and affected tests.
+GATE_MODE=fast
+[ -n "${SELLOS_GATE_FULL:-}" ] && GATE_MODE=full
+for arg in "$@"; do
+  case "$arg" in
+    --full) GATE_MODE=full ;;
+    --fast) GATE_MODE=fast ;;
+    *) echo "Usage: scripts/run-tests.sh [--full]" >&2; exit 2 ;;
+  esac
+done
 
 BENCH_DIR="${SELLOS_BENCH_DIR:-$HOME/iespl-bench}"
 APP="${SELLOS_APP:-sellos}"
@@ -68,6 +85,7 @@ set +e
 {
 set -e
 echo "=== SellOS test run: $(date) ==="
+echo "=== Gate mode: $GATE_MODE ($([ "$GATE_MODE" = full ] && echo 'whole backend and Cypress suites' || echo 'smoke set in place of the whole suites; CI runs the whole suites')) ==="
 
 # CI lints and scans every file in the commit, new ones included. pre-commit --all-files and
 # semgrep ci see only files git tracks, and a task's new files stay untracked until the loop
@@ -288,9 +306,8 @@ if grep -q '^spec' "$FLAKE_TARGETS" || [ -n "${AFFECTED_RAN:-}" ]; then
   sellos_reset_test_site "after the changed and affected specs, before the backend suite"
 fi
 
+if [ "$GATE_MODE" = full ]; then
 echo "--- Backend unit tests: $APP ---"
-# The runner prints one summary per batch, and the last one can say OK while an earlier one failed.
-# The wrapper prints every batch and the exit code, and the exit code decides (SOS-SETUP-24).
 run_backend "$LOG_DIR/backend-$STAMP-all.log" || { echo "BACKEND TESTS FAILED"; exit 1; }
 rm -f "$TEMPLATE_SQL"
 unset SELLOS_TENANT_TEMPLATE_SQL
@@ -298,6 +315,29 @@ unset SELLOS_TENANT_TEMPLATE_SQL
 echo "--- UI tests: $APP ---"
 # Rerun once, alone; FLAKY on a passing rerun; three times FLAKY fails (scripts/lib/ui_flaky.sh).
 sellos_ui_suite "$UI_LOG" || { echo "UI TESTS FAILED"; exit 1; }
+else
+# SOS-SETUP-42: the smoke set, each test once (a changed test already ran its repeats above). A
+# failure here is the task's, and prints SMOKE TESTS FAILED for the loop's repair prompt.
+echo "--- Smoke set (scripts/smoke-set.txt): $APP ---"
+SMOKE_FAILED=""
+while read -r kind target <&3; do
+  case "$kind" in ""|"#"*) continue ;; esac
+  echo "--- smoke $kind: $target ---"
+  slug="$(printf '%s' "$target" | tr '/' '_')"
+  case "$kind" in
+    backend) run_backend "$LOG_DIR/backend-$STAMP-smoke-$slug.log" --module "$target" || SMOKE_FAILED="$SMOKE_FAILED $target" ;;
+    spec) _sellos_ui_run "$LOG_DIR/ui-$STAMP-smoke-$slug.log" "$target" || SMOKE_FAILED="$SMOKE_FAILED $target" ;;
+    *) echo "scripts/smoke-set.txt: unknown kind '$kind'" >&2; exit 1 ;;
+  esac
+done 3<"$REPO_DIR/scripts/smoke-set.txt"
+rm -f "$TEMPLATE_SQL"
+unset SELLOS_TENANT_TEMPLATE_SQL
+if [ -n "$SMOKE_FAILED" ]; then
+  for t in $SMOKE_FAILED; do echo "SMOKE TEST FAILED: $t"; done
+  echo "SMOKE TESTS FAILED:$SMOKE_FAILED. The whole suites did not run (fast gate); CI runs them."
+  exit 1
+fi
+fi
 # The end of the heavy segment. A failure above releases the lock through the helper's EXIT trap.
 bench_gate_release
 
