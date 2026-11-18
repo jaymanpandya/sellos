@@ -31,7 +31,8 @@ prints the hours since the last stop. The exit test in `docs/DEV_STRATEGY.md` se
 consecutive tasks without an unplanned stop. Categories: `blocked` (the gate failed after its
 repairs), `task broke older specs` (the gate failed on a spec the task did not change, SOS-SETUP-37),
 `needs-input`, `crash`, `unrecognized`, `environment`, `ci-red`, `push-failed`, `blocked-exists`
-(before SOS-SETUP-37), `no-work`, `start` (a check before any task), `unexpected`, and the planned
+(before SOS-SETUP-37), `no-work`, `start` (a check before any task), `unexpected`, `gate timeout` (a limit or the stall watchdog killed the gate twice in a row, SOS-SETUP-39),
+`machine slept or gate hung` (recorded by hand), and the planned
 ones, `paused` and `stopped`. "Attempt lost" is the time from the task's start to the stop. "Idle
 until restart" is filled in when the loop starts again; it is 0.0 for a Blocked task the loop went on
 from at once (SOS-SETUP-37).

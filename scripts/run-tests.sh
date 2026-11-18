@@ -41,7 +41,21 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="$LOG_DIR/run-$STAMP.log"
 UI_LOG="$LOG_DIR/ui-$STAMP.log"
 export SELLOS_FLAKY_LOG="$BASELINE_DIR/sellos-flaky.log"
-rm -f "$LOG_DIR/latest.log"
+# SOS-SETUP-39: latest.log points at this run's log from the first line on, not only at the end, so
+# "sellos status" and anyone tailing it can always find the log of a gate that is running or hung.
+: >"$LOG_FILE"
+ln -sf "$LOG_FILE" "$LOG_DIR/latest.log"
+# SOS-SETUP-39: hard time limits, in seconds, chosen from the gate's measured times (docs/STOPS.md, the
+# row "machine slept or gate hung"): a spec 15 min (normally 67 to 85 s), the whole Cypress suite and the
+# backend suite 45 min each (normally 6 to 7 min and 12 to 14 min). Past a limit the command's process
+# tree is killed and the gate exits 4, a gate timeout: an environment fault, never repaired as code.
+# The tag lets the loop find this gate's leftover Cypress and Chrome processes and nobody else's.
+# shellcheck source=lib/gate_limits.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/gate_limits.sh"
+export SELLOS_GATE_LIMITS=1
+export SELLOS_GATE_TAG="${SELLOS_GATE_TAG:-hand-run-$$}"
+export SELLOS_GATE_FAULT_FILE="${SELLOS_GATE_FAULT_FILE:-$LOG_DIR/gate-fault.txt}"
+rm -f "$SELLOS_GATE_FAULT_FILE"
 # Exit 2 and 3 mean an environment problem, and the build loop never repairs, resets or Blocks a
 # task for one (SOS-SETUP-14). Only the preflight's own exits, recorded by sellos_env_exit, keep a
 # 2 or 3. Any other failure ends as 1, whatever status the failing command returned: under set -e
@@ -56,6 +70,8 @@ source "$REPO_DIR/scripts/lib/sellos_server.sh"
 # the end of the run fails if the password is in any log, the repository or a tenant site.
 # shellcheck source=lib/db_secrets.sh
 source "$REPO_DIR/scripts/lib/db_secrets.sh"
+# shellcheck source=lib/transcript_leak.sh
+source "$REPO_DIR/scripts/lib/transcript_leak.sh"
 # SOS-SETUP-22: on a hand run the password may be only in the Keychain. Load it (never shown) so the
 # redaction and the leak check below know it. Nothing fails when it is not available.
 sellos_load_provisioner_password || true
@@ -309,16 +325,19 @@ python3 "$REPO_DIR/scripts/check_site_set.py" compare "$BENCH_DIR" "$SITES_SNAPS
 echo "--- No secret (provisioner password, Telegram, BuildOS) is in a log ---"
 python3 "$REPO_DIR/scripts/check_no_secret_leak.py" --since "${SELLOS_TASK_STARTED:-$GATE_START}" \
   "$LOG_DIR" "$BENCH_DIR/logs" "$BENCH_DIR/sites/common_site_config.json" "$BENCH_DIR/sites/archived_sites" \
-  "$REPO_DIR" "$CLAUDE_TRANSCRIPTS"
+  "$REPO_DIR"
+# A secret in an interactive session's transcript is an environment fault (scripts/lib/transcript_leak.sh):
+# scrubbed in place, sent to Telegram by name only, the gate stops with exit 3.
+sellos_transcript_leak_check "${SELLOS_TASK_STARTED:-$GATE_START}" "$CLAUDE_TRANSCRIPTS"
 python3 "$REPO_DIR/scripts/check_no_secret_leak.py" "$BENCH_DIR"/sites/sellos_tenant_*
 echo "--- GATE PASSED ---"
 } 2>&1 | sellos_redact | tee "$LOG_FILE"
 
 STATUS="${PIPESTATUS[0]}"
+# Status 4 (a gate timeout, SOS-SETUP-39) is kept as it is: only gate_limits.sh produces it.
 if [[ "$STATUS" -eq 2 || "$STATUS" -eq 3 ]] && [ "$(cat "$SELLOS_ENV_EXIT_FILE" 2>/dev/null)" != "$STATUS" ]; then
   echo "The gate failed with status $STATUS from a command, not from its preflight. Reporting it as a test failure (1)." | tee -a "$LOG_FILE"
   STATUS=1
 fi
 rm -f "$SELLOS_ENV_EXIT_FILE"
-ln -sf "$LOG_FILE" "$LOG_DIR/latest.log"
 exit "$STATUS"

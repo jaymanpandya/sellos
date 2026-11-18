@@ -13,11 +13,16 @@
 # rerun that fails any other way is a test failure. Returns the test command's status.
 #
 #   run_backend <log file> [run-tests options...]
+# SOS-SETUP-39: a backend run past its time limit is killed and ends the gate (status 4).
+# shellcheck source=gate_limits.sh
+source "$(dirname "${BASH_SOURCE[0]}")/gate_limits.sh"
 run_backend() {
   local log="$1" status mod failed rerun_log
   shift
-  "$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP" "$@" 2>&1 | tee "$log"
+  sellos_limited "the backend tests" "${SELLOS_BACKEND_TIMEOUT:-2700}" \
+    "$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP" "$@" 2>&1 | tee "$log"
   status="${PIPESTATUS[0]}"
+  sellos_limit_check "$status" "the backend tests"
   [ "$status" -eq 0 ] && return 0
   python3 "$DB_CONFLICT" is-conflict "$log" || return "$status"
   failed="$(python3 "$DB_CONFLICT" failing-modules "$log")"
@@ -28,8 +33,10 @@ run_backend() {
   for mod in $failed; do
     echo "--- DATABASE CONFLICT (1020 or deadlock): RERUN once, alone: $mod ---"
     rerun_log="${log%.log}-rerun-$mod.log"
-    "$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP" --module "$mod" 2>&1 | tee "$rerun_log"
+    sellos_limited "the backend rerun of $mod" "${SELLOS_BACKEND_TIMEOUT:-2700}" \
+      "$REPORT_TEST_EXIT" bench --site "$SITE" run-tests --app "$APP" --module "$mod" 2>&1 | tee "$rerun_log"
     status="${PIPESTATUS[0]}"
+    sellos_limit_check "$status" "the backend rerun of $mod"
     if [ "$status" -eq 0 ]; then
       echo "DATABASE CONFLICT (passed on rerun): $mod"
       echo "$(date +%F) $mod" >>"$DB_CONFLICT_LOG"
