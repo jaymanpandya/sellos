@@ -191,7 +191,7 @@ class TestResetBeforeTheBackendSuite(TenantSiteTestCase):
 		)
 		(root / "targets.tsv").write_text(targets, encoding="utf-8")
 		reset_fn = gate_block("sellos_reset_test_site() {", 'sellos_reset_test_site "before the tests"')
-		between = gate_block('sellos_flake_gate "$FLAKE_TARGETS" || exit 1', 'echo "--- Backend unit tests')
+		between = gate_block('sellos_flake_gate "$FLAKE_TARGETS" || exit 1', 'if [ "$GATE_MODE" = full ]; then')
 		driver = f"""set -euo pipefail
 sellos_env_exit() {{ echo "ENV EXIT $1"; exit "$1"; }}
 REPO_DIR="{root}"
