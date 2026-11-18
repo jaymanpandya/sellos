@@ -184,12 +184,15 @@ class TestEveryRoleAgainstTwoTeams(SalesTeamCase):
 
 	def test_the_record_api_and_the_list_show_only_the_team(self):
 		frappe.set_user(self.manager_a)
-		self.assertEqual({lead["name"] for lead in api.list_leads()}, {self.lead_a})
+		# Other tests' committed rows may belong to the shared test users, so look at this test's own.
+		own = {lead["name"] for lead in api.list_leads() if (lead["client_name"] or "").startswith("P118 ")}
+		self.assertEqual(own, {self.lead_a})
 		self.assertEqual(api.get_lead(self.lead_a)["lead"]["name"], self.lead_a)
 		for lead in (self.lead_b, self.lead_free):
 			with self.assertRaises(frappe.PermissionError):
 				api.get_lead(lead)
-		self.assertEqual({c["client_name"] for c in api.list_clients()}, {"P118 Buyer A"})
+		clients = {c["client_name"] for c in api.list_clients() if c["client_name"].startswith("P118 ")}
+		self.assertEqual(clients, {"P118 Buyer A"})
 		with self.assertRaises(frappe.PermissionError):
 			api.add_activity(self.lead_b, "Note", "not my team")
 		api.add_activity(self.lead_a, "Note", "my team")
