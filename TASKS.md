@@ -184,7 +184,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-04
 - **Browser spec:** required
-- **Status:** Blocked
+- **Status:** Not Started
 
 ### SOS-P1-18: Sales teams and the Sales Manager role
 - **Epic:** Core CRM and consent
@@ -346,7 +346,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-08
-- **Status:** Blocked
+- **Status:** Not Started
 
 ### SOS-N22: Write the default consent wording
 - **Epic:** Compliance, procurement and access
@@ -896,7 +896,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 1
 - **Dependencies:** SOS-P0-10
-- **Status:** Blocked
+- **Status:** Not Started
 - **Browser spec:** required
 
 ### SOS-P1-09: Build the website lead endpoint
@@ -989,7 +989,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 8
 - **Dependencies:** SOS-P1-04
-- **Status:** Blocked
+- **Status:** Not Started
 - **Browser spec:** required
 
 ### SOS-P7-05: Towers, wings and floors for projects
