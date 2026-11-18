@@ -13,10 +13,17 @@ import frappe
 from frappe.desk.form import load
 
 from sellos.access.registry import sellos_api
-from sellos.access.roles import AGENT, CHANNEL_PARTNER, CLIENT, COMPANY_ADMIN, PLATFORM_ADMIN
+from sellos.access.roles import (
+	AGENT,
+	CHANNEL_PARTNER,
+	CLIENT,
+	COMPANY_ADMIN,
+	PLATFORM_ADMIN,
+	SALES_MANAGER,
+)
 
 # Every role that opens records through these two methods.
-OPENERS = (PLATFORM_ADMIN, COMPANY_ADMIN, AGENT, CLIENT, CHANNEL_PARTNER)
+OPENERS = (PLATFORM_ADMIN, COMPANY_ADMIN, AGENT, CLIENT, CHANNEL_PARTNER, SALES_MANAGER)
 
 
 @sellos_api(*OPENERS)

@@ -251,6 +251,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Phone %"],
 			["client_name", "like", "Gate Consent %"],
 			["client_name", "like", "Gate Buyer %"],
+			["client_name", "like", "Gate Team %"],
 		],
 		pluck="name",
 	)
@@ -486,6 +487,9 @@ def seed_regression_data():
 	* Two support grants (SOS-P1-13) for the gate platform admin: one the Company Admin ended early
 	  and one still active for 2 hours, each with its Granted (and Revoked) line in the access log.
 
+	* Two sales teams (SOS-P1-18): Regression Team North, run by the Sales Manager test user with the gate
+	  agent and Regression Agent Two, and Regression Team South, run by Regression Manager Two with
+	  Regression Agent Three. The Sales Manager sees the first two agents' leads and not the third's.
 	* Requirements (SOS-P1-15): Buyer One wants a 2 or 3 BHK apartment under construction in Andheri
 	  West or Powai for 80 lakh to 1.2 crore, within 3 months. Investor Four wants a ready villa in
 	  Alibaug as an investment. The other leads have none.
@@ -668,6 +672,7 @@ def seed_regression_data():
 	_seed_telephony(admin)
 	_seed_control_site()
 	_seed_setup_wizard(admin)
+	_seed_sales_teams(admin, agent_one, agent_two, agent_three)
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -1052,6 +1057,121 @@ def _settle_seed_jobs(platform_admin):
 					if job.status != step:
 						job.status = step
 						job.save()
+
+
+def _seed_sales_teams(admin, agent_one, agent_two, agent_three):
+	"""Two sales teams (SOS-P1-18), made through the team API as the Company Admin. Regression Team North is
+	run by the Sales Manager test user with the test agent and Regression Agent Two, so that manager sees
+	their leads and not Regression Agent Three's. Regression Team South has its own manager and agent three.
+	Safe to run again: a team that exists is left alone."""
+	from sellos.access import teams
+
+	_test_users()
+	manager_two = {
+		"email": "regression_manager_two@example.com",
+		"first_name": "Regression Manager Two",
+		"roles": ["SellOS Sales Manager"],
+		"desk": False,
+	}
+	_ensure_user(manager_two)
+	with _as_user(admin):
+		for name, manager, members in (
+			("Regression Team North", TEST_USERS["sales_manager"]["email"], [agent_one, agent_two]),
+			("Regression Team South", manager_two["email"], [agent_three]),
+		):
+			if not frappe.db.exists("Sales Team", name):
+				teams.save_team(values={"team_name": name, "manager": manager, "members": members})
+
+
+GATE_TEAM_USERS = {
+	"manager": {
+		"email": "gate_team_manager@example.com",
+		"first_name": "Gate Team Manager",
+		"roles": ["SellOS Sales Manager"],
+		"desk": False,
+	},
+	"agent": {
+		"email": "gate_team_agent@example.com",
+		"first_name": "Gate Team Agent",
+		"roles": ["SellOS Agent"],
+		"desk": False,
+	},
+	"spare": {
+		"email": "gate_team_spare@example.com",
+		"first_name": "Gate Team Spare",
+		"roles": ["SellOS Agent"],
+		"desk": False,
+	},
+}
+
+
+def seed_sales_teams():
+	"""Two teams and a lead in each, for the sales teams spec (SOS-P1-18), made through the team and lead
+	APIs as the Company Admin. Team A is the Sales Manager test user with the test agent, who owns
+	{"own"}. Team B is Gate Team Manager with Gate Team Agent, who owns {"other"}. Gate Team Spare is an agent
+	in no team. Return the client names the lead rows show and the people's names. Run
+	remove_sales_teams after: a team left behind would put the test agent in two teams for the backend tests."""
+	from sellos.access import teams
+	from sellos.crm import api as crm
+
+	_test_users()
+	for spec in GATE_TEAM_USERS.values():
+		_ensure_user(spec)
+	admin = TEST_USERS["company_admin"]["email"]
+	tag = frappe.generate_hash(length=6)
+	made = {}
+	with _as_user(admin):
+		for key, assignee, seed, team_name, manager in (
+			("own", TEST_USERS["agent"]["email"], 41, f"Gate Team A {tag}", TEST_USERS["sales_manager"]),
+			(
+				"other",
+				GATE_TEAM_USERS["agent"]["email"],
+				42,
+				f"Gate Team B {tag}",
+				GATE_TEAM_USERS["manager"],
+			),
+		):
+			teams.save_team(
+				values={"team_name": team_name, "manager": manager["email"], "members": [assignee]}
+			)
+			client_name = f"Gate Team Lead {key.title()} {tag}"
+			client = crm.save_client(
+				values={"client_name": client_name, "client_type": "Buyer", "phone": phones.in_mobile(seed)}
+			)
+			crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": assignee})
+			made[key] = client_name
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {
+		**made,
+		"team_a": f"Gate Team A {tag}",
+		"team_b": f"Gate Team B {tag}",
+		"manager_name": TEST_USERS["sales_manager"]["first_name"],
+		"other_manager_name": GATE_TEAM_USERS["manager"]["first_name"],
+		"spare_name": GATE_TEAM_USERS["spare"]["first_name"],
+		"agent_name": TEST_USERS["agent"]["first_name"],
+		"other_agent_name": GATE_TEAM_USERS["agent"]["first_name"],
+		"phone_forms": phones.forms(phones.in_mobile(41)),
+	}
+
+
+def remove_sales_teams():
+	"""Remove what the sales teams spec committed (tests only, SOS-P1-18): the teams named Gate Team, their
+	leads and the Gate Team users. The app never deletes a team's leads, so this goes to the tables."""
+	remove_seeded_leads()
+	teams = frappe.get_all("Sales Team", filters={"team_name": ["like", "Gate Team %"]}, pluck="name")
+	for name in teams:
+		frappe.db.delete("Version", {"ref_doctype": "Sales Team", "docname": name})
+		frappe.delete_doc("Sales Team", name, force=True, ignore_permissions=True)
+	for spec in GATE_TEAM_USERS.values():
+		email = spec["email"]
+		if frappe.db.exists("User", email):
+			frappe.db.delete("Sessions", {"user": email})
+			frappe.db.delete("Version", {"ref_doctype": "User", "docname": email})
+			for contact in frappe.get_all("Contact", filters={"email_id": email}, pluck="name"):
+				frappe.delete_doc("Contact", contact, force=True, ignore_permissions=True)
+			frappe.delete_doc("User", email, force=True, ignore_permissions=True)
+	frappe.db.commit()  # nosemgrep
+	return {"teams": len(teams)}
 
 
 def _regression_summary():

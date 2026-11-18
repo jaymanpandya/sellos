@@ -10,10 +10,11 @@ import {
 } from "../../../frontend/src/personas";
 
 context("SOS-P0-10: personas", () => {
-	it("defines the five roles, highest priority first", () => {
+	it("defines the six roles, highest priority first", () => {
 		expect(PERSONAS.map((p) => p.role)).to.deep.equal([
 			"SellOS Platform Admin",
 			"SellOS Company Admin",
+			"SellOS Sales Manager",
 			"SellOS Agent",
 			"SellOS Channel Partner",
 			"SellOS Client",
@@ -35,6 +36,7 @@ context("SOS-P0-10: personas", () => {
 	it("gives a user with several roles the highest priority persona", () => {
 		expect(personaFor(["SellOS Agent", "SellOS Company Admin"]).key).to.eq("company_admin");
 		expect(personaFor(["SellOS Client", "SellOS Platform Admin"]).key).to.eq("platform_admin");
+		expect(personaFor(["SellOS Agent", "SellOS Sales Manager"]).key).to.eq("sales_manager");
 	});
 
 	it("keeps clients and partners out of the CRM area", () => {

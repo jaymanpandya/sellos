@@ -12,12 +12,21 @@ every method here as every role, as an outsider and as a guest, and fails the bu
 Add one line per method, in the same commit that adds the method.
 """
 
-from sellos.access.roles import AGENT, CHANNEL_PARTNER, CLIENT, COMPANY_ADMIN, PLATFORM_ADMIN
+from sellos.access.roles import (
+	AGENT,
+	CHANNEL_PARTNER,
+	CLIENT,
+	COMPANY_ADMIN,
+	PLATFORM_ADMIN,
+	SALES_MANAGER,
+)
 
-_READERS = frozenset({AGENT, CHANNEL_PARTNER, COMPANY_ADMIN})
-_LOGGERS = frozenset({AGENT, COMPANY_ADMIN})
+# SOS-P1-18: the Sales Manager reads and logs like an Agent, on its team's leads.
+_READERS = frozenset({AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER})
+_LOGGERS = frozenset({AGENT, COMPANY_ADMIN, SALES_MANAGER})
+_TEAM_USERS = frozenset({COMPANY_ADMIN, SALES_MANAGER})
 _ADMIN_ONLY = frozenset({COMPANY_ADMIN})
-_OPENERS = frozenset({PLATFORM_ADMIN, COMPANY_ADMIN, AGENT, CLIENT, CHANNEL_PARTNER})
+_OPENERS = frozenset({PLATFORM_ADMIN, COMPANY_ADMIN, AGENT, CLIENT, CHANNEL_PARTNER, SALES_MANAGER})
 
 # dotted method path -> the roles that may call it.
 MATRIX: dict[str, frozenset[str]] = {
@@ -38,6 +47,7 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.save_lost_reason": _ADMIN_ONLY,
 	"sellos.crm.api.delete_lost_reason": _ADMIN_ONLY,
 	"sellos.crm.api.log_call": _LOGGERS,
+	"sellos.crm.api.reassign_lead": _TEAM_USERS,
 	"sellos.crm.api.save_lead": _READERS,
 	"sellos.crm.api.get_lead": _READERS,
 	"sellos.crm.api.add_activity": _LOGGERS,
@@ -66,6 +76,11 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.access.users.save_user": _ADMIN_ONLY,
 	"sellos.access.users.deactivate_user": _ADMIN_ONLY,
 	"sellos.access.users.reactivate_user": _ADMIN_ONLY,
+	# SOS-P1-18: sales teams, and the report a Sales Manager reads for its own team.
+	"sellos.access.teams.list_teams": _TEAM_USERS,
+	"sellos.access.teams.save_team": _ADMIN_ONLY,
+	"sellos.access.teams.delete_team": _ADMIN_ONLY,
+	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.save_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.check_connection": _ADMIN_ONLY,

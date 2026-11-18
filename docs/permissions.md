@@ -12,18 +12,20 @@ every migrate. Nothing here is set up in the Desk.
 | Agent | `SellOS Agent` | crm, home, profile | No |
 | Channel Partner | `SellOS Channel Partner` | partner, home, profile | No |
 | Client | `SellOS Client` | client, home, profile | No |
-| Sales Manager | `SellOS Sales Manager` | none yet (SOS-P1-18 adds its area) | No |
+| Sales Manager | `SellOS Sales Manager` | crm, reports, home, profile | No |
 
-The Sales Manager was approved by Jayman on 13 November 2026 (SOS-SETUP-35). Until SOS-P1-18 builds sales
-teams it holds no API method and its data scope is "none"; SOS-P1-18 gives it the leads, activities, tasks
-and site visits of its own team's members, with phone numbers masked as for an Agent.
+The Sales Manager was approved by Jayman on 13 November 2026 (SOS-SETUP-35) and built in SOS-P1-18. It sees
+and edits the leads, activities, tasks and site visits of the agents in the teams it manages (and any lead it
+owns itself), reassigns leads within the team, reads the team's report, and sees phone numbers masked as an
+Agent does. A Company Admin makes the teams (a manager and agents, an agent in at most one team). The scope
+is "team" in `sellos/access/lead_permissions.py` (`scope_for`, `team_members`, `visible_users`).
 
 The areas come from `frontend/src/personas.js`. The desk block is `sellos/access/desk_guard.py`.
 
 ## Data rules
 
 Sees (CRM data, P1.06): "all" is every record on the site, "own" is the leads the user owns, is assigned, or
-has a Frappe share on, plus the records that follow those leads. "None" is nothing.
+has a Frappe share on, plus the records that follow those leads. "Team" (Sales Manager, SOS-P1-18) is the leads owned by or assigned to the manager or to the agents of the teams they manage, plus the records that follow those leads; a Sales Manager edits them like an Agent, with masked phone numbers. "None" is nothing.
 
 | Data | Platform Admin | Company Admin | Agent | Channel Partner | Client |
 | --- | --- | --- | --- | --- | --- |
@@ -57,22 +59,26 @@ on a company site, because the data scope above is "none".
 | `sellos.crm.api.list_lead_sources` (P1.20, the lead source list for a picker. A Company Admin also sees the disabled ones) | Company Admin, Agent, Channel Partner |
 | `sellos.crm.api.save_lead_source`, `delete_lead_source` (P1.20, extend, disable or delete a source. A source in use is never deleted) | Company Admin |
 | `sellos.crm.api.list_stages` (SOS-P1-07, the buyer pipeline's stages with their lead counts) | Company Admin, Agent, Channel Partner |
-| `sellos.crm.api.move_lead_stage` (SOS-P1-07, move a lead to any stage whatever its consent status, logged, with a warning and no refusal when Contacted has no live Consent Record) | Company Admin, Agent |
-| `sellos.crm.api.list_call_outcomes`, `list_lost_reasons` (SOS-P1-21, the lists for the call form and the move to Closed lost. A Company Admin also sees the disabled ones) | Company Admin, Agent |
-| `sellos.crm.api.log_call` (SOS-P1-21, a call logged by hand with its outcome, notes and duration, and the follow up the outcome needs. Whatever the consent status) | Company Admin, Agent |
+| `sellos.crm.api.move_lead_stage` (SOS-P1-07, move a lead to any stage whatever its consent status, logged, with a warning and no refusal when Contacted has no live Consent Record) | Company Admin, Agent, Sales Manager |
+| `sellos.crm.api.list_call_outcomes`, `list_lost_reasons` (SOS-P1-21, the lists for the call form and the move to Closed lost. A Company Admin also sees the disabled ones) | Company Admin, Agent, Sales Manager |
+| `sellos.crm.api.log_call` (SOS-P1-21, a call logged by hand with its outcome, notes and duration, and the follow up the outcome needs. Whatever the consent status) | Company Admin, Agent, Sales Manager |
 | `sellos.crm.api.save_call_outcome`, `delete_call_outcome`, `save_lost_reason`, `delete_lost_reason` (SOS-P1-21, edit the two lists. One in use is never deleted) | Company Admin |
 | `sellos.access.users.list_users`, `user_open_work` (SOS-P1-17, the Company Admins, Agents and Channel Partners on the site with their mobile number, whether click to call works for them, and their open leads and tasks. A Platform Admin is never listed) | Company Admin |
 | `sellos.access.users.invite_user`, `resend_invitation` (SOS-P1-17, a user made with one of Company Admin, Agent or Channel Partner and emailed a link to set a password. Never the Platform Admin role) | Company Admin |
 | `sellos.access.users.save_user` (SOS-P1-17, a user's name, Indian mobile number as +91 and ten digits, or role. A user who holds the Platform Admin role is not touched, and nobody changes their own role) | Company Admin |
 | `sellos.access.users.deactivate_user`, `reactivate_user` (SOS-P1-17, deactivating ends sign in and every session at once and lists the user's open leads and tasks for SOS-P1-19. Not yourself, not the last active Company Admin. Nothing is deleted) | Company Admin |
 | `sellos.telephony.settings.get_telephony_settings`, `save_telephony_settings`, `check_connection` (SOS-P2-01, the Plivo India account: the auth ID and token are encrypted and never returned, only whether each is set) | Company Admin |
-| `sellos.crm.api.find_duplicates` (P1.16, the clients that already have a phone or email, masked as the viewer's role requires) | Company Admin, Agent |
+| `sellos.crm.api.find_duplicates` (P1.16, the clients that already have a phone or email, masked as the viewer's role requires) | Company Admin, Agent, Sales Manager |
 | `sellos.crm.api.merge_clients` (P1.16, moves a client's leads to the one kept, nothing deleted, logged) | Company Admin |
-| `sellos.crm.api.add_activity`, `save_task`, `save_site_visit` | Company Admin, Agent |
-| `sellos.crm.api.record_consent`, `record_opt_out`, `record_dnd_result` (P1.08, the Consent Record; consent never blocks) | Company Admin, Agent |
+| `sellos.crm.api.add_activity`, `save_task`, `save_site_visit` | Company Admin, Agent, Sales Manager |
+| `sellos.crm.api.record_consent`, `record_opt_out`, `record_dnd_result` (P1.08, the Consent Record; consent never blocks) | Company Admin, Agent, Sales Manager |
 | `sellos.access.support.list_support_users`, `grant_support_access`, `revoke_support_access`, `list_support_grants`, `support_access_log` (P1.13) | Company Admin |
 | `sellos.config.setup_wizard.get_setup_state`, `save_profile`, `save_branding`, `save_stages`, `add_user`, `finish_setup` (P1.03, the setup wizard) | Company Admin |
-| `sellos.access.field_history.getdoc`, `get_docinfo` (P1.06B: the record loader, with the history of fields the reader may not read left out) | Every role but the Sales Manager (until SOS-P1-18) |
+| `sellos.access.field_history.getdoc`, `get_docinfo` (P1.06B: the record loader, with the history of fields the reader may not read left out) | Every role |
+| `sellos.access.teams.list_teams` (SOS-P1-18, every team for a Company Admin with the managers and agents to pick from, only the teams they manage for a Sales Manager) | Company Admin, Sales Manager |
+| `sellos.access.teams.save_team`, `delete_team` (SOS-P1-18, make a team, set its manager and agents, remove it. An agent is in one team only) | Company Admin |
+| `sellos.crm.api.reassign_lead` (SOS-P1-18, give a lead to another agent. A Sales Manager only within its own team) | Company Admin, Sales Manager |
+| `sellos.reports.team.team_report` (SOS-P1-18, the leads the reader may see by agent and by stage) | Company Admin, Sales Manager |
 
 Each story that adds a method adds a row here.
 

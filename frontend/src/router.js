@@ -9,6 +9,8 @@ const LeadPage = () => import("./pages/LeadPage.vue");
 const SupportPage = () => import("./pages/SupportPage.vue");
 const UsersPage = () => import("./pages/UsersPage.vue");
 const TelephonyPage = () => import("./pages/TelephonyPage.vue");
+const TeamsPage = () => import("./pages/TeamsPage.vue");
+const TeamReportPage = () => import("./pages/TeamReportPage.vue");
 const CallListsPage = () => import("./pages/CallListsPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
@@ -57,6 +59,18 @@ export function createAppRouter() {
 				name: "call-lists",
 				component: CallListsPage,
 				meta: { area: "company" },
+			},
+			{
+				path: "/company/teams",
+				name: "teams",
+				component: TeamsPage,
+				meta: { area: "company" },
+			},
+			{
+				path: "/reports/team",
+				name: "team-report",
+				component: TeamReportPage,
+				meta: { area: "reports" },
 			},
 			{
 				path: "/company/setup",

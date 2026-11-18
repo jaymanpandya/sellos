@@ -260,6 +260,14 @@
    "share": 1
   },
   {
+   "role": "SellOS Sales Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "share": 1
+  },
+  {
    "role": "SellOS Channel Partner",
    "permlevel": 0,
    "read": 1,

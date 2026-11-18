@@ -67,6 +67,11 @@
    "role": "SellOS Agent",
    "permlevel": 0,
    "read": 1
+  },
+  {
+   "role": "SellOS Sales Manager",
+   "permlevel": 0,
+   "read": 1
   }
  ],
  "sort_field": "creation",

@@ -1,4 +1,4 @@
-// The five roles. Each role is a persona with its own areas of the app and navigation. Roles are
+// The six roles. Each role is a persona with its own areas of the app and navigation. Roles are
 // listed in priority order: a user with several roles gets the first one that matches.
 export const PERSONAS = [
 	{
@@ -21,6 +21,18 @@ export const PERSONAS = [
 			{ key: "support", label: "Support access", to: "/company/support", area: "company" },
 			{ key: "telephony", label: "Telephony", to: "/company/telephony", area: "company" },
 			{ key: "call-lists", label: "Call lists", to: "/company/call-lists", area: "company" },
+			{ key: "teams", label: "Teams", to: "/company/teams", area: "company" },
+		],
+	},
+	{
+		// SOS-P1-18: a manager works on the leads of its own team and reads the team's report.
+		key: "sales_manager",
+		role: "SellOS Sales Manager",
+		areas: ["crm", "reports", "home", "profile"],
+		nav: [
+			{ key: "home", label: "Home", to: "/", area: "home" },
+			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
+			{ key: "team-report", label: "Team report", to: "/reports/team", area: "reports" },
 		],
 	},
 	{

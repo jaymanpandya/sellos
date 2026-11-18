@@ -11,13 +11,18 @@ from frappe import _
 from frappe.utils import cint, now_datetime
 
 from sellos.access.registry import sellos_api
-from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
+from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER
 from sellos.crm import call_outcomes, consent, duplicates, lead_sources, pipeline
 from sellos.crm.base import is_overdue
 from sellos.crm.requirements import REQUIREMENT_FIELDS, has_filters, join_values, matches, requirements_view
 
-READERS = (AGENT, CHANNEL_PARTNER, COMPANY_ADMIN)
-LOGGERS = (AGENT, COMPANY_ADMIN)  # may log activities, tasks and visits. A partner only reads them.
+# SOS-P1-18: a Sales Manager works like an Agent, on the leads of their team, with masked phone numbers.
+READERS = (AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER)
+LOGGERS = (
+	AGENT,
+	COMPANY_ADMIN,
+	SALES_MANAGER,
+)  # may log activities, tasks and visits. A partner only reads them.
 
 CLIENT_FIELDS = (
 	"client_name",
@@ -394,6 +399,17 @@ def log_call(
 	return call_outcomes.log_call(
 		lead, outcome, notes, duration_seconds, follow_up_at, stage, lost_reason, called_at
 	)
+
+
+@sellos_api(COMPANY_ADMIN, SALES_MANAGER)
+def reassign_lead(lead, assigned_to):
+	"""Give a lead to another agent (SOS-P1-18). A Sales Manager reassigns within their own team: the
+	lead must be one of their team's, and so must the new agent. The Company Admin may pick any agent."""
+	doc = _writable_lead(lead)
+	doc.assigned_to = assigned_to
+	doc.flags.ignore_permissions = True  # checked above
+	doc.save()
+	return {"name": doc.name, "assigned_to": doc.assigned_to}
 
 
 @sellos_api(*READERS)

@@ -51,6 +51,11 @@
    "read": 1
   },
   {
+   "role": "SellOS Sales Manager",
+   "permlevel": 0,
+   "read": 1
+  },
+  {
    "role": "SellOS Channel Partner",
    "permlevel": 0,
    "read": 1

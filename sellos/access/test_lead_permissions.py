@@ -17,8 +17,8 @@ class TestLeadScope(unittest.TestCase):
 		self.assertEqual(lp.scope_for([CHANNEL_PARTNER]), "own")
 		self.assertEqual(lp.scope_for([CLIENT]), "none")
 		self.assertEqual(lp.scope_for([]), "none")
-		# SOS-SETUP-35: the Sales Manager sees no lead until SOS-P1-18 gives it its team's leads.
-		self.assertEqual(lp.scope_for([SALES_MANAGER]), "none")
+		# SOS-P1-18: the Sales Manager sees its team's leads.
+		self.assertEqual(lp.scope_for([SALES_MANAGER]), "team")
 
 	def test_the_widest_scope_wins(self):
 		self.assertEqual(lp.scope_for([AGENT, COMPANY_ADMIN]), "all")

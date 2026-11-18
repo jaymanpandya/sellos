@@ -73,6 +73,8 @@ SAMPLE_CALLS = {
 	"sellos.crm.api.save_lost_reason": {"name": "{spare_reason}", "values": {"enabled": 0}},
 	"sellos.crm.api.delete_lost_reason": {"name": "{spare_reason}"},
 	"sellos.crm.api.log_call": {"lead": "{lead}", "outcome": "Wrong number", "notes": "p121 call"},
+	# SOS-P1-18: the lead goes to the test agent, who is in no team.
+	"sellos.crm.api.reassign_lead": {"lead": "{lead}", "assigned_to": "{agent}"},
 	"sellos.crm.api.save_lead": {"name": "{lead}", "values": {"notes": "p105 edit"}},
 	"sellos.crm.api.get_lead": {"name": "{lead}"},
 	"sellos.crm.api.add_activity": {"lead": "{lead}", "activity_type": "Note", "notes": "p105 added"},
@@ -125,6 +127,11 @@ SAMPLE_CALLS = {
 	"sellos.access.users.save_user": {"email": "{spare_user}", "values": {"first_name": "P117 Edit"}},
 	"sellos.access.users.deactivate_user": {"email": "{spare_user}"},
 	"sellos.access.users.reactivate_user": {"email": "{spare_user}"},
+	# SOS-P1-18: the calls act on a spare team made for the test.
+	"sellos.access.teams.list_teams": {},
+	"sellos.access.teams.save_team": {"name": "{spare_team}", "values": {"members": []}},
+	"sellos.access.teams.delete_team": {"name": "{spare_team}"},
+	"sellos.reports.team.team_report": {},
 	# SOS-P2-01: blank values keep what is saved, so the Company Admin's call changes nothing.
 	"sellos.telephony.settings.get_telephony_settings": {},
 	"sellos.telephony.settings.save_telephony_settings": {},
@@ -230,6 +237,13 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		)
 		spare_user.flags.ignore_permissions = True
 		spare_user.insert()
+		spare_team = frappe.get_doc(
+			{
+				"doctype": "Sales Team",
+				"team_name": "P118 Spare Team",
+				"manager": TEST_USERS["sales_manager"]["email"],
+			}
+		).insert()
 		frappe.get_doc(
 			{
 				"doctype": "Lead Activity",
@@ -251,6 +265,8 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_outcome": spare_outcome.name,
 			"spare_reason": spare_reason.name,
 			"spare_user": spare_user.name,
+			"spare_team": spare_team.name,
+			"agent": TEST_USERS["agent"]["email"],
 			"support_user": support_user,
 			"grant": grant["name"],
 		}

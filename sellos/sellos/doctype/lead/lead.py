@@ -2,6 +2,7 @@
 import frappe
 from frappe import _
 
+from sellos.access.lead_permissions import check_assignee_in_team
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
 from sellos.crm.base import ArchiveOnly, stamp_archive
 from sellos.crm.lead_sources import check_usable
@@ -16,6 +17,7 @@ class Lead(ArchiveOnly):
 		self.lead_title = self.lead_title or self._title()
 		if self.assigned_to:
 			self._check_assignee()
+			check_assignee_in_team(self)  # SOS-P1-18
 		check_usable(self)
 		self.stage = self.stage or first_stage()  # SOS-P1-07
 		validate_requirements(self)

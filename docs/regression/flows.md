@@ -130,3 +130,12 @@ FLOW SOS-P1-17-4 | company_admin | /sellos/company/users | Click Deactivate on R
 FLOW SOS-P1-17-5 | company_admin | /sellos/company/users | Look at the row of the signed in Company Admin. | The row has no Deactivate button: nobody deactivates themselves.
 FLOW SOS-P1-17-6 | agent | /sellos/company/users | Sign in as an agent and type the Users address. | The no access page opens, no user is shown and Users is not in the navigation.
 FLOW SOS-P1-17-7 | platform_admin | /sellos/company/users | Sign in as the platform admin and type the Users address. | The no access page opens and no user is shown.
+
+## SOS-P1-18: sales teams and the Sales Manager
+
+FLOW SOS-P1-18-1 | company_admin | /sellos/company/teams | Sign in as the Company Admin and click Teams. Look at the two teams, then add the team Regression Team East with Regression Manager Two as manager and no agents. | Regression Team North (manager Gate Sales Manager) and Regression Team South (manager Regression Manager Two) are listed with their agents. Every agent is ticked and greyed out with the name of the team they are in, so no agent can be picked for a second team. Regression Team East is added with the manager and no agents.
+FLOW SOS-P1-18-2 | sales_manager | /sellos/crm/leads | Sign in as the Sales Manager and click Leads. | The list holds the leads of the gate agent and Regression Agent Two (Regression Team North) and none of Regression Agent Three's leads. Teams and Users are not in the navigation, Team report is.
+FLOW SOS-P1-18-3 | sales_manager | /sellos/crm/leads | Open Regression Buyer One as the Sales Manager. | The phone number is masked (stars and the last three digits), Merge a duplicate client is not shown, and the Assigned agent box offers only the agents of Regression Team North.
+FLOW SOS-P1-18-4 | sales_manager | /sellos/crm/leads | On Regression Buyer One choose Regression Agent Two in the Assigned agent box. Then type the address /sellos/company/teams. | The lead is now assigned to Regression Agent Two and still in the list. The teams address opens the no access page.
+FLOW SOS-P1-18-5 | sales_manager | /sellos/reports/team | Sign in as the Sales Manager and click Team report. | The report counts only the leads of Regression Team North, by agent and by stage, and names only that team.
+FLOW SOS-P1-18-6 | agent | /sellos/reports/team | Sign in as the gate agent and type the Team report address. | The no access page opens and no count is shown.

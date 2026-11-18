@@ -1,6 +1,13 @@
 // SOS-P0-10: the layout works at phone width (390 px wide). The side navigation gives way to a top bar
 // and a bottom navigation, and nothing scrolls sideways.
-const ROLES = ["platform_admin", "company_admin", "agent", "channel_partner", "client"];
+const ROLES = [
+	"platform_admin",
+	"company_admin",
+	"sales_manager",
+	"agent",
+	"channel_partner",
+	"client",
+];
 
 context("SOS-P0-10: phone layout", () => {
 	beforeEach(() => {

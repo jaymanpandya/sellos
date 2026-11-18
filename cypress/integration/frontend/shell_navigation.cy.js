@@ -3,7 +3,14 @@
 // given, because that is where the app reads them.
 import { PERSONAS, navFor } from "../../../frontend/src/personas";
 
-const ROLE_KEYS = ["platform_admin", "company_admin", "agent", "channel_partner", "client"];
+const ROLE_KEYS = [
+	"platform_admin",
+	"company_admin",
+	"sales_manager",
+	"agent",
+	"channel_partner",
+	"client",
+];
 
 context("SOS-P0-10: app shell", () => {
 	ROLE_KEYS.forEach((key) => {

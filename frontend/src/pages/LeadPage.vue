@@ -30,6 +30,40 @@
 		</div>
 
 		<section
+			v-if="canReassign"
+			data-testid="sellos-reassign"
+			class="mt-4 space-y-2 rounded-input border border-line bg-surface p-4"
+		>
+			<h2 class="font-medium text-ink">Assigned agent</h2>
+			<p class="text-sm text-ink-muted">
+				Now:
+				<span data-testid="sellos-reassign-current">{{
+					detail.lead.assigned_to || "Nobody"
+				}}</span>
+			</p>
+			<select
+				:value="detail.lead.assigned_to || ''"
+				aria-label="Assign to"
+				data-testid="sellos-reassign-select"
+				class="field"
+				@change="reassign($event.target.value)"
+			>
+				<option value="" disabled>Choose an agent</option>
+				<option v-for="a in assignees" :key="a.user" :value="a.user">
+					{{ a.full_name }}
+				</option>
+			</select>
+			<p
+				v-if="reassignError"
+				role="alert"
+				data-testid="sellos-reassign-error"
+				class="text-sm text-accent"
+			>
+				{{ reassignError }}
+			</p>
+		</section>
+
+		<section
 			v-if="detail.can_merge"
 			data-testid="sellos-merge"
 			class="mt-4 space-y-2 rounded-input border border-line bg-surface p-4"
@@ -619,6 +653,9 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+import { teamsApi } from "../company/teamsApi";
+import { session } from "../session";
+
 import {
 	ACTIVITY_TYPES,
 	CONFIGURATIONS,
@@ -897,10 +934,45 @@ async function merge() {
 	}
 }
 
+// Reassigning (SOS-P1-18): a Company Admin picks any agent, a Sales Manager one of its own team.
+const canReassign = computed(
+	() =>
+		!partner.value &&
+		(session.roles.includes("SellOS Company Admin") ||
+			session.roles.includes("SellOS Sales Manager"))
+);
+const assignees = ref([]);
+const reassignError = ref("");
+
+async function loadAssignees() {
+	if (!canReassign.value) return;
+	try {
+		const data = await teamsApi.list();
+		assignees.value = data.agents
+			? data.agents.map((a) => ({ user: a.name, full_name: a.full_name }))
+			: data.teams.flatMap((t) => t.members);
+	} catch (e) {
+		reassignError.value = serverMessage(e, "The agents could not be loaded.");
+	}
+}
+
+async function reassign(user) {
+	reassignError.value = "";
+	try {
+		await teamsApi.reassign(route.params.name, user);
+	} catch (e) {
+		reassignError.value = serverMessage(e, "The lead could not be reassigned.");
+	}
+	await load();
+}
+
 async function archive() {
 	await crmApi.setArchived("Lead", route.params.name);
 	router.push(listPath.value);
 }
 
-onMounted(load);
+onMounted(() => {
+	load();
+	loadAssignees();
+});
 </script>
