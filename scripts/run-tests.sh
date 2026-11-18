@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # run-tests.sh: the real test gate for SellOS. Copied from BuildOS's gate, with the holes closed.
 #
+# SOS-SETUP-42: the default is the FAST gate, which stops short of the whole backend suite and the whole
+# Cypress suite and runs the smoke set (scripts/smoke-set.txt) in their place. Those two suites run in
+# CI on every push, and the loop waits for CI to go green. `scripts/run-tests.sh --full` (or
+# SELLOS_GATE_FULL=1) is the full gate described below, for a person to run by hand. Everything before
+# the whole suites is the same in both modes.
+#
 # Order: new files marked intent-to-add, the guards (scripts/check-guards.sh --all: lint, Semgrep and the task guards, SOS-SETUP-33), preflight (CI parity, a snapshot of the bench's sites and databases), build the web app, put the clean baseline back
 # over a wiped database, migrate, prepare_clean_site (code, every run), a check that the site is clean (exit 3, SOS-SETUP-36), the tenant template (on unless SELLOS_TENANT_TEMPLATE=off, SOS-SETUP-32), the specs the task did not change but uses, each run once (SOS-SETUP-37, scripts/lib/affected_specs.py; a failure stops the gate), the test files the task changed first, each run 5, 3 or 2 times by the time of its first run, with the repeats capped at 10 minutes, where one failed run fails it (SOS-SETUP-33 and SOS-SETUP-34, scripts/lib/flake_check.sh; a failure stops the gate at once), the same reset and check again when a changed spec ran, the
 # whole backend suite (a module that failed on a MariaDB 1020 or deadlock is rerun once, alone, and
@@ -14,6 +20,17 @@
 # The build loop sets SELLOS_TASK_ID, SELLOS_BASE_SHA and SELLOS_TASK_BLOCK_FILE so the task
 # guards run. A human running the gate by hand leaves them unset and the guards are skipped.
 set -euo pipefail
+
+# SOS-SETUP-42: --full runs the whole backend and Cypress suites after the changed and affected tests.
+GATE_MODE=fast
+[ -n "${SELLOS_GATE_FULL:-}" ] && GATE_MODE=full
+for arg in "$@"; do
+  case "$arg" in
+    --full) GATE_MODE=full ;;
+    --fast) GATE_MODE=fast ;;
+    *) echo "Usage: scripts/run-tests.sh [--full]" >&2; exit 2 ;;
+  esac
+done
 
 BENCH_DIR="${SELLOS_BENCH_DIR:-$HOME/iespl-bench}"
 APP="${SELLOS_APP:-sellos}"
@@ -41,7 +58,21 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="$LOG_DIR/run-$STAMP.log"
 UI_LOG="$LOG_DIR/ui-$STAMP.log"
 export SELLOS_FLAKY_LOG="$BASELINE_DIR/sellos-flaky.log"
-rm -f "$LOG_DIR/latest.log"
+# SOS-SETUP-39: latest.log points at this run's log from the first line on, not only at the end, so
+# "sellos status" and anyone tailing it can always find the log of a gate that is running or hung.
+: >"$LOG_FILE"
+ln -sf "$LOG_FILE" "$LOG_DIR/latest.log"
+# SOS-SETUP-39: hard time limits, in seconds, chosen from the gate's measured times (docs/STOPS.md, the
+# row "machine slept or gate hung"): a spec 15 min (normally 67 to 85 s), the whole Cypress suite and the
+# backend suite 45 min each (normally 6 to 7 min and 12 to 14 min). Past a limit the command's process
+# tree is killed and the gate exits 4, a gate timeout: an environment fault, never repaired as code.
+# The tag lets the loop find this gate's leftover Cypress and Chrome processes and nobody else's.
+# shellcheck source=lib/gate_limits.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/gate_limits.sh"
+export SELLOS_GATE_LIMITS=1
+export SELLOS_GATE_TAG="${SELLOS_GATE_TAG:-hand-run-$$}"
+export SELLOS_GATE_FAULT_FILE="${SELLOS_GATE_FAULT_FILE:-$LOG_DIR/gate-fault.txt}"
+rm -f "$SELLOS_GATE_FAULT_FILE"
 # Exit 2 and 3 mean an environment problem, and the build loop never repairs, resets or Blocks a
 # task for one (SOS-SETUP-14). Only the preflight's own exits, recorded by sellos_env_exit, keep a
 # 2 or 3. Any other failure ends as 1, whatever status the failing command returned: under set -e
@@ -56,6 +87,8 @@ source "$REPO_DIR/scripts/lib/sellos_server.sh"
 # the end of the run fails if the password is in any log, the repository or a tenant site.
 # shellcheck source=lib/db_secrets.sh
 source "$REPO_DIR/scripts/lib/db_secrets.sh"
+# shellcheck source=lib/transcript_leak.sh
+source "$REPO_DIR/scripts/lib/transcript_leak.sh"
 # SOS-SETUP-22: on a hand run the password may be only in the Keychain. Load it (never shown) so the
 # redaction and the leak check below know it. Nothing fails when it is not available.
 sellos_load_provisioner_password || true
@@ -68,6 +101,7 @@ set +e
 {
 set -e
 echo "=== SellOS test run: $(date) ==="
+echo "=== Gate mode: $GATE_MODE ($([ "$GATE_MODE" = full ] && echo 'whole backend and Cypress suites' || echo 'smoke set in place of the whole suites; CI runs the whole suites')) ==="
 
 # CI lints and scans every file in the commit, new ones included. pre-commit --all-files and
 # semgrep ci see only files git tracks, and a task's new files stay untracked until the loop
@@ -288,9 +322,8 @@ if grep -q '^spec' "$FLAKE_TARGETS" || [ -n "${AFFECTED_RAN:-}" ]; then
   sellos_reset_test_site "after the changed and affected specs, before the backend suite"
 fi
 
+if [ "$GATE_MODE" = full ]; then
 echo "--- Backend unit tests: $APP ---"
-# The runner prints one summary per batch, and the last one can say OK while an earlier one failed.
-# The wrapper prints every batch and the exit code, and the exit code decides (SOS-SETUP-24).
 run_backend "$LOG_DIR/backend-$STAMP-all.log" || { echo "BACKEND TESTS FAILED"; exit 1; }
 rm -f "$TEMPLATE_SQL"
 unset SELLOS_TENANT_TEMPLATE_SQL
@@ -298,6 +331,29 @@ unset SELLOS_TENANT_TEMPLATE_SQL
 echo "--- UI tests: $APP ---"
 # Rerun once, alone; FLAKY on a passing rerun; three times FLAKY fails (scripts/lib/ui_flaky.sh).
 sellos_ui_suite "$UI_LOG" || { echo "UI TESTS FAILED"; exit 1; }
+else
+# SOS-SETUP-42: the smoke set, each test once (a changed test already ran its repeats above). A
+# failure here is the task's, and prints SMOKE TESTS FAILED for the loop's repair prompt.
+echo "--- Smoke set (scripts/smoke-set.txt): $APP ---"
+SMOKE_FAILED=""
+while read -r kind target <&3; do
+  case "$kind" in ""|"#"*) continue ;; esac
+  echo "--- smoke $kind: $target ---"
+  slug="$(printf '%s' "$target" | tr '/' '_')"
+  case "$kind" in
+    backend) run_backend "$LOG_DIR/backend-$STAMP-smoke-$slug.log" --module "$target" || SMOKE_FAILED="$SMOKE_FAILED $target" ;;
+    spec) _sellos_ui_run "$LOG_DIR/ui-$STAMP-smoke-$slug.log" "$target" || SMOKE_FAILED="$SMOKE_FAILED $target" ;;
+    *) echo "scripts/smoke-set.txt: unknown kind '$kind'" >&2; exit 1 ;;
+  esac
+done 3<"$REPO_DIR/scripts/smoke-set.txt"
+rm -f "$TEMPLATE_SQL"
+unset SELLOS_TENANT_TEMPLATE_SQL
+if [ -n "$SMOKE_FAILED" ]; then
+  for t in $SMOKE_FAILED; do echo "SMOKE TEST FAILED: $t"; done
+  echo "SMOKE TESTS FAILED:$SMOKE_FAILED. The whole suites did not run (fast gate); CI runs them."
+  exit 1
+fi
+fi
 # The end of the heavy segment. A failure above releases the lock through the helper's EXIT trap.
 bench_gate_release
 
@@ -309,16 +365,19 @@ python3 "$REPO_DIR/scripts/check_site_set.py" compare "$BENCH_DIR" "$SITES_SNAPS
 echo "--- No secret (provisioner password, Telegram, BuildOS) is in a log ---"
 python3 "$REPO_DIR/scripts/check_no_secret_leak.py" --since "${SELLOS_TASK_STARTED:-$GATE_START}" \
   "$LOG_DIR" "$BENCH_DIR/logs" "$BENCH_DIR/sites/common_site_config.json" "$BENCH_DIR/sites/archived_sites" \
-  "$REPO_DIR" "$CLAUDE_TRANSCRIPTS"
+  "$REPO_DIR"
+# A secret in an interactive session's transcript is an environment fault (scripts/lib/transcript_leak.sh):
+# scrubbed in place, sent to Telegram by name only, the gate stops with exit 3.
+sellos_transcript_leak_check "${SELLOS_TASK_STARTED:-$GATE_START}" "$CLAUDE_TRANSCRIPTS"
 python3 "$REPO_DIR/scripts/check_no_secret_leak.py" "$BENCH_DIR"/sites/sellos_tenant_*
 echo "--- GATE PASSED ---"
 } 2>&1 | sellos_redact | tee "$LOG_FILE"
 
 STATUS="${PIPESTATUS[0]}"
+# Status 4 (a gate timeout, SOS-SETUP-39) is kept as it is: only gate_limits.sh produces it.
 if [[ "$STATUS" -eq 2 || "$STATUS" -eq 3 ]] && [ "$(cat "$SELLOS_ENV_EXIT_FILE" 2>/dev/null)" != "$STATUS" ]; then
   echo "The gate failed with status $STATUS from a command, not from its preflight. Reporting it as a test failure (1)." | tee -a "$LOG_FILE"
   STATUS=1
 fi
 rm -f "$SELLOS_ENV_EXIT_FILE"
-ln -sf "$LOG_FILE" "$LOG_DIR/latest.log"
 exit "$STATUS"

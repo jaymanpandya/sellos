@@ -96,6 +96,21 @@ loop_commit() {
 # recorded, as "unexpected" or "stopped". The next start fills in how long the loop stood idle.
 STOPS_FILE="$PROJECT_DIR/docs/STOPS.md"
 STOPS_PY="$SCRIPT_DIR/lib/stops.py"
+# SOS-SETUP-39: a hung or frozen gate must be impossible to miss and impossible to leave stuck.
+# The loop and everything it starts carry SELLOS_GATE_TAG, so the leftover Cypress and headless Chrome
+# processes of SellOS, and only those, are found by lib/gate_watch.py (never BuildOS's or Pamaa's).
+# Before each gate and after any stop they are killed. Limits are in seconds, chosen from the gate's
+# measured times (docs/STOPS.md): the whole gate 150 min (a normal run is 31 to 51 min, plus up to 90
+# min waiting for the bench lock), and 15 min without a new line in the loop log.
+GATE_WATCH="$SCRIPT_DIR/lib/gate_watch.py"
+export SELLOS_GATE_TAG="sellos-loop-$(printf '%s' "$PROJECT_DIR" | cksum | cut -d' ' -f1)"
+SELLOS_GATE_TIMEOUT="${SELLOS_GATE_TIMEOUT:-9000}"
+SELLOS_STALL_TIMEOUT="${SELLOS_STALL_TIMEOUT:-900}"
+export SELLOS_GATE_FAULT_FILE="${SELLOS_GATE_FAULT_FILE:-$LOG_DIR/gate-fault.txt}"
+cleanup_leftovers() {
+  echo "Looking for SellOS's own leftover Cypress and Chrome processes ($1)."
+  python3 "$GATE_WATCH" cleanup --tag "$SELLOS_GATE_TAG" || true
+}
 STOP_CATEGORY="unexpected"
 STOP_CAUSE="the loop ended without saying why (a failed command under set -e)"
 STOP_TASK="-"
@@ -104,6 +119,7 @@ on_exit() {
   local status=$? minutes=0
   if [[ "$(cat "$LOCK_FILE" 2>/dev/null)" == "$$" ]]; then rm -f "$LOCK_FILE"; fi
   [[ "$STOP_CATEGORY" == "none" ]] && return
+  cleanup_leftovers "after the stop"
   if [[ "$STOP_TASK" != "-" && -n "${SELLOS_TASK_STARTED:-}" ]]; then
     minutes=$((($(date +%s) - SELLOS_TASK_STARTED) / 60))
   fi
@@ -446,8 +462,8 @@ $CI_FAILURES$([[ -n "$(git status --porcelain)" ]] && printf '\n\nThe last repai
       continue
     fi
     set +e
-    "$SCRIPT_DIR/run-tests.sh" 2>&1 | sellos_redact | tee "$GATE_OUT"
-    gate_exit="${PIPESTATUS[0]}"
+    run_gate_guarded
+    gate_exit=$?
     set -e
     if [[ "$gate_exit" -eq 2 || "$gate_exit" -eq 3 ]]; then
       CI_STOP_CATEGORY=environment
@@ -458,7 +474,7 @@ $(tail -n 15 "$GATE_OUT")"
     fi
     if [[ "$gate_exit" -ne 0 ]]; then
       ci_notify "CI repair attempt $attempt of $MAX_CI_REPAIRS on $label failed the gate, so nothing was pushed. Its changes stay in the working tree for the next attempt.
-$(grep -m3 -E 'GUARDS FAILED|AFFECTED SPECS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED' "$GATE_OUT" 2>/dev/null || tail -n 5 "$GATE_OUT")"
+$(grep -m3 -E 'GUARDS FAILED|AFFECTED SPECS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED|SMOKE TESTS FAILED' "$GATE_OUT" 2>/dev/null || tail -n 5 "$GATE_OUT")"
       continue
     fi
     git add -A
@@ -518,6 +534,49 @@ push_with_retry() {
 BENCH_DIR="${SELLOS_BENCH_DIR:-$HOME/iespl-bench}"
 TEST_SITE="${SELLOS_TEST_SITE:-sellos_test.localhost}"
 GATE_OUT="$LOG_DIR/loop-gate-output.txt"
+
+# SOS-SETUP-39: run the gate under a hard timeout and a stall watchdog (lib/gate_watch.py). Past the
+# whole-gate limit, or with no new line in the loop log for the stall limit, SellOS's own process tree
+# is killed, the bench lock is released, the reason goes to Telegram, and the gate is run once more.
+# A gate timeout (status 4 from a limit inside the gate, 124 or 125 from here) is an environment
+# fault: never repaired as code. A second one stops the loop with the stop reason "gate timeout".
+# The caller has set +e. Returns the gate's status; a timeout that survives the rerun ends the loop.
+gate_timeout_status() { [[ "$1" -eq 4 || "$1" -eq 124 || "$1" -eq 125 ]]; }
+release_dead_gate_lock() {
+  local dir="${BENCH_GATE_LOCK_DIR:-/tmp/iespl-bench-heavy.lock.d}" holder
+  holder="$(cat "$dir/pid" 2>/dev/null || true)"
+  if [[ -d "$dir" && -n "$holder" ]] && ! kill -0 "$holder" 2>/dev/null; then
+    rm -rf "$dir"
+    echo "Released the bench gate lock held by pid $holder, which is gone."
+  fi
+}
+run_gate_guarded() {
+  local attempt=1 code reason
+  while true; do
+    cleanup_leftovers "before the gate"
+    rm -f "$SELLOS_GATE_FAULT_FILE"
+    python3 "$GATE_WATCH" run --label "the gate" --timeout "$SELLOS_GATE_TIMEOUT" \
+      --stall "$SELLOS_STALL_TIMEOUT" --stall-file "${SELLOS_LOOP_LOG:-$GATE_OUT}" \
+      --fault-file "$SELLOS_GATE_FAULT_FILE" -- "$SCRIPT_DIR/run-tests.sh" 2>&1 | sellos_redact | tee "$GATE_OUT"
+    code="${PIPESTATUS[0]}"
+    gate_timeout_status "$code" || return "$code"
+    reason="$(cat "$SELLOS_GATE_FAULT_FILE" 2>/dev/null || true)"
+    [[ -n "$reason" ]] || reason="gate timeout: the gate ended with status $code"
+    cleanup_leftovers "after the gate timeout"
+    release_dead_gate_lock
+    if [[ "$attempt" -ge 2 ]]; then
+      echo "Gate timeout again: $reason. Stopping."
+      stop_note "gate timeout" "$reason, on two gate runs in a row"
+      "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: GATE TIMEOUT again, so the loop is stopping. $reason.
+${TASK_ID:-The task} stays In Progress and its work is left in the working tree as it is: no repair run, no reset, not Blocked. This is an environment fault (a hung gate, or the Mac slept), not the code's.
+Check the Mac (power, sleep), then restart the loop with: scripts/sellos up" || true
+      exit 3
+    fi
+    echo "Gate timeout: $reason. An environment fault, not the code's: running the gate once more."
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: GATE TIMEOUT. $reason. Its process tree is killed and the bench lock is released. Not handed to the repair agent; the gate runs once more, and a second timeout stops the loop." || true
+    attempt=$((attempt + 1))
+  done
+}
 # shellcheck source=lib/sellos_server.sh
 source "$SCRIPT_DIR/lib/sellos_server.sh"
 
@@ -535,7 +594,7 @@ CONNECTION_ERROR_RE='ECONNREFUSED|ECONNRESET|ESOCKETTIMEDOUT|socket hang up|fail
 # Lines that report a failure. Summary lines (counts, "failed again", the run table) only repeat
 # the failures above them, so they are not causes.
 FAILURE_LINE_RE='Error|Exception|Traceback|AssertionError|expected .* to |FAIL:|ERROR:'
-SUMMARY_LINE_RE='FAILED \(|FAILED AGAIN|SPEC FAILED|UI tests failed|Failing:|[0-9]+ of [0-9]+ failed|│|GATE PASSED'
+SUMMARY_LINE_RE='FAILED \(|FAILED AGAIN|SPEC FAILED|SMOKE TEST|UI tests failed|Failing:|[0-9]+ of [0-9]+ failed|│|GATE PASSED'
 
 # True when the gate's output has a connection error to the SellOS server and every failure line
 # in it is a connection error, as when the server dies in the middle of a Cypress run.
@@ -701,6 +760,11 @@ $WAITING_LINES"
 
   echo "Selected task: $TASK_ID"
   STOP_TASK="$TASK_ID"
+  # SOS-SETUP-39: a Mac on battery power, or under 30 percent, can sleep or run out in the middle of a gate.
+  if ! POWER_NOW="$(python3 "$GATE_WATCH" power --warn)"; then
+    echo "WARNING: the Mac is $POWER_NOW."
+    "$SCRIPT_DIR/notify-telegram.sh" "SellOS loop: starting $TASK_ID with the Mac $POWER_NOW. A gate can hang if it sleeps, or stop when the battery runs out. Plug it in." || true
+  fi
 
   # Known-good point to fall back to if this task doesn't end cleanly.
   PRE_TASK_SHA="$(git rev-parse HEAD)"
@@ -868,8 +932,8 @@ $TASK_BLOCK"
   while true; do
     set +e
     mkdir -p "$LOG_DIR"
-    "$SCRIPT_DIR/run-tests.sh" 2>&1 | sellos_redact | tee "$GATE_OUT"
-    TEST_EXIT="${PIPESTATUS[0]}"
+    run_gate_guarded
+    TEST_EXIT=$?
     set -e
     if [[ "$TEST_EXIT" -eq 0 ]]; then break; fi
     # Exit 2 or 3: the gate stopped in its preflight and tested nothing (SOS-SETUP-14).
@@ -978,7 +1042,7 @@ $RUN_SUMMARY"
     # SOS-SETUP-37: a gate that failed on specs the task did not change is its own category.
     BLOCK_CATEGORY=blocked
     if grep -q -E '^AFFECTED SPECS? FAILED' "$LOG_DIR/latest.log" 2>/dev/null; then BLOCK_CATEGORY="task broke older specs"; fi
-    blocked_decide "$BLOCK_CATEGORY" "the gate still failed after $GATE_RUN gate run(s): $(grep -m1 -E "GUARDS FAILED|AFFECTED SPECS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED|TENANT TEMPLATE FAILED" "$LOG_DIR/latest.log" 2>/dev/null | cut -c1-120 || echo "see the gate log")"
+    blocked_decide "$BLOCK_CATEGORY" "the gate still failed after $GATE_RUN gate run(s): $(grep -m1 -E "GUARDS FAILED|AFFECTED SPECS FAILED|CHANGED TEST FAILED|CHANGED SPEC FAILED|BACKEND TESTS FAILED|UI TESTS FAILED|SMOKE TESTS FAILED|TENANT TEMPLATE FAILED" "$LOG_DIR/latest.log" 2>/dev/null | cut -c1-120 || echo "see the gate log")"
     git add "$TASKS_FILE"
     loop_commit -m "$TASK_ID: tests failed, marking Blocked (repo reset to pre-task state, no broken code left on main)"
     "$SCRIPT_DIR/notify-telegram.sh" "$(blocked_notice "SellOS loop: $TASK_ID failed tests. Blocked, repo reset to before this task — main is clean. Tail: $TAIL")" || true

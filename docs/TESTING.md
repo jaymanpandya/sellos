@@ -38,7 +38,15 @@ The agent never commits. Git hooks are not used.
    Then the test files the task changed, each run five times when its first run takes under 60 seconds, three times under 3 minutes and twice above, with the repeats of one gate capped at 10 minutes (SOS-SETUP-34; `SELLOS_FLAKE_RUNS` lowers every tier, `SELLOS_FLAKE_CAP_SECONDS` sets the cap; `scripts/lib/flake_check.sh` and `scripts/lib/flake_plan.py`). Every changed test runs once, then the repeat plan is printed, then the repeats run. A failure on any run stops the gate, and a failure after a passing run is reported as flaky (SOS-SETUP-33). The test rules in `CLAUDE.md` say how to write a test that cannot flake.
 7. When a changed or affected spec ran, the same drop, restore, migrate, prepare and clean check again, so the
    backend suite starts clean whatever a spec left (SOS-SETUP-36).
-8. The whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
+8. **Fast gate (the default, SOS-SETUP-42).** The smoke set in `scripts/smoke-set.txt`, each test once
+   (three browser specs and three backend modules: the app shell, who may see which lead, phone
+   numbers never leaking, the permission matrix, and the tests that stop a test pinning a value the
+   loop changes). A failure prints `SMOKE TESTS FAILED` and goes to the repair agent like any other.
+   The whole backend suite and the whole Cypress suite do not run here: CI runs them on every push,
+   and the loop waits for CI to go green before the next task (the repair path of SOS-SETUP-38 is
+   unchanged). `scripts/run-tests.sh --full` (or `SELLOS_GATE_FULL=1`) is the **full gate**, for a
+   person to run by hand, and steps 1 to 7 are the same in both modes. The full gate's step 8 is:
+   the whole backend suite, then the whole Cypress suite. A failed spec is rerun once, alone. A spec
    that needed a rerun is logged FLAKY, and one that is FLAKY three times fails the gate. The bench
    gate lock is released at the end of the Cypress run, or when the gate fails or is killed. The
    policy is `scripts/lib/ui_flaky.sh`, and CI's UI job runs Cypress through the same script, with
@@ -92,7 +100,7 @@ These decide whether a task passes, so a task may not change them unless its blo
 `scripts/check_*.py`, `cypress.config.js`, `cypress/support/e2e.js`, `.pre-commit-config.yaml`,
 `.semgrepignore`, `.eslintrc`, `.github/workflows/*`, `docs/DEV_STRATEGY.md`,
 `scripts/prepare-regression.sh`, `scripts/pause-loop.sh`, `scripts/resume-loop.sh`,
-`scripts/refresh-buildos-reference.sh`, `scripts/install-shared-helpers.sh`, `scripts/shared/*`,
+`scripts/smoke-set.txt`, `scripts/refresh-buildos-reference.sh`, `scripts/install-shared-helpers.sh`, `scripts/shared/*`,
 `docs/regression/README.md`, `scripts/check-guards.sh`, `sellos/testing/guards.py`, `docs/GUARDS.md` and this file. `docs/regression/flows.md`
 is append only: a task adds its flows and may never remove one.
 
@@ -114,7 +122,8 @@ From `~/iespl-bench`, with the SellOS server running on port 8004 (`cd ~/iespl-b
 ```
 bench --site sellos_test.localhost run-tests --app sellos --module sellos.crm.test_crm
 bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/smoke/app_shell.cy.js
-apps/sellos/scripts/run-tests.sh        # the whole gate
+apps/sellos/scripts/run-tests.sh          # the fast gate, what the loop runs
+apps/sellos/scripts/run-tests.sh --full   # the full gate: whole backend and Cypress suites, about 30 minutes
 ```
 
 Logs are in `/tmp/sellos-test-logs/` and `latest.log` is the last run.

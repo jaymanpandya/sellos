@@ -26,4 +26,4 @@ A failing job turns its check red. Whether red blocks the merge is a GitHub sett
 3. Require branches to be up to date before merging.
 4. Do not allow bypassing the rules.
 
-Until this rule is set, a failing check is reported but does not stop a merge. The build loop's own gate (`scripts/run-tests.sh`) runs before every push to `1.0`.
+Until this rule is set, a failing check is reported but does not stop a merge. The build loop's own gate (`scripts/run-tests.sh`) runs before every push to `1.0`. Since SOS-SETUP-42 it is the fast gate (guards, the task's own and affected tests, a smoke set), and CI is where the whole backend and Cypress suites run, on every push; the loop waits for CI to go green before it starts the next task.

@@ -4,8 +4,9 @@
 #   sellos up            check everything the loop needs, start what SellOS owns, refuse with the exact
 #                        fix for anything else, then start the loop (log: ~/iespl-baseline/sellos-loop.log)
 #   sellos up --check    the same checks, and start what SellOS owns, but never the loop
-#   sellos status        the loop process, the log tail, git, tasks in progress or blocked, CI, the locks
-#                        and the hours since the last stop
+#   sellos status        the loop process, the log tail, the gate's log (its real path and when it was last
+#                        written), git, tasks in progress or blocked, CI, the locks and the hours since the
+#                        last stop
 #   sellos stop          pause: the running task finishes (gate, commit, push), then the loop stops
 #   sellos stop --now    stop the loop process now; the task stays In Progress and its work stays in the
 #                        working tree, and the next "sellos up" resumes it
@@ -27,6 +28,7 @@ BENCH_DIR="${SELLOS_BENCH_DIR:-$HOME/iespl-bench}"
 BASELINE_DIR="${SELLOS_BASELINE_DIR:-$HOME/iespl-baseline}"
 SITE="${SELLOS_TEST_SITE:-sellos_test.localhost}"
 LOOP_LOG="${SELLOS_LOOP_LOG:-$BASELINE_DIR/sellos-loop.log}"
+GATE_LOG_DIR="${SELLOS_LOG_DIR:-/tmp/sellos-test-logs}"
 LOCK_FILE="${SELLOS_LOOP_LOCK:-/tmp/sellos-build-loop.lock}"
 PAUSE_FILE="${SELLOS_PAUSE_FILE:-/tmp/sellos-loop.pause}"
 GATE_LOCK_DIR="/tmp/iespl-bench-heavy.lock.d"
@@ -192,6 +194,22 @@ else:
 PY
   [ $? -ne 0 ] && FAILS=$((FAILS + 1))
 
+  # SOS-SETUP-39: the loop runs under caffeinate (below) so the Mac does not sleep in the middle of a
+  # gate. A Mac on battery power, or under 30 percent, can still sleep with the lid closed or run out.
+  if [ -x "${SELLOS_CAFFEINATE:-/usr/bin/caffeinate}" ]; then
+    ok "caffeinate is there: the loop is started under it, so the Mac stays awake while it runs"
+  else
+    fail "caffeinate is missing (${SELLOS_CAFFEINATE:-/usr/bin/caffeinate}), so the Mac could sleep in the middle of a gate" \
+      "it ships with macOS; restore /usr/bin/caffeinate"
+  fi
+  local power_now
+  if power_now="$(python3 "$SCRIPT_DIR/lib/gate_watch.py" power --warn)"; then
+    ok "power: the Mac is $power_now"
+  else
+    warn "power: the Mac is $power_now, and the loop will Telegram you at every task start while it is" \
+      "plug in the charger; caffeinate cannot keep a Mac on battery awake with the lid closed"
+  fi
+
   # Telegram: the loop's variables, copied from BuildOS's when they are not set.
   if [ -z "${SELLOS_TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${BUILDOS_TELEGRAM_BOT_TOKEN:-}" ]; then
     export SELLOS_TELEGRAM_BOT_TOKEN="$BUILDOS_TELEGRAM_BOT_TOKEN"
@@ -290,7 +308,10 @@ $in_progress"
   # set -m: without job control bash starts a background job with SIGINT ignored, every child
   # inherits that, and a shell that starts with SIGINT ignored cannot trap it, so the gate lock's
   # INT trap never ran (docs/STOPS.md, 2026-11-13). With job control the loop gets default signals.
-  (set -m; cd "$REPO_DIR" && nohup "$SCRIPT_DIR/build-loop.sh" >>"$LOOP_LOG" 2>&1 </dev/null &)
+  # SOS-SETUP-39: under caffeinate (-i no idle sleep, -m no disk sleep, -s no system sleep on AC power), which
+  # exits with the loop. The loop watches its own gate: a stall of 15 minutes in this log is a gate timeout.
+  (set -m; cd "$REPO_DIR" && SELLOS_LOOP_LOG="$LOOP_LOG" nohup "${SELLOS_CAFFEINATE:-/usr/bin/caffeinate}" -i -m -s \
+    "$SCRIPT_DIR/build-loop.sh" >>"$LOOP_LOG" 2>&1 </dev/null &)
   sleep 3
   pid="$(loop_pid)"
   if [ -n "$pid" ]; then
@@ -328,6 +349,28 @@ cmd_status() {
   echo
   echo "== Log ($LOOP_LOG)"
   tail -n 15 "$LOOP_LOG" 2>/dev/null | cut -c1-200 | sed 's/^/  /'
+  echo
+  echo "== Gate log"
+  local latest="$GATE_LOG_DIR/latest.log" real now age
+  now="$(date +%s)"
+  if [ -L "$latest" ] || [ -f "$latest" ]; then
+    real="$(readlink "$latest" 2>/dev/null || true)"
+    [ -n "$real" ] || real="$latest"
+    if [ -f "$real" ]; then
+      age=$((now - $(python3 -c 'import os,sys; print(int(os.path.getmtime(sys.argv[1])))' "$real")))
+      echo "  $real"
+      echo "  last written $((age / 60)) min ago, $(wc -c <"$real" | tr -d ' ') bytes (also $latest)"
+      if [ -d "$GATE_LOCK_DIR" ] && [ "$age" -gt 900 ]; then
+        echo "  WARNING: a gate holds the bench lock and its log has been quiet for $((age / 60)) min; the loop's watchdog stops it at 15 min"
+      fi
+    else
+      echo "  $latest points at $real, which does not exist"
+    fi
+  elif [ -d "$GATE_LOCK_DIR" ]; then
+    echo "  WARNING: a gate holds the bench lock but $latest does not exist (a gate from before SOS-SETUP-39)"
+  else
+    echo "  none yet ($latest)"
+  fi
   echo
   echo "== Git"
   git -C "$REPO_DIR" fetch -q origin "$BRANCH" 2>/dev/null || true

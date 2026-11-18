@@ -191,7 +191,7 @@ class TestResetBeforeTheBackendSuite(TenantSiteTestCase):
 		)
 		(root / "targets.tsv").write_text(targets, encoding="utf-8")
 		reset_fn = gate_block("sellos_reset_test_site() {", 'sellos_reset_test_site "before the tests"')
-		between = gate_block('sellos_flake_gate "$FLAKE_TARGETS" || exit 1', 'echo "--- Backend unit tests')
+		between = gate_block('sellos_flake_gate "$FLAKE_TARGETS" || exit 1', 'if [ "$GATE_MODE" = full ]; then')
 		driver = f"""set -euo pipefail
 sellos_env_exit() {{ echo "ENV EXIT $1"; exit "$1"; }}
 REPO_DIR="{root}"
@@ -304,7 +304,13 @@ class TestGateWiring(UnitTestCase):
 
 	def test_the_loop_starts_with_default_signals(self):
 		text = SELLOS_CLI.read_text(encoding="utf-8")
-		self.assertTrue(re.search(r'\(set -m; cd "\$REPO_DIR" && nohup "\$SCRIPT_DIR/build-loop.sh"', text))
+		# SOS-SETUP-39: the loop runs under caffeinate, still in a job-control subshell.
+		self.assertTrue(
+			re.search(
+				r'\(set -m; cd "\$REPO_DIR" && [^\n]*nohup "[^"\n]*caffeinate[^"\n]*" -i -m -s \\\n\s*"\$SCRIPT_DIR/build-loop.sh"',
+				text,
+			)
+		)
 
 	def test_the_restore_refuses_any_other_site_before_a_command_runs(self):
 		for site in (
