@@ -9,3 +9,5 @@ spec security/phone_masking_leaks.cy.js
 backend sellos.access.test_permission_matrix
 backend sellos.access.test_p1_06b_phone_leaks
 backend sellos.tests.test_no_live_status_pins
+backend sellos.access.test_p1_04_permissions
+backend sellos.crm.test_p1_16_duplicates
