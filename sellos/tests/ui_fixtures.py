@@ -515,6 +515,11 @@ def seed_regression_data():
 	  Regression Price too high (a lost reason the company added), and one call Buyer Two's agent
 	  logged by hand on Regression Buyer Two (Busy, two minutes, with its follow up tomorrow).
 
+	* Users (SOS-P1-17): Regression New Agent (invited, with an Indian mobile number, never signed in),
+	  Regression Agent No Mobile (invited with no number, so shown as unable to use click to call) and
+	  Regression Former Agent (deactivated, with one open lead and one open task waiting for SOS-P1-19).
+	  All three are made through the Company Admin's invite and deactivate methods, with mail switched off.
+
 	* Telephony Settings (SOS-P2-01): the Plivo India account saved with fake keys, a 022 number
 	  made by landline_022(TELEPHONY_SEED), and the fake provider switched on, so Test connection reports success.
 
@@ -541,6 +546,7 @@ def seed_regression_data():
 		_seed_lead_sources(admin)
 		_seed_pipeline_stages()
 		_seed_call_outcomes(admin, agent_one)
+		_seed_users(admin)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -657,6 +663,7 @@ def seed_regression_data():
 	_seed_lead_sources(admin)
 	_seed_pipeline_stages()
 	_seed_call_outcomes(admin, agent_one)
+	_seed_users(admin)
 	_seed_support_grants(admin)
 	_seed_telephony(admin)
 	_seed_control_site()
@@ -835,6 +842,112 @@ def remove_gate_call_lists():
 			frappe.db.delete(doctype, {"name": ["in", names]})
 	frappe.db.commit()  # nosemgrep
 	return {"outcomes": len(outcomes), "lost_reasons": len(reasons)}
+
+
+SEEDED_USERS = (
+	("regression_new_agent@example.com", "Regression New Agent", 301),
+	("regression_agent_no_mobile@example.com", "Regression Agent No Mobile", None),
+	("regression_former_agent@example.com", "Regression Former Agent", 302),
+)
+
+
+def _seed_users(admin):
+	"""Three invited users, one of them deactivated with work waiting (SOS-P1-17), through the production
+	methods as the Company Admin. The invitation mail is switched off, so no mail is ever sent."""
+	from unittest.mock import patch
+
+	from sellos.access import users
+	from sellos.crm import api as crm
+
+	with _as_user(admin), patch.object(users, "mail_ready", return_value=False):
+		for email, first_name, seed in SEEDED_USERS:
+			if not frappe.db.exists("User", email):
+				users.invite_user(
+					email, first_name, "SellOS Agent", "", phones.in_mobile(seed) if seed else ""
+				)
+		former = SEEDED_USERS[2][0]
+		if not frappe.db.exists("Lead", {"assigned_to": former}):
+			client = crm.save_client(
+				values={
+					"client_name": f"{REGRESSION_PREFIX}Former Agent Buyer",
+					"client_type": "Buyer",
+					"phone": phones.in_mobile(303),
+				}
+			)
+			lead = crm.save_lead(
+				values={"client": client["name"], "source": "Website", "assigned_to": former}
+			)
+			crm.save_task(
+				values={
+					"lead": lead["lead"]["name"],
+					"title": f"{REGRESSION_PREFIX}Call the buyer back",
+					"due_date": add_days(today(), 1),
+					"assigned_to": former,
+				}
+			)
+		if frappe.db.get_value("User", former, "enabled"):
+			users.deactivate_user(former)
+
+
+def seed_user_work(email):
+	"""Give a user one open lead and one open task, for the users spec (tests only, SOS-P1-17). The client
+	is named Gate Consent Users, so remove_seeded_leads removes the lead and the task afterwards."""
+	from sellos.crm import api as crm
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		client = crm.save_client(
+			values={
+				"client_name": f"Gate Consent Users {tag}",
+				"client_type": "Buyer",
+				"phone": phones.in_mobile(304),
+			}
+		)
+		lead = crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": email})
+		task = crm.save_task(
+			values={
+				"lead": lead["lead"]["name"],
+				"title": "Gate users task",
+				"due_date": add_days(today(), 2),
+				"assigned_to": email,
+			}
+		)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"lead": lead["lead"]["name"], "task": task["name"]}
+
+
+GATE_USER_PREFIX = "gate_invited_"
+
+
+def gate_user_email(tag):
+	return {"email": f"{GATE_USER_PREFIX}{tag}@example.com"}
+
+
+def set_gate_user_password(email):
+	"""Set the password of a user the users spec invited, as the invitation link would (tests only,
+	SOS-P1-17: the spec has no mail to read the link from). Returns {"user", "password"}."""
+	from frappe.utils.password import update_password
+
+	if not email.startswith(GATE_USER_PREFIX) or not frappe.db.exists("User", email):
+		raise ValueError("Only a user the users spec invited.")
+	update_password(email, PASSWORD)
+	frappe.db.commit()  # the browser signs in from another process  # nosemgrep
+	return {"user": email, "password": PASSWORD}
+
+
+def remove_gate_users():
+	"""Remove the users the users spec invited (email starting gate_invited_), with their contacts,
+	sessions and history (tests only, SOS-P1-17). Run remove_seeded_leads first. The app never deletes a user."""
+	emails = frappe.get_all("User", filters={"name": ["like", f"{GATE_USER_PREFIX}%"]}, pluck="name")
+	for email in emails:
+		frappe.db.delete("Sessions", {"user": email})
+		frappe.db.delete("Version", {"ref_doctype": "User", "docname": email})
+		for contact in frappe.get_all("Contact", filters={"email_id": email}, pluck="name"):
+			frappe.delete_doc("Contact", contact, force=True, ignore_permissions=True)
+		frappe.delete_doc("User", email, force=True, ignore_permissions=True)
+	frappe.db.commit()  # nosemgrep
+	return {"users": len(emails)}
 
 
 def _seed_support_grants(admin):

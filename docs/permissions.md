@@ -61,6 +61,10 @@ on a company site, because the data scope above is "none".
 | `sellos.crm.api.list_call_outcomes`, `list_lost_reasons` (SOS-P1-21, the lists for the call form and the move to Closed lost. A Company Admin also sees the disabled ones) | Company Admin, Agent |
 | `sellos.crm.api.log_call` (SOS-P1-21, a call logged by hand with its outcome, notes and duration, and the follow up the outcome needs. Whatever the consent status) | Company Admin, Agent |
 | `sellos.crm.api.save_call_outcome`, `delete_call_outcome`, `save_lost_reason`, `delete_lost_reason` (SOS-P1-21, edit the two lists. One in use is never deleted) | Company Admin |
+| `sellos.access.users.list_users`, `user_open_work` (SOS-P1-17, the Company Admins, Agents and Channel Partners on the site with their mobile number, whether click to call works for them, and their open leads and tasks. A Platform Admin is never listed) | Company Admin |
+| `sellos.access.users.invite_user`, `resend_invitation` (SOS-P1-17, a user made with one of Company Admin, Agent or Channel Partner and emailed a link to set a password. Never the Platform Admin role) | Company Admin |
+| `sellos.access.users.save_user` (SOS-P1-17, a user's name, Indian mobile number as +91 and ten digits, or role. A user who holds the Platform Admin role is not touched, and nobody changes their own role) | Company Admin |
+| `sellos.access.users.deactivate_user`, `reactivate_user` (SOS-P1-17, deactivating ends sign in and every session at once and lists the user's open leads and tasks for SOS-P1-19. Not yourself, not the last active Company Admin. Nothing is deleted) | Company Admin |
 | `sellos.telephony.settings.get_telephony_settings`, `save_telephony_settings`, `check_connection` (SOS-P2-01, the Plivo India account: the auth ID and token are encrypted and never returned, only whether each is set) | Company Admin |
 | `sellos.crm.api.find_duplicates` (P1.16, the clients that already have a phone or email, masked as the viewer's role requires) | Company Admin, Agent |
 | `sellos.crm.api.merge_clients` (P1.16, moves a client's leads to the one kept, nothing deleted, logged) | Company Admin |

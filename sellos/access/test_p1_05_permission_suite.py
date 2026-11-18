@@ -113,6 +113,18 @@ SAMPLE_CALLS = {
 		"role": "SellOS Agent",
 	},
 	"sellos.config.setup_wizard.finish_setup": {},
+	# SOS-P1-17: the calls act on a spare agent made for the test, never on the caller.
+	"sellos.access.users.list_users": {},
+	"sellos.access.users.user_open_work": {"email": "{spare_user}"},
+	"sellos.access.users.invite_user": {
+		"email": "p117_invited@example.com",
+		"first_name": "P117",
+		"role": "SellOS Agent",
+	},
+	"sellos.access.users.resend_invitation": {"email": "{spare_user}"},
+	"sellos.access.users.save_user": {"email": "{spare_user}", "values": {"first_name": "P117 Edit"}},
+	"sellos.access.users.deactivate_user": {"email": "{spare_user}"},
+	"sellos.access.users.reactivate_user": {"email": "{spare_user}"},
 	# SOS-P2-01: blank values keep what is saved, so the Company Admin's call changes nothing.
 	"sellos.telephony.settings.get_telephony_settings": {},
 	"sellos.telephony.settings.save_telephony_settings": {},
@@ -207,6 +219,17 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			{"doctype": "Call Outcome", "outcome_name": "P121 Spare Outcome"}
 		).insert()
 		spare_reason = frappe.get_doc({"doctype": "Lost Reason", "reason_name": "P121 Spare Reason"}).insert()
+		spare_user = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": "p117_spare_agent@example.com",
+				"first_name": "P117 Spare",
+				"send_welcome_email": 0,
+				"roles": [{"role": "SellOS Agent"}],
+			}
+		)
+		spare_user.flags.ignore_permissions = True
+		spare_user.insert()
 		frappe.get_doc(
 			{
 				"doctype": "Lead Activity",
@@ -227,6 +250,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_source": spare.name,
 			"spare_outcome": spare_outcome.name,
 			"spare_reason": spare_reason.name,
+			"spare_user": spare_user.name,
 			"support_user": support_user,
 			"grant": grant["name"],
 		}
