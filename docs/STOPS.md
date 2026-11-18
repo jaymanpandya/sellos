@@ -36,3 +36,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-17 20:30 | SOS-P2-02 | stopped | stopped by a signal (sellos stop --now, Ctrl-C or a shutdown) | 26 | 0.1 |
 | 2026-11-17 20:33 | - | push-failed | unpushed commits that do not start with SOS- | 0 | 0.1 |
 | 2026-11-17 20:36 | - | push-failed | unpushed commits that do not start with SOS- | 0 | 0.3 |
+| 2026-11-18 04:13 | SOS-FIX-1 | blocked | the gate still failed after 2 gate run(s): BACKEND TESTS FAILED; the loop went on to the next task | 168 | 0.0 |
