@@ -6,7 +6,7 @@ import frappe
 from frappe.tests import IntegrationTestCase
 
 from sellos.access.matrix import MATRIX
-from sellos.access.roles import AGENT, COMPANY_ADMIN
+from sellos.access.roles import AGENT, COMPANY_ADMIN, SALES_MANAGER
 from sellos.crm import api, duplicates
 from sellos.crm.base import mask_phone
 from sellos.crm.test_crm import CrmCase, as_user, email
@@ -196,7 +196,10 @@ class TestTheWarning(CrmCase):
 		self.assertEqual(frappe.db.count("Access Log", {"method": "Full phone number shown"}), 1)
 
 	def test_the_company_admin_and_the_agent_may_ask_and_the_others_may_not(self):
-		self.assertEqual(MATRIX["sellos.crm.api.find_duplicates"], frozenset({AGENT, COMPANY_ADMIN}))
+		# SOS-P1-18: the Sales Manager asks like an Agent.
+		self.assertEqual(
+			MATRIX["sellos.crm.api.find_duplicates"], frozenset({AGENT, COMPANY_ADMIN, SALES_MANAGER})
+		)
 		self.assertEqual(MATRIX["sellos.crm.api.merge_clients"], frozenset({COMPANY_ADMIN}))
 		as_user("channel_partner")
 		with self.assertRaises(frappe.PermissionError):
