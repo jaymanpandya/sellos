@@ -18,6 +18,7 @@ from pathlib import Path
 
 PROTECTED = [
 	"scripts/run-tests.sh",
+	"scripts/smoke-set.txt",
 	"scripts/build-loop.sh",
 	"scripts/watchdog.sh",
 	"scripts/select-next-task.sh",

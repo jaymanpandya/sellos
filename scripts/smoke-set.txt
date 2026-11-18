@@ -1,0 +1,11 @@
+# The local gate's smoke set (SOS-SETUP-42): a short run of what protects the most, in place of the
+# whole backend and Cypress suites, which CI runs on every push. One test per line, "backend <dotted
+# module>" or "spec <path under cypress/integration>". Each is chosen because a break in it means
+# something basic is wrong: the app shell loads, the role and permission rules hold, a phone number
+# never leaks. Keep it to about three minutes. Gate file: only a person edits it.
+spec smoke/app_shell.cy.js
+spec crm/leads_by_role.cy.js
+spec security/phone_masking_leaks.cy.js
+backend sellos.access.test_permission_matrix
+backend sellos.access.test_p1_06b_phone_leaks
+backend sellos.tests.test_no_live_status_pins
