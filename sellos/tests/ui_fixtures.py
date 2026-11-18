@@ -183,6 +183,55 @@ def seed_consent_leads():
 	return made
 
 
+def seed_board_leads():
+	"""Make the leads the pipeline board and list filter spec needs (SOS-P1-24), through sellos.crm.api
+	as the company admin. The test agent owns three: Gate Board Agent A (Referral, Qualified, budget up to
+	40 lakh, called yesterday), Gate Board Agent B (Website, Qualified, budget up to 60 lakh, opted out) and
+	Gate Board Old (Website, New, made 30 days ago with no activity, so it is untouched). The company admin
+	owns Gate Board Admin. Returns the client names and the budgets. Each run makes new ones, and
+	remove_seeded_leads removes them."""
+	from frappe.utils import add_days, now_datetime
+
+	from sellos.crm import api as crm
+
+	_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	tag = frappe.generate_hash(length=6)
+	names = {}
+	with _as_user(admin):
+		for key, owner, seed, source, budget, stage in (
+			("agent_a", agent, 51, "Referral", 4000000, "Qualified"),
+			("agent_b", agent, 52, "Website", 6000000, "Qualified"),
+			("old", agent, 53, "Website", None, None),
+			("admin", admin, 54, "Referral", 9000000, None),
+		):
+			client_name = f"Gate Board {key.replace('_', ' ').title()} {tag}"
+			client = crm.save_client(
+				values={"client_name": client_name, "client_type": "Buyer", "phone": phones.in_mobile(seed)}
+			)
+			values = {"client": client["name"], "source": source, "assigned_to": owner}
+			if budget:
+				values["budget_to"] = budget
+			lead = crm.save_lead(values=values)["lead"]["name"]
+			if stage:
+				crm.move_lead_stage(lead, stage)
+			names[key] = (client_name, lead)
+		crm.add_activity(names["agent_a"][1], "Call", activity_date=add_days(now_datetime(), -1))
+		crm.record_opt_out(names["agent_b"][1], "Phone call")
+	frappe.db.set_value(
+		"Lead", names["old"][1], "creation", add_days(now_datetime(), -30), update_modified=False
+	)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {
+		**{key: value[0] for key, value in names.items()},
+		"leads": {key: value[1] for key, value in names.items()},
+		"qualified_total": 10000000,
+		"agent_name": TEST_USERS["agent"]["first_name"],
+		"agent_email": agent,
+	}
+
+
 def seed_duplicate_clients():
 	"""Make what the duplicate spec needs (SOS-P1-16), through sellos.crm.api as the company admin.
 
@@ -252,6 +301,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Consent %"],
 			["client_name", "like", "Gate Buyer %"],
 			["client_name", "like", "Gate Team %"],
+			["client_name", "like", "Gate Board %"],
 		],
 		pluck="name",
 	)
@@ -533,6 +583,12 @@ def seed_regression_data():
 	* One plan and four tenants on the control site (SOS-P1-01), regressionone to regressionfour, one
 	  Requested, one Provisioning, one Active and one Failed, each with its Provisioning Job.
 
+	* The pipeline board and list filters (SOS-P1-24): Regression Dormant Eight, a Referral lead of the gate
+	  agent on New with a budget up to 70 lakh, made 30 days ago with nothing logged, so the board and the
+	  list mark it as having no activity for 7 days. The other regression leads are recent, so only this
+	  one is marked. The board and the filters use the stages, budgets, sources, consent statuses and
+	  teams above.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -551,6 +607,7 @@ def seed_regression_data():
 		_seed_pipeline_stages()
 		_seed_call_outcomes(admin, agent_one)
 		_seed_users(admin)
+		_seed_dormant_lead(admin, agent_one)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -668,6 +725,7 @@ def seed_regression_data():
 	_seed_pipeline_stages()
 	_seed_call_outcomes(admin, agent_one)
 	_seed_users(admin)
+	_seed_dormant_lead(admin, agent_one)
 	_seed_support_grants(admin)
 	_seed_telephony(admin)
 	_seed_control_site()
@@ -773,6 +831,37 @@ def _seed_lead_sources(admin):
 			crm.save_lead(
 				name=lead, values={"source": "Regression Roadshow", "campaign": "Diwali 2026 hoardings"}
 			)
+
+
+def _seed_dormant_lead(admin, agent_one):
+	"""Regression Dormant Eight (SOS-P1-24): a lead made through the API and then dated 30 days back, so
+	it has had no activity for longer than the untouched period. Safe to run again."""
+	from frappe.utils import add_days, now_datetime
+
+	from sellos.crm import api as crm
+
+	title = f"{REGRESSION_PREFIX}Dormant Eight"
+	if frappe.db.exists("Client", {"client_name": title}):
+		return
+	with _as_user(admin):
+		client = crm.save_client(
+			values={
+				"client_name": title,
+				"client_type": "Buyer",
+				"email": "regression_dormant_eight@example.com",
+				"city": "Mumbai",
+				"phone": phones.in_mobile(111),
+			}
+		)
+		lead = crm.save_lead(
+			values={
+				"client": client["name"],
+				"source": "Referral",
+				"assigned_to": agent_one,
+				"budget_to": 7000000,
+			}
+		)["lead"]["name"]
+	frappe.db.set_value("Lead", lead, "creation", add_days(now_datetime(), -30), update_modified=False)
 
 
 def _seed_pipeline_stages():

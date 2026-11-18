@@ -60,6 +60,8 @@ SAMPLE_CALLS = {
 	"sellos.crm.api.merge_clients": {"keep": "{client}", "merge": "{client_other}"},
 	"sellos.crm.api.save_client": {"name": "{client}", "values": {"city": "Pune"}},
 	"sellos.crm.api.list_leads": {},
+	"sellos.crm.api.get_board": {},
+	"sellos.crm.api.lead_filter_options": {},
 	"sellos.crm.api.list_lead_sources": {},
 	"sellos.crm.api.save_lead_source": {"name": "{spare_source}", "values": {"enabled": 0}},
 	"sellos.crm.api.delete_lead_source": {"name": "{spare_source}"},

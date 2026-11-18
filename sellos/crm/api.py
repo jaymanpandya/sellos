@@ -12,9 +12,9 @@ from frappe.utils import cint, now_datetime
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER
-from sellos.crm import call_outcomes, consent, duplicates, lead_sources, pipeline
+from sellos.crm import board, call_outcomes, consent, duplicates, lead_sources, pipeline
 from sellos.crm.base import is_overdue
-from sellos.crm.requirements import REQUIREMENT_FIELDS, has_filters, join_values, matches, requirements_view
+from sellos.crm.requirements import REQUIREMENT_FIELDS, join_values, requirements_view
 
 # SOS-P1-18: a Sales Manager works like an Agent, on the leads of their team, with masked phone numbers.
 READERS = (AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER)
@@ -199,52 +199,85 @@ def list_leads(
 	configuration=None,
 	locality=None,
 	timeline=None,
+	stage=None,
+	assigned_to=None,
+	team=None,
+	source=None,
+	consent_status=None,
+	last_contacted_from=None,
+	last_contacted_to=None,
+	untouched=0,
 ):
-	"""The leads the user may see. The requirement filters (SOS-P1-15) are budget range, configuration
-	(one or several), locality and timeline; see sellos.crm.requirements.matches."""
-	filters = {} if cint(include_archived) else {"archived": 0}
-	if isinstance(configuration, str) and configuration.startswith("["):
-		configuration = frappe.parse_json(configuration)
-	requirement_filters = {
-		"budget_min": budget_min,
-		"budget_max": budget_max,
-		"configuration": configuration,
-		"locality": locality,
-		"timeline": timeline,
-	}
-	narrowed = has_filters(**requirement_filters)
-	leads = frappe.get_list(
-		"Lead",
-		filters=filters,
-		or_filters=_search(search, ("lead_title", "source", "campaign")),
-		fields=[
-			"name",
-			"lead_title",
-			"client",
-			"source",
-			"campaign",
-			"assigned_to",
-			"stage",
-			"archived",
-			"modified",
-			*REQUIREMENT_FIELDS,
-		],
-		order_by="modified desc",
-		limit_page_length=0 if narrowed else 100,
-	)
-	if narrowed:
-		leads = [lead for lead in leads if matches(lead, **requirement_filters)][:100]
+	"""The leads the user may see, up to 100, narrowed by every filter given (SOS-P1-24 and SOS-P1-15):
+	stage, agent, team, source, consent status, budget range, configuration, locality, timeline, last
+	contacted dates and untouched. See sellos.crm.board.visible_leads. Each lead says whether it is untouched."""
+	leads = board.visible_leads(
+		search=search,
+		include_archived=include_archived,
+		budget_min=budget_min,
+		budget_max=budget_max,
+		configuration=configuration,
+		locality=locality,
+		timeline=timeline,
+		stage=stage,
+		assigned_to=assigned_to,
+		team=team,
+		source=source,
+		consent_status=consent_status,
+		last_contacted_from=last_contacted_from,
+		last_contacted_to=last_contacted_to,
+		untouched=untouched,
+	)[:100]
 	for lead in leads:
-		lead["client_name"] = frappe.db.get_value("Client", lead.client, "client_name")
 		tasks = frappe.get_all(
 			"Lead Task", filters={"lead": lead.name, "archived": 0, "status": "Open"}, fields=["due_date"]
 		)
-		lead["consent_status"] = consent.compute_status(lead.name)
-		lead["consent_warning"] = consent.WARNINGS[lead["consent_status"]][0]
-		lead["requirements"] = requirements_view(lead)
 		lead["open_tasks"] = len(tasks)
 		lead["overdue_tasks"] = sum(is_overdue(t.due_date, "Open") for t in tasks)
 	return leads
+
+
+@sellos_api(*READERS)
+def get_board(
+	search=None,
+	budget_min=None,
+	budget_max=None,
+	configuration=None,
+	locality=None,
+	timeline=None,
+	stage=None,
+	assigned_to=None,
+	team=None,
+	source=None,
+	consent_status=None,
+	last_contacted_from=None,
+	last_contacted_to=None,
+	untouched=0,
+):
+	"""The pipeline board (SOS-P1-24): one column per stage with the leads the user may see, the count
+	and the total budget, under the same filters as the list. A card moves with move_lead_stage."""
+	return board.board(
+		search=search,
+		budget_min=budget_min,
+		budget_max=budget_max,
+		configuration=configuration,
+		locality=locality,
+		timeline=timeline,
+		stage=stage,
+		assigned_to=assigned_to,
+		team=team,
+		source=source,
+		consent_status=consent_status,
+		last_contacted_from=last_contacted_from,
+		last_contacted_to=last_contacted_to,
+		untouched=untouched,
+	)
+
+
+@sellos_api(*READERS)
+def lead_filter_options():
+	"""The agents, teams and consent statuses the list and board filters offer the user (SOS-P1-24)."""
+	return board.filter_options()
 
 
 @sellos_api(*READERS)

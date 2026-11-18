@@ -35,6 +35,8 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.merge_clients": _ADMIN_ONLY,
 	"sellos.crm.api.save_client": _READERS,
 	"sellos.crm.api.list_leads": _READERS,
+	"sellos.crm.api.get_board": _READERS,
+	"sellos.crm.api.lead_filter_options": _READERS,
 	"sellos.crm.api.list_lead_sources": _READERS,
 	"sellos.crm.api.save_lead_source": _ADMIN_ONLY,
 	"sellos.crm.api.delete_lead_source": _ADMIN_ONLY,

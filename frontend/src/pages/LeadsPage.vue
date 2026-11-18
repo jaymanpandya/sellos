@@ -1,7 +1,31 @@
 <template>
-	<div class="max-w-3xl" data-testid="sellos-leads-page">
+	<div
+		:class="view === 'board' ? 'max-w-full' : 'max-w-3xl'"
+		data-testid="sellos-leads-page"
+		:data-view="view"
+	>
 		<div class="flex items-center justify-between gap-3">
 			<h1 class="text-2xl font-semibold text-ink">Leads</h1>
+			<div class="flex gap-2" role="group" aria-label="View">
+				<button
+					type="button"
+					class="btn"
+					:aria-pressed="view === 'list'"
+					data-testid="sellos-leads-view-list"
+					@click="setView('list')"
+				>
+					List
+				</button>
+				<button
+					type="button"
+					class="btn"
+					:aria-pressed="view === 'board'"
+					data-testid="sellos-leads-view-board"
+					@click="setView('board')"
+				>
+					Board
+				</button>
+			</div>
 			<button
 				v-if="canCreate"
 				type="button"
@@ -199,6 +223,92 @@
 				<option value="">Any timeline</option>
 				<option v-for="t in TIMELINES" :key="t">{{ t }}</option>
 			</select>
+			<select
+				v-model="filters.stage"
+				data-testid="sellos-leads-filter-stage"
+				aria-label="Stage"
+				class="field w-auto"
+				@change="load"
+			>
+				<option value="">Any stage</option>
+				<option v-for="st in stages" :key="st.name" :value="st.name">{{ st.name }}</option>
+			</select>
+			<select
+				v-model="filters.assigned_to"
+				data-testid="sellos-leads-filter-agent"
+				aria-label="Agent"
+				class="field w-auto"
+				@change="load"
+			>
+				<option value="">Any agent</option>
+				<option v-for="a in options.agents" :key="a.name" :value="a.name">
+					{{ a.full_name }}
+				</option>
+			</select>
+			<select
+				v-if="options.teams.length"
+				v-model="filters.team"
+				data-testid="sellos-leads-filter-team"
+				aria-label="Team"
+				class="field w-auto"
+				@change="load"
+			>
+				<option value="">Any team</option>
+				<option v-for="t in options.teams" :key="t.name" :value="t.name">
+					{{ t.team_name }}
+				</option>
+			</select>
+			<select
+				v-model="filters.source"
+				data-testid="sellos-leads-filter-source"
+				aria-label="Source"
+				class="field w-auto"
+				@change="load"
+			>
+				<option value="">Any source</option>
+				<option v-for="so in filterSources" :key="so.name" :value="so.name">
+					{{ so.name }}
+				</option>
+			</select>
+			<select
+				v-model="filters.consent_status"
+				data-testid="sellos-leads-filter-consent"
+				aria-label="Consent status"
+				class="field w-auto"
+				@change="load"
+			>
+				<option value="">Any consent status</option>
+				<option v-for="c in options.consent_statuses" :key="c">{{ c }}</option>
+			</select>
+			<label class="flex items-center gap-1 text-sm text-ink-muted">
+				Last contacted from
+				<input
+					v-model="filters.last_contacted_from"
+					type="date"
+					data-testid="sellos-leads-filter-contacted-from"
+					class="field w-auto"
+					@input="load"
+				/>
+			</label>
+			<label class="flex items-center gap-1 text-sm text-ink-muted">
+				to
+				<input
+					v-model="filters.last_contacted_to"
+					type="date"
+					data-testid="sellos-leads-filter-contacted-to"
+					class="field w-auto"
+					@input="load"
+				/>
+			</label>
+			<label class="flex items-center gap-1 text-sm text-ink-muted">
+				<input
+					v-model="untouchedOnly"
+					type="checkbox"
+					data-testid="sellos-leads-filter-untouched"
+					@change="load"
+				/>
+				No activity for {{ untouchedDays }} days
+			</label>
 			<button type="submit" class="btn" data-testid="sellos-leads-filter-apply">
 				Filter
 			</button>
@@ -217,13 +327,28 @@
 		<p v-else-if="loading" data-testid="sellos-leads-loading" class="mt-4 text-ink-muted">
 			Loading leads.
 		</p>
-		<p v-else-if="!leads.length" data-testid="sellos-leads-empty" class="mt-4 text-ink-muted">
+		<p
+			v-else-if="view === 'list' && !leads.length"
+			data-testid="sellos-leads-empty"
+			class="mt-4 text-ink-muted"
+		>
 			No leads yet.
 		</p>
-		<ul class="mt-4 divide-y divide-line rounded-input border border-line bg-surface">
+		<LeadBoard
+			v-if="view === 'board' && !loadError"
+			:columns="board.columns"
+			:can-move="!partner"
+			:base-path="basePath"
+			:untouched-days="untouchedDays"
+			@moved="load"
+		/>
+		<ul
+			v-if="view === 'list'"
+			class="mt-4 divide-y divide-line rounded-input border border-line bg-surface"
+		>
 			<li v-for="lead in leads" :key="lead.name" data-testid="sellos-lead-row">
 				<router-link
-					:to="`${basePath}/${lead.name}`"
+					:to="{ path: `${basePath}/${lead.name}`, query: $route.query }"
 					class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-brand-light"
 				>
 					<span>
@@ -242,6 +367,13 @@
 						class="rounded-input border border-line px-2 py-1 text-xs text-ink-muted"
 					>
 						{{ lead.stage }}
+					</span>
+					<span
+						v-if="lead.untouched"
+						data-testid="sellos-untouched"
+						class="rounded-input bg-accent px-2 py-1 text-xs text-white"
+					>
+						No activity for {{ untouchedDays }} days
 					</span>
 					<span
 						v-if="lead.overdue_tasks"
@@ -263,6 +395,7 @@ import { useRoute, useRouter } from "vue-router";
 
 import { CLIENT_TYPES, CONFIGURATIONS, TIMELINES, crmApi, serverMessage } from "../crm/crmApi";
 import { logRequestError } from "../api";
+import LeadBoard from "../components/LeadBoard.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -281,8 +414,67 @@ const emptyFilters = () => ({
 	configuration: "",
 	locality: "",
 	timeline: "",
+	stage: "",
+	assigned_to: "",
+	team: "",
+	source: "",
+	consent_status: "",
+	last_contacted_from: "",
+	last_contacted_to: "",
 });
 const filters = reactive(emptyFilters());
+const untouchedOnly = ref(false);
+const untouchedDays = ref(7);
+const stages = ref([]);
+const options = reactive({ agents: [], teams: [], consent_statuses: [] });
+const filterSources = ref([]);
+const board = reactive({ columns: [] });
+const view = ref("list");
+
+// The URL keeps the view, the search and every filter, so a filtered view can be bookmarked (SOS-P1-24).
+// The numbers in it are the same names the server takes, and the search is q.
+function readUrl() {
+	const q = route.query;
+	view.value = q.view === "board" ? "board" : "list";
+	search.value = typeof q.q === "string" ? q.q : "";
+	for (const key of Object.keys(emptyFilters())) {
+		filters[key] = typeof q[key] === "string" ? q[key] : "";
+	}
+	untouchedOnly.value = q.untouched === "1";
+}
+
+function writeUrl() {
+	const query = { ...activeFilters() };
+	if (search.value) query.q = search.value;
+	if (untouchedOnly.value) query.untouched = "1";
+	if (view.value === "board") query.view = "board";
+	router.replace({ path: route.path, query });
+}
+
+async function setView(next) {
+	view.value = next;
+	await load();
+}
+
+async function loadOptions() {
+	try {
+		const [opts, st, so] = await Promise.all([
+			crmApi.leadFilterOptions(),
+			crmApi.listStages(),
+			crmApi.listLeadSources(),
+		]);
+		Object.assign(options, {
+			agents: opts.agents || [],
+			teams: opts.teams || [],
+			consent_statuses: opts.consent_statuses || [],
+		});
+		untouchedDays.value = opts.untouched_days || 7;
+		stages.value = st || [];
+		filterSources.value = so.sources || [];
+	} catch (e) {
+		logRequestError("lead_filter_options failed", e);
+	}
+}
 const form = reactive({
 	client_name: "",
 	client_type: "Buyer",
@@ -327,8 +519,14 @@ function activeFilters() {
 	return Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== "" && v != null));
 }
 
+function serverFilters() {
+	return { ...activeFilters(), ...(untouchedOnly.value ? { untouched: 1 } : {}) };
+}
+
 async function clearFilters() {
 	Object.assign(filters, emptyFilters());
+	untouchedOnly.value = false;
+	search.value = "";
 	await load();
 }
 
@@ -336,9 +534,17 @@ async function load() {
 	loading.value = true;
 	loadError.value = "";
 	try {
-		leads.value = (await crmApi.listLeads(search.value, 0, activeFilters())) || [];
+		writeUrl();
+		if (view.value === "board") {
+			const result = await crmApi.getBoard(search.value, serverFilters());
+			board.columns = result.columns || [];
+			untouchedDays.value = result.untouched_days || untouchedDays.value;
+		} else {
+			leads.value = (await crmApi.listLeads(search.value, 0, serverFilters())) || [];
+		}
 	} catch (e) {
 		leads.value = [];
+		board.columns = [];
 		loadError.value = serverMessage(e, "The leads could not be loaded.");
 		logRequestError("list_leads failed", e);
 	} finally {
@@ -403,7 +609,9 @@ async function addToExisting(match) {
 // Only someone who can make a lead needs the source list. A channel partner's screen never asks for
 // it, so leaving that screen cuts no request off half way.
 onMounted(() => {
+	readUrl();
 	load();
+	loadOptions();
 	if (canCreate.value) loadSources();
 });
 </script>

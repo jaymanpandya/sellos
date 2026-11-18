@@ -8,6 +8,9 @@ const call = (method, params = {}) =>
 export const crmApi = {
 	listLeads: (search = "", includeArchived = 0, filters = {}) =>
 		call("list_leads", { search, include_archived: includeArchived, ...filters }),
+	// The pipeline board and its filter boxes (SOS-P1-24). The board takes the list's filters.
+	getBoard: (search = "", filters = {}) => call("get_board", { search, ...filters }),
+	leadFilterOptions: () => call("lead_filter_options"),
 	getLead: (name) => call("get_lead", { name }),
 	findDuplicates: (values) => call("find_duplicates", values),
 	mergeClients: (keep, merge) => call("merge_clients", { keep, merge }),

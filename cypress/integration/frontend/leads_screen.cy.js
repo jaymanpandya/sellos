@@ -9,9 +9,22 @@ const LEAD = {
 	},
 };
 
+// The screen also asks for the filter boxes, the stages and the sources (SOS-P1-24). They are stubbed
+// too, so no request is left in flight when the test moves to another page.
+function stubFilterBoxes() {
+	cy.intercept("**/api/method/sellos.crm.api.lead_filter_options*", {
+		body: { message: { agents: [], teams: [], consent_statuses: [], untouched_days: 7 } },
+	});
+	cy.intercept("**/api/method/sellos.crm.api.list_stages*", { body: { message: [] } });
+	cy.intercept("**/api/method/sellos.crm.api.list_lead_sources*", {
+		body: { message: { sources: [{ name: "Website" }], can_manage: false } },
+	});
+}
+
 context("SOS-P1-06A: leads screen", () => {
 	it("lists leads and shows overdue tasks", () => {
 		cy.signInFresh("agent");
+		stubFilterBoxes();
 		cy.intercept("**/api/method/sellos.crm.api.list_leads*", {
 			body: {
 				message: [
@@ -26,6 +39,7 @@ context("SOS-P1-06A: leads screen", () => {
 
 	it("creates a client and a lead, then opens the lead", () => {
 		cy.signInFresh("agent");
+		stubFilterBoxes();
 		cy.intercept("**/api/method/sellos.crm.api.list_leads*", { body: { message: [] } });
 		cy.intercept("**/api/method/sellos.crm.api.save_client*", {
 			body: { message: { name: "CL-1" } },
