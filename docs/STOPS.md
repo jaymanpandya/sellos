@@ -39,4 +39,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-18 04:13 | SOS-FIX-1 | blocked | the gate still failed after 2 gate run(s): BACKEND TESTS FAILED; the loop went on to the next task | 168 | 0.0 |
 | 2026-11-18 06:28 | SOS-P4-01 | blocked | two tasks Blocked in a row (SOS-FIX-1, then SOS-P4-01): the gate still failed after 3 gate run(s): CHANGED SPEC FAILED: inventory/projects_units.cy.js | 135 | 4.6 |
 | 2026-11-18 16:54 | SOS-P1-23 | blocked | the gate still failed after 3 gate run(s): CHANGED SPEC FAILED: crm/leads_by_role.cy.js; the loop went on to the next task | 54 | 0.0 |
-| 2026-11-18 18:01 | SOS-P2-04 | blocked | two tasks Blocked in a row (SOS-P1-23, then SOS-P2-04): the gate still failed after 3 gate run(s): see the gate log | 67 |  |
+| 2026-11-18 18:01 | SOS-P2-04 | blocked | two tasks Blocked in a row (SOS-P1-23, then SOS-P2-04): the gate still failed after 3 gate run(s): see the gate log | 67 | 1.0 |
