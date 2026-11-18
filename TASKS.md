@@ -989,7 +989,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 8
 - **Dependencies:** SOS-P1-04
-- **Status:** Not Started
+- **Status:** Blocked
 - **Browser spec:** required
 
 ### SOS-P7-05: Towers, wings and floors for projects
