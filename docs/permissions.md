@@ -57,6 +57,7 @@ on a company site, because the data scope above is "none".
 | --- | --- |
 | `sellos.crm.api.list_clients`, `save_client`, `list_leads`, `get_lead`, `save_lead`, `set_archived` | Company Admin, Agent, Channel Partner |
 | `sellos.crm.api.get_board`, `lead_filter_options` (SOS-P1-24, the pipeline board and the filter choices for the lead list and board. Phone numbers masked as the viewer's role requires) | Company Admin, Agent, Sales Manager, Channel Partner |
+| `sellos.crm.api.list_notifications`, `mark_notification_read`, `mark_all_notifications_read` (SOS-P1-23, the bell. Each role reads and changes only its own) | Company Admin, Agent, Sales Manager, Channel Partner |
 | `sellos.crm.api.list_lead_sources` (P1.20, the lead source list for a picker. A Company Admin also sees the disabled ones) | Company Admin, Agent, Channel Partner |
 | `sellos.crm.api.save_lead_source`, `delete_lead_source` (P1.20, extend, disable or delete a source. A source in use is never deleted) | Company Admin |
 | `sellos.crm.api.list_stages` (SOS-P1-07, the buyer pipeline's stages with their lead counts) | Company Admin, Agent, Channel Partner |
