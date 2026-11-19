@@ -425,7 +425,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 3
 - **Dependencies:** none
-- **Status:** Waiting
+- **Status:** Complete
 
 ### SOS-UI-2: Apply the PAMAA style to the SellOS app shell
 - **Epic:** Web app, roles and security
