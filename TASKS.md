@@ -346,7 +346,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-08
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-N22: Write the default consent wording
 - **Epic:** Compliance, procurement and access
