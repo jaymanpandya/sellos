@@ -17,6 +17,9 @@ context("SOS-P0-10: app shell and access by role", () => {
 			cy.visit("/sellos");
 			cy.getByTestId("app-shell").should("be.visible");
 			cy.getByTestId("nav-home").should("be.visible");
+			// SOS-P1-26: an agent lands on Today. Let its lists finish loading before signing out,
+			// or the sign out answers the request still in flight with a 401.
+			if (role === "agent") cy.getByTestId("today-counts").should("be.visible");
 			cy.signOut();
 		});
 

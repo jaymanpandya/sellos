@@ -313,6 +313,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Notify %"],
 			["client_name", "like", "Gate Assign %"],
 			["client_name", "like", "Gate Import %"],
+			["client_name", "like", "Gate Today %"],
 		],
 		pluck="name",
 	)
@@ -682,6 +683,12 @@ def seed_regression_data():
 	  Manager sees all three and the Company Admin sees all three. Regression Buyer Two is on Site visit
 	  booked, so marking its visit done offers a next stage.
 
+	* The Today screen (SOS-P1-26): it reads the data above. For the gate agent it lists the overdue
+	  Regression chase the site visit and the follow up Regression ring back soon (due in ten minutes, so
+	  it is on Today until midnight), the new lead Regression Dormant Eight, today's visit Regression Noon
+	  Walkthrough on Regression Buyer Two (at noon today, made here) and tomorrow's two visits to
+	  confirm. The Sales Manager sees the same by agent for Regression Team North.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -1034,6 +1041,27 @@ def _seed_site_visits(agent_one, agent_two):
 			)
 			if confirmation:
 				crm.confirm_site_visit(visit["name"], confirmation)
+	_seed_today_visit(agent_one)
+
+
+def _seed_today_visit(agent_one):
+	"""Regression Noon Walkthrough, a site visit at noon today on Regression Buyer Two (SOS-P1-26), booked by
+	its agent through the visit API so that Today has a visit for today. Buyer Two is already on Site visit
+	booked, so its stage does not move. Safe to run again: a visit that exists is left alone."""
+	from sellos.crm import api as crm
+
+	lead = frappe.db.get_value("Lead", {"lead_title": ["like", f"{REGRESSION_PREFIX}Buyer Two%"]}, "name")
+	project = "Regression Noon Walkthrough"
+	if not lead or frappe.db.exists("Site Visit", {"lead": lead, "project_name": project}):
+		return
+	with _as_user(agent_one):
+		crm.save_site_visit(
+			values={
+				"lead": lead,
+				"project_name": project,
+				"visit_datetime": add_to_date(get_datetime(today()), hours=12),
+			}
+		)
 
 
 def _seed_dormant_lead(admin, agent_one):
@@ -1465,6 +1493,115 @@ def remove_sales_teams():
 			frappe.delete_doc("User", email, force=True, ignore_permissions=True)
 	frappe.db.commit()  # nosemgrep
 	return {"teams": len(teams)}
+
+
+GATE_TODAY_AGENT = {
+	"email": "gate_today_agent@example.com",
+	"first_name": "Gate Today Agent",
+	"roles": ["SellOS Agent"],
+	"desk": False,
+}
+
+
+def seed_today():
+	"""What the Today spec needs (SOS-P1-26), made through the lead, task and site visit APIs. The test
+	agent owns Gate Today Mine New (stage New), Gate Today Mine Busy (a follow up two hours ago and one
+	with only today's day, a visit today at noon and one tomorrow at ten) and Gate Today Mine Later (a
+	follow up tomorrow, which is not on Today). Gate Today Agent, in the same team Gate Today Team as the
+	test Sales Manager, owns Gate Today Theirs (a follow up due today and a visit tomorrow) and Gate Today Theirs New (stage New).
+	The Company Admin owns Gate Today Admin (stage New), whom neither sees. Return the client names, the
+	spellings of the agent's first full number and the people's names. Run remove_today after: a team
+	left behind would put the test agent in two teams for the backend tests."""
+	from sellos.access import teams
+	from sellos.crm import api as crm
+
+	_test_users()
+	_ensure_user(GATE_TODAY_AGENT)
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	other = GATE_TODAY_AGENT["email"]
+	tag = frappe.generate_hash(length=6)
+	noon = add_to_date(get_datetime(today()), hours=12)
+	tomorrow_ten = add_to_date(get_datetime(add_days(today(), 1)), hours=10)
+	names, leads = {}, {}
+	with _as_user(admin):
+		teams.save_team(
+			values={
+				"team_name": f"Gate Today Team {tag}",
+				"manager": TEST_USERS["sales_manager"]["email"],
+				"members": [agent, other],
+			}
+		)
+		for key, owner, seed, stage in (
+			("mine_new", agent, 61, None),
+			("mine_busy", agent, 62, "Contacted"),
+			("mine_later", agent, 63, "Contacted"),
+			("theirs", other, 64, "Contacted"),
+			("theirs_new", other, 66, None),
+			("admin", admin, 65, None),
+		):
+			client_name = f"Gate Today {key.replace('_', ' ').title()} {tag}"
+			client = crm.save_client(
+				values={"client_name": client_name, "client_type": "Buyer", "phone": phones.in_mobile(seed)}
+			)
+			lead = crm.save_lead(
+				values={"client": client["name"], "source": "Website", "assigned_to": owner}
+			)["lead"]["name"]
+			if stage:
+				crm.move_lead_stage(lead, stage)
+			names[key], leads[key] = client_name, lead
+		for key, title, owner, values in (
+			(
+				"mine_busy",
+				"Gate Today overdue ring",
+				agent,
+				{"due_at": add_to_date(now_datetime(), hours=-2)},
+			),
+			("mine_busy", "Gate Today day only", agent, {"due_date": today()}),
+			("mine_later", "Gate Today next week", agent, {"due_date": add_days(today(), 7)}),
+			("theirs", "Gate Today team ring", other, {"due_date": today()}),
+		):
+			crm.save_task(
+				values={"lead": leads[key], "title": title, "assigned_to": owner, "status": "Open", **values}
+			)
+		for key, owner, project, when in (
+			("mine_busy", agent, "Gate Today Noon Tower", noon),
+			("mine_busy", agent, "Gate Today Tomorrow Tower", tomorrow_ten),
+			("theirs", other, "Gate Today Team Tower", tomorrow_ten),
+		):
+			crm.save_site_visit(
+				values={"lead": leads[key], "project_name": project, "visit_datetime": when, "agent": owner}
+			)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {
+		**names,
+		"leads": leads,
+		"agent_name": TEST_USERS["agent"]["first_name"],
+		"other_agent_name": GATE_TODAY_AGENT["first_name"],
+		"phone_forms": phones.forms(phones.in_mobile(61)),
+		"overdue_forms": phones.forms(phones.in_mobile(62)),
+	}
+
+
+def remove_today():
+	"""Remove what the Today spec committed (tests only, SOS-P1-26): the Gate Today leads, team and agent.
+	The app never deletes a lead or a team, so this goes to the tables."""
+	remove_seeded_leads()
+	for name in frappe.get_all(
+		"Sales Team", filters={"team_name": ["like", "Gate Today Team %"]}, pluck="name"
+	):
+		frappe.db.delete("Version", {"ref_doctype": "Sales Team", "docname": name})
+		frappe.delete_doc("Sales Team", name, force=True, ignore_permissions=True)
+	email = GATE_TODAY_AGENT["email"]
+	if frappe.db.exists("User", email):
+		frappe.db.delete("Sessions", {"user": email})
+		frappe.db.delete("App Notification", {"recipient": email})
+		frappe.db.delete("Version", {"ref_doctype": "User", "docname": email})
+		for contact in frappe.get_all("Contact", filters={"email_id": email}, pluck="name"):
+			frappe.delete_doc("Contact", contact, force=True, ignore_permissions=True)
+		frappe.delete_doc("User", email, force=True, ignore_permissions=True)
+	frappe.db.commit()  # nosemgrep
+	return {"removed": True}
 
 
 GATE_ASSIGN_USERS = {

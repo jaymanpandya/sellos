@@ -24,6 +24,7 @@ from sellos.crm import (
 	notifications,
 	pipeline,
 	site_visits,
+	today,
 )
 from sellos.crm.requirements import REQUIREMENT_FIELDS, join_values, requirements_view
 
@@ -717,6 +718,28 @@ def complete_site_visit(name, outcome=None, outcome_notes=None):
 def site_visit_options():
 	"""The agents, outcomes and confirmations the site visit screens offer the user (SOS-P1-25)."""
 	return site_visits.options()
+
+
+@sellos_api(*LOGGERS)
+def today_screen():
+	"""What the signed in user does today (SOS-P1-26): follow ups due and overdue, new leads, today's site
+	visits and tomorrow's to confirm, in time order, with the counts of each. An Agent gets their own, a
+	Sales Manager their team's with the counts of each agent, a Company Admin everyone's. Each row has the
+	number to call as the role sees it: masked for an Agent and a Sales Manager, in full for a Company
+	Admin (the full number shown is logged, P1.06B). Consent is a warning on the row and never blocks."""
+	view = today.today_view()
+	rows = [row for key in today.SECTIONS for row in view[key]]
+	clients = sorted({row.client for row in rows if row.client})
+	phones = {}
+	for name in clients:
+		shown = client_view(frappe.get_doc("Client", name), log=False)
+		phones[name] = {"phone": shown["phone"], "overseas_phone": shown["overseas_phone"]}
+	for row in rows:
+		row.update(phones.get(row.client, {"phone": "", "overseas_phone": ""}))
+	if _sees_phone():
+		log_full_number_shown(clients)
+	view["full_numbers"] = cint(_sees_phone())
+	return view
 
 
 def _writable_lead(lead):
