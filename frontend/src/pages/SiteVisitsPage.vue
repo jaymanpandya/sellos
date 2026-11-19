@@ -176,14 +176,23 @@ function shift(day, days) {
 	return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`;
 }
 
+// Only the newest request may fill the screen: a slower, older answer (the week the page opened
+// with) must not overwrite the day the user has since chosen.
+let latestLoad = 0;
+
 async function loadAll() {
+	const mine = ++latestLoad;
 	error.value = "";
 	try {
-		[calendar.value, tomorrow.value] = await Promise.all([
+		const [cal, tom] = await Promise.all([
 			crmApi.siteVisitCalendar(view.value, date.value),
 			crmApi.tomorrowsSiteVisits(),
 		]);
+		if (mine !== latestLoad) return;
+		calendar.value = cal;
+		tomorrow.value = tom;
 	} catch (e) {
+		if (mine !== latestLoad) return;
 		error.value = serverMessage(e, "The site visits could not be loaded.");
 	}
 }
