@@ -25,7 +25,7 @@ SEES_TEAM = frozenset({SALES_MANAGER})
 TEAM_DOCTYPE = "Sales Team"
 DOCTYPE = "Lead"
 CLIENT_DOCTYPE = "Client"
-LEAD_CHILDREN = ("Lead Activity", "Lead Task", "Site Visit", "Consent Record")
+LEAD_CHILDREN = ("Lead Activity", "Lead Task", "Site Visit", "Consent Record", "Call Log")
 # What a support grant allows (P1.13). A missing permission type means read.
 SUPPORT_PTYPES = frozenset({"read", "select", "print", "report"})
 

@@ -124,6 +124,19 @@ def has_live_record(lead, on=None) -> bool:
 	)
 
 
+def live_record(lead, on=None) -> str | None:
+	"""The name of the newest live Consent Record of the lead, or None (SOS-P2-05)."""
+	on = get_datetime(on or now_datetime())
+	rows = frappe.db.sql(
+		"""select name from `tabConsent Record`
+		where lead = %s and archived = 0 and recorded_on <= %s
+		and (expires_on is null or expires_on > %s)
+		order by recorded_on desc, creation desc limit 1""",
+		(lead, on, on),
+	)
+	return rows[0][0] if rows else None
+
+
 def compute_status(lead, on=None) -> str:
 	"""The lead's consent status as of `on` (now by default), from the records. Always current."""
 	row = frappe.db.get_value("Lead", lead, ["opted_out_on", "dnd_registered"], as_dict=True)

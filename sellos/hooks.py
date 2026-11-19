@@ -168,6 +168,7 @@ permission_query_conditions = {
 	"Lead Task": f"{_LEAD_PERMS}.get_child_query_conditions",
 	"Site Visit": f"{_LEAD_PERMS}.get_child_query_conditions",
 	"Consent Record": f"{_LEAD_PERMS}.get_child_query_conditions",
+	"Call Log": f"{_LEAD_PERMS}.get_child_query_conditions",  # SOS-P2-05
 	"Sales Team": f"{_LEAD_PERMS}.get_team_query_conditions",  # SOS-P1-18
 }
 has_permission = {
@@ -177,6 +178,7 @@ has_permission = {
 	"Lead Task": f"{_LEAD_PERMS}.has_child_permission",
 	"Site Visit": f"{_LEAD_PERMS}.has_child_permission",
 	"Consent Record": f"{_LEAD_PERMS}.has_child_permission",
+	"Call Log": f"{_LEAD_PERMS}.has_child_permission",  # SOS-P2-05
 	"Sales Team": f"{_LEAD_PERMS}.has_team_permission",  # SOS-P1-18
 }
 
