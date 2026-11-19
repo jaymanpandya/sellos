@@ -8,7 +8,8 @@
  "field_order": [
   "team_name",
   "manager",
-  "members"
+  "members",
+  "last_assigned"
  ],
  "fields": [
   {
@@ -35,6 +36,16 @@
    "label": "Agents",
    "options": "Sales Team Member",
    "description": "Agents only. An agent is in at most one team."
+  },
+  {
+   "fieldname": "last_assigned",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Last agent given a lead",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1,
+   "description": "The round robin position (SOS-P1-19)."
   }
  ],
  "index_web_pages_for_search": 0,

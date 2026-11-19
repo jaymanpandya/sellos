@@ -13,6 +13,7 @@ from frappe.utils import cint, now_datetime
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER
 from sellos.crm import (
+	assignment,
 	board,
 	call_outcomes,
 	consent,
@@ -467,14 +468,77 @@ def log_call(
 
 
 @sellos_api(COMPANY_ADMIN, SALES_MANAGER)
-def reassign_lead(lead, assigned_to):
-	"""Give a lead to another agent (SOS-P1-18). A Sales Manager reassigns within their own team: the
-	lead must be one of their team's, and so must the new agent. The Company Admin may pick any agent."""
-	doc = _writable_lead(lead)
-	doc.assigned_to = assigned_to
-	doc.flags.ignore_permissions = True  # checked above
-	doc.save()
-	return {"name": doc.name, "assigned_to": doc.assigned_to}
+def reassign_lead(lead, assigned_to, note=None):
+	"""Give a lead to another agent (SOS-P1-18, SOS-P1-19). A Sales Manager reassigns within their own team:
+	the lead must be one of their team's, and so must the new agent. The Company Admin may pick any agent.
+	The lead's open follow ups and future site visits go with it, the change is logged and the new agent
+	is told (SOS-P1-23)."""
+	result = assignment.reassign([lead], assigned_to, assignment.MANUAL_METHOD, note)
+	return {"name": lead, **result}
+
+
+@sellos_api(COMPANY_ADMIN, SALES_MANAGER)
+def bulk_reassign_leads(assigned_to, leads=None, filters=None):
+	"""Give many leads to one agent (SOS-P1-19): the `leads` listed, or every lead the list `filters` find
+	(the same keys as list_leads). Open follow ups and future site visits go with each lead. A Sales
+	Manager may move only their team's leads to an agent of their team. All of it happens, or none."""
+	return assignment.bulk_reassign(assigned_to, leads=leads, filters=filters)
+
+
+@sellos_api(COMPANY_ADMIN, SALES_MANAGER)
+def reassign_options():
+	"""The agents the user may give leads to (SOS-P1-19)."""
+	return {"agents": assignment.assignable_agents()}
+
+
+@sellos_api(COMPANY_ADMIN)
+def list_assignment_rules():
+	"""The rules that assign new leads, the default team and the teams to pick from (SOS-P1-19)."""
+	return {
+		"rules": frappe.get_all(
+			assignment.RULE,
+			fields=["name", "rule_name", "enabled", "rule_type", "priority", "source", "locality", "team"],
+			order_by="priority asc, creation asc",
+			limit_page_length=0,
+		),
+		"default_team": assignment.default_team(),
+		"rule_types": list(assignment.RULE_TYPES),
+		"teams": frappe.get_all("Sales Team", fields=["name", "team_name"], order_by="team_name asc"),
+		"sources": lead_sources.list_sources(),
+	}
+
+
+@sellos_api(COMPANY_ADMIN)
+def save_assignment_rule(name=None, values=None):
+	"""Add a rule, or change one (SOS-P1-19)."""
+	values = _values(values, ("rule_name", "enabled", "rule_type", "priority", "source", "locality", "team"))
+	if name:
+		doc = frappe.get_doc(assignment.RULE, name)
+		doc.check_permission("write")
+		doc.update(values)
+		doc.save()
+	else:
+		doc = frappe.get_doc({"doctype": assignment.RULE, **values})
+		doc.check_permission("create")
+		doc.insert()
+	return {"name": doc.name}
+
+
+@sellos_api(COMPANY_ADMIN)
+def delete_assignment_rule(name):
+	"""Remove a rule. Leads it already assigned stay where they are."""
+	frappe.get_doc(assignment.RULE, name).check_permission("delete")
+	frappe.delete_doc(assignment.RULE, name)
+	return {"deleted": name}
+
+
+@sellos_api(COMPANY_ADMIN)
+def set_default_team(team=None):
+	"""The team that takes a new lead no rule matches (SOS-P1-19). Empty clears it."""
+	if team and not frappe.db.exists("Sales Team", team):
+		frappe.throw(_("That team does not exist."))
+	frappe.db.set_single_value("SellOS Settings", "default_team", team or None)
+	return {"default_team": team or None}
 
 
 @sellos_api(*READERS)
@@ -494,6 +558,7 @@ def get_lead(name):
 		"client": client_view(frappe.get_doc("Client", lead.client)),
 		"can_merge": COMPANY_ADMIN in frappe.get_roles(),
 		"timeline": _timeline(name),
+		"assignments": _assignments(lead),
 		"follow_up": _next_follow_up(lead),
 		"consent": consent.consent_view(name),
 		"pipeline": pipeline.stage_view(lead),
@@ -502,6 +567,22 @@ def get_lead(name):
 			"lost_reasons": call_outcomes.list_lost_reasons(),
 		},
 	}
+
+
+def _assignments(lead) -> list[dict]:
+	"""The lead's assignment log with names, newest first (SOS-P1-19)."""
+	rows = assignment.history(lead.name)
+	people = {
+		u.name: u.full_name
+		for u in frappe.get_all("User", filters={"name": ["in", _emails(rows)]}, fields=["name", "full_name"])
+	}
+	return [
+		{**row, "from_name": people.get(row.from_agent), "to_name": people.get(row.to_agent)} for row in rows
+	]
+
+
+def _emails(rows) -> list[str]:
+	return list({email for row in rows for email in (row.from_agent, row.to_agent) if email} or [""])
 
 
 def _next_follow_up(lead) -> dict:

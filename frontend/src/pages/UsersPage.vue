@@ -166,8 +166,15 @@
 					data-testid="sellos-users-work"
 					class="rounded-input border border-line p-3 text-sm"
 				>
-					<p class="font-medium text-ink">
-						{{ u.full_name || u.email }} can no longer sign in. These need a new owner:
+					<p v-if="work.needs_handover" class="font-medium text-ink">
+						{{ u.full_name || u.email }} still has open work. Choose who takes it
+						before you deactivate them:
+					</p>
+					<p v-else class="font-medium text-ink">
+						{{ u.full_name || u.email }} can no longer sign in.
+						<span v-if="handedOver" data-testid="sellos-users-handed-over">
+							{{ handedOver }}
+						</span>
 					</p>
 					<p
 						v-if="!work.open_lead_count && !work.open_task_count"
@@ -191,6 +198,41 @@
 							Task {{ t.title }}, due {{ t.due_date }}
 						</li>
 					</ul>
+					<form
+						v-if="work.needs_handover"
+						class="mt-2 flex flex-wrap items-center gap-2"
+						data-testid="sellos-users-handover"
+						@submit.prevent="handOver(u)"
+					>
+						<select
+							v-model="handoverTo"
+							required
+							aria-label="Who takes the leads"
+							data-testid="sellos-users-handover-agent"
+							class="field"
+						>
+							<option value="" disabled>Choose who takes the leads</option>
+							<option value="__team">Share among the team's active agents</option>
+							<option v-for="a in work.agents" :key="a.name" :value="a.name">
+								{{ a.full_name }}
+							</option>
+						</select>
+						<button
+							type="submit"
+							class="btn"
+							data-testid="sellos-users-handover-confirm"
+						>
+							Hand over and deactivate
+						</button>
+						<button
+							type="button"
+							class="btn"
+							data-testid="sellos-users-handover-cancel"
+							@click="work = null"
+						>
+							Cancel
+						</button>
+					</form>
 				</div>
 			</li>
 		</ul>
@@ -281,15 +323,36 @@ async function saveMobile(u) {
 	}
 }
 
-async function deactivate(u) {
+const handoverTo = ref("");
+const handedOver = ref("");
+
+async function deactivate(u, choice = {}) {
+	handedOver.value = "";
 	const result = await run(
-		() => usersApi.deactivate(u.email),
+		() => usersApi.deactivate(u.email, choice),
 		"The user could not be deactivated."
 	);
 	if (!result) return;
 	take(result);
 	work.value = result;
+	if (result.needs_handover) {
+		handoverTo.value = "";
+		notice.value = "";
+		return;
+	}
+	const moved = result.handed_over || {};
+	if (moved.leads || moved.tasks || moved.visits) {
+		handedOver.value = `${moved.leads} leads, ${moved.tasks} tasks and ${moved.visits} site visits were handed over.`;
+	}
 	notice.value = `${u.full_name || u.email} is deactivated.`;
+}
+
+// The Company Admin has chosen an agent, or the team, to take the leaving agent's work (SOS-P1-19).
+function handOver(u) {
+	return deactivate(
+		u,
+		handoverTo.value === "__team" ? { distribute: 1 } : { reassignTo: handoverTo.value }
+	);
 }
 
 async function reactivate(u) {

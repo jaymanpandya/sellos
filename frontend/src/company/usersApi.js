@@ -10,6 +10,8 @@ export const usersApi = {
 	invite: (values) => call("invite_user", values),
 	resend: (email) => call("resend_invitation", { email }),
 	save: (email, values) => call("save_user", { email, values }),
-	deactivate: (email) => call("deactivate_user", { email }),
+	// SOS-P1-19: an agent with open work needs `reassignTo` (an agent) or `distribute` (the team shares it).
+	deactivate: (email, { reassignTo = null, distribute = 0 } = {}) =>
+		call("deactivate_user", { email, reassign_to: reassignTo, distribute }),
 	reactivate: (email) => call("reactivate_user", { email }),
 };

@@ -367,14 +367,83 @@
 			:untouched-days="untouchedDays"
 			@moved="load"
 		/>
+		<form
+			v-if="view === 'list' && canReassign && leads.length"
+			class="mt-4 flex flex-wrap items-center gap-2 rounded-input border border-line bg-surface p-3"
+			data-testid="sellos-bulk"
+			@submit.prevent="bulkReassign"
+		>
+			<label class="flex items-center gap-1 text-sm text-ink">
+				<input
+					type="checkbox"
+					:checked="allSelected"
+					data-testid="sellos-bulk-select-all"
+					@change="toggleAll($event.target.checked)"
+				/>
+				Select all {{ leads.length }} shown
+			</label>
+			<span class="text-sm text-ink-muted" data-testid="sellos-bulk-count">
+				{{ selected.length }} selected
+			</span>
+			<select
+				v-model="bulkAgent"
+				required
+				aria-label="Give the selected leads to"
+				data-testid="sellos-bulk-agent"
+				class="field w-auto"
+			>
+				<option value="" disabled>Give the selected leads to</option>
+				<option v-for="a in reassignAgents" :key="a.name" :value="a.name">
+					{{ a.full_name }}
+				</option>
+			</select>
+			<button
+				type="submit"
+				class="btn"
+				:disabled="!selected.length"
+				data-testid="sellos-bulk-reassign"
+			>
+				Reassign selected
+			</button>
+			<p
+				v-if="bulkNotice"
+				role="status"
+				class="w-full text-sm text-ink"
+				data-testid="sellos-bulk-result"
+			>
+				{{ bulkNotice }}
+			</p>
+			<p
+				v-if="bulkError"
+				role="alert"
+				class="w-full text-sm text-accent"
+				data-testid="sellos-bulk-error"
+			>
+				{{ bulkError }}
+			</p>
+		</form>
 		<ul
 			v-if="view === 'list'"
 			class="mt-4 divide-y divide-line rounded-input border border-line bg-surface"
 		>
-			<li v-for="lead in leads" :key="lead.name" data-testid="sellos-lead-row">
+			<li
+				v-for="lead in leads"
+				:key="lead.name"
+				data-testid="sellos-lead-row"
+				class="flex items-center"
+			>
+				<input
+					v-if="canReassign"
+					v-model="selected"
+					type="checkbox"
+					:value="lead.name"
+					:aria-label="`Select ${lead.client_name}`"
+					data-testid="sellos-lead-select"
+					class="ml-4"
+				/>
 				<router-link
 					:to="{ path: `${basePath}/${lead.name}`, query: $route.query }"
-					class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-brand-light"
+					class="flex flex-1 items-center justify-between gap-3 px-4 py-3 hover:bg-brand-light"
 				>
 					<span>
 						<span class="block font-medium text-ink">{{ lead.client_name }}</span>
@@ -443,6 +512,7 @@ import { useRoute, useRouter } from "vue-router";
 import { CLIENT_TYPES, CONFIGURATIONS, TIMELINES, crmApi, serverMessage } from "../crm/crmApi";
 import { logRequestError } from "../api";
 import LeadBoard from "../components/LeadBoard.vue";
+import { session } from "../session";
 
 const route = useRoute();
 const router = useRouter();
@@ -526,6 +596,48 @@ async function loadOptions() {
 		logRequestError("lead_filter_options failed", e);
 	}
 }
+// Bulk reassignment (SOS-P1-19): a Company Admin or Sales Manager moves the selected leads to one agent.
+const canReassign = computed(
+	() =>
+		!partner.value &&
+		(session.roles.includes("SellOS Company Admin") ||
+			session.roles.includes("SellOS Sales Manager"))
+);
+const selected = ref([]);
+const reassignAgents = ref([]);
+const bulkAgent = ref("");
+const bulkNotice = ref("");
+const bulkError = ref("");
+const allSelected = computed(
+	() => leads.value.length > 0 && selected.value.length === leads.value.length
+);
+
+function toggleAll(on) {
+	selected.value = on ? leads.value.map((lead) => lead.name) : [];
+}
+
+async function loadReassignAgents() {
+	if (!canReassign.value) return;
+	try {
+		reassignAgents.value = (await crmApi.reassignOptions()).agents || [];
+	} catch (e) {
+		logRequestError("reassign_options failed", e);
+	}
+}
+
+async function bulkReassign() {
+	bulkNotice.value = "";
+	bulkError.value = "";
+	try {
+		const result = await crmApi.bulkReassign(bulkAgent.value, selected.value);
+		bulkNotice.value = `${result.count} leads reassigned. ${result.tasks_moved} follow ups and ${result.visits_moved} site visits moved with them.`;
+		selected.value = [];
+		await load();
+	} catch (e) {
+		bulkError.value = serverMessage(e, "The leads could not be reassigned.");
+	}
+}
+
 const form = reactive({
 	client_name: "",
 	client_type: "Buyer",
@@ -681,5 +793,6 @@ onMounted(() => {
 	load();
 	loadOptions();
 	if (canCreate.value) loadSources();
+	loadReassignAgents();
 });
 </script>

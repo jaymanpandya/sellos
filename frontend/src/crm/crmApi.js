@@ -11,6 +11,14 @@ export const crmApi = {
 	// The pipeline board and its filter boxes (SOS-P1-24). The board takes the list's filters.
 	getBoard: (search = "", filters = {}) => call("get_board", { search, ...filters }),
 	leadFilterOptions: () => call("lead_filter_options"),
+	// SOS-P1-19: the agents a Company Admin or Sales Manager may give leads to, and a bulk move.
+	reassignOptions: () => call("reassign_options"),
+	listAssignmentRules: () => call("list_assignment_rules"),
+	saveAssignmentRule: (values, name = null) => call("save_assignment_rule", { name, values }),
+	deleteAssignmentRule: (name) => call("delete_assignment_rule", { name }),
+	setDefaultTeam: (team) => call("set_default_team", { team }),
+	bulkReassign: (assignedTo, leads) =>
+		call("bulk_reassign_leads", { assigned_to: assignedTo, leads }),
 	getLead: (name) => call("get_lead", { name }),
 	findDuplicates: (values) => call("find_duplicates", values),
 	mergeClients: (keep, merge) => call("merge_clients", { keep, merge }),

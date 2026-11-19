@@ -50,6 +50,13 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.delete_lost_reason": _ADMIN_ONLY,
 	"sellos.crm.api.log_call": _LOGGERS,
 	"sellos.crm.api.reassign_lead": _TEAM_USERS,
+	# SOS-P1-19: bulk reassignment, the agents to pick from, the assignment rules and the default team.
+	"sellos.crm.api.bulk_reassign_leads": _TEAM_USERS,
+	"sellos.crm.api.reassign_options": _TEAM_USERS,
+	"sellos.crm.api.list_assignment_rules": _ADMIN_ONLY,
+	"sellos.crm.api.save_assignment_rule": _ADMIN_ONLY,
+	"sellos.crm.api.delete_assignment_rule": _ADMIN_ONLY,
+	"sellos.crm.api.set_default_team": _ADMIN_ONLY,
 	"sellos.crm.api.save_lead": _READERS,
 	"sellos.crm.api.get_lead": _READERS,
 	"sellos.crm.api.add_activity": _LOGGERS,

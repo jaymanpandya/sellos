@@ -213,6 +213,8 @@ def check_assignee_in_team(lead) -> None:
 	"""A Sales Manager reassigns leads within their team only (SOS-P1-18). Run when a lead is saved."""
 	if not lead.assigned_to or not (lead.is_new() or lead.has_value_changed("assigned_to")):
 		return
+	if lead.flags.assigned_by_rule:  # SOS-P1-19: the company's own rule chose the agent, not the manager
+		return
 	user = frappe.session.user
 	if user == "Administrator" or _user_scope(user) != "team":
 		return

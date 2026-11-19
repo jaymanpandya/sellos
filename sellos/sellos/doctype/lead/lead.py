@@ -4,6 +4,7 @@ from frappe import _
 
 from sellos.access.lead_permissions import check_assignee_in_team
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
+from sellos.crm import assignment
 from sellos.crm.base import ArchiveOnly, stamp_archive
 from sellos.crm.lead_sources import check_usable
 from sellos.crm.notifications import notify_lead_assignment
@@ -14,6 +15,9 @@ CAN_BE_ASSIGNED = frozenset({AGENT, CHANNEL_PARTNER, COMPANY_ADMIN})
 
 
 class Lead(ArchiveOnly):
+	def before_insert(self):
+		assignment.assign_new(self)  # SOS-P1-19: every new lead reaches an agent by the rules
+
 	def validate(self):
 		self.lead_title = self.lead_title or self._title()
 		if self.assigned_to:
@@ -33,4 +37,5 @@ class Lead(ArchiveOnly):
 			frappe.throw(_("{0} cannot be assigned leads.").format(self.assigned_to))
 
 	def on_update(self):
+		assignment.on_lead_saved(self)  # SOS-P1-19: the log, and the follow ups and visits move
 		notify_lead_assignment(self)  # SOS-P1-23

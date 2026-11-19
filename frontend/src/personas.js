@@ -23,6 +23,7 @@ export const PERSONAS = [
 			{ key: "telephony", label: "Telephony", to: "/company/telephony", area: "company" },
 			{ key: "call-lists", label: "Call lists", to: "/company/call-lists", area: "company" },
 			{ key: "teams", label: "Teams", to: "/company/teams", area: "company" },
+			{ key: "assignment", label: "Assignment", to: "/company/assignment", area: "company" },
 		],
 	},
 	{

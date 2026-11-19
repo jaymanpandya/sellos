@@ -218,17 +218,25 @@ class TestDeactivation(UsersCase):
 		open_lead, lost, task, done = self.make_agent_with_work()
 		row = self.row(NEW_EMAIL)
 		self.assertEqual((row["open_leads"], row["open_tasks"]), (1, 1))
+		# SOS-P1-19: an agent who holds open work is not deactivated until the caller says where it goes.
 		result = users.deactivate_user(NEW_EMAIL)
+		self.assertTrue(result["needs_handover"])
 		# A lead in a closed stage and a task that is done are not open work.
 		self.assertEqual([lead["name"] for lead in result["open_leads"]], [open_lead.name])
 		self.assertEqual([t["name"] for t in result["open_tasks"]], [task.name])
 		self.assertNotIn(lost.name, [lead["name"] for lead in result["open_leads"]])
 		self.assertNotIn(done.name, [t["name"] for t in result["open_tasks"]])
 		self.assertEqual((result["open_lead_count"], result["open_task_count"]), (1, 1))
-		self.assertEqual(self.row(NEW_EMAIL, result)["status"], "Deactivated")
-		# Nothing moved and nothing was deleted: SOS-P1-19 reassigns them.
+		self.assertEqual(self.row(NEW_EMAIL, result)["status"], "Invited")
 		self.assertEqual(frappe.db.get_value("Lead", open_lead.name, "assigned_to"), NEW_EMAIL)
-		self.assertEqual(frappe.db.get_value("Lead Task", task.name, "assigned_to"), NEW_EMAIL)
+		# Told where it goes, the user is deactivated and nothing stays with them. Nothing is deleted.
+		with patch.object(frappe.db, "commit"):
+			result = users.deactivate_user(NEW_EMAIL, reassign_to=_email("agent"))
+		self.assertEqual(self.row(NEW_EMAIL, result)["status"], "Deactivated")
+		self.assertEqual((result["open_lead_count"], result["open_task_count"]), (0, 0))
+		self.assertEqual(frappe.db.get_value("Lead", open_lead.name, "assigned_to"), _email("agent"))
+		self.assertEqual(frappe.db.get_value("Lead Task", task.name, "assigned_to"), _email("agent"))
+		self.assertEqual(frappe.db.get_value("Lead", lost.name, "assigned_to"), NEW_EMAIL)
 		self.assertTrue(frappe.db.exists("User", NEW_EMAIL))
 
 	def test_sign_in_stops_at_once_and_every_session_ends(self):
@@ -351,8 +359,9 @@ class TestRegressionSeed(UsersCase):
 		self.assertTrue(new["can_click_to_call"])
 		self.assertEqual(no_mobile["status"], "Invited")
 		self.assertFalse(no_mobile["can_click_to_call"])
+		self.assertEqual((no_mobile["open_leads"], no_mobile["open_tasks"]), (1, 1))  # the former agent's
 		self.assertEqual(former["status"], "Deactivated")
-		self.assertEqual((former["open_leads"], former["open_tasks"]), (1, 1))
+		self.assertEqual((former["open_leads"], former["open_tasks"]), (0, 0))  # SOS-P1-19 handed them over
 		self.assertEqual(self.sent, [])  # no mail was sent
 
 	def test_the_spec_fixture_gives_a_user_work_and_a_password(self):

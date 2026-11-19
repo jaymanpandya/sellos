@@ -311,6 +311,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Team %"],
 			["client_name", "like", "Gate Board %"],
 			["client_name", "like", "Gate Notify %"],
+			["client_name", "like", "Gate Assign %"],
 		],
 		pluck="name",
 	)
@@ -320,6 +321,7 @@ def remove_seeded_leads():
 	if leads:
 		frappe.db.delete("Lead Stage Change", {"parent": ["in", leads]})
 		frappe.db.delete("App Notification", {"lead": ["in", leads]})  # SOS-P1-23
+		frappe.db.delete("Lead Assignment", {"lead": ["in", leads]})  # SOS-P1-19
 	for doctype in ("Lead Activity", "Lead Task", "Site Visit", "Consent Record"):
 		if leads and frappe.get_meta(doctype).has_field("lead"):
 			frappe.db.delete(doctype, {"lead": ["in", leads]})
@@ -638,7 +640,8 @@ def seed_regression_data():
 
 	* Users (SOS-P1-17): Regression New Agent (invited, with an Indian mobile number, never signed in),
 	  Regression Agent No Mobile (invited with no number, so shown as unable to use click to call) and
-	  Regression Former Agent (deactivated, with one open lead and one open task waiting for SOS-P1-19).
+	  Regression Former Agent (deactivated, SOS-P1-19: their one open lead and one open task were handed to
+	  Regression Agent No Mobile, so nothing is left with the inactive user).
 	  All three are made through the Company Admin's invite and deactivate methods, with mail switched off.
 
 	* Telephony Settings (SOS-P2-01): the Plivo India account saved with fake keys, a 022 number
@@ -1133,7 +1136,8 @@ def _seed_users(admin):
 					email, first_name, "SellOS Agent", "", phones.in_mobile(seed) if seed else ""
 				)
 		former = SEEDED_USERS[2][0]
-		if not frappe.db.exists("Lead", {"assigned_to": former}):
+		handover = SEEDED_USERS[1][0]  # SOS-P1-19: a leaving agent's work goes to another agent
+		if not frappe.db.exists("Client", {"client_name": f"{REGRESSION_PREFIX}Former Agent Buyer"}):
 			client = crm.save_client(
 				values={
 					"client_name": f"{REGRESSION_PREFIX}Former Agent Buyer",
@@ -1153,7 +1157,7 @@ def _seed_users(admin):
 				}
 			)
 		if frappe.db.get_value("User", former, "enabled"):
-			users.deactivate_user(former)
+			users.deactivate_user(former, reassign_to=handover)
 
 
 def seed_user_work(email):
@@ -1434,6 +1438,122 @@ def remove_sales_teams():
 			frappe.delete_doc("User", email, force=True, ignore_permissions=True)
 	frappe.db.commit()  # nosemgrep
 	return {"teams": len(teams)}
+
+
+GATE_ASSIGN_USERS = {
+	"from": {
+		"email": "gate_assign_from@example.com",
+		"first_name": "Gate Assign From",
+		"roles": ["SellOS Agent"],
+		"desk": False,
+	},
+	"to": {
+		"email": "gate_assign_to@example.com",
+		"first_name": "Gate Assign To",
+		"roles": ["SellOS Agent"],
+		"desk": False,
+	},
+}
+
+
+def seed_bulk_reassign():
+	"""Three leads held by Gate Assign From, each with an open follow up and a future site visit, and Gate
+	Assign To who will take them, for the bulk reassignment spec (SOS-P1-19). Made through the lead, task
+	and site visit APIs as the Company Admin. Run remove_gate_assignment after."""
+	from sellos.access import teams
+	from sellos.crm import api as crm
+
+	_test_users()
+	for spec in GATE_ASSIGN_USERS.values():
+		_ensure_user(spec)
+	tag = frappe.generate_hash(length=6)
+	holder = GATE_ASSIGN_USERS["from"]["email"]
+	names = []
+	team = "Gate Assign Team"
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		if not frappe.db.exists("Sales Team", team):
+			teams.save_team(
+				values={
+					"team_name": team,
+					"manager": TEST_USERS["sales_manager"]["email"],
+					"members": [GATE_ASSIGN_USERS["to"]["email"]],
+				}
+			)
+		for n in (1, 2, 3):
+			name = f"Gate Assign Lead {n} {tag}"
+			client = crm.save_client(
+				values={"client_name": name, "client_type": "Buyer", "phone": phones.in_mobile(430 + n)}
+			)
+			lead = crm.save_lead(
+				values={"client": client["name"], "source": "Website", "assigned_to": holder}
+			)
+			crm.save_task(
+				values={
+					"lead": lead["lead"]["name"],
+					"title": f"Gate Assign task {n}",
+					"due_date": add_days(today(), 2),
+					"assigned_to": holder,
+				}
+			)
+			crm.save_site_visit(
+				values={
+					"lead": lead["lead"]["name"],
+					"project_name": "Gate Assign Tower",
+					"visit_datetime": f"{add_days(today(), 5)} 10:00:00",
+				}
+			)
+			names.append(name)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {
+		"leads": names,
+		"team": team,
+		"to_name": GATE_ASSIGN_USERS["to"]["first_name"],
+		"holder": holder,
+		"taker": GATE_ASSIGN_USERS["to"]["email"],
+	}
+
+
+def assignment_state(names):
+	"""Where the leads of these clients, and their follow ups and future visits, are (tests only,
+	SOS-P1-19): the agent of each lead, and how many tasks and visits each agent holds."""
+	clients = frappe.get_all("Client", filters={"client_name": ["in", names]}, pluck="name")
+	leads = frappe.get_all(
+		"Lead", filters={"client": ["in", clients or [""]]}, fields=["name", "lead_title", "assigned_to"]
+	)
+	ids = [lead.name for lead in leads] or [""]
+	state = {"leads": {lead.lead_title.rsplit(" ", 1)[0]: lead.assigned_to for lead in leads}}
+	for doctype, field in (("Lead Task", "assigned_to"), ("Site Visit", "agent")):
+		rows = frappe.get_all(doctype, filters={"lead": ["in", ids]}, pluck=field)
+		state[doctype] = {agent: rows.count(agent) for agent in set(rows)}
+	state["log"] = frappe.get_all(
+		"Lead Assignment", filters={"lead": ["in", ids], "method": "Bulk"}, pluck="to_agent"
+	)
+	return state
+
+
+def remove_gate_assignment():
+	"""Remove what the assignment specs committed (tests only, SOS-P1-19): the Gate Assign leads and users
+	and the rules named Gate Assign. The app never deletes a lead, so this goes to the tables."""
+	remove_seeded_leads()
+	for name in frappe.get_all(
+		"Lead Assignment Rule", filters={"rule_name": ["like", "Gate Assign %"]}, pluck="name"
+	):
+		frappe.db.delete("Version", {"ref_doctype": "Lead Assignment Rule", "docname": name})
+		frappe.delete_doc("Lead Assignment Rule", name, force=True, ignore_permissions=True)
+	for name in frappe.get_all("Sales Team", filters={"team_name": "Gate Assign Team"}, pluck="name"):
+		frappe.db.delete("Version", {"ref_doctype": "Sales Team", "docname": name})
+		frappe.delete_doc("Sales Team", name, force=True, ignore_permissions=True)
+	for spec in GATE_ASSIGN_USERS.values():
+		email = spec["email"]
+		if frappe.db.exists("User", email):
+			frappe.db.delete("Sessions", {"user": email})
+			frappe.db.delete("App Notification", {"recipient": email})
+			frappe.db.delete("Version", {"ref_doctype": "User", "docname": email})
+			for contact in frappe.get_all("Contact", filters={"email_id": email}, pluck="name"):
+				frappe.delete_doc("Contact", contact, force=True, ignore_permissions=True)
+			frappe.delete_doc("User", email, force=True, ignore_permissions=True)
+	frappe.db.commit()  # nosemgrep
+	return {"removed": True}
 
 
 def _regression_summary():

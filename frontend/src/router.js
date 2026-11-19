@@ -11,6 +11,7 @@ const SupportPage = () => import("./pages/SupportPage.vue");
 const UsersPage = () => import("./pages/UsersPage.vue");
 const TelephonyPage = () => import("./pages/TelephonyPage.vue");
 const TeamsPage = () => import("./pages/TeamsPage.vue");
+const AssignmentRulesPage = () => import("./pages/AssignmentRulesPage.vue");
 const TeamReportPage = () => import("./pages/TeamReportPage.vue");
 const CallListsPage = () => import("./pages/CallListsPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
@@ -71,6 +72,12 @@ export function createAppRouter() {
 				path: "/company/teams",
 				name: "teams",
 				component: TeamsPage,
+				meta: { area: "company" },
+			},
+			{
+				path: "/company/assignment",
+				name: "assignment-rules",
+				component: AssignmentRulesPage,
 				meta: { area: "company" },
 			},
 			{

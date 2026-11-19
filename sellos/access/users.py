@@ -24,6 +24,7 @@ from frappe.utils import cint, validate_email_address
 from sellos.access.registry import sellos_api
 from sellos.access.roles import COMPANY_ADMIN, PLATFORM_ADMIN
 from sellos.config.setup_wizard import GRANTABLE_ROLES, _max_users, _users
+from sellos.crm import assignment
 
 OPEN_LIST_LIMIT = 100
 NAME_LIMIT = 60
@@ -324,23 +325,44 @@ def save_user(email, values):
 
 
 @sellos_api(COMPANY_ADMIN)
-def deactivate_user(email):
-	"""Stop a user's sign in at once and list their open leads and tasks.
+def deactivate_user(email, reassign_to=None, distribute=0):
+	"""Stop a user's sign in at once, and hand their open work to someone else (SOS-P1-19).
 
-	The account is disabled, every session is ended and an unused invitation link is cancelled. Their leads
-	and tasks stay with them until SOS-P1-19 reassigns them."""
+	A user who holds open leads, open follow ups or future site visits is not deactivated until the
+	caller says where they go: `reassign_to` (one agent takes it all) or `distribute=1` (their team's
+	active agents take the leads in turn). With neither, nothing changes, and the answer carries
+	`needs_handover`, the open work and the agents to choose from, so the screen can ask. Nothing is left
+	with an inactive user. The account is disabled, every session is ended and an unused invitation
+	link is cancelled."""
 	user = _managed_user(email)
 	if user.name == frappe.session.user:
 		frappe.throw(_("You can not deactivate yourself."))
 	if COMPANY_ADMIN in _roles_of(user.name) and user.enabled and _enabled_admins() <= 1:
 		frappe.throw(_("There must be at least one active Company Admin."))
+	work = assignment.open_work(user.name)
+	if any(work.values()) and not (reassign_to or cint(distribute)):
+		agents = [a for a in assignment.assignable_agents() if a.name != user.name]
+		return {
+			**_state(),
+			"email": user.name,
+			"needs_handover": True,
+			"agents": agents,
+			**_open_work(user.name),
+		}
 	if user.enabled:
 		user.enabled = 0
 		user.flags.ignore_permissions = True
 		_save_user(user)
+	handed_over = assignment.hand_over(user.name, reassign_to, distribute)
 	frappe.db.set_value("User", user.name, "reset_password_key", "", update_modified=False)
 	clear_sessions(user.name, force=True)
-	return {**_state(), "email": user.name, **_open_work(user.name)}
+	return {
+		**_state(),
+		"email": user.name,
+		"needs_handover": False,
+		"handed_over": handed_over,
+		**_open_work(user.name),
+	}
 
 
 @sellos_api(COMPANY_ADMIN)

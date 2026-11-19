@@ -1,0 +1,33 @@
+{
+ "actions": [],
+ "autoname": "field:rule_name",
+ "creation": "2026-11-19 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["rule_name", "enabled", "rule_type", "priority", "source", "locality", "team"],
+ "fields": [
+  {"fieldname": "rule_name", "fieldtype": "Data", "in_list_view": 1, "label": "Rule", "reqd": 1, "unique": 1},
+  {"fieldname": "enabled", "fieldtype": "Check", "default": "1", "in_list_view": 1, "label": "Enabled"},
+  {"fieldname": "rule_type", "fieldtype": "Select", "in_list_view": 1, "label": "Assign by", "options": "Round robin\nSource\nLocality", "default": "Round robin", "reqd": 1, "description": "Round robin matches every lead. Source and Locality match leads from that source or wanting that locality. The team's active agents take the leads in turn."},
+  {"fieldname": "priority", "fieldtype": "Int", "in_list_view": 1, "label": "Order", "default": "10", "description": "Rules are tried from the lowest number up. The first that finds an active agent assigns the lead."},
+  {"fieldname": "source", "fieldtype": "Link", "label": "Source", "options": "Lead Source", "depends_on": "eval:doc.rule_type=='Source'"},
+  {"fieldname": "locality", "fieldtype": "Data", "label": "Locality", "depends_on": "eval:doc.rule_type=='Locality'"},
+  {"fieldname": "team", "fieldtype": "Link", "in_list_view": 1, "label": "Team", "options": "Sales Team", "reqd": 1}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-19 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Lead Assignment Rule",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "SellOS Company Admin", "permlevel": 0, "read": 1, "write": 1, "create": 1, "delete": 1}
+ ],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "rule_name",
+ "track_changes": 1
+}

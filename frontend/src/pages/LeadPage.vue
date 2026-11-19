@@ -61,6 +61,20 @@
 			>
 				{{ reassignError }}
 			</p>
+			<ul
+				v-if="detail.assignments && detail.assignments.length"
+				class="text-sm text-ink-muted"
+				data-testid="sellos-assignment-log"
+			>
+				<li
+					v-for="a in detail.assignments"
+					:key="a.name"
+					data-testid="sellos-assignment-entry"
+				>
+					{{ a.method }}: {{ a.from_name || a.from_agent || "nobody" }} to
+					{{ a.to_name || a.to_agent || "nobody" }}
+				</li>
+			</ul>
 		</section>
 
 		<section

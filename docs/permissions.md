@@ -68,7 +68,7 @@ on a company site, because the data scope above is "none".
 | `sellos.access.users.list_users`, `user_open_work` (SOS-P1-17, the Company Admins, Agents and Channel Partners on the site with their mobile number, whether click to call works for them, and their open leads and tasks. A Platform Admin is never listed) | Company Admin |
 | `sellos.access.users.invite_user`, `resend_invitation` (SOS-P1-17, a user made with one of Company Admin, Agent or Channel Partner and emailed a link to set a password. Never the Platform Admin role) | Company Admin |
 | `sellos.access.users.save_user` (SOS-P1-17, a user's name, Indian mobile number as +91 and ten digits, or role. A user who holds the Platform Admin role is not touched, and nobody changes their own role) | Company Admin |
-| `sellos.access.users.deactivate_user`, `reactivate_user` (SOS-P1-17, deactivating ends sign in and every session at once and lists the user's open leads and tasks for SOS-P1-19. Not yourself, not the last active Company Admin. Nothing is deleted) | Company Admin |
+| `sellos.access.users.deactivate_user`, `reactivate_user` (SOS-P1-17, deactivating ends sign in and every session at once. SOS-P1-19: a user with open leads, follow ups or future visits is not deactivated until the caller names who takes them, `reassign_to` or `distribute`; nothing is left with an inactive user. Not yourself, not the last active Company Admin. Nothing is deleted) | Company Admin |
 | `sellos.telephony.settings.get_telephony_settings`, `save_telephony_settings`, `check_connection` (SOS-P2-01, the Plivo India account: the auth ID and token are encrypted and never returned, only whether each is set) | Company Admin |
 | `sellos.crm.api.find_duplicates` (P1.16, the clients that already have a phone or email, masked as the viewer's role requires) | Company Admin, Agent, Sales Manager |
 | `sellos.crm.api.merge_clients` (P1.16, moves a client's leads to the one kept, nothing deleted, logged) | Company Admin |
@@ -84,6 +84,8 @@ on a company site, because the data scope above is "none".
 | `sellos.access.teams.list_teams` (SOS-P1-18, every team for a Company Admin with the managers and agents to pick from, only the teams they manage for a Sales Manager) | Company Admin, Sales Manager |
 | `sellos.access.teams.save_team`, `delete_team` (SOS-P1-18, make a team, set its manager and agents, remove it. An agent is in one team only) | Company Admin |
 | `sellos.crm.api.reassign_lead` (SOS-P1-18, give a lead to another agent. A Sales Manager only within its own team) | Company Admin, Sales Manager |
+| `sellos.crm.api.bulk_reassign_leads`, `reassign_options` (SOS-P1-19, give the listed leads, or the leads a filter finds, to one agent, with their open follow ups and future site visits, logged. A Sales Manager only the leads and agents of its own team. All or none) | Company Admin, Sales Manager |
+| `sellos.crm.api.list_assignment_rules`, `save_assignment_rule`, `delete_assignment_rule`, `set_default_team` (SOS-P1-19, the rules that assign new leads by round robin, source or locality, and the default team) | Company Admin |
 | `sellos.reports.team.team_report` (SOS-P1-18, the leads the reader may see by agent and by stage) | Company Admin, Sales Manager |
 
 Each story that adds a method adds a row here.

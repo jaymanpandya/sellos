@@ -78,6 +78,13 @@ SAMPLE_CALLS = {
 	"sellos.crm.api.log_call": {"lead": "{lead}", "outcome": "Wrong number", "notes": "p121 call"},
 	# SOS-P1-18: the lead goes to the test agent, who is in no team.
 	"sellos.crm.api.reassign_lead": {"lead": "{lead}", "assigned_to": "{agent}"},
+	# SOS-P1-19: a bulk move of the one lead, the agents to pick from, the rules and the default team.
+	"sellos.crm.api.bulk_reassign_leads": {"leads": "{lead_list}", "assigned_to": "{agent}"},
+	"sellos.crm.api.reassign_options": {},
+	"sellos.crm.api.list_assignment_rules": {},
+	"sellos.crm.api.save_assignment_rule": {"name": "{spare_rule}", "values": {"priority": 5}},
+	"sellos.crm.api.delete_assignment_rule": {"name": "{spare_rule}"},
+	"sellos.crm.api.set_default_team": {"team": "{rule_team}"},
 	"sellos.crm.api.save_lead": {"name": "{lead}", "values": {"notes": "p105 edit"}},
 	"sellos.crm.api.get_lead": {"name": "{lead}"},
 	"sellos.crm.api.add_activity": {"lead": "{lead}", "activity_type": "Note", "notes": "p105 added"},
@@ -262,6 +269,21 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"manager": TEST_USERS["sales_manager"]["email"],
 			}
 		).insert()
+		rule_team = frappe.get_doc(
+			{
+				"doctype": "Sales Team",
+				"team_name": "P119 Rule Team",
+				"manager": TEST_USERS["sales_manager"]["email"],
+			}
+		).insert()
+		spare_rule = frappe.get_doc(
+			{
+				"doctype": "Lead Assignment Rule",
+				"rule_name": "P119 Spare Rule",
+				"rule_type": "Round robin",
+				"team": rule_team.name,
+			}
+		).insert()
 		task = frappe.get_doc(
 			{
 				"doctype": "Lead Task",
@@ -302,11 +324,14 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"client": client.name,
 			"client_other": other.name,
 			"lead": lead.name,
+			"lead_list": [lead.name],
 			"spare_source": spare.name,
 			"spare_outcome": spare_outcome.name,
 			"spare_reason": spare_reason.name,
 			"spare_user": spare_user.name,
 			"spare_team": spare_team.name,
+			"spare_rule": spare_rule.name,
+			"rule_team": rule_team.name,
 			"agent": TEST_USERS["agent"]["email"],
 			"support_user": support_user,
 			"grant": grant["name"],

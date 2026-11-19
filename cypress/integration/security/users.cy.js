@@ -96,7 +96,7 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 		});
 	});
 
-	it("deactivates the agent: sign in stops and the open leads and tasks are listed", () => {
+	it("deactivates the agent after asking who takes the open leads and tasks: sign in stops", () => {
 		cy.bench("sellos.tests.ui_fixtures.set_gate_user_password", { email: agent }).then(
 			({ user, password }) => {
 				cy.request({
@@ -116,18 +116,32 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 		});
 		cy.intercept("POST", "**/sellos.access.users.deactivate_user*").as("deactivate");
 		row(agent).find('[data-testid="sellos-users-deactivate"]').click();
+		// SOS-P1-19: an agent with open work is asked where it goes, and nothing is deactivated yet.
+		cy.wait("@deactivate").its("response.statusCode").should("eq", 200);
+		row(agent)
+			.should("have.attr", "data-status", "Active") // the agent signed in above, and is still on
+			.within(() => {
+				cy.getByTestId("users-work-lead").should("have.length", 1);
+				cy.getByTestId("users-work-task")
+					.should("have.length", 1)
+					.and("contain", "Gate users task");
+				cy.getByTestId("users-handover-agent").select(noMobile);
+				cy.getByTestId("users-handover-confirm").click();
+			});
 		cy.wait("@deactivate").its("response.statusCode").should("eq", 200);
 		row(agent)
 			.should("have.attr", "data-status", "Deactivated")
 			.within(() => {
 				cy.getByTestId("users-work").should("be.visible");
-				cy.getByTestId("users-work-lead").should("have.length", 1);
-				cy.getByTestId("users-work-task")
-					.should("have.length", 1)
-					.and("contain", "Gate users task");
+				cy.getByTestId("users-handed-over").should("contain", "1 leads");
+				cy.getByTestId("users-work-lead").should("not.exist");
+				cy.getByTestId("users-work-task").should("not.exist");
 				cy.getByTestId("users-deactivate").should("not.exist");
 				cy.getByTestId("users-reactivate").should("be.visible");
 			});
+		row(noMobile).within(() => {
+			cy.getByTestId("users-open-leads").should("contain", "1 open leads");
+		});
 		// Sign in stops at once, over the real login.
 		cy.bench("sellos.tests.ui_fixtures.set_gate_user_password", { email: agent }).then(
 			({ user, password }) => {
