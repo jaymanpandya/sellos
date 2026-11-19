@@ -57,6 +57,9 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.save_assignment_rule": _ADMIN_ONLY,
 	"sellos.crm.api.delete_assignment_rule": _ADMIN_ONLY,
 	"sellos.crm.api.set_default_team": _ADMIN_ONLY,
+	# SOS-P1-12: the bought list import.
+	"sellos.crm.api.preview_lead_import": _ADMIN_ONLY,
+	"sellos.crm.api.import_bought_list": _ADMIN_ONLY,
 	"sellos.crm.api.save_lead": _READERS,
 	"sellos.crm.api.get_lead": _READERS,
 	"sellos.crm.api.add_activity": _LOGGERS,

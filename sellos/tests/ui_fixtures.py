@@ -312,6 +312,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Board %"],
 			["client_name", "like", "Gate Notify %"],
 			["client_name", "like", "Gate Assign %"],
+			["client_name", "like", "Gate Import %"],
 		],
 		pluck="name",
 	)
@@ -609,6 +610,10 @@ def seed_regression_data():
 	* Two sales teams (SOS-P1-18): Regression Team North, run by the Sales Manager test user with the gate
 	  agent and Regression Agent Two, and Regression Team South, run by Regression Manager Two with
 	  Regression Agent Three. The Sales Manager sees the first two agents' leads and not the third's.
+	* A bought list (SOS-P1-12), imported by the Company Admin through the import API: Regression Bought
+	  One and Regression Bought Two (the second also listed again under another name in the same file,
+	  merged into one), both from the source Bought list. One is Unknown and Two is Registered DND, each
+	  with its amber warning. They are unassigned, so only the Company Admin sees them.
 	* Requirements (SOS-P1-15): Buyer One wants a 2 or 3 BHK apartment under construction in Andheri
 	  West or Powai for 80 lakh to 1.2 crore, within 3 months. Investor Four wants a ready villa in
 	  Alibaug as an investment. The other leads have none.
@@ -817,6 +822,7 @@ def seed_regression_data():
 	_seed_call_outcomes(admin, agent_one)
 	_seed_users(admin)
 	_seed_dormant_lead(admin, agent_one)
+	_seed_bought_list(admin)
 	_seed_support_grants(admin)
 	_seed_telephony(admin)
 	_seed_control_site()
@@ -829,6 +835,27 @@ def seed_regression_data():
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
 	return _regression_summary()
+
+
+def _seed_bought_list(admin):
+	"""Regression Bought One (Unknown) and Regression Bought Two (a do not call result of Yes, so Registered
+	DND) from a bought list file (SOS-P1-12), made by the import API as the Company Admin. The file lists
+	Two twice under different names to show the merge. Safe to run again."""
+	from sellos.crm import api as crm
+
+	if frappe.db.exists("Client", {"client_name": f"{REGRESSION_PREFIX}Bought One"}):
+		return
+	one, two = phones.in_mobile(1301), phones.in_mobile(1302)
+	text = "\n".join(
+		(
+			"Name,Mobile,Email,City,DND Status",
+			f"{REGRESSION_PREFIX}Bought One,{one},regression_bought_one@example.com,Pune,",
+			f"{REGRESSION_PREFIX}Bought Two,{two},regression_bought_two@example.com,Thane,Yes",
+			f"{REGRESSION_PREFIX}Bought Two Again,{two},,,",
+		)
+	)
+	with _as_user(admin):
+		crm.import_bought_list(text, list_name="Regression bought list")
 
 
 def _seed_requirements(agent_one, agent_two):
@@ -1511,6 +1538,57 @@ def seed_bulk_reassign():
 		"holder": holder,
 		"taker": GATE_ASSIGN_USERS["to"]["email"],
 	}
+
+
+def seed_import_sample():
+	"""The file the bought list import spec uploads, and the one client already in SellOS it matches
+	(SOS-P1-12). Gate Import Known has a Website lead made through the API. The file lists Gate Import
+	Alpha twice (the second time with a spaced number), Gate Import Beta with a do not call result of
+	Yes, Gate Import Known, and a row with no name. Numbers are generated. Run remove_seeded_leads after."""
+	from sellos.crm import api as crm
+
+	_test_users()
+	alpha, beta, known = (phones.in_mobile(seed) for seed in (1310, 1311, 1312))
+	spaced = f"{alpha[:3]} {alpha[3:8]} {alpha[8:]}"
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		client = crm.save_client(values={"client_name": "Gate Import Known", "phone": known})
+		crm.save_lead(values={"client": client["name"], "source": "Website"})
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	rows = (
+		"Name,Mobile,Email,City,DND Status",
+		f"Gate Import Alpha,{alpha},gate_import_alpha@example.com,Pune,No",
+		f"Gate Import Alpha Twin,{spaced},,Thane,",
+		f"Gate Import Beta,{beta},,Nashik,Yes",
+		f"Gate Import Known,{known},,Mumbai,",
+		f",{beta},,,",
+	)
+	return {"csv": "\n".join(rows), "names": ["Gate Import Alpha", "Gate Import Beta", "Gate Import Known"]}
+
+
+def import_state(names):
+	"""What the import made, read back from the database (tests only, SOS-P1-12): for each client name, how
+	many clients and leads it has, and its lead's source, consent status and whether it is archived or
+	opted out."""
+	state = {}
+	for name in names:
+		clients = frappe.get_all("Client", filters={"client_name": name}, pluck="name")
+		leads = frappe.get_all(
+			"Lead",
+			filters={"client": ["in", clients or [""]]},
+			fields=["source", "consent_status", "archived", "opted_out_on", "stage"],
+		)
+		state[name] = {
+			"clients": len(clients),
+			"leads": [
+				{
+					"source": lead.source,
+					"consent_status": lead.consent_status,
+					"blocked": bool(lead.archived or lead.opted_out_on),
+				}
+				for lead in leads
+			],
+		}
+	return state
 
 
 def assignment_state(names):

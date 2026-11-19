@@ -19,6 +19,7 @@ from sellos.crm import (
 	consent,
 	duplicates,
 	follow_ups,
+	lead_import,
 	lead_sources,
 	notifications,
 	pipeline,
@@ -752,6 +753,22 @@ def record_dnd_result(lead, registered=1):
 	_writable_lead(lead)
 	consent.record_dnd_result(lead, cint(registered))
 	return consent.consent_view(lead)
+
+
+@sellos_api(COMPANY_ADMIN)
+def preview_lead_import(csv_text, mapping=None):
+	"""What importing a bought list would do, with nothing written (SOS-P1-12): the column mapping (the
+	one given, or guessed from the headers), the counts of new, merged and skipped rows, and the first
+	rows with their numbers masked."""
+	return lead_import.preview(csv_text, mapping)
+
+
+@sellos_api(COMPANY_ADMIN)
+def import_bought_list(csv_text, mapping=None, list_name=None):
+	"""Import a bought lead list (SOS-P1-12). Every lead gets the source Bought list and the consent status
+	Unknown, or Registered DND when the file carries a known do not call result. Duplicates are merged.
+	Nothing the import sets stops a call, an SMS or a WhatsApp message (consent never blocks)."""
+	return lead_import.import_list(csv_text, mapping, list_name)
 
 
 @sellos_api(*READERS)

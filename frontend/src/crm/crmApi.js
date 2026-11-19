@@ -19,6 +19,11 @@ export const crmApi = {
 	setDefaultTeam: (team) => call("set_default_team", { team }),
 	bulkReassign: (assignedTo, leads) =>
 		call("bulk_reassign_leads", { assigned_to: assignedTo, leads }),
+	// SOS-P1-12: the bought list import. The preview writes nothing.
+	previewLeadImport: (csvText, mapping = null) =>
+		call("preview_lead_import", { csv_text: csvText, mapping }),
+	importBoughtList: (csvText, mapping, listName) =>
+		call("import_bought_list", { csv_text: csvText, mapping, list_name: listName }),
 	getLead: (name) => call("get_lead", { name }),
 	findDuplicates: (values) => call("find_duplicates", values),
 	mergeClients: (keep, merge) => call("merge_clients", { keep, merge }),

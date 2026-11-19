@@ -85,6 +85,7 @@ on a company site, because the data scope above is "none".
 | `sellos.access.teams.save_team`, `delete_team` (SOS-P1-18, make a team, set its manager and agents, remove it. An agent is in one team only) | Company Admin |
 | `sellos.crm.api.reassign_lead` (SOS-P1-18, give a lead to another agent. A Sales Manager only within its own team) | Company Admin, Sales Manager |
 | `sellos.crm.api.bulk_reassign_leads`, `reassign_options` (SOS-P1-19, give the listed leads, or the leads a filter finds, to one agent, with their open follow ups and future site visits, logged. A Sales Manager only the leads and agents of its own team. All or none) | Company Admin, Sales Manager |
+| `sellos.crm.api.preview_lead_import`, `import_bought_list` (SOS-P1-12, a CSV of a bought lead list: the preview writes nothing, the import makes leads with the source Bought list and the consent status Unknown or Registered DND, merges duplicates, and sets nothing that stops contact) | Company Admin |
 | `sellos.crm.api.list_assignment_rules`, `save_assignment_rule`, `delete_assignment_rule`, `set_default_team` (SOS-P1-19, the rules that assign new leads by round robin, source or locality, and the default team) | Company Admin |
 | `sellos.reports.team.team_report` (SOS-P1-18, the leads the reader may see by agent and by stage) | Company Admin, Sales Manager |
 
