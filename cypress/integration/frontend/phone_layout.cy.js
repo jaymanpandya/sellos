@@ -27,7 +27,7 @@ context("SOS-P0-10: phone layout", () => {
 			cy.getByTestId("phone-nav-home").should("be.visible");
 			// SOS-P1-26: an agent and a sales manager land on Today. Let its lists finish loading.
 			if (role === "agent" || role === "sales_manager") {
-				cy.getByTestId("today-counts").should("be.visible");
+				cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 			}
 			cy.getByTestId("nav").should("not.be.visible");
 			cy.getByTestId("signout").should("not.be.visible");
@@ -42,6 +42,9 @@ context("SOS-P0-10: phone layout", () => {
 		cy.signInFresh("agent");
 		cy.intercept("**/api/method/sellos.crm.api.list_leads*", { body: { message: [] } });
 		cy.visit("/sellos");
+		// SOS-P1-26: the agent lands on Today. Let its lists finish loading before leaving the page, so
+		// no request is cut off in the middle.
+		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 		cy.getByTestId("phone-nav-leads").click();
 		cy.location("pathname").should("eq", "/sellos/crm/leads");
 		cy.intercept("POST", "**/api/method/logout").as("logout");
@@ -54,7 +57,7 @@ context("SOS-P0-10: phone layout", () => {
 		cy.viewport(1280, 800);
 		cy.signInFresh("agent");
 		cy.visit("/sellos");
-		cy.getByTestId("today-counts").should("be.visible");
+		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 		cy.getByTestId("nav").should("be.visible");
 		cy.getByTestId("phone-nav").should("not.be.visible");
 	});
