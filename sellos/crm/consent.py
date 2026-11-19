@@ -16,10 +16,11 @@ not to be contacted, or the number is on the register, and a basis is not the sa
 """
 
 import re
+from dataclasses import asdict, dataclass
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, add_months, get_datetime, now_datetime
+from frappe.utils import add_days, add_months, cint, get_datetime, now_datetime
 
 CONSENTED = "Consented"
 UNKNOWN = "Unknown"
@@ -33,6 +34,10 @@ APPLICATION_MONTHS = 3
 STOP_SOURCES = ("Phone call", "WhatsApp", "SMS", "Email", "In person", "Website", "Other")
 
 # red for an explicit stop, amber for the two cases where permission is not established, none otherwise.
+CHANNELS = ("Call", "SMS", "WhatsApp")
+SETTINGS = "SellOS Settings"
+ENFORCEMENT_FIELD = "consent_enforcement"
+
 WARNINGS = {
 	OPTED_OUT: ("red", "Opted out. This lead asked to stop being contacted."),
 	REGISTERED_DND: ("amber", "Registered on the do not call list."),
@@ -204,3 +209,112 @@ def consent_view(lead, on=None) -> dict:
 		"dnd_checked_on": row.dnd_checked_on,
 		"records": records,
 	}
+
+
+# --- the one function that evaluates consent (SOS-P2-04) -------------------------------------------
+
+
+@dataclass
+class ContactCheck:
+	"""What check_contact decided. `refused` is True only with Consent enforcement On and a lead that is
+	not Consented. `warning` is written to the log entry and shown on the screen."""
+
+	check: str
+	lead: str
+	channel: str
+	status: str
+	warning_level: str
+	warning: str
+	enforcement: str
+	refused: bool
+	reason: str
+	purpose: str = ""
+
+	def as_dict(self) -> dict:
+		return asdict(self)
+
+
+def enforcement_on() -> bool:
+	return bool(cint(frappe.db.get_single_value(SETTINGS, ENFORCEMENT_FIELD)))
+
+
+def check_contact(lead, channel, purpose=None, reference_doctype=None, reference_name=None) -> ContactCheck:
+	"""The only place consent is evaluated. Every dial, SMS send and WhatsApp send calls it first.
+
+	It always writes a Consent Check with the status, the warning and the outcome, and returns it. With
+	Consent enforcement Off (the default) it never refuses. With it On it refuses a contact to a lead
+	that is not Consented and says why. A promotional call on the 022 number adds a warning and is
+	never refused for that. Callers act on `refused`: they return the reason to the screen rather than
+	raise, so the logged refusal is kept. Pass the log entry it belongs to, or link it afterwards with
+	link_check."""
+	if channel not in CHANNELS:
+		frappe.throw(_("The channel must be Call, SMS or WhatsApp."))
+	status = compute_status(lead)
+	level, message = WARNINGS[status]
+	warnings = [message] if message else []
+	if channel == "Call" and purpose:
+		from sellos.telephony.router import purpose_warning
+
+		promo = purpose_warning(purpose)
+		if promo:
+			warnings.append(promo)
+			level = level or "amber"
+	on = enforcement_on()
+	refused = on and status != CONSENTED
+	reason = ""
+	if refused:
+		reason = _(
+			"Consent enforcement is On and this lead's consent status is {0}, so the {1} was not made."
+		).format(_(status), _(channel))
+	doc = frappe.get_doc(
+		{
+			"doctype": "Consent Check",
+			"lead": lead,
+			"channel": channel,
+			"purpose": (purpose or "").strip().title(),
+			"consent_status": status,
+			"warning_level": level or "",
+			"warning": " ".join(warnings),
+			"enforcement": "On" if on else "Off",
+			"refused": 1 if refused else 0,
+			"reason": reason,
+			"checked_on": now_datetime(),
+			"checked_by": frappe.session.user,
+			"reference_doctype": reference_doctype,
+			"reference_name": reference_name,
+		}
+	).insert(ignore_permissions=True)
+	return ContactCheck(
+		doc.name,
+		lead,
+		channel,
+		status,
+		doc.warning_level,
+		doc.warning,
+		doc.enforcement,
+		bool(refused),
+		reason,
+		doc.purpose,
+	)
+
+
+def link_check(check, reference_doctype, reference_name) -> None:
+	"""Point a Consent Check at the log entry it belongs to, once that entry exists."""
+	frappe.db.set_value(
+		"Consent Check",
+		check,
+		{"reference_doctype": reference_doctype, "reference_name": reference_name},
+		update_modified=False,
+	)
+
+
+def set_enforcement(on) -> bool:
+	"""Switch Consent enforcement. Saved as a document save so the change is tracked: who, when, from
+	what to what (SellOS Settings tracks changes)."""
+	on = bool(cint(on))
+	doc = frappe.get_doc(SETTINGS)
+	if bool(doc.get(ENFORCEMENT_FIELD)) != on:
+		doc.set(ENFORCEMENT_FIELD, 1 if on else 0)
+		doc.flags.ignore_permissions = True
+		doc.save(ignore_version=False)  # Frappe skips versions in tests; this change is always logged
+	return on

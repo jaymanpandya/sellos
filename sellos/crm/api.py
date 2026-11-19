@@ -679,6 +679,18 @@ def save_follow_up_settings(untouched_days):
 	return {"untouched_days": follow_ups.set_untouched_days(untouched_days)}
 
 
+@sellos_api(*READERS)
+def get_consent_enforcement():
+	"""Whether Consent enforcement is On for this company (SOS-P2-04). Off by default."""
+	return {"consent_enforcement": consent.enforcement_on()}
+
+
+@sellos_api(COMPANY_ADMIN)
+def set_consent_enforcement(on):
+	"""A Company Admin switches Consent enforcement On or Off (SOS-P2-04). Every change is logged."""
+	return {"consent_enforcement": consent.set_enforcement(on)}
+
+
 @sellos_api(*LOGGERS)
 def save_site_visit(name=None, values=None):
 	"""Book or change a site visit (SOS-P1-25): the lead, the project, the date and time and the agent

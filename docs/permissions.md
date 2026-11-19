@@ -79,6 +79,8 @@ on a company site, because the data scope above is "none".
 | `sellos.crm.api.today_screen` (SOS-P1-26, the Today screen: follow ups due and overdue, new leads, today's and tomorrow's site visits, each showing the user's own records, a Sales Manager's team's by agent and a Company Admin's everyone's; phone numbers masked except for a Company Admin) | Company Admin, Agent, Sales Manager |
 | `sellos.crm.api.add_activity`, `save_task`, `save_site_visit` (a new visit moves its lead to Site visit booked, SOS-P1-25) | Company Admin, Agent, Sales Manager |
 | `sellos.crm.api.record_consent`, `record_opt_out`, `record_dnd_result` (P1.08, the Consent Record; consent never blocks) | Company Admin, Agent, Sales Manager |
+| `sellos.crm.api.get_consent_enforcement` (SOS-P2-04, reads the company setting Consent enforcement, Off by default) | Company Admin, Agent, Sales Manager, Channel Partner |
+| `sellos.crm.api.set_consent_enforcement` (SOS-P2-04, changes the company setting Consent enforcement; every change is logged) | Company Admin |
 | `sellos.access.support.list_support_users`, `grant_support_access`, `revoke_support_access`, `list_support_grants`, `support_access_log` (P1.13) | Company Admin |
 | `sellos.config.setup_wizard.get_setup_state`, `save_profile`, `save_branding`, `save_stages`, `add_user`, `finish_setup` (P1.03, the setup wizard) | Company Admin |
 | `sellos.access.field_history.getdoc`, `get_docinfo` (P1.06B: the record loader, with the history of fields the reader may not read left out) | Every role |

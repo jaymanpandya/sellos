@@ -13,6 +13,7 @@
   "address",
   "untouched_days",
   "default_team",
+  "consent_enforcement",
   "setup_steps_done",
   "setup_complete"
  ],
@@ -79,6 +80,14 @@
    "options": "Sales Team",
    "label": "Default team for new leads",
    "description": "A lead no assignment rule matches goes to this team's active agents in turn (SOS-P1-19)."
+  },
+  {
+   "fieldname": "consent_enforcement",
+   "fieldtype": "Check",
+   "label": "Consent enforcement",
+   "default": "0",
+   "read_only": 1,
+   "description": "Off by default. With it On, a call, an SMS or a WhatsApp message to a lead that is not Consented is refused and the refusal is logged. Only a Company Admin changes it, in the web app (SOS-P2-04)."
   }
  ],
  "index_web_pages_for_search": 0,
@@ -102,5 +111,6 @@
  ],
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

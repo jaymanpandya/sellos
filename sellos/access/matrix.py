@@ -83,6 +83,9 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.list_notifications": _READERS,
 	"sellos.crm.api.mark_notification_read": _READERS,
 	"sellos.crm.api.mark_all_notifications_read": _READERS,
+	# SOS-P2-04: Consent enforcement is the Company Admin's. Others may read whether it is on.
+	"sellos.crm.api.get_consent_enforcement": _READERS,
+	"sellos.crm.api.set_consent_enforcement": _ADMIN_ONLY,
 	"sellos.crm.api.record_consent": _LOGGERS,
 	"sellos.crm.api.record_opt_out": _LOGGERS,
 	"sellos.crm.api.record_dnd_result": _LOGGERS,
