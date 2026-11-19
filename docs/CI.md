@@ -27,3 +27,7 @@ A failing job turns its check red. Whether red blocks the merge is a GitHub sett
 4. Do not allow bypassing the rules.
 
 Until this rule is set, a failing check is reported but does not stop a merge. The build loop's own gate (`scripts/run-tests.sh`) runs before every push to `1.0`. Since SOS-SETUP-42 it is the fast gate (guards, the task's own and affected tests, a smoke set), and CI is where the whole backend and Cypress suites run, on every push; the loop waits for CI to go green before it starts the next task.
+
+## CI red on the flake counter alone (SOS-P2-05)
+
+When the only red is "FLAKY too often, fix these specs" (no test failed on its own), the loop does not spend a repair attempt. It reruns the failed jobs once (`gh run rerun --failed`). If the counter is still the only red, it writes the specs to docs/FLAKY.md and goes on. To clear the counter after a real fix: `gh cache list --key sellos-flaky-`, then `gh cache delete <id>` for each (the counter lives in the Actions cache). Never edit a spec to quiet the counter without its failure message.

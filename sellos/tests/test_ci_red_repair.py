@@ -37,7 +37,7 @@ case "$1 $2" in
       *--json*) if [ "$n" -gt 0 ]; then echo $((n - 1)) >"$F/in_progress"; echo in_progress; else echo completed; fi ;;
       *) echo "$*" >>"$F/log_reads"
          if [ "$n" -gt 0 ]; then echo "run $3 is still in progress; logs will be available when it is complete"; exit 0; fi
-         if [ "$(cat "$F/ci_last")" = env ]; then cat "$F/env.log"; else cat "$F/red.log"; fi ;;
+         case "$(cat "$F/ci_last")" in env) cat "$F/env.log" ;; flake) cat "$F/flake.log" ;; *) cat "$F/red.log" ;; esac ;;
     esac ;;
   "run rerun") echo "$*" >>"$F/gh_reruns" ;;
   *) exit 0 ;;
@@ -66,6 +66,17 @@ ENV_LOG = (
 )
 
 
+# CI runs 44557395802, 44561474025, 44566130220: a spec failed once and passed on its rerun (its numbered
+# failure is still in the log), and the counter then failed the job. No test failed on its own.
+FLAKE_LOG = (
+	"UI\tRun the Cypress suite\t2026-11-19T16:30:00.0000000Z     1) SellOS Agent sees only navigation inside its own areas\n"
+	"UI\tRun the Cypress suite\t2026-11-19T16:33:00.0000000Z FLAKY (passed on rerun): frontend/lead_detail.cy.js\n"
+	"UI\tRun the Cypress suite\t2026-11-19T16:36:00.0000000Z --- FLAKY too often, fix these specs:"
+	" frontend/lead_detail.cy.js frontend/pages.cy.js ---\n"
+	"UI\tRun the Cypress suite\t2026-11-19T16:36:01.0000000Z ##[error]Process completed with exit code 1.\n"
+)
+
+
 class CiSandbox(loop_env.LoopSandbox):
 	def setUp(self):
 		super().setUp()
@@ -76,6 +87,7 @@ class CiSandbox(loop_env.LoopSandbox):
 		self.write(self.bin / "claude", FAKE_CLAUDE, 0o755)
 		self.write(self.fake / "red.log", RED_LOG)
 		self.write(self.fake / "env.log", ENV_LOG)
+		self.write(self.fake / "flake.log", FLAKE_LOG)
 		self.origin = self.root / "origin.git"
 		self.serve(302)
 
@@ -158,6 +170,37 @@ class ARedCiIsRepaired(CiSandbox):
 		self.assertRegex(
 			self.ledger(), r"\| SOS-X-1 \| environment \| CI red on [0-9a-f]+ .*still red after one rerun"
 		)
+
+
+class TheFlakeCounterAloneIsNotRepaired(CiSandbox):
+	def test_green_after_one_rerun_spends_no_repair(self):
+		code = self.run_ci([0], ["flake", "green"])
+		self.assertEqual(code, 0, self.out)
+		self.assertEqual(self.calls("claude_calls"), 1, "no repair agent ran for the flake counter")
+		self.assertEqual(self.read("gh_reruns").splitlines(), ["run rerun 101 --failed"])
+		self.assertIn("after one rerun of the failed jobs. Going on.", "\n".join(self.notices()))
+		self.assertNotIn("Repair attempt", "\n".join(self.notices()))
+
+	def test_still_red_on_the_counter_is_recorded_and_the_loop_goes_on(self):
+		code = self.run_ci([0], ["flake", "flake"])
+		self.assertEqual(code, 0, self.out)
+		self.assertEqual(self.calls("claude_calls"), 1, "no repair agent ran for the flake counter")
+		self.assertEqual(self.read("gh_reruns").splitlines(), ["run rerun 101 --failed"], "rerun once")
+		flaky = (self.repo / "docs" / "FLAKY.md").read_text(encoding="utf-8")
+		self.assertIn("frontend/lead_detail.cy.js frontend/pages.cy.js", flaky)
+		self.assertNotIn("| ci-red |", self.ledger())
+		self.assertEqual(self.status(), "Complete", self.out)
+		self.assertIn("Going on without a repair.", "\n".join(self.notices()))
+
+	def test_a_spec_that_failed_its_rerun_is_still_a_code_failure(self):
+		self.write(
+			self.fake / "flake.log",
+			FLAKE_LOG
+			+ "UI\tRun the Cypress suite\t2026-11-19T16:36:02Z FAILED AGAIN: frontend/pages.cy.js\n",
+		)
+		code = self.run_ci([0, 0, 0], ["flake", "flake", "flake"])
+		self.assertEqual(code, 0, self.out)
+		self.assertEqual(self.calls("claude_calls"), 3, "the task's agent, then two repairs")
 
 
 class ARunStillInProgressIsWaitedFor(CiSandbox):

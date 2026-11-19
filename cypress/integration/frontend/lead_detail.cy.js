@@ -8,44 +8,9 @@ const lead = (timeline = []) => ({
 	},
 });
 
-// The lead opens beside the list (router.js), so the list screen asks for its rows and filter boxes
-// too, and the shell asks for the bell's notifications and, for those who log, the site visit lists.
-// Stub every one and wait for them, so no request is left running when the test ends (a slow CI run
-// cut the unstubbed ones off, "lead_filter_options failed Failed to fetch").
-const quietBackground = (logs = true) => {
-	cy.intercept("**/api/method/sellos.crm.api.list_notifications*", {
-		body: { message: { unread: 0, items: [] } },
-	}).as("notifications");
-	cy.intercept("**/api/method/sellos.crm.api.list_leads*", { body: { message: [] } }).as(
-		"leads"
-	);
-	cy.intercept("**/api/method/sellos.crm.api.lead_filter_options*", {
-		body: { message: {} },
-	}).as("filterOptions");
-	cy.intercept("**/api/method/sellos.crm.api.list_stages*", { body: { message: [] } }).as(
-		"stages"
-	);
-	cy.intercept("**/api/method/sellos.crm.api.list_lead_sources*", {
-		body: { message: { sources: [] } },
-	}).as("sources");
-	if (logs) {
-		cy.intercept("**/api/method/sellos.crm.api.site_visit_options*", {
-			body: { message: {} },
-		}).as("visitOptions");
-	}
-};
-const backgroundLoaded = (logs = true) => {
-	cy.wait("@notifications");
-	cy.wait(["@leads", "@filterOptions", "@stages"]);
-	// A screen that can make a lead asks for the sources twice (its filter and its form).
-	cy.wait(logs ? ["@sources", "@sources"] : ["@sources"]);
-	if (logs) cy.wait("@visitOptions");
-};
-
 context("SOS-P1-06A: lead detail", () => {
 	it("logs an activity and reloads the timeline", () => {
 		cy.signInFresh("agent");
-		quietBackground();
 		let loads = 0;
 		cy.intercept("**/api/method/sellos.crm.api.get_lead*", (req) => {
 			loads += 1;
@@ -69,7 +34,6 @@ context("SOS-P1-06A: lead detail", () => {
 			"addActivity"
 		);
 		cy.visit("/sellos/crm/leads/LD-1");
-		backgroundLoaded();
 		cy.getByTestId("lead-phone").should("contain", "*********345");
 		cy.getByTestId("lead-timeline-empty").should("contain", "Nothing logged yet");
 		cy.getByTestId("lead-activity-notes").type("intro");
@@ -87,7 +51,6 @@ context("SOS-P1-06A: lead detail", () => {
 
 	it("marks an overdue task", () => {
 		cy.signInFresh("agent");
-		quietBackground();
 		cy.intercept("**/api/method/sellos.crm.api.get_lead*", {
 			body: lead([
 				{
@@ -101,20 +64,17 @@ context("SOS-P1-06A: lead detail", () => {
 			]),
 		});
 		cy.visit("/sellos/crm/leads/LD-1");
-		backgroundLoaded();
 		cy.getByTestId("lead-timeline-overdue").should("contain", "Overdue");
 	});
 
 	it("shows a partner the timeline but no way to log or archive", () => {
 		cy.signInFresh("channel_partner");
-		quietBackground(false);
 		cy.intercept("**/api/method/sellos.crm.api.get_lead*", {
 			body: lead([
 				{ kind: "activity", name: "A1", title: "Call", when: "2026-11-04 10:00:00" },
 			]),
 		});
 		cy.visit("/sellos/partner/leads/LD-1");
-		backgroundLoaded(false);
 		cy.getByTestId("lead-timeline-item").should("contain", "Call");
 		cy.getByTestId("lead-activity-form").should("not.exist");
 		cy.getByTestId("lead-archive").should("not.exist");

@@ -3,7 +3,8 @@
 
 Usage:
   ci_failures.py extract <log>   the failing tests and their messages, one per line, at most 80 lines
-  ci_failures.py kind <log>      "code" or "environment <the line that shows it>"
+  ci_failures.py kind <log>      "code", "environment <the line that shows it>" or "flake-counter"
+  ci_failures.py flaky <log>     the specs the flake counter names, one per line
 
 A red run is the environment's only when its log names no failing test and shows a runner, quota or
 network fault (a runner lost or shut down, a job GitHub would not start, a host that does not
@@ -69,7 +70,41 @@ def extract(lines):
 	return out[:80]
 
 
+# A run that is red only because of the flake counter: the suite printed "FLAKY too often" and nothing
+# else failed. A numbered Cypress failure is not counted, because a spec that failed once and passed on
+# its rerun still prints it; a spec that failed its rerun prints FAILED AGAIN.
+HARD_FAILURE = re.compile(
+	r"^\s*(FAIL|ERROR):? "
+	r"|FAILED AGAIN|UI tests failed|SPEC FAILED|SPECS FAILED|TESTS FAILED|GUARD FAILED|GUARDS FAILED"
+	r"|^\s*FAILED \((failures|errors)="
+)
+TOO_OFTEN = re.compile(r"FLAKY too often, fix these specs:\s*(.*?)\s*-*\s*$")
+RERUN_PASSED = re.compile(r"^\s*FLAKY \(passed on rerun\):\s*(\S+)")
+
+
+def flake_counter_only(lines):
+	if not any(TOO_OFTEN.search(line) for line in lines):
+		return False
+	return not any(HARD_FAILURE.search(line) for line in lines)
+
+
+def flaky_specs(lines):
+	specs = []
+	for line in lines:
+		m = TOO_OFTEN.search(line)
+		found = m.group(1).split() if m else []
+		m = RERUN_PASSED.search(line)
+		if m:
+			found = [m.group(1)]
+		for spec in found:
+			if spec not in specs:
+				specs.append(spec)
+	return specs
+
+
 def kind(lines):
+	if flake_counter_only(lines):
+		return "flake-counter"
 	if extract(lines):
 		return "code"
 	for line in lines:
@@ -79,12 +114,14 @@ def kind(lines):
 
 
 def main(argv):
-	if len(argv) != 2 or argv[0] not in ("extract", "kind"):
+	if len(argv) != 2 or argv[0] not in ("extract", "kind", "flaky"):
 		print(__doc__)
 		return 2
 	lines = lines_of(argv[1])
 	if argv[0] == "extract":
 		print("\n".join(extract(lines)))
+	elif argv[0] == "flaky":
+		print("\n".join(flaky_specs(lines)))
 	else:
 		print(kind(lines))
 	return 0
