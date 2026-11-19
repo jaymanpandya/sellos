@@ -274,7 +274,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-22
 - **Browser spec:** required
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-P1-19: Assign and reassign leads
 - **Epic:** Core CRM and consent
