@@ -438,6 +438,7 @@ class TestRegressionSeed(VisitCase):
 			[(r.project_name, r.agent, r.confirmation_status, r.status) for r in rows],
 			[
 				("Regression Lakeside Tour", self.other, "Not confirmed", "Scheduled"),
+				("Regression Noon Walkthrough", self.agent, "Not confirmed", "Scheduled"),
 				("Regression Skyline Walkthrough", self.agent, "Confirmed", "Scheduled"),
 			],
 		)
