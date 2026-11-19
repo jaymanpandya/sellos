@@ -41,3 +41,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-18 16:54 | SOS-P1-23 | blocked | the gate still failed after 3 gate run(s): CHANGED SPEC FAILED: crm/leads_by_role.cy.js; the loop went on to the next task | 54 | 0.0 |
 | 2026-11-18 18:01 | SOS-P2-04 | blocked | two tasks Blocked in a row (SOS-P1-23, then SOS-P2-04): the gate still failed after 3 gate run(s): see the gate log | 67 | 1.0 |
 | 2026-11-18 20:36 | SOS-P1-22 | ci-red | CI still red on 0858628 (the commit for SOS-P1-22) after 2 repair attempt(s): (no failing test could be read from the log; its last lines:) run 44391986098 is still in progress; logs will be availabl… | 40 | 4.4 |
+| 2026-11-19 06:35 | SOS-P2-04 | ci-red | CI still red on e565aa1 (the commit for SOS-P2-04) after 2 repair attempt(s): 1) "after each" hook for "shows a partner the timeline but no way to log or archive" 1) SOS-P1-06A: lead detail | 68 | 9.0 |
