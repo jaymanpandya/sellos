@@ -66,4 +66,32 @@ context("SOS-P1-06A: leads screen", () => {
 			});
 		cy.location("pathname").should("eq", "/sellos/crm/leads/LD-1");
 	});
+
+	// The newest request wins. The first, unfiltered answer is held back until after the filtered one
+	// has been drawn; it must not put the unfiltered list back on the screen.
+	it("a slow earlier answer does not overwrite the filtered list", () => {
+		cy.signInFresh("agent");
+		stubFilterBoxes();
+		const everyone = [
+			{ name: "LD-1", client_name: "Asha Rao", source: "Website", overdue_tasks: 0 },
+			{ name: "LD-2", client_name: "Vikram Shah", source: "Website", overdue_tasks: 0 },
+		];
+		const filtered = [everyone[0]];
+		cy.intercept("**/api/method/sellos.crm.api.list_leads*", (req) => {
+			const searched = JSON.stringify(req.body || "").includes("Asha");
+			req.reply({
+				body: { message: searched ? filtered : everyone },
+				delay: searched ? 0 : 2500,
+			});
+		}).as("listLeads");
+		cy.visit("/sellos/crm/leads");
+		cy.getByTestId("leads-search").type("Asha");
+		cy.getByTestId("lead-row").should("have.length", 1).and("contain", "Asha Rao");
+		// Both answers have arrived once the second request has completed and the delay has passed.
+		cy.wait("@listLeads");
+		cy.wait("@listLeads");
+		cy.wait(3000);
+		cy.getByTestId("lead-row").should("have.length", 1).and("contain", "Asha Rao");
+		cy.getByTestId("lead-row").should("not.contain", "Vikram Shah");
+	});
 });

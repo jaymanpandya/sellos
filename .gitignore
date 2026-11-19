@@ -57,3 +57,6 @@ sellos/public/frontend
 sellos/www/sellos.html
 frontend/auto-imports.d.ts
 frontend/components.d.ts
+
+# Cypress failure screenshots (screenshotOnRunFailure), made by every failing run
+cypress/screenshots/

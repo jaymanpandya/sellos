@@ -581,25 +581,32 @@ async function clearFilters() {
 	await load();
 }
 
+// Only the newest request may fill the screen: a slow earlier answer must not overwrite a filtered one.
+let loadSeq = 0;
 async function load() {
+	const seq = ++loadSeq;
 	loading.value = true;
 	loadError.value = "";
 	try {
 		writeUrl();
 		if (view.value === "board") {
 			const result = await crmApi.getBoard(search.value, serverFilters());
+			if (seq !== loadSeq) return;
 			board.columns = result.columns || [];
 			untouchedDays.value = result.untouched_days || untouchedDays.value;
 		} else {
-			leads.value = (await crmApi.listLeads(search.value, 0, serverFilters())) || [];
+			const rows = (await crmApi.listLeads(search.value, 0, serverFilters())) || [];
+			if (seq !== loadSeq) return;
+			leads.value = rows;
 		}
 	} catch (e) {
+		if (seq !== loadSeq) return;
 		leads.value = [];
 		board.columns = [];
 		loadError.value = serverMessage(e, "The leads could not be loaded.");
 		logRequestError("list_leads failed", e);
 	} finally {
-		loading.value = false;
+		if (seq === loadSeq) loading.value = false;
 	}
 }
 
