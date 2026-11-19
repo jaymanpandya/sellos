@@ -81,6 +81,9 @@ SAMPLE_CALLS = {
 	# SOS-P1-19: a bulk move of the one lead, the agents to pick from, the rules and the default team.
 	"sellos.crm.api.bulk_reassign_leads": {"leads": "{lead_list}", "assigned_to": "{agent}"},
 	"sellos.crm.api.reassign_options": {},
+	# SOS-P2-04: reading and switching Consent enforcement (Off is the default, so the call changes nothing).
+	"sellos.crm.api.get_consent_enforcement": {},
+	"sellos.crm.api.set_consent_enforcement": {"on": 0},
 	"sellos.crm.api.list_assignment_rules": {},
 	"sellos.crm.api.save_assignment_rule": {"name": "{spare_rule}", "values": {"priority": 5}},
 	"sellos.crm.api.delete_assignment_rule": {"name": "{spare_rule}"},

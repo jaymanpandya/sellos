@@ -7,6 +7,8 @@ context("SOS-P0-10: pages", () => {
 		});
 		cy.visit("/sellos");
 		cy.getByTestId("home-welcome").should("contain", "Welcome, Jayman");
+		// SOS-P1-26: an agent lands on Today. Let its lists finish loading so no request is left running.
+		cy.getByTestId("today-counts").should("be.visible");
 	});
 
 	it("greets with the email when the boot data has no name", () => {
@@ -20,6 +22,8 @@ context("SOS-P0-10: pages", () => {
 		cy.getByTestId("home-welcome")
 			.should("contain", "Welcome")
 			.and("contain", "sos_test_agent@example.com");
+		// SOS-P1-26: let the Today lists finish loading so no request is left running.
+		cy.getByTestId("today-counts").should("be.visible");
 	});
 
 	it("explains the no access page", () => {

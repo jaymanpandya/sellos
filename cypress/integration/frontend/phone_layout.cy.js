@@ -25,6 +25,10 @@ context("SOS-P0-10: phone layout", () => {
 			cy.getByTestId("phone-signout").should("be.visible");
 			cy.getByTestId("phone-nav").should("be.visible");
 			cy.getByTestId("phone-nav-home").should("be.visible");
+			// SOS-P1-26: an agent and a sales manager land on Today. Let its lists finish loading.
+			if (role === "agent" || role === "sales_manager") {
+				cy.getByTestId("today-counts").should("be.visible");
+			}
 			cy.getByTestId("nav").should("not.be.visible");
 			cy.getByTestId("signout").should("not.be.visible");
 			cy.document().then((doc) => {
@@ -50,6 +54,7 @@ context("SOS-P0-10: phone layout", () => {
 		cy.viewport(1280, 800);
 		cy.signInFresh("agent");
 		cy.visit("/sellos");
+		cy.getByTestId("today-counts").should("be.visible");
 		cy.getByTestId("nav").should("be.visible");
 		cy.getByTestId("phone-nav").should("not.be.visible");
 	});
