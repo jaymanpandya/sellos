@@ -147,8 +147,10 @@ context("SOS-P1-24: pipeline board and lead list filters", () => {
 
 	it("filters by last contacted and by untouched", () => {
 		openList("agent");
-		const lastWeek = new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10);
-		cy.getByTestId("leads-filter-contacted-from").type(lastWeek);
+		// Five days ago by the site's date and time zone, never the browser clock.
+		cy.bench("sellos.tests.ui_fixtures.site_date", { days: -5 }).then((r) =>
+			cy.getByTestId("leads-filter-contacted-from").type(r.date)
+		);
 		cy.wait("@list");
 		rows().should("have.length", 1).and("contain", seed.agent_a);
 		cy.getByTestId("leads-filter-clear").click();

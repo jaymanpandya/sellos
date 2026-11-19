@@ -1785,3 +1785,12 @@ def _regression_summary():
 			"Client", {"client_name": f"{REGRESSION_PREFIX}Buyer One"}, "name"
 		),
 	}
+
+
+def site_date(days=0, at=None):
+	"""A date of the site, from the server's own clock and time zone, never the browser's (SOS-LOOP: CI ran
+	the browser in UTC while the site is in Asia/Kolkata, so "tomorrow" differed for hours of every day).
+	`days` is added to the site's today. Returns "YYYY-MM-DD", or "YYYY-MM-DDTHH:MM" when `at` ("10:00")
+	is given, the way a "datetime-local" box wants it. Returns {"date": ...} (bench execute prints JSON)."""
+	day = add_days(today(), int(days))
+	return {"date": f"{day}T{at}" if at else str(day)}

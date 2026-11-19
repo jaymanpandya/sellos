@@ -14,13 +14,12 @@ context("SOS-P1-25: site visits", () => {
 		cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads");
 	});
 
-	const pad = (n) => String(n).padStart(2, "0");
-	// Tomorrow at ten, as the "datetime-local" box wants it.
-	const tomorrowAt = () => {
-		const day = new Date();
-		day.setDate(day.getDate() + 1);
-		return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}T10:00`;
-	};
+	// Tomorrow at ten, as the "datetime-local" box wants it. The day comes from the site (the server's date
+	// and time zone), never the browser clock: the browser may be in another zone (CI runs it in UTC).
+	const tomorrowAt = () =>
+		cy
+			.bench("sellos.tests.ui_fixtures.site_date", { days: 1, at: "10:00" })
+			.then((r) => r.date);
 
 	// The row of tomorrow's list for one project, so other visits on the site do not matter.
 	const rowFor = (project) =>
@@ -38,7 +37,7 @@ context("SOS-P1-25: site visits", () => {
 	const book = (project) => {
 		cy.intercept("POST", "**/api/method/sellos.crm.api.save_site_visit*").as("book");
 		cy.getByTestId("lead-visit-project").type(project);
-		cy.getByTestId("lead-visit-when").type(tomorrowAt());
+		tomorrowAt().then((when) => cy.getByTestId("lead-visit-when").type(when));
 		cy.getByTestId("lead-visit-save").click();
 		cy.wait("@book").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("lead-timeline-item").contains(project).should("be.visible");
