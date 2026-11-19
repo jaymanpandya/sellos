@@ -52,7 +52,7 @@ VISIT_FIELDS = [
 	"agent",
 	"status",
 	"confirmation_status",
-	"outcome",
+	"visit_outcome",
 	"outcome_notes",
 	"notes",
 ]
@@ -249,7 +249,7 @@ def complete(name, outcome, outcome_notes=None) -> dict:
 	if doc.status == CANCELLED:
 		frappe.throw(_("A cancelled visit cannot be marked done."))
 	doc.status = DONE
-	doc.outcome = outcome
+	doc.visit_outcome = outcome
 	doc.outcome_notes = (outcome_notes or "").strip() or None
 	doc.flags.ignore_permissions = True
 	doc.save()
@@ -269,7 +269,7 @@ def visit_view(doc) -> dict:
 		"agent": doc.agent,
 		"status": doc.status,
 		"confirmation_status": doc.confirmation_status,
-		"outcome": doc.outcome or "",
+		"outcome": doc.visit_outcome or "",
 		"outcome_notes": doc.outcome_notes or "",
 	}
 

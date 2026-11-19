@@ -684,7 +684,9 @@
 				>
 					{{ item.confirmation_status
 					}}<template v-if="item.agent"> , agent {{ item.agent }}</template
-					><template v-if="item.outcome">, outcome: {{ item.outcome }}</template>
+					><template v-if="item.visit_outcome"
+						>, outcome: {{ item.visit_outcome }}</template
+					>
 				</p>
 				<div
 					v-if="canLog && item.kind === 'visit' && item.status === 'Scheduled'"

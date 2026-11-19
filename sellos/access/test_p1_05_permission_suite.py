@@ -87,6 +87,12 @@ SAMPLE_CALLS = {
 	"sellos.crm.api.save_site_visit": {
 		"values": {"lead": "{lead}", "project_name": "P105 Tower", "visit_datetime": "2030-01-01 10:00:00"}
 	},
+	# SOS-P1-25: the calendar and the list read what the caller may see. The visit is the test's own.
+	"sellos.crm.api.site_visit_calendar": {"view": "week", "date": "2030-01-01"},
+	"sellos.crm.api.tomorrows_site_visits": {},
+	"sellos.crm.api.confirm_site_visit": {"name": "{visit}", "confirmation_status": "Confirmed"},
+	"sellos.crm.api.complete_site_visit": {"name": "{visit}", "outcome": "Liked it"},
+	"sellos.crm.api.site_visit_options": {},
 	"sellos.crm.api.set_archived": {"doctype": "Lead", "name": "{lead}", "archived": 0},
 	# SOS-P1-22: a follow up made for the test, completed with a note. The setting is the Company Admin's.
 	"sellos.crm.api.complete_follow_up": {"name": "{task}", "notes": "p122 done"},
@@ -264,6 +270,14 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"due_date": "2030-01-01",
 			}
 		).insert()
+		visit = frappe.get_doc(
+			{
+				"doctype": "Site Visit",
+				"lead": lead.name,
+				"project_name": "P125 Permission Tower",
+				"visit_datetime": "2030-01-01 10:00:00",
+			}
+		).insert()
 		frappe.get_doc(
 			{
 				"doctype": "Lead Activity",
@@ -284,6 +298,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		self.names = {
 			"notification": notification,
 			"task": task.name,
+			"visit": visit.name,
 			"client": client.name,
 			"client_other": other.name,
 			"lead": lead.name,

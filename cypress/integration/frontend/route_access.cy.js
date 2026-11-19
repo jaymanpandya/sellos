@@ -21,6 +21,12 @@ context("SOS-P0-10: route access", () => {
 		cy.intercept("**/api/method/sellos.crm.api.list_lead_sources*", {
 			body: { message: { sources: [], can_manage: false } },
 		}).as("sources");
+		// The leads screen also asks for its filter lists and the stages (SOS-P1-25 added a nav link,
+		// and a test that ends while these are in flight logs "lead_filter_options failed").
+		cy.intercept("**/api/method/sellos.crm.api.lead_filter_options*", {
+			body: { message: {} },
+		});
+		cy.intercept("**/api/method/sellos.crm.api.list_stages*", { body: { message: [] } });
 	};
 
 	it("sends a user without a SellOS role to the no access page", () => {

@@ -14,7 +14,7 @@
   "confirmed_on",
   "notes",
   "section_outcome",
-  "outcome",
+  "visit_outcome",
   "outcome_notes",
   "section_archive",
   "archived",
@@ -88,7 +88,7 @@
    "label": "Outcome"
   },
   {
-   "fieldname": "outcome",
+   "fieldname": "visit_outcome",
    "fieldtype": "Select",
    "label": "Outcome",
    "options": "\nLiked it\nUndecided\nWants a second visit\nNot interested\nDid not come"

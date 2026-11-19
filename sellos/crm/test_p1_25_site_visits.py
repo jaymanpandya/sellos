@@ -374,7 +374,7 @@ class TestMarkingAVisitDone(VisitCase):
 		}
 		self.assertEqual(site_visits.OUTCOME_STAGES, offers)
 		for outcome, stage in offers.items():
-			frappe.db.set_value("Site Visit", self.visit, {"status": "Scheduled", "outcome": None})
+			frappe.db.set_value("Site Visit", self.visit, {"status": "Scheduled", "visit_outcome": None})
 			self.assertEqual(self.done(outcome)["suggested_stage"], stage, outcome)
 
 	def test_nothing_is_offered_when_the_lead_is_already_on_that_stage(self):

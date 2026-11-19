@@ -43,8 +43,11 @@ context("SOS-P1-06B: phone numbers do not leak", () => {
 	});
 
 	it("the agent's screen shows the number masked", () => {
+		cy.intercept("**/api/method/sellos.crm.api.get_lead*").as("getLead");
+		cy.intercept("**/api/method/sellos.crm.api.site_visit_options*").as("visitOptions");
 		cy.signInFresh("agent");
 		cy.visit(`/sellos/crm/leads/${seeded.lead}`);
+		cy.wait(["@getLead", "@visitOptions"]);
 		cy.getByTestId("lead-phone").should("be.visible");
 		seeded.phone_forms.forEach((form) => {
 			cy.getByTestId("lead-phone").should("not.contain", form);
@@ -52,8 +55,11 @@ context("SOS-P1-06B: phone numbers do not leak", () => {
 	});
 
 	it("the company admin sees the full number", () => {
+		cy.intercept("**/api/method/sellos.crm.api.get_lead*").as("getLead");
+		cy.intercept("**/api/method/sellos.crm.api.site_visit_options*").as("visitOptions");
 		cy.signInFresh("company_admin");
 		cy.visit(`/sellos/crm/leads/${seeded.lead}`);
+		cy.wait(["@getLead", "@visitOptions"]);
 		cy.getByTestId("lead-phone").should("contain", seeded.phone_forms[0]);
 	});
 });

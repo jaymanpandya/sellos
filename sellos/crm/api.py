@@ -543,7 +543,7 @@ def _timeline(lead):
 			"agent",
 			"status",
 			"confirmation_status",
-			"outcome",
+			"visit_outcome",
 			"notes",
 		],
 	):
