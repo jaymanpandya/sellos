@@ -5,10 +5,14 @@ context("SOS-P0-10: pages", () => {
 		cy.bootOverride((boot) => {
 			boot.full_name = "Jayman";
 		});
+		cy.intercept("**/api/method/sellos.crm.api.list_notifications*", {
+			body: { message: { unread: 0, items: [] } },
+		}).as("notifications");
 		cy.visit("/sellos");
 		cy.getByTestId("home-welcome").should("contain", "Welcome, Jayman");
 		// SOS-P1-26: an agent lands on Today. Let its lists finish loading so no request is left running.
 		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
+		cy.wait("@notifications");
 	});
 
 	it("greets with the email when the boot data has no name", () => {
@@ -18,12 +22,16 @@ context("SOS-P0-10: pages", () => {
 		cy.bootOverride((boot) => {
 			boot.full_name = "";
 		});
+		cy.intercept("**/api/method/sellos.crm.api.list_notifications*", {
+			body: { message: { unread: 0, items: [] } },
+		}).as("notifications");
 		cy.visit("/sellos");
 		cy.getByTestId("home-welcome")
 			.should("contain", "Welcome")
 			.and("contain", "sos_test_agent@example.com");
 		// SOS-P1-26: let the Today lists finish loading so no request is left running.
 		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
+		cy.wait("@notifications");
 	});
 
 	it("explains the no access page", () => {

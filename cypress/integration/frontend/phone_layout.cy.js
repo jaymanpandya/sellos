@@ -1,5 +1,6 @@
 // SOS-P0-10: the layout works at phone width (390 px wide). The side navigation gives way to a top bar
 // and a bottom navigation, and nothing scrolls sideways.
+const BELL_ROLES = ["company_admin", "sales_manager", "agent", "channel_partner"];
 const ROLES = [
 	"platform_admin",
 	"company_admin",
@@ -9,6 +10,13 @@ const ROLES = [
 	"client",
 ];
 
+const stubBell = () =>
+	cy
+		.intercept("**/api/method/sellos.crm.api.list_notifications*", {
+			body: { message: { unread: 0, items: [] } },
+		})
+		.as("notifications");
+
 context("SOS-P0-10: phone layout", () => {
 	beforeEach(() => {
 		cy.viewport(390, 844);
@@ -17,6 +25,7 @@ context("SOS-P0-10: phone layout", () => {
 	ROLES.forEach((role) => {
 		it(`${role} gets the top bar and bottom navigation and no sideways scroll`, () => {
 			cy.signInFresh(role);
+			stubBell();
 			cy.bootOverride((boot) => {
 				boot.company.name = "Pandya Realtors";
 			});
@@ -29,6 +38,7 @@ context("SOS-P0-10: phone layout", () => {
 			if (role === "agent" || role === "sales_manager") {
 				cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 			}
+			if (BELL_ROLES.includes(role)) cy.wait("@notifications");
 			cy.getByTestId("nav").should("not.be.visible");
 			cy.getByTestId("signout").should("not.be.visible");
 			cy.document().then((doc) => {
@@ -40,11 +50,13 @@ context("SOS-P0-10: phone layout", () => {
 
 	it("an agent can use the bottom navigation and the phone sign out button", () => {
 		cy.signInFresh("agent");
+		stubBell();
 		cy.intercept("**/api/method/sellos.crm.api.list_leads*", { body: { message: [] } });
 		cy.visit("/sellos");
 		// SOS-P1-26: the agent lands on Today. Let its lists finish loading before leaving the page, so
 		// no request is cut off in the middle.
 		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
+		cy.wait("@notifications");
 		cy.getByTestId("phone-nav-leads").click();
 		cy.location("pathname").should("eq", "/sellos/crm/leads");
 		cy.intercept("POST", "**/api/method/logout").as("logout");
@@ -56,8 +68,10 @@ context("SOS-P0-10: phone layout", () => {
 	it("shows the full side navigation again at desktop width", () => {
 		cy.viewport(1280, 800);
 		cy.signInFresh("agent");
+		stubBell();
 		cy.visit("/sellos");
 		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
+		cy.wait("@notifications");
 		cy.getByTestId("nav").should("be.visible");
 		cy.getByTestId("phone-nav").should("not.be.visible");
 	});
