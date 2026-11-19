@@ -309,7 +309,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 3
 - **Dependencies:** SOS-P1-07, SOS-P1-16, SOS-P1-19, SOS-P1-20
-- **Status:** Not Started
+- **Status:** In Progress
 - **Browser spec:** required
 
 ### SOS-P1-26: The agent's Today screen
