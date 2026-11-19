@@ -1,6 +1,6 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-import-page">
-		<h1 class="text-2xl font-semibold text-ink">Import a bought lead list</h1>
+		<h1 class="ui-page-title">Import a bought lead list</h1>
 		<p class="mt-2 text-ink-muted">
 			Choose a CSV file. Every lead comes in from the source Bought list with the consent
 			status Unknown, or Registered DND when the file says the number is on the do not call
@@ -71,7 +71,7 @@
 				{{ preview.counts.unrecognised_dnd }} do not call values were not recognised and
 				are treated as no result.
 			</p>
-			<table class="w-full text-sm" data-testid="sellos-import-sample">
+			<table class="ui-table" data-testid="sellos-import-sample">
 				<thead>
 					<tr class="text-left text-ink-muted">
 						<th>Rows</th>

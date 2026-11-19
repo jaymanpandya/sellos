@@ -1,6 +1,6 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-support-page">
-		<h1 class="text-2xl font-semibold text-ink">Support access</h1>
+		<h1 class="ui-page-title">Support access</h1>
 		<p class="mt-2 text-ink-muted">
 			Let SellOS support read your company's records for a limited time. Support can look and
 			change nothing. Access ends by itself, after 4 hours at most, and every action is

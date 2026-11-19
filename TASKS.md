@@ -442,7 +442,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Browser spec:** required
 - **Story Points:** 8
 - **Dependencies:** SOS-UI-1
-- **Status:** In Progress
+- **Status:** Complete
 
 ### SOS-UI-3: Restyle every existing screen
 - **Epic:** Web app, roles and security

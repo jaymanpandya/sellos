@@ -1,6 +1,6 @@
 <template>
 	<div class="max-w-4xl" data-testid="sellos-users-page">
-		<h1 class="text-2xl font-semibold text-ink">Users</h1>
+		<h1 class="ui-page-title">Users</h1>
 		<p class="mt-2 text-ink-muted">
 			Invite the people who work in your company, set the mobile number that click to call
 			rings first, and deactivate users who leave. A deactivated user can not sign in, and

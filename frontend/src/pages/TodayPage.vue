@@ -19,11 +19,9 @@
 					<a :href="`#today-${s.key}`" class="block text-sm text-ink-muted">{{
 						s.label
 					}}</a>
-					<span
-						class="text-2xl font-semibold text-ink"
-						:data-testid="`sellos-today-count-${s.key}`"
-						>{{ view.counts[s.key] }}</span
-					>
+					<span class="ui-page-title" :data-testid="`sellos-today-count-${s.key}`">{{
+						view.counts[s.key]
+					}}</span>
 				</li>
 			</ul>
 

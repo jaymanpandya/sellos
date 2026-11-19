@@ -1,6 +1,6 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-teamreport-page">
-		<h1 class="text-2xl font-semibold text-ink">Team report</h1>
+		<h1 class="ui-page-title">Team report</h1>
 		<p class="mt-2 text-ink-muted">
 			The open leads of your team, by agent and by stage. Only your own team is counted.
 		</p>

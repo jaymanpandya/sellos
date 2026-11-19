@@ -5,7 +5,7 @@
 		:data-view="view"
 	>
 		<div class="flex items-center justify-between gap-3">
-			<h1 class="text-2xl font-semibold text-ink">Leads</h1>
+			<h1 class="ui-page-title">Leads</h1>
 			<div class="flex gap-2" role="group" aria-label="View">
 				<button
 					type="button"

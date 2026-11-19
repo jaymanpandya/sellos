@@ -1,6 +1,6 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-calllists-page">
-		<h1 class="text-2xl font-semibold text-ink">Call lists</h1>
+		<h1 class="ui-page-title">Call lists</h1>
 		<p class="mt-2 text-ink-muted">
 			The outcomes an agent picks when logging a call, and the reasons asked for when a lead
 			is lost. An outcome or reason that has been used is disabled, never deleted.

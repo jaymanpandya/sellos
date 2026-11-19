@@ -1,6 +1,6 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-assignment-page">
-		<h1 class="text-2xl font-semibold text-ink">Lead assignment</h1>
+		<h1 class="ui-page-title">Lead assignment</h1>
 		<p class="mt-2 text-ink-muted">
 			Every new lead goes to an agent at once. Rules are tried from the lowest order up. A
 			rule names a team, and the team's active agents take the leads in turn. A lead no rule

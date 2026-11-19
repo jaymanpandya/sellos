@@ -1,6 +1,6 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-telephony-page">
-		<h1 class="text-2xl font-semibold text-ink">Telephony</h1>
+		<h1 class="ui-page-title">Telephony</h1>
 		<p class="mt-2 text-ink-muted">
 			Enter your Plivo India account once, so calling works for your company. The keys are
 			stored encrypted and are never shown again after you save them.

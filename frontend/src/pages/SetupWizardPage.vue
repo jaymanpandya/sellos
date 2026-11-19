@@ -1,6 +1,6 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-setup-page">
-		<h1 class="text-2xl font-semibold text-ink">Set up your company</h1>
+		<h1 class="ui-page-title">Set up your company</h1>
 		<p
 			v-if="loadError"
 			role="alert"

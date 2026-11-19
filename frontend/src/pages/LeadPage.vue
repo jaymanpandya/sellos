@@ -5,7 +5,7 @@
 		>
 		<div class="mt-2 flex items-start justify-between gap-3">
 			<div>
-				<h1 class="text-2xl font-semibold text-ink" data-testid="sellos-lead-name">
+				<h1 class="ui-page-title" data-testid="sellos-lead-name">
 					{{ detail.client.client_name }}
 				</h1>
 				<p class="text-sm text-ink-muted">

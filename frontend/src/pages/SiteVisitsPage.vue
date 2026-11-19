@@ -1,6 +1,6 @@
 <template>
 	<div class="max-w-4xl" data-testid="sellos-visits-page">
-		<h1 class="text-2xl font-semibold text-ink">Site visits</h1>
+		<h1 class="ui-page-title">Site visits</h1>
 		<p class="mt-2 text-ink-muted">{{ scopeNote }}</p>
 		<p v-if="error" role="alert" data-testid="sellos-visits-error" class="mt-3 text-accent">
 			{{ error }}

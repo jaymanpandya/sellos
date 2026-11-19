@@ -1,28 +1,135 @@
-@import "@fontsource/syne/600.css";
-@import "@fontsource/syne/700.css";
-@import "@fontsource/dm-sans/400.css";
-@import "@fontsource/dm-sans/500.css";
-@import "@fontsource/dm-sans/700.css";
+@import "./theme/ui-tokens.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* SOS-UI-2: the PAMAA look of docs/UI_STYLE.md. Values come from the tokens, never written by hand. */
 body {
-	@apply bg-surface font-sans text-ink antialiased;
+	@apply bg-surface-muted font-sans text-base text-ink antialiased;
+	font-family: var(--ui-font);
+	line-height: 1.5;
 }
 
 h1,
 h2,
 h3 {
-	@apply font-heading;
+	@apply font-heading text-ink;
 }
 
 @layer components {
-	.btn {
-		@apply rounded-input bg-brand hover:bg-brand-mid px-3 py-2 text-sm font-medium text-white;
+	/* Page header: title 24px/600, one line of text, actions on the right. */
+	.ui-page-title {
+		@apply text-title text-ink;
 	}
-	.field {
-		@apply block w-full rounded-input border border-line bg-surface px-3 py-2 text-sm text-ink;
+	.ui-page-lead {
+		@apply mt-1 max-w-3xl text-base text-ink-body;
+	}
+
+	/* Cards: white, 14px, 1px line, card shadow. */
+	.ui-card {
+		@apply rounded-card border border-line bg-surface p-4 shadow-card sm:p-5;
+	}
+	.ui-card-heading {
+		@apply text-heading uppercase text-ink-muted;
+	}
+
+	/* Buttons: 44px, 10px radius. Outlined by default, solid for the one main action. */
+	.btn,
+	.ui-button {
+		@apply inline-flex min-h-touch min-w-touch items-center justify-center gap-2 rounded-input border bg-surface px-[18px] text-base font-medium text-brand transition active:scale-[0.94] disabled:opacity-50;
+		border-color: color-mix(in srgb, var(--sos-brand) 35%, transparent);
+	}
+	.btn:hover,
+	.ui-button:hover {
+		@apply bg-brand-soft;
+	}
+	.ui-button-solid {
+		@apply border-transparent text-white shadow-button hover:brightness-110;
+		background-image: var(--ui-grad-brand);
+		background-color: var(--sos-brand);
+	}
+	.ui-button-solid:hover {
+		background-color: var(--sos-brand);
+	}
+	.btn:focus-visible,
+	.field:focus,
+	.ui-field:focus {
+		@apply outline-none;
+		border-color: var(--sos-brand);
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--sos-brand) 40%, transparent);
+	}
+
+	/* Fields: 44px, 10px radius, 1px field border, 16px text. */
+	.field,
+	.ui-field {
+		@apply block min-h-touch w-full rounded-input border border-line-field bg-surface px-3 text-base text-ink;
+	}
+	.ui-label {
+		@apply text-base text-ink-body;
+	}
+	.ui-required {
+		@apply text-danger;
+	}
+	.ui-hint {
+		@apply text-xs text-ink-muted;
+	}
+	.ui-error {
+		@apply text-xs text-danger;
+	}
+
+	/* Tables inside a card. */
+	.ui-table {
+		@apply w-full text-left text-base;
+	}
+	.ui-table th {
+		@apply border-b border-line px-2.5 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted;
+	}
+	.ui-table td {
+		@apply border-b border-line-soft px-2.5 py-2;
+	}
+	.ui-table tr[role="link"]:hover,
+	.ui-table tr.is-clickable:hover {
+		@apply bg-brand-soft;
+	}
+
+	/* Status badges: pill, tone line, tone background, tone ink, word and icon. */
+	.ui-badge {
+		@apply inline-flex items-center gap-1 rounded-badge border px-2.5 py-0.5 text-xs font-medium;
+	}
+	.ui-badge-success {
+		@apply border-tone-success-line bg-tone-success-bg text-tone-success;
+	}
+	.ui-badge-warn {
+		@apply border-tone-warn-line bg-tone-warn-bg text-tone-warn;
+	}
+	.ui-badge-danger {
+		@apply border-tone-danger-line bg-tone-danger-bg text-tone-danger-ink;
+	}
+	.ui-badge-neutral {
+		@apply border-tone-neutral-line bg-tone-neutral-bg text-tone-neutral;
+	}
+	.ui-badge-info {
+		@apply border-tone-info-line bg-tone-info-bg text-tone-info;
+	}
+
+	/* Empty state, load error, toast. */
+	.ui-empty {
+		@apply flex flex-col items-center gap-2 rounded-card border border-dashed px-4 py-8 text-center text-base text-ink-muted;
+		border-color: color-mix(in srgb, var(--sos-brand) 25%, transparent);
+		background-image: var(--ui-grad-empty);
+	}
+	.ui-error-box {
+		@apply rounded-card border border-tone-warn-line bg-tone-warn-bg p-4 text-base text-tone-warn;
+	}
+	.ui-toast {
+		@apply flex min-h-touch max-w-sm items-center gap-2 rounded-card border bg-surface px-3 text-base shadow-lift;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition: none !important;
+		animation: none !important;
 	}
 }

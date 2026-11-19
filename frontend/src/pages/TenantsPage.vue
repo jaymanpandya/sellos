@@ -1,6 +1,6 @@
 <template>
 	<div class="max-w-4xl" data-testid="sellos-tenants-page">
-		<h1 class="text-2xl font-semibold text-ink">Companies</h1>
+		<h1 class="ui-page-title">Companies</h1>
 		<p class="mt-2 text-ink-muted">
 			Every company has its own site. A new company starts as Requested, then moves to
 			Provisioning, then Active, or Failed. A failed company can be tried again.

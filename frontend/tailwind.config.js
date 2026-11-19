@@ -3,6 +3,7 @@ import plugin from "tailwindcss/plugin";
 
 import {
 	colors,
+	boxShadow,
 	cssVariables,
 	fontFamily,
 	radius,
@@ -24,6 +25,7 @@ export default {
 			fontSize: typography,
 			spacing,
 			borderRadius: radius,
+			boxShadow,
 		},
 	},
 	plugins: [

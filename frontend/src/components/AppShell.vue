@@ -4,21 +4,23 @@
 		data-testid="sellos-app-shell"
 	>
 		<header
-			class="flex items-center justify-between border-b border-line bg-surface px-4 py-3 sm:hidden"
+			class="sticky top-0 z-10 flex min-h-topbar items-center justify-between border-b border-line bg-surface/85 px-4 backdrop-blur sm:hidden"
 			data-testid="sellos-phone-topbar"
 		>
 			<CompanyBrand />
 			<NotificationBell />
 			<button
 				type="button"
-				class="rounded-input px-3 py-1 text-sm text-ink-muted hover:bg-brand-light"
+				class="min-h-touch min-w-touch rounded-input px-3 text-base text-ink-muted hover:bg-surface-muted"
 				data-testid="sellos-phone-signout"
 				@click="signOut()"
 			>
 				Sign out
 			</button>
 		</header>
-		<aside class="hidden w-56 shrink-0 flex-col border-r border-line bg-surface p-4 sm:flex">
+		<aside
+			class="hidden w-sidebar shrink-0 flex-col border-r border-line bg-surface/80 p-4 backdrop-blur sm:flex"
+		>
 			<div class="mb-2"><CompanyBrand /></div>
 			<div class="mb-4"><NotificationBell /></div>
 			<nav class="flex-1 space-y-1" aria-label="Main" data-testid="sellos-nav">
@@ -27,21 +29,23 @@
 					:key="item.key"
 					:to="item.to"
 					:data-testid="`sellos-nav-${item.key}`"
-					class="block rounded-input px-3 py-2 text-sm text-ink hover:bg-brand-light"
+					:active-class="item.key === 'home' ? '' : 'ui-nav-active'"
+					exact-active-class="ui-nav-active"
+					class="flex min-h-touch items-center rounded-input px-3 text-base text-ink-body hover:bg-surface-muted"
 				>
 					{{ item.label }}
 				</router-link>
 			</nav>
 			<button
 				type="button"
-				class="rounded-input px-3 py-2 text-left text-sm text-ink-muted hover:bg-brand-light"
+				class="min-h-touch rounded-input px-3 text-left text-base text-ink-muted hover:bg-surface-muted"
 				data-testid="sellos-signout"
 				@click="signOut()"
 			>
 				Sign out
 			</button>
 		</aside>
-		<main class="min-w-0 flex-1 p-4 pb-20 sm:p-8" data-testid="sellos-page-body">
+		<main class="min-w-0 flex-1 px-4 pb-20 pt-5 sm:px-6" data-testid="sellos-page-body">
 			<slot />
 		</main>
 		<nav
@@ -54,7 +58,8 @@
 				:key="item.key"
 				:to="item.to"
 				:data-testid="`sellos-phone-nav-${item.key}`"
-				class="flex-1 px-2 py-3 text-center text-sm text-ink"
+				active-class="ui-nav-active-phone"
+				class="flex min-h-[56px] flex-1 items-center justify-center px-2 text-center text-base text-ink-body"
 			>
 				{{ item.label }}
 			</router-link>
@@ -72,3 +77,16 @@ import { navFor, personaFor } from "../personas";
 
 const nav = computed(() => navFor(personaFor(session.roles)));
 </script>
+
+<style scoped>
+.ui-nav-active {
+	background-image: var(--ui-grad-brand);
+	background-color: var(--sos-brand);
+	color: #fff;
+	font-weight: 600;
+}
+.ui-nav-active-phone {
+	color: var(--sos-brand);
+	font-weight: 600;
+}
+</style>
