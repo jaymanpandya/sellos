@@ -475,7 +475,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 5
 - **Dependencies:** SOS-P2-02, SOS-P2-04, SOS-P1-21
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-P2-06: Build the webhook endpoint
 - **Epic:** Calling
