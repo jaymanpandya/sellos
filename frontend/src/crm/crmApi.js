@@ -44,7 +44,19 @@ export const crmApi = {
 	getFollowUpSettings: () => call("get_follow_up_settings"),
 	saveFollowUpSettings: (untouchedDays) =>
 		call("save_follow_up_settings", { untouched_days: untouchedDays }),
+	// Site visits (SOS-P1-25): book, the calendar, tomorrow's confirmations, confirm and mark done.
 	saveSiteVisit: (values, name = null) => call("save_site_visit", { name, values }),
+	siteVisitOptions: () => call("site_visit_options"),
+	siteVisitCalendar: (view = "week", date = null) => call("site_visit_calendar", { view, date }),
+	tomorrowsSiteVisits: () => call("tomorrows_site_visits"),
+	confirmSiteVisit: (name, confirmationStatus, visitDatetime = null) =>
+		call("confirm_site_visit", {
+			name,
+			confirmation_status: confirmationStatus,
+			visit_datetime: visitDatetime,
+		}),
+	completeSiteVisit: (name, outcome, outcomeNotes = "") =>
+		call("complete_site_visit", { name, outcome, outcome_notes: outcomeNotes }),
 	recordConsent: (lead, basis, evidenceLink) =>
 		call("record_consent", { lead, basis, evidence_link: evidenceLink }),
 	recordOptOut: (lead, source) => call("record_opt_out", { lead, source }),

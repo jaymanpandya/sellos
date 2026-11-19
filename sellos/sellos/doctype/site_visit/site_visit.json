@@ -8,8 +8,14 @@
   "lead",
   "project_name",
   "visit_datetime",
+  "agent",
   "status",
+  "confirmation_status",
+  "confirmed_on",
   "notes",
+  "section_outcome",
+  "outcome",
+  "outcome_notes",
   "section_archive",
   "archived",
   "archived_on",
@@ -49,9 +55,48 @@
    "in_standard_filter": 1
   },
   {
+   "fieldname": "agent",
+   "fieldtype": "Link",
+   "label": "Agent",
+   "options": "User",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "confirmation_status",
+   "fieldtype": "Select",
+   "label": "Confirmation",
+   "options": "Not confirmed\nConfirmed\nRescheduled\nCancelled",
+   "default": "Not confirmed",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "confirmed_on",
+   "fieldtype": "Datetime",
+   "label": "Confirmation set on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_outcome",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "Outcome",
+   "options": "\nLiked it\nUndecided\nWants a second visit\nNot interested\nDid not come"
+  },
+  {
+   "fieldname": "outcome_notes",
+   "fieldtype": "Small Text",
+   "label": "Outcome notes"
   },
   {
    "fieldname": "section_archive",

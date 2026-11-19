@@ -622,6 +622,17 @@
 					type="datetime-local"
 					class="field w-auto"
 				/>
+				<select
+					v-model="visit.agent"
+					aria-label="Agent for the visit"
+					data-testid="sellos-lead-visit-agent"
+					class="field w-auto"
+				>
+					<option value="">The lead's agent</option>
+					<option v-for="a in visitOptions.agents" :key="a.name" :value="a.name">
+						{{ a.full_name }}
+					</option>
+				</select>
 				<button type="submit" class="btn" data-testid="sellos-lead-visit-save">
 					Add visit
 				</button>
@@ -666,6 +677,97 @@
 				</div>
 				<p class="text-sm text-ink-muted">{{ String(item.when).slice(0, 16) }}</p>
 				<p v-if="item.notes" class="mt-1 text-sm text-ink">{{ item.notes }}</p>
+				<p
+					v-if="item.kind === 'visit'"
+					data-testid="sellos-lead-visit-confirmation"
+					class="text-sm text-ink-muted"
+				>
+					{{ item.confirmation_status
+					}}<template v-if="item.agent"> , agent {{ item.agent }}</template
+					><template v-if="item.outcome">, outcome: {{ item.outcome }}</template>
+				</p>
+				<div
+					v-if="canLog && item.kind === 'visit' && item.status === 'Scheduled'"
+					class="mt-2 flex flex-wrap gap-2"
+				>
+					<VisitConfirm
+						:visit="item"
+						:confirmations="visitOptions.confirmations"
+						@changed="load"
+					/>
+					<button
+						type="button"
+						class="text-sm text-ink-muted underline"
+						data-testid="sellos-lead-visit-done"
+						@click="startVisitDone(item)"
+					>
+						Mark visit done
+					</button>
+				</div>
+				<form
+					v-if="visitDoing === item.name"
+					class="mt-2 space-y-2"
+					data-testid="sellos-lead-visit-done-form"
+					@submit.prevent="finishVisitDone(item)"
+				>
+					<div class="flex flex-wrap gap-2">
+						<select
+							v-model="visitDone.outcome"
+							aria-label="Outcome of the visit"
+							data-testid="sellos-lead-visit-outcome"
+							class="field w-auto"
+						>
+							<option value="">Choose the outcome</option>
+							<option
+								v-for="o in visitOptions.outcomes"
+								:key="o.name"
+								:value="o.name"
+							>
+								{{ o.name }}
+							</option>
+						</select>
+						<input
+							v-model="visitDone.notes"
+							placeholder="Note"
+							aria-label="Visit note"
+							data-testid="sellos-lead-visit-outcome-notes"
+							class="field flex-1"
+						/>
+					</div>
+					<p
+						v-if="visitError"
+						role="alert"
+						data-testid="sellos-lead-visit-error"
+						class="text-sm text-accent"
+					>
+						{{ visitError }}
+					</p>
+					<div class="flex gap-2">
+						<button
+							type="submit"
+							class="btn"
+							data-testid="sellos-lead-visit-done-save"
+						>
+							Done
+						</button>
+						<button type="button" class="btn" @click="visitDoing = ''">Cancel</button>
+					</div>
+				</form>
+				<p
+					v-if="offeredStage && offeredFor === item.name"
+					data-testid="sellos-lead-visit-offer"
+					class="mt-2 text-sm text-ink"
+				>
+					Next stage: {{ offeredStage }}.
+					<button
+						type="button"
+						class="underline"
+						data-testid="sellos-lead-visit-offer-use"
+						@click="acceptOffer"
+					>
+						Move the lead to {{ offeredStage }}
+					</button>
+				</p>
 				<button
 					v-if="canLog && item.kind === 'task' && item.status !== 'Done'"
 					type="button"
@@ -749,6 +851,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+import VisitConfirm from "../components/VisitConfirm.vue";
 import { teamsApi } from "../company/teamsApi";
 import { session } from "../session";
 
@@ -789,7 +892,14 @@ function whenLabel(value) {
 		? `${label}, ${time.slice(0, 5)}`
 		: label;
 }
-const visit = reactive({ project_name: "", visit_datetime: "" });
+const visit = reactive({ project_name: "", visit_datetime: "", agent: "" });
+// Site visits (SOS-P1-25): the lists the forms offer, the confirmation and the outcome of a visit.
+const visitOptions = ref({ agents: [], outcomes: [], confirmations: [] });
+const visitDoing = ref("");
+const visitDone = reactive({ outcome: "", notes: "" });
+const visitError = ref("");
+const offeredStage = ref("");
+const offeredFor = ref("");
 
 const req = reactive({
 	budget_from: "",
@@ -1008,6 +1118,50 @@ async function addVisit() {
 	await crmApi.saveSiteVisit({ lead: route.params.name, ...visit });
 	visit.project_name = "";
 	visit.visit_datetime = "";
+	visit.agent = "";
+	await load();
+}
+
+async function loadVisitOptions() {
+	if (!canLog.value) return;
+	try {
+		visitOptions.value = await crmApi.siteVisitOptions();
+	} catch (e) {
+		visitError.value = serverMessage(e, "The site visit lists could not be loaded.");
+	}
+}
+
+function startVisitDone(item) {
+	visitDoing.value = item.name;
+	visitError.value = "";
+	Object.assign(visitDone, { outcome: "", notes: "" });
+}
+
+async function finishVisitDone(item) {
+	visitError.value = "";
+	if (!visitDone.outcome) {
+		visitError.value = "Choose the outcome of the visit.";
+		return;
+	}
+	try {
+		const result = await crmApi.completeSiteVisit(
+			item.name,
+			visitDone.outcome,
+			visitDone.notes
+		);
+		visitDoing.value = "";
+		offeredStage.value = result.suggested_stage || "";
+		offeredFor.value = item.name;
+		await load();
+	} catch (e) {
+		visitError.value = serverMessage(e, "The visit could not be marked done.");
+	}
+}
+
+// The next stage the outcome offers is moved to only when the agent accepts it.
+async function acceptOffer() {
+	await crmApi.moveLeadStage(route.params.name, offeredStage.value);
+	offeredStage.value = "";
 	await load();
 }
 
@@ -1111,5 +1265,6 @@ async function archive() {
 onMounted(() => {
 	load();
 	loadAssignees();
+	loadVisitOptions();
 });
 </script>

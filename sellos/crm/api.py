@@ -21,6 +21,7 @@ from sellos.crm import (
 	lead_sources,
 	notifications,
 	pipeline,
+	site_visits,
 )
 from sellos.crm.requirements import REQUIREMENT_FIELDS, join_values, requirements_view
 
@@ -44,7 +45,7 @@ CLIENT_FIELDS = (
 LEAD_FIELDS = ("client", "source", "campaign", "assigned_to", "notes", *REQUIREMENT_FIELDS)
 ACTIVITY_FIELDS = ("lead", "activity_type", "activity_date", "notes")
 TASK_FIELDS = ("lead", "title", "due_date", "due_at", "status", "assigned_to", "notes")
-VISIT_FIELDS = ("lead", "project_name", "visit_datetime", "status", "notes")
+VISIT_FIELDS = ("lead", "project_name", "visit_datetime", "agent", "status", "notes")
 FOLLOW_UP_KEYS = (
 	"next_follow_up",
 	"next_follow_up_name",
@@ -535,7 +536,16 @@ def _timeline(lead):
 	for row in frappe.get_list(
 		"Site Visit",
 		filters={"lead": lead, "archived": 0},
-		fields=["name", "project_name", "visit_datetime", "status", "notes"],
+		fields=[
+			"name",
+			"project_name",
+			"visit_datetime",
+			"agent",
+			"status",
+			"confirmation_status",
+			"outcome",
+			"notes",
+		],
 	):
 		items.append({"kind": "visit", "when": row.visit_datetime, "title": row.project_name, **row})
 	return sorted(items, key=lambda item: str(item["when"]), reverse=True)
@@ -588,7 +598,43 @@ def save_follow_up_settings(untouched_days):
 
 @sellos_api(*LOGGERS)
 def save_site_visit(name=None, values=None):
-	return _save("Site Visit", name, values, VISIT_FIELDS).as_dict()
+	"""Book or change a site visit (SOS-P1-25): the lead, the project, the date and time and the agent
+	(the lead's agent unless another is chosen). A new visit moves its lead to Site visit booked unless
+	the lead is already further on. Returns the visit with stage_moved and lead_stage."""
+	return site_visits.book(_values(values, VISIT_FIELDS), name)
+
+
+@sellos_api(*LOGGERS)
+def site_visit_calendar(view="week", date=None):
+	"""The signed in user's site visits for a day or a week, grouped by day (SOS-P1-25). An Agent sees
+	their own, a Sales Manager their team's and a Company Admin everyone's."""
+	return site_visits.calendar(view, date)
+
+
+@sellos_api(*LOGGERS)
+def tomorrows_site_visits():
+	"""Tomorrow's visits with each confirmation status, for the agent to confirm by phone (SOS-P1-25)."""
+	return site_visits.tomorrows_visits()
+
+
+@sellos_api(*LOGGERS)
+def confirm_site_visit(name, confirmation_status, visit_datetime=None):
+	"""Set a visit's confirmation: Not confirmed, Confirmed, Rescheduled (with the new time) or
+	Cancelled (SOS-P1-25)."""
+	return site_visits.confirm(name, confirmation_status, visit_datetime)
+
+
+@sellos_api(*LOGGERS)
+def complete_site_visit(name, outcome=None, outcome_notes=None):
+	"""Mark a visit Done. The outcome is required, and the next stage it offers is returned, not applied
+	(SOS-P1-25). The agent accepts it with move_lead_stage."""
+	return site_visits.complete(name, outcome, outcome_notes)
+
+
+@sellos_api(*LOGGERS)
+def site_visit_options():
+	"""The agents, outcomes and confirmations the site visit screens offer the user (SOS-P1-25)."""
+	return site_visits.options()
 
 
 def _writable_lead(lead):

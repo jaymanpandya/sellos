@@ -6,6 +6,7 @@ import { inAreas, personaFor, routeArea } from "./personas";
 const HomePage = () => import("./pages/HomePage.vue");
 const LeadsPage = () => import("./pages/LeadsPage.vue");
 const LeadPage = () => import("./pages/LeadPage.vue");
+const SiteVisitsPage = () => import("./pages/SiteVisitsPage.vue");
 const SupportPage = () => import("./pages/SupportPage.vue");
 const UsersPage = () => import("./pages/UsersPage.vue");
 const TelephonyPage = () => import("./pages/TelephonyPage.vue");
@@ -28,6 +29,12 @@ export function createAppRouter() {
 				component: LeadsPage,
 				meta: { area: "crm" },
 				children: [{ path: ":name", name: "lead", component: LeadPage }],
+			},
+			{
+				path: "/crm/visits",
+				name: "site-visits",
+				component: SiteVisitsPage,
+				meta: { area: "crm" },
 			},
 			{
 				path: "/partner/leads",

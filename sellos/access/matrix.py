@@ -55,6 +55,12 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.add_activity": _LOGGERS,
 	"sellos.crm.api.save_task": _LOGGERS,
 	"sellos.crm.api.save_site_visit": _LOGGERS,
+	# SOS-P1-25: the calendar, tomorrow's confirmations, confirming and finishing a visit.
+	"sellos.crm.api.site_visit_calendar": _LOGGERS,
+	"sellos.crm.api.tomorrows_site_visits": _LOGGERS,
+	"sellos.crm.api.confirm_site_visit": _LOGGERS,
+	"sellos.crm.api.complete_site_visit": _LOGGERS,
+	"sellos.crm.api.site_visit_options": _LOGGERS,
 	# SOS-P1-22: follow ups. The untouched setting is the Company Admin's.
 	"sellos.crm.api.complete_follow_up": _LOGGERS,
 	"sellos.crm.api.list_follow_ups": _LOGGERS,

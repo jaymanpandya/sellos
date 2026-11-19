@@ -164,13 +164,14 @@ def notify_site_visits(now=None) -> int:
 			["visit_datetime", ">=", start],
 			["visit_datetime", "<", add_days(start, 1)],
 		],
-		fields=["name", "lead", "project_name", "visit_datetime"],
+		fields=["name", "lead", "project_name", "visit_datetime", "agent"],
 		limit_page_length=0,
 	)
 	leads, made = {}, 0
 	for visit in visits:
 		lead = _lead_row(visit.lead, leads)
-		if not lead or lead.archived or not lead.assigned_to:
+		recipient = visit.agent or (lead and lead.assigned_to)  # the visit's agent (SOS-P1-25)
+		if not lead or lead.archived or not recipient:
 			continue
 		at = get_datetime(visit.visit_datetime)
 		message = _("Site visit for {0} at {1} tomorrow, {2}.").format(
@@ -178,7 +179,7 @@ def notify_site_visits(now=None) -> int:
 		)
 		key = f"{SITE_VISIT_TOMORROW}:{visit.name}:{visit.visit_datetime}"
 		made += bool(
-			notify(lead.assigned_to, SITE_VISIT_TOMORROW, _("Site visit tomorrow"), message, visit.lead, key)
+			notify(recipient, SITE_VISIT_TOMORROW, _("Site visit tomorrow"), message, visit.lead, key)
 		)
 	return made
 

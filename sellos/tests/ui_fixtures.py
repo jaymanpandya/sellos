@@ -667,6 +667,13 @@ def seed_regression_data():
 	  scheduler's reminder function tells the agent of both. Regression Dormant Eight has no open follow up
 	  and is flagged untouched after the Company Admin's number of days (3).
 
+	* Site visits (SOS-P1-25): tomorrow the gate agent has Regression Tomorrow Heights on Regression Buyer
+	  One (Not confirmed, and Buyer One stays on Qualified) and Regression Skyline Walkthrough on Regression
+	  Buyer Two (Confirmed), and Regression Agent Two has Regression Lakeside Tour on Regression Buyer Three
+	  (Not confirmed). The gate agent's calendar and list of tomorrow's visits hold their own two, the Sales
+	  Manager sees all three and the Company Admin sees all three. Regression Buyer Two is on Site visit
+	  booked, so marking its visit done offers a next stage.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -688,6 +695,7 @@ def seed_regression_data():
 		_seed_dormant_lead(admin, agent_one)
 		_seed_follow_ups(agent_one)
 		_seed_notifications(agent_one)
+		_seed_site_visits(agent_one, agent_two)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -813,6 +821,7 @@ def seed_regression_data():
 	_seed_sales_teams(admin, agent_one, agent_two, agent_three)
 	_seed_follow_ups(agent_one)
 	_seed_notifications(agent_one)
+	_seed_site_visits(agent_one, agent_two)
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -951,6 +960,7 @@ def _seed_notifications(agent_one):
 	lead = frappe.db.get_value("Lead", {"lead_title": ["like", f"{REGRESSION_PREFIX}Buyer One%"]}, "name")
 	project = f"{REGRESSION_PREFIX}Tomorrow Heights"
 	if lead and not frappe.db.exists("Site Visit", {"lead": lead, "project_name": project}):
+		stage = frappe.db.get_value("Lead", lead, "stage")
 		with _as_user(agent_one):
 			crm.save_site_visit(
 				values={
@@ -960,8 +970,40 @@ def _seed_notifications(agent_one):
 					"status": "Scheduled",
 				}
 			)
+			# Booking moves a lead to Site visit booked (SOS-P1-25). Buyer One stays where the stage flows
+			# (SOS-P1-07) expect it, so the agent moves it back through the same API.
+			if frappe.db.get_value("Lead", lead, "stage") != stage:
+				crm.move_lead_stage(lead, stage)
 	notifications.notify_follow_ups()
 	notifications.notify_site_visits()
+
+
+def _seed_site_visits(agent_one, agent_two):
+	"""Tomorrow's site visits (SOS-P1-25), booked by their agents through the visit API: Regression Skyline
+	Walkthrough on Regression Buyer Two (the gate agent's, confirmed by the agent after the call) and
+	Regression Lakeside Tour on Regression Buyer Three (Regression Agent Two's). With Regression Tomorrow
+	Heights (Not confirmed) on Buyer One, the gate agent's list of tomorrow's visits holds two and the
+	Sales Manager's holds three. Safe to run again: a visit that exists is left alone."""
+	from sellos.crm import api as crm
+
+	plan = (
+		(agent_one, "Buyer Two", "Regression Skyline Walkthrough", 15, "Confirmed"),
+		(agent_two, "Buyer Three", "Regression Lakeside Tour", 16, None),
+	)
+	for agent, who, project, hour, confirmation in plan:
+		lead = frappe.db.get_value("Lead", {"lead_title": ["like", f"{REGRESSION_PREFIX}{who}%"]}, "name")
+		if not lead or frappe.db.exists("Site Visit", {"lead": lead, "project_name": project}):
+			continue
+		with _as_user(agent):
+			visit = crm.save_site_visit(
+				values={
+					"lead": lead,
+					"project_name": project,
+					"visit_datetime": add_to_date(get_datetime(add_days(today(), 1)), hours=hour),
+				}
+			)
+			if confirmation:
+				crm.confirm_site_visit(visit["name"], confirmation)
 
 
 def _seed_dormant_lead(admin, agent_one):
