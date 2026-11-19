@@ -8,12 +8,26 @@ const lead = (timeline = []) => ({
 	},
 });
 
-// The page and the shell also ask for the bell's notifications and, for those who log, the site visit
-// lists. Stub them and wait for them, so no request is left running when the test ends.
+// The lead opens beside the list (router.js), so the list screen asks for its rows and filter boxes
+// too, and the shell asks for the bell's notifications and, for those who log, the site visit lists.
+// Stub every one and wait for them, so no request is left running when the test ends (a slow CI run
+// cut the unstubbed ones off, "lead_filter_options failed Failed to fetch").
 const quietBackground = (logs = true) => {
 	cy.intercept("**/api/method/sellos.crm.api.list_notifications*", {
 		body: { message: { unread: 0, items: [] } },
 	}).as("notifications");
+	cy.intercept("**/api/method/sellos.crm.api.list_leads*", { body: { message: [] } }).as(
+		"leads"
+	);
+	cy.intercept("**/api/method/sellos.crm.api.lead_filter_options*", {
+		body: { message: {} },
+	}).as("filterOptions");
+	cy.intercept("**/api/method/sellos.crm.api.list_stages*", { body: { message: [] } }).as(
+		"stages"
+	);
+	cy.intercept("**/api/method/sellos.crm.api.list_lead_sources*", {
+		body: { message: { sources: [] } },
+	}).as("sources");
 	if (logs) {
 		cy.intercept("**/api/method/sellos.crm.api.site_visit_options*", {
 			body: { message: {} },
@@ -22,6 +36,9 @@ const quietBackground = (logs = true) => {
 };
 const backgroundLoaded = (logs = true) => {
 	cy.wait("@notifications");
+	cy.wait(["@leads", "@filterOptions", "@stages"]);
+	// A screen that can make a lead asks for the sources twice (its filter and its form).
+	cy.wait(logs ? ["@sources", "@sources"] : ["@sources"]);
 	if (logs) cy.wait("@visitOptions");
 };
 
