@@ -4,6 +4,8 @@ context("SOS-UI-2B: Pandya palette on the app shell", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos");
 		cy.getByTestId("app-shell").should("exist");
+		// The agent lands on Today. Let its lists finish loading, so leaving the page cuts no request off.
+		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 	});
 
 	it("uses the page background, the ink text colour and Inter", () => {
@@ -37,8 +39,6 @@ context("SOS-UI-2B: Pandya palette on the app shell", () => {
 	});
 
 	it("gives a card the 16px radius, a 1px teal line at low opacity and white fill", () => {
-		// The agent's Today lists must finish loading before the page is left, so no request is cut off.
-		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 		cy.signInFresh("basic");
 		cy.visit("/sellos");
 		cy.getByTestId("no-access")
