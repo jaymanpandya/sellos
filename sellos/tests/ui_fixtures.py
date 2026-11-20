@@ -697,6 +697,12 @@ def seed_regression_data():
 	  phones.in_mobile(CLICK_TO_CALL_SEED), set by the Company Admin through the users API, so the Call
 	  button on a lead rings the agent's phone first through the fake provider and shows the lead's warning.
 
+	* Calling hours and the do not call list (SOS-P2-10): calling hours of 9:00 am to 9:00 pm, Monday to
+	  Saturday, saved but switched off (so the regression calls work at any time), and a do not call list
+	  holding the number of Regression DND Listed, a lead of the gate agent that is therefore Registered DND
+	  with an amber warning on the lead, the caller queue and the call log. Made through the Company Admin's
+	  production methods.
+
 	* The company setup wizard (SOS-P1-03) left half way: profile, colours and the eleven pipeline
 	  stages saved, the users step still to do, so it opens on that step.
 
@@ -878,6 +884,7 @@ def seed_regression_data():
 	_seed_support_grants(admin)
 	_seed_telephony(admin)
 	_seed_click_to_call_agent(admin, agent_one)
+	_seed_calling_rules(admin, agent_one)
 	_seed_control_site()
 	_seed_setup_wizard(admin)
 	_seed_sales_teams(admin, agent_one, agent_two, agent_three)
@@ -1384,6 +1391,53 @@ def _seed_click_to_call_agent(admin, agent):
 		return
 	with _as_user(admin):
 		users.save_user(agent, {"mobile_no": phones.in_mobile(CLICK_TO_CALL_SEED)})
+
+
+CALLING_RULES_SEED = 2401
+DND_QUEUE_SEED = 84  # the number of the caller queue's Unknown lead, made by seed_caller_queue
+
+
+def _seed_calling_rules(admin, agent_one):
+	"""Calling hours (saved, switched off) and a do not call list with one number (SOS-P2-10), through the
+	Company Admin's methods. Regression DND Listed is a lead of the gate agent with that number, so it is
+	Registered DND. Safe to run again: a lead that exists is left alone."""
+	from sellos.crm import api as crm
+	from sellos.telephony import dnd, hours
+
+	title = f"{REGRESSION_PREFIX}DND Listed"
+	if frappe.db.exists("Client", {"client_name": title}):
+		return
+	with _as_user(admin):
+		hours.save_calling_hours(0, "09:00", "21:00", "Mon,Tue,Wed,Thu,Fri,Sat")
+		client = crm.save_client(
+			values={
+				"client_name": title,
+				"client_type": "Buyer",
+				"phone": phones.in_mobile(CALLING_RULES_SEED),
+			}
+		)
+		crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": agent_one})
+		dnd.import_do_not_call_list(phones.in_mobile(CALLING_RULES_SEED), "Regression list")
+
+
+def seed_calling_rules():
+	"""What the calling rules spec needs (SOS-P2-10): everything click to call needs, plus a calling window
+	that is closed right now (so a spec can save it and see the refusal) and the number of the Unknown lead
+	of the caller queue, which the spec imports as a do not call list. remove_calling_rules undoes it."""
+	seed = seed_click_to_call()
+	closed = ("14:00", "20:00") if frappe.utils.now_datetime().hour < 12 else ("01:00", "05:00")
+	return {
+		**seed,
+		"closed_start": closed[0],
+		"closed_end": closed[1],
+		"dnd_number": phones.in_mobile(DND_QUEUE_SEED),
+	}
+
+
+def remove_calling_rules():
+	"""Undo seed_calling_rules (tests only): the do not call list, the calling hours and click to call's data."""
+	frappe.db.delete("Do Not Call Number", {"number": phones.in_mobile(DND_QUEUE_SEED)})
+	return remove_click_to_call()
 
 
 def seed_click_to_call():

@@ -15,7 +15,7 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from sellos.crm import consent
-from sellos.telephony import router, settings
+from sellos.telephony import dnd, router, settings
 from sellos.telephony.base import ProviderError
 from sellos.telephony.provider import get_provider
 
@@ -62,6 +62,7 @@ def place_logged_call(lead, purpose, mode="Manual", answer_url="", status_url=""
 		frappe.throw(_("Lead {0} was not found.").format(lead), frappe.DoesNotExistError)
 	number = _lead_number(lead)
 	route = router.route_call(number, purpose)
+	dnd.apply_to_lead(lead)  # SOS-P2-10: a listed number is Registered DND; the call goes on
 	check = consent.check_contact(lead, "Call", route.purpose)
 	if check.refused:
 		return {"check": check, "log": None}

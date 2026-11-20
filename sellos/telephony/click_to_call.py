@@ -23,7 +23,7 @@ from frappe.utils import cint, get_url
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, COMPANY_ADMIN, SALES_MANAGER
 from sellos.crm import call_outcomes, consent
-from sellos.telephony import call_log, router, settings
+from sellos.telephony import call_log, dnd, hours, router, settings
 from sellos.telephony.base import ProviderError
 from sellos.telephony.provider import get_provider
 
@@ -90,9 +90,11 @@ def call_preview(lead, purpose="Service"):
 	"""What the Call button shows before the call: the consent status and warning, the purpose's warning
 	and whether the user can be rung (their Indian mobile). A lead in any consent status can be called."""
 	_lead_doc(lead)
+	dnd.apply_to_lead(lead)  # SOS-P2-10: a listed number is Registered DND, with its warning
 	view = _consent_view(lead, purpose)
 	error = ""
 	try:
+		hours.check_calling_hours()
 		agent_mobile()
 		call_log._lead_number(lead)
 	except ProviderError as exc:
@@ -119,6 +121,7 @@ def click_to_call(lead, purpose="Service"):
 		route = router.route_call(call_log._lead_number(lead), purpose)
 	except ProviderError as error:
 		_fail(error)
+	dnd.apply_to_lead(lead)  # SOS-P2-10: flags the lead, never refuses the call
 	check = consent.check_contact(lead, "Call", route.purpose)
 	view = _consent_view(lead, route.purpose)
 	if check.refused:
@@ -163,7 +166,7 @@ def connect_lead(log_name) -> bool:
 	try:
 		# Both legs must be in India: the lead's number is routed again, so a number that changed to one
 		# outside India after the agent leg was placed is refused here, before any second leg.
-		route = router.route_call(call_log._lead_number(row.lead), row.purpose)
+		route = router.route_call(call_log._lead_number(row.lead), row.purpose, check_hours=False)
 		auth_id, auth_token = settings._keys()
 		placed = get_provider(auth_id, auth_token).place_call(route.from_number, route.to_number, *_urls())
 	except ProviderError as error:

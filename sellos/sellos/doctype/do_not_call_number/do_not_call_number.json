@@ -1,0 +1,25 @@
+{
+ "actions": [],
+ "autoname": "field:number",
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["number", "source", "imported_on", "imported_by"],
+ "fields": [
+  {"fieldname": "number", "fieldtype": "Data", "label": "Number", "reqd": 1, "unique": 1, "read_only": 1, "description": "An Indian mobile number as +91 and ten digits."},
+  {"fieldname": "source", "fieldtype": "Data", "label": "Source", "read_only": 1},
+  {"fieldname": "imported_on", "fieldtype": "Datetime", "label": "Imported on", "read_only": 1},
+  {"fieldname": "imported_by", "fieldtype": "Link", "label": "Imported by", "options": "User", "read_only": 1}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Do Not Call Number",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

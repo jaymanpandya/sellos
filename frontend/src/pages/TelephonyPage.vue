@@ -91,6 +91,7 @@
 				{{ result.message }}
 			</p>
 		</form>
+		<CallingRules v-if="!loading && !loadError" />
 	</div>
 </template>
 
@@ -98,6 +99,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 
 import { logRequestError } from "../api";
+import CallingRules from "../components/CallingRules.vue";
 import { serverMessage } from "../crm/crmApi";
 import { telephonyApi } from "../telephony/telephonyApi";
 

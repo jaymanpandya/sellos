@@ -15,3 +15,24 @@ export const telephonyApi = {
 		}),
 	check: () => call("check_connection"),
 };
+
+// Calling hours and the do not call list (SOS-P2-10), for the Company Admin.
+const rules = (module, method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.telephony.${module}.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const callingRulesApi = {
+	getHours: () => rules("hours", "get_calling_hours"),
+	saveHours: ({ enabled, start, end, days }) =>
+		rules("hours", "save_calling_hours", {
+			enabled: enabled ? 1 : 0,
+			start,
+			end,
+			days: days.join(","),
+		}),
+	importList: (text) => rules("dnd", "import_do_not_call_list", { text }),
+	summary: () => rules("dnd", "do_not_call_summary"),
+};

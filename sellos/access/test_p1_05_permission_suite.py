@@ -33,6 +33,7 @@ SECRET_NAME = "P105 Secret Buyer"
 SECRET_PHONE = phones.in_mobile(105)
 # SOS-P2-07: the 022 number the fake provider rings from, made from a generated number.
 LANDLINE_022 = f"{phones.in_mobile(2007)[:3]}22{phones.in_mobile(2007)[-8:]}"
+DND_SAMPLE = phones.in_mobile(2010)  # SOS-P2-10
 ACTIVITY_NOTE = "p105-secret-activity-note"
 ADMIN = "company_admin"
 
@@ -181,6 +182,11 @@ SAMPLE_CALLS = {
 	"sellos.telephony.click_to_call.call_status": {"call_log": "{call_log}"},
 	"sellos.telephony.click_to_call.pending_outcomes": {},
 	"sellos.telephony.click_to_call.record_outcome": {"call_log": "{call_log}", "outcome": "Wrong number"},
+	# SOS-P2-10: calling hours and the do not call list.
+	"sellos.telephony.hours.get_calling_hours": {},
+	"sellos.telephony.hours.save_calling_hours": {"enabled": 0},
+	"sellos.telephony.dnd.import_do_not_call_list": {"text": DND_SAMPLE},
+	"sellos.telephony.dnd.do_not_call_summary": {},
 	"sellos.access.field_history.getdoc": {"doctype": "Client", "name": "{client}"},
 	"sellos.access.field_history.get_docinfo": {"doctype": "Client", "name": "{client}"},
 }

@@ -7,7 +7,8 @@ and does not exist here.
 
 The 022 number is for service and transactional calls. Each call records its purpose. A promotional
 purpose is not refused: the route carries a warning, which the call log shows (SOS-P2-05). Consent
-never blocks here: the router does not look at consent.
+never blocks here: the router does not look at consent. The calling hours (SOS-P2-10) are a rule of
+the router, not a consent check.
 """
 
 import re
@@ -48,10 +49,14 @@ def _compact(number: str) -> str:
 	return re.sub(r"[\s\-()]", "", number or "")
 
 
-def route_call(to_number: str, purpose: str, from_number: str | None = None) -> Route:
+def route_call(
+	to_number: str, purpose: str, from_number: str | None = None, check_hours: bool = True, now=None
+) -> Route:
 	"""Route a call to `to_number` for `purpose`. Raises ProviderError with a message safe to show.
 
-	from_number is the 022 number; it defaults to the one saved in Telephony Settings."""
+	from_number is the 022 number; it defaults to the one saved in Telephony Settings. A call outside the
+	company's calling hours is refused with the hours in the message (SOS-P2-10); the second leg of a call
+	already under way passes check_hours=False."""
 	purpose = (purpose or "").strip().title()
 	if purpose not in PURPOSES:
 		raise ProviderError(_("Choose the purpose of the call: Service, Transactional or Promotional."))
@@ -66,6 +71,10 @@ def route_call(to_number: str, purpose: str, from_number: str | None = None) -> 
 		from_number = frappe.db.get_single_value("Telephony Settings", "phone_number") or ""
 	if not from_number:
 		raise ProviderError(_("The 022 number is not set. Ask your Company Admin to add it."))
+	if check_hours:
+		from sellos.telephony import hours
+
+		hours.check_calling_hours(now)
 	return Route(ACCOUNT_INDIA, SERIES_022, from_number, number, purpose, purpose_warning(purpose))
 
 

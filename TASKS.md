@@ -565,7 +565,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 5
 - **Dependencies:** SOS-P2-04, SOS-N10, SOS-P2-03, SOS-P2-05, SOS-P2-09
-- **Status:** In Progress
+- **Status:** Complete
 - **Browser spec:** required
 
 ### SOS-UI-3A: Move Home, Call queue and Site visits to the shared components

@@ -124,6 +124,11 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.telephony.click_to_call.call_status": _LOGGERS,
 	"sellos.telephony.click_to_call.pending_outcomes": _LOGGERS,
 	"sellos.telephony.click_to_call.record_outcome": _LOGGERS,
+	# SOS-P2-10: calling hours and the do not call list, for the Company Admin.
+	"sellos.telephony.hours.get_calling_hours": _ADMIN_ONLY,
+	"sellos.telephony.hours.save_calling_hours": _ADMIN_ONLY,
+	"sellos.telephony.dnd.import_do_not_call_list": _ADMIN_ONLY,
+	"sellos.telephony.dnd.do_not_call_summary": _ADMIN_ONLY,
 	"sellos.access.field_history.getdoc": _OPENERS,
 	"sellos.access.field_history.get_docinfo": _OPENERS,
 }

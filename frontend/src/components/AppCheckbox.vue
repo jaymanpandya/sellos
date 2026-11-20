@@ -1,6 +1,12 @@
 <template>
 	<div ref="host" class="contents">
-		<Checkbox v-bind="$attrs" :model-value="modelValue" :label="label" padding />
+		<Checkbox
+			v-bind="$attrs"
+			:model-value="modelValue"
+			:label="label"
+			padding
+			@update:model-value="emit('update:modelValue', $event)"
+		/>
 	</div>
 </template>
 
@@ -17,6 +23,7 @@ defineProps({
 	modelValue: { type: [Boolean, Number, String], default: false },
 	label: { type: String, default: "" },
 });
+const emit = defineEmits(["update:modelValue"]);
 
 const host = ref(null);
 function clean() {

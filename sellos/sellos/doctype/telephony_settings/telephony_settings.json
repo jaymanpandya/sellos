@@ -7,7 +7,12 @@
   "auth_id",
   "auth_token",
   "phone_number",
-  "provider"
+  "provider",
+  "section_calling_hours",
+  "calling_hours_enabled",
+  "calling_hours_start",
+  "calling_hours_end",
+  "calling_days"
  ],
  "fields": [
   {
@@ -32,6 +37,36 @@
    "hidden": 1,
    "label": "Provider",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_calling_hours",
+   "fieldtype": "Section Break",
+   "label": "Calling hours"
+  },
+  {
+   "fieldname": "calling_hours_enabled",
+   "fieldtype": "Check",
+   "label": "Limit calls to calling hours",
+   "default": "0",
+   "description": "SOS-P2-10. Off means calls may be placed at any time."
+  },
+  {
+   "fieldname": "calling_hours_start",
+   "fieldtype": "Time",
+   "label": "Calls may start at",
+   "description": "India time."
+  },
+  {
+   "fieldname": "calling_hours_end",
+   "fieldtype": "Time",
+   "label": "Calls must end by",
+   "description": "India time. A call at exactly this time is refused."
+  },
+  {
+   "fieldname": "calling_days",
+   "fieldtype": "Data",
+   "label": "Calling days",
+   "description": "Three letter day names, comma separated, for example Mon,Tue,Wed,Thu,Fri,Sat."
   }
  ],
  "index_web_pages_for_search": 0,
