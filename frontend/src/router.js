@@ -16,6 +16,7 @@ const TelephonyPage = () => import("./pages/TelephonyPage.vue");
 const TeamsPage = () => import("./pages/TeamsPage.vue");
 const AssignmentRulesPage = () => import("./pages/AssignmentRulesPage.vue");
 const TeamReportPage = () => import("./pages/TeamReportPage.vue");
+const CallReportsPage = () => import("./pages/CallReportsPage.vue");
 const CallListsPage = () => import("./pages/CallListsPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
@@ -117,6 +118,12 @@ export function createAppRouter() {
 				name: "team-report",
 				component: TeamReportPage,
 				meta: { area: "reports", title: "Team report" },
+			},
+			{
+				path: "/reports/calls",
+				name: "call-reports",
+				component: CallReportsPage,
+				meta: { area: "reports", title: "Call reports" },
 			},
 			{
 				path: "/company/setup",

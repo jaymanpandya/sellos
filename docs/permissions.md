@@ -95,6 +95,7 @@ on a company site, because the data scope above is "none".
 | `sellos.crm.api.preview_lead_import`, `import_bought_list` (SOS-P1-12, a CSV of a bought lead list: the preview writes nothing, the import makes leads with the source Bought list and the consent status Unknown or Registered DND, merges duplicates, and sets nothing that stops contact) | Company Admin |
 | `sellos.crm.api.list_assignment_rules`, `save_assignment_rule`, `delete_assignment_rule`, `set_default_team` (SOS-P1-19, the rules that assign new leads by round robin, source or locality, and the default team) | Company Admin |
 | `sellos.reports.team.team_report` (SOS-P1-18, the leads the reader may see by agent and by stage) | Company Admin, Sales Manager |
+| `sellos.reports.calls.call_report`, `call_report_calls` (SOS-P2-11, the call reports for a range of dates: cost by agent and by purpose, connect rate, talk time and consent coverage, and the calls behind each figure) | Company Admin |
 
 Each story that adds a method adds a row here.
 

@@ -171,6 +171,8 @@ SAMPLE_CALLS = {
 	"sellos.access.teams.save_team": {"name": "{spare_team}", "values": {"members": []}},
 	"sellos.access.teams.delete_team": {"name": "{spare_team}"},
 	"sellos.reports.team.team_report": {},
+	"sellos.reports.calls.call_report": {},
+	"sellos.reports.calls.call_report_calls": {},
 	# SOS-P2-01: blank values keep what is saved, so the Company Admin's call changes nothing.
 	"sellos.telephony.settings.get_telephony_settings": {},
 	"sellos.telephony.settings.save_telephony_settings": {},

@@ -11,6 +11,7 @@ export const ICONS = {
 	"call-lists": "lucide-list-checks",
 	teams: "lucide-users-round",
 	assignment: "lucide-shuffle",
+	"call-reports": "lucide-phone-call",
 	"team-report": "lucide-chart-column",
 	tenants: "lucide-building-2",
 };

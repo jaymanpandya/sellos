@@ -26,6 +26,7 @@ export const PERSONAS = [
 			{ key: "call-lists", label: "Call lists", to: "/company/call-lists", area: "company" },
 			{ key: "teams", label: "Teams", to: "/company/teams", area: "company" },
 			{ key: "assignment", label: "Assignment", to: "/company/assignment", area: "company" },
+			{ key: "call-reports", label: "Call reports", to: "/reports/calls", area: "reports" },
 		],
 	},
 	{

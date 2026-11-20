@@ -115,6 +115,8 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.access.teams.save_team": _ADMIN_ONLY,
 	"sellos.access.teams.delete_team": _ADMIN_ONLY,
 	"sellos.reports.team.team_report": _TEAM_USERS,
+	"sellos.reports.calls.call_report": _ADMIN_ONLY,
+	"sellos.reports.calls.call_report_calls": _ADMIN_ONLY,
 	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.save_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.check_connection": _ADMIN_ONLY,

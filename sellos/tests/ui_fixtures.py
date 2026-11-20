@@ -739,6 +739,12 @@ def seed_regression_data():
 	  Walkthrough on Regression Buyer Two (at noon today, made here) and tomorrow's two visits to
 	  confirm. The Sales Manager sees the same by agent for Regression Team North.
 
+	* Call reports (SOS-P2-11): seven calls on Regression Buyer One to Four and Regression Queue Application,
+	  placed through the fake provider and its last event (REPORT_CALL_PLAN): Service and Transactional,
+	  completed, no answer, busy and failed, by the gate agent and the Company Admin, one 40 days ago, so the
+	  Company Admin's call reports show cost by agent and by purpose, a connect rate, talk time and consent
+	  coverage for the last 30 days, and each figure lists its calls.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -761,6 +767,7 @@ def seed_regression_data():
 		_seed_follow_ups(agent_one)
 		_seed_notifications(agent_one)
 		_seed_site_visits(agent_one, agent_two)
+		_seed_call_reports_regression()
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -885,6 +892,7 @@ def seed_regression_data():
 	_seed_telephony(admin)
 	_seed_click_to_call_agent(admin, agent_one)
 	_seed_calling_rules(admin, agent_one)
+	_seed_call_reports_regression()
 	_seed_control_site()
 	_seed_setup_wizard(admin)
 	_seed_sales_teams(admin, agent_one, agent_two, agent_three)
@@ -895,6 +903,30 @@ def seed_regression_data():
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
 	return _regression_summary()
+
+
+def _seed_call_reports_regression():
+	"""Seven calls on the regression leads (SOS-P2-11), through the fake provider and the production call
+	functions, so the call reports have something to add up. Safe to run again: leads that already have a
+	Call Log are left alone."""
+	titles = {
+		"soon": "Buyer Two",
+		"months": "Queue Application",
+		"forever": "Buyer One",
+		"unknown": "Investor Four",
+		"opted": "Buyer Three",
+		"dnd": "DND Listed",
+	}
+	leads = {}
+	for key, title in titles.items():
+		client = frappe.db.get_value("Client", {"client_name": f"{REGRESSION_PREFIX}{title}"}, "name")
+		lead = frappe.db.get_value("Lead", {"client": client}, "name") if client else None
+		if not lead:
+			return
+		leads[key] = lead
+	if frappe.db.exists("Call Log", {"lead": ["in", list(leads.values())]}):
+		return
+	place_report_calls(leads)
 
 
 def _seed_bought_list(admin):
@@ -1508,6 +1540,99 @@ def remove_click_to_call():
 		frappe.db.delete("Version", {"ref_doctype": "Call Log", "docname": ["in", logs]})
 		frappe.db.delete("Call Log", {"name": ["in", logs]})
 	frappe.db.set_value("User", agent, "mobile_no", "")
+	remove_telephony_settings()
+	return remove_seeded_leads()
+
+
+# SOS-P2-11: the calls the call reports are checked with. Each row is (lead key, purpose, state, seconds,
+# cost in paise, days ago, who clicked). Cost and talk time are what the provider's last event says.
+REPORT_CALL_PLAN = (
+	("soon", "Service", "completed", 125, 300, 2, "agent"),
+	("months", "Service", "completed", 61, 150, 3, "agent"),
+	("forever", "Transactional", "completed", 30, 100, 5, "company_admin"),
+	("unknown", "Service", "no-answer", 0, 0, 5, "agent"),
+	("opted", "Transactional", "busy", 0, 0, 40, "agent"),
+	("dnd", "Service", "completed", 600, 1000, 10, "company_admin"),
+	("unknown", "Transactional", "failed", 0, 0, 1, "agent"),
+)
+
+
+def place_report_calls(leads, plan=REPORT_CALL_PLAN):
+	"""Place the plan's calls through the fake provider and the production call functions (SOS-P2-11), and
+	return one dict per call: its log, lead key, purpose, state, seconds, rupees, day and who clicked.
+
+	`leads` maps each lead key to a lead name. The fake provider takes the call, the provider's last event
+	(through apply_event, as the webhook does) sets its state, seconds and cost, and the call's day and
+	agent are set on the log, because a fake call starts now and nobody clicked. Does not commit."""
+	from sellos.telephony import call_log, settings
+	from sellos.telephony.base import CallEvent
+
+	_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	frappe.db.set_single_value("Telephony Settings", "provider", "fake")
+	with _as_user(admin):
+		settings.save_telephony_settings(
+			auth_id=TELEPHONY_FAKE_ID,
+			auth_token=TELEPHONY_FAKE_TOKEN,
+			phone_number=landline_022(TELEPHONY_SEED),
+		)
+	made = []
+	for key, purpose, state, seconds, paise, days_ago, who in plan:
+		log = call_log.place_logged_call(leads[key], purpose)["log"]
+		call_id = frappe.db.get_value("Call Log", log, "call_id")
+		call_log.apply_event(CallEvent(call_id, state, duration=seconds), cost=paise, cost_unit="paise")
+		started = add_days(now_datetime(), -days_ago)
+		agent = TEST_USERS[who]["email"]
+		frappe.db.set_value("Call Log", log, {"started_on": started, "agent": agent})
+		made.append(
+			{
+				"log": log,
+				"lead_key": key,
+				"purpose": purpose,
+				"state": state,
+				"seconds": seconds,
+				"rupees": paise / 100,
+				"day": str(get_datetime(started).date()),
+				"agent": agent,
+			}
+		)
+	return made
+
+
+def call_log_totals(from_date, to_date):
+	"""What the Call Log table itself holds for the two days (SOS-P2-11), read with SQL that shares no code
+	with the report, so a spec can check the report against it: calls, connected, seconds and rupees."""
+	row = frappe.db.sql(
+		"""select count(*), coalesce(sum(state = 'completed' and duration > 0), 0),
+			coalesce(sum(duration), 0), coalesce(sum(cost_rupees), 0)
+		from `tabCall Log` where date(started_on) between %s and %s""",
+		(from_date, to_date),
+	)[0]
+	return {"calls": int(row[0]), "connected": int(row[1]), "seconds": int(row[2]), "rupees": float(row[3])}
+
+
+def seed_call_reports():
+	"""What the call reports spec needs (SOS-P2-11): the caller queue's six leads (one for each consent
+	case), seven calls on them placed through the fake provider (REPORT_CALL_PLAN), and the date range that
+	holds all but the oldest. Returns the calls, the range and what the Call Log holds for it.
+	remove_call_reports undoes it."""
+	seed = seed_caller_queue()
+	calls = place_report_calls(seed["leads"])
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	start, end = str(add_days(today(), -12)), str(today())
+	return {**seed, "calls": calls, "from_date": start, "to_date": end, "totals": call_log_totals(start, end)}
+
+
+def remove_call_reports():
+	"""Undo seed_call_reports (tests only): the calls of the six leads, their Consent Checks, the telephony
+	account and the leads. The app deletes none of them, so this goes to the tables."""
+	clients = frappe.get_all("Client", filters={"client_name": ["like", "Gate Consent %"]}, pluck="name")
+	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name") if clients else []
+	logs = frappe.get_all("Call Log", filters={"lead": ["in", leads]}, pluck="name") if leads else []
+	if logs:
+		frappe.db.delete("Consent Check", {"reference_doctype": "Call Log", "reference_name": ["in", logs]})
+		frappe.db.delete("Version", {"ref_doctype": "Call Log", "docname": ["in", logs]})
+		frappe.db.delete("Call Log", {"name": ["in", logs]})
 	remove_telephony_settings()
 	return remove_seeded_leads()
 
