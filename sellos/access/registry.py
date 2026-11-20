@@ -52,10 +52,13 @@ def declared_methods() -> dict[str, frozenset[str]]:
 
 def undeclared_whitelisted_methods() -> list[str]:
 	"""Whitelisted functions in the sellos package that have no declaration."""
+	from sellos.access.webhooks import declared_webhooks
+
+	webhooks = declared_webhooks()  # SOS-P2-06: a registered provider webhook is declared there
 	found = []
 	for fn in frappe.whitelisted:
 		path = f"{fn.__module__}.{fn.__name__}"
-		if path.startswith(PREFIX) and path not in _REGISTRY:
+		if path.startswith(PREFIX) and path not in _REGISTRY and path not in webhooks:
 			found.append(path)
 	return sorted(found)
 
@@ -89,10 +92,15 @@ def load_declared_modules():
 
 
 def is_refused(method: str | None) -> bool:
-	"""True for a sellos method that has no declared roles."""
+	"""True for a sellos method that has no declared roles and is not a registered provider webhook
+	(SOS-P2-06: a webhook declares its checks in sellos.access.webhooks instead of roles)."""
 	if method and method.startswith(PREFIX):
 		load_declared_modules()
-	return bool(method) and method.startswith(PREFIX) and method not in _REGISTRY
+	if not method or not method.startswith(PREFIX) or method in _REGISTRY:
+		return False
+	from sellos.access.webhooks import is_webhook
+
+	return not is_webhook(method)
 
 
 def guard_api():

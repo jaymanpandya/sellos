@@ -121,9 +121,9 @@ Registered webhooks (one heading each as they are built):
 
 | Webhook | Provider | Task | Secret field | Writes |
 | --- | --- | --- | --- | --- |
-| none yet | | | | |
+| `sellos.telephony.webhook.plivo_call_event` (Plivo call events) | Plivo | SOS-P2-06 | Telephony Settings, auth token (Plivo signs with it) | Call Log (state, duration, hangup cause, recording link), Webhook Event (replay keys), a private recording file |
 
-Plivo call events (SOS-P2-06) is the first. WhatsApp and email (P5) and payment (P6) webhooks are added the same way, each under its own row
+Plivo call events (SOS-P2-06) is the first: body cap 64 KB, 600 requests a minute per tenant, replay key the signing nonce. A refused signature is always answered `refused` (HTTP 403), a body over the cap 413 and a rate limited request 429, and none writes anything. WhatsApp and email (P5) and payment (P6) webhooks are added the same way, each under its own row
 here, and each task adds its row.
 
 ## The permission test suite (P1.05)
