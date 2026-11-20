@@ -1,121 +1,140 @@
 <template>
 	<div data-testid="sellos-tenants-page">
-		<h1 class="ui-page-title">Companies</h1>
-		<p class="mt-2 text-ink-muted">
-			Every company has its own site. A new company starts as Requested, then moves to
-			Provisioning, then Active, or Failed. A failed company can be tried again.
-		</p>
+		<PageHeader
+			title="Companies"
+			text="Every company has its own site. A new company starts as Requested, then moves to Provisioning, then Active, or Failed. A failed company can be tried again."
+			icon="lucide-building-2"
+		/>
 
-		<form
-			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
-			data-testid="sellos-tenant-form"
-			@submit.prevent="create"
+		<div
+			class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4"
+			data-testid="sellos-tenant-stats"
 		>
-			<input
-				v-model="form.tenant_id"
-				required
-				pattern="[a-z0-9]+"
-				data-testid="sellos-tenant-id"
-				class="field"
-				placeholder="Tenant ID (lower case letters and digits)"
-				aria-label="Tenant ID"
+			<StatCard label="Requested" :value="countOf('Requested')" icon="lucide-inbox" />
+			<StatCard
+				label="Provisioning"
+				:value="countOf('Provisioning')"
+				icon="lucide-loader"
+				tone="warning"
 			/>
-			<input
-				v-model="form.company_name"
-				required
-				data-testid="sellos-tenant-company"
-				class="field"
-				placeholder="Company name"
-				aria-label="Company name"
+			<StatCard label="Active" :value="countOf('Active')" icon="lucide-circle-check" />
+			<StatCard
+				label="Failed"
+				:value="countOf('Failed')"
+				icon="lucide-circle-alert"
+				tone="warning"
 			/>
-			<input
-				v-model="form.admin_email"
-				required
-				type="email"
-				data-testid="sellos-tenant-email"
-				class="field"
-				placeholder="Admin email"
-				aria-label="Admin email"
+		</div>
+
+		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-tenant-load-error">
+			<LoadError :message="loadError" @retry="load" />
+		</div>
+		<LoadingSkeleton v-else-if="loading" />
+		<ListCard v-else title="Companies" data-testid="sellos-tenant-list">
+			<EmptyState
+				v-if="!tenants.length"
+				title="No company has been requested yet"
+				text="Add the first company below."
+				icon="lucide-building-2"
+				data-testid="sellos-tenant-empty"
 			/>
-			<select
-				v-model="form.plan"
-				data-testid="sellos-tenant-plan"
-				class="field"
-				aria-label="Plan"
-			>
-				<option value="">No plan yet</option>
-				<option v-for="p in plans" :key="p.name" :value="p.name">{{ p.name }}</option>
-			</select>
+			<ul class="space-y-ui-sm">
+				<li
+					v-for="t in tenants"
+					:key="t.name"
+					data-testid="sellos-tenant-row"
+					class="flex flex-wrap items-center justify-between gap-3 rounded-input border border-line-soft p-ui-md"
+				>
+					<span>
+						<span class="block font-medium text-ink" data-testid="sellos-tenant-name">
+							{{ t.company_name }}
+						</span>
+						<span class="block text-sm text-ink-muted">
+							{{ t.site_name }} · {{ t.admin_email
+							}}<span v-if="t.plan"> · {{ t.plan }}</span>
+						</span>
+					</span>
+					<span class="flex flex-wrap items-center gap-2">
+						<StatusBadge
+							:label="t.status"
+							:tone="STATUS_TONE[t.status] || 'neutral'"
+							data-testid="sellos-tenant-status"
+						/>
+						<AppButton
+							v-for="next in NEXT_STATUSES[t.status] || []"
+							:key="next"
+							type="button"
+							:data-testid="`sellos-tenant-to-${next.toLowerCase()}`"
+							@click="move(t, next)"
+						>
+							Move to {{ next }}
+						</AppButton>
+					</span>
+				</li>
+			</ul>
+		</ListCard>
+
+		<form class="ui-card mt-ui-md" data-testid="sellos-tenant-form" @submit.prevent="create">
+			<h2 class="ui-card-heading mb-ui-md">Add a company</h2>
+			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+				<FormField
+					v-model="form.tenant_id"
+					label="Tenant ID"
+					hint="Lower case letters and digits."
+					required
+					pattern="[a-z0-9]+"
+					data-testid="sellos-tenant-id"
+				/>
+				<FormField
+					v-model="form.company_name"
+					label="Company name"
+					required
+					data-testid="sellos-tenant-company"
+				/>
+				<FormField
+					v-model="form.admin_email"
+					type="email"
+					label="Admin email"
+					required
+					data-testid="sellos-tenant-email"
+				/>
+				<FormField
+					v-model="form.plan"
+					type="select"
+					label="Plan"
+					:options="planOptions"
+					data-testid="sellos-tenant-plan"
+				/>
+			</div>
 			<p
 				v-if="error"
 				data-testid="sellos-tenant-error"
 				role="alert"
-				class="text-sm text-accent"
+				class="mt-ui-md text-sm text-accent"
 			>
 				{{ error }}
 			</p>
-			<button type="submit" class="btn" data-testid="sellos-tenant-create">
-				Create company
-			</button>
+			<div class="mt-ui-md">
+				<AppButton type="submit" variant="primary" data-testid="sellos-tenant-create">
+					Create company
+				</AppButton>
+			</div>
 		</form>
-
-		<p
-			v-if="loadError"
-			data-testid="sellos-tenant-load-error"
-			role="alert"
-			class="mt-4 text-accent"
-		>
-			{{ loadError }}
-		</p>
-		<p v-else-if="loading" class="mt-4 text-ink-muted">Loading.</p>
-		<p
-			v-else-if="!tenants.length"
-			data-testid="sellos-tenant-empty"
-			class="mt-4 text-ink-muted"
-		>
-			No company has been requested yet.
-		</p>
-		<ul class="mt-4 divide-y divide-line rounded-input border border-line bg-surface">
-			<li
-				v-for="t in tenants"
-				:key="t.name"
-				data-testid="sellos-tenant-row"
-				class="flex items-center justify-between gap-3 px-4 py-3"
-			>
-				<span>
-					<span class="block font-medium text-ink" data-testid="sellos-tenant-name">
-						{{ t.company_name }}
-					</span>
-					<span class="block text-sm text-ink-muted">
-						{{ t.site_name }} · {{ t.admin_email
-						}}<span v-if="t.plan"> · {{ t.plan }}</span>
-					</span>
-				</span>
-				<span class="flex items-center gap-2">
-					<span
-						data-testid="sellos-tenant-status"
-						class="rounded-input bg-brand-light px-2 py-1 text-xs text-ink"
-					>
-						{{ t.status }}
-					</span>
-					<button
-						v-for="next in NEXT_STATUSES[t.status] || []"
-						:key="next"
-						type="button"
-						class="rounded-input px-3 py-1 text-sm text-ink-muted hover:bg-brand-light"
-						:data-testid="`sellos-tenant-to-${next.toLowerCase()}`"
-						@click="move(t, next)"
-					>
-						Move to {{ next }}
-					</button>
-				</span>
-			</li>
-		</ul>
 	</div>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
+
+import AppButton from "../components/AppButton.vue";
+import EmptyState from "../components/EmptyState.vue";
+import FormField from "../components/FormField.vue";
+import ListCard from "../components/ListCard.vue";
+import LoadError from "../components/LoadError.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import PageHeader from "../components/PageHeader.vue";
+import StatCard from "../components/StatCard.vue";
+import StatusBadge from "../components/StatusBadge.vue";
 
 import { serverMessage } from "../crm/crmApi";
 import { logRequestError } from "../api";
@@ -126,6 +145,17 @@ const plans = ref([]);
 const loading = ref(true);
 const loadError = ref("");
 const error = ref("");
+const STATUS_TONE = {
+	Requested: "info",
+	Provisioning: "warning",
+	Active: "success",
+	Failed: "danger",
+};
+const planOptions = computed(() => [
+	{ label: "No plan yet", value: "" },
+	...plans.value.map((p) => ({ label: p.name, value: p.name })),
+]);
+const countOf = (status) => tenants.value.filter((t) => t.status === status).length;
 const form = reactive({ tenant_id: "", company_name: "", admin_email: "", plan: "" });
 
 async function load() {

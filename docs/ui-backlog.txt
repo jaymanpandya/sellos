@@ -6,8 +6,6 @@
 # components (docs/UI_STYLE.md), following the Leads list and the lead page. Never add a page here.
 #
 # Counts are raw tags at 20 November 2026: buttons / inputs / selects.
-frontend/src/pages/SetupWizardPage.vue  # 12 / 11 / 2
-frontend/src/pages/TenantsPage.vue  # 2 / 3 / 1
 #
 # Not checked by the guard, because they live in frontend/src/components, but still raw and converted
-# by the same tasks: (Users, Teams, Team report, Support access and Telephony were converted in SOS-UI-3C; LeadBoard.vue was converted in SOS-UI-3B; NotificationBell.vue, TodayRow.vue and VisitConfirm.vue were converted in SOS-UI-3A).
+# by the same tasks: (Companies and the setup wizard were converted in SOS-UI-3D; Users, Teams, Team report, Support access and Telephony were converted in SOS-UI-3C; LeadBoard.vue was converted in SOS-UI-3B; NotificationBell.vue, TodayRow.vue and VisitConfirm.vue were converted in SOS-UI-3A).

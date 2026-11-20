@@ -307,3 +307,99 @@ context("SOS-UI-3C: Users, Teams, Team report, Support and Telephony follow the 
 			.and("have.css", "color", "rgb(228, 179, 60)");
 	});
 });
+
+// SOS-UI-3D: Companies, the setup wizard and the sign in page are built from the shared components.
+context("SOS-UI-3D: Companies, setup wizard and sign in follow the style", () => {
+	const pages = [
+		{
+			name: "Companies",
+			role: "platform_admin",
+			path: "/sellos/control/tenants",
+			ready: "tenant-list",
+			primary: "tenant-create",
+		},
+		{
+			name: "Setup wizard",
+			role: "company_admin",
+			path: "/sellos/company/setup",
+			ready: "setup-profile",
+			primary: "setup-save-profile",
+			reset: true,
+		},
+	];
+
+	pages.forEach((page) => {
+		const open = () => {
+			if (page.reset) cy.bench("sellos.tests.ui_fixtures.reset_setup_wizard");
+			cy.signInFresh(page.role);
+			cy.visit(page.path);
+			cy.getByTestId(page.ready, { timeout: 15000 }).should("be.visible");
+		};
+
+		it(`${page.name}: page colours, 24px/600 title, 16px card with the teal line`, () => {
+			open();
+			cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
+			cy.get("body").should("have.css", "color", "rgb(0, 60, 60)");
+			cy.get("h1.ui-page-title")
+				.first()
+				.should("have.css", "font-size", "24px")
+				.and("have.css", "font-weight", "600");
+			cy.getByTestId("app-shell")
+				.find(".ui-card, .rounded-card")
+				.first()
+				.should("have.css", "border-top-left-radius", "16px")
+				.and("have.css", "border-top-width", "1px")
+				.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)");
+		});
+
+		it(`${page.name}: every control is a frappe-ui control`, () => {
+			open();
+			cy.getByTestId("app-shell")
+				.find("main")
+				.then(($main) => {
+					expect($main.find("select").length, "native selects").to.eq(0);
+					$main.find("button").each((_, el) => {
+						expect(
+							el.className,
+							`button ${el.textContent.trim()} is a frappe-ui Button`
+						).to.match(/inline-flex|\bflex\b/);
+					});
+					$main.find("input:not([type=file]):not([type=checkbox])").each((_, el) => {
+						expect(
+							el.className,
+							`input ${el.getAttribute("data-testid")} is a frappe-ui input`
+						).to.match(/form-input|form-control|\bblock\b|\bw-full\b/);
+					});
+				});
+		});
+
+		it(`${page.name}: the primary button is solid button/bg with text/button`, () => {
+			open();
+			cy.getByTestId(page.primary)
+				.should("have.css", "background-color", "rgb(0, 60, 60)")
+				.and("have.css", "color", "rgb(228, 179, 60)");
+		});
+	});
+
+	it("Sign in: the SellOS tile, Inter, the page colours, a 16px card and a solid Continue button", () => {
+		cy.clearAllCookies();
+		cy.visit("/login");
+		cy.get(".for-login .page-card").should("be.visible");
+		cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
+		cy.get("body").invoke("css", "font-family").should("match", /Inter/);
+		cy.get(".for-login .page-card")
+			.should("have.css", "border-top-left-radius", "16px")
+			.and("have.css", "border-top-width", "1px")
+			.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)");
+		cy.get(".for-login .page-card-head h4")
+			.should("have.css", "font-size", "24px")
+			.and("have.css", "font-weight", "600");
+		cy.get(".for-login .page-card-head")
+			.then(($head) => getComputedStyle($head[0], "::before").backgroundColor)
+			.should("eq", "rgb(0, 60, 60)");
+		cy.get(".for-login .es-button[type=submit]")
+			.first()
+			.should("have.css", "background-color", "rgb(0, 60, 60)")
+			.and("have.css", "color", "rgb(228, 179, 60)");
+	});
+});
