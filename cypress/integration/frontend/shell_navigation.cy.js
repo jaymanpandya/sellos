@@ -22,6 +22,9 @@ context("SOS-P0-10: app shell", () => {
 				boot.company.name = "Pandya Realtors";
 			});
 			cy.visit("/sellos");
+			if (key === "agent" || key === "sales_manager") {
+				cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
+			}
 			const labels = navFor(persona).map((item) => item.label);
 			expect(labels.length, "the persona has navigation").to.be.greaterThan(0);
 			cy.getByTestId("nav")
@@ -53,6 +56,8 @@ context("SOS-P0-10: app shell", () => {
 			boot.company.name = "Pandya Realtors";
 		});
 		cy.visit("/sellos");
+		// Agents land on Today: let its lists finish loading, so leaving the page cuts no request off.
+		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 		cy.getByTestId("brand-name").filter(":visible").should("contain", "Pandya Realtors");
 		cy.getByTestId("nav")
 			.find("a")
@@ -72,6 +77,8 @@ context("SOS-P0-10: app shell", () => {
 			boot.company.logo = "/files/logo.png";
 		});
 		cy.visit("/sellos");
+		// Agents land on Today: let its lists finish loading, so leaving the page cuts no request off.
+		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 		cy.getByTestId("brand-logo").first().should("have.attr", "src", "/files/logo.png");
 	});
 
@@ -81,6 +88,8 @@ context("SOS-P0-10: app shell", () => {
 			boot.company.brand_color = "#112233";
 		});
 		cy.visit("/sellos");
+		// Agents land on Today: let its lists finish loading, so leaving the page cuts no request off.
+		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 		cy.document().then((doc) => {
 			expect(doc.documentElement.style.getPropertyValue("--sos-brand")).to.eq("#112233");
 		});
@@ -91,6 +100,8 @@ context("SOS-P0-10: app shell", () => {
 		cy.intercept("POST", "**/api/method/logout").as("logout");
 		cy.intercept("POST", "**/api/method/sellos.crm.api.today_screen").as("today");
 		cy.visit("/sellos");
+		// Agents land on Today: let its lists finish loading, so leaving the page cuts no request off.
+		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 		cy.wait("@today");
 		cy.getByTestId("signout").click();
 		cy.wait("@logout").its("request.method").should("eq", "POST");
@@ -100,6 +111,8 @@ context("SOS-P0-10: app shell", () => {
 	it("sends the user to sign in again when the session has expired", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos");
+		// Agents land on Today: let its lists finish loading, so leaving the page cuts no request off.
+		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 		cy.getByTestId("app-shell").should("exist");
 		cy.intercept("GET", "**/api/method/frappe.auth.get_logged_user*", {
 			statusCode: 200,
@@ -113,6 +126,8 @@ context("SOS-P0-10: app shell", () => {
 	it("does not send a signed in user to login when the session is still good", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos");
+		// Agents land on Today: let its lists finish loading, so leaving the page cuts no request off.
+		cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 		cy.getByTestId("app-shell").should("exist");
 		cy.intercept("GET", "**/api/method/frappe.auth.get_logged_user*", {
 			statusCode: 200,
