@@ -45,4 +45,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-19 16:38 | SOS-P2-05 | ci-red | CI still red on 15dddeb (the commit for SOS-P2-05) after 2 repair attempt(s): 1) SellOS Agent sees only navigation inside its own areas 2) "after each" hook for "SellOS Agent sees only navigation ins… | 64 | 4.7 |
 | 2026-11-19 21:22 | SOS-P2-06 | needs-input | SOS-P2-06's webhook has to be callable by Plivo, which has no SellOS login, and I can't build that without changing how API methods are declared. That touches permissions, so I need your decision fir… | 0 | 0.2 |
 | 2026-11-19 23:43 | SOS-P2-06 | needs-input | SOS-P2-06's webhook has to be callable by Plivo, which has no SellOS login. I can't build that without changing how API methods are declared, and `docs/STOPS.md` shows an earlier run stopped on the s… | 0 | 3.9 |
-| 2026-11-20 04:17 | - | paused | the regression pause file exists | 0 |  |
+| 2026-11-20 04:17 | - | paused | the regression pause file exists | 0 | 7.3 |
