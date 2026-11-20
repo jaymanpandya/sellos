@@ -25,11 +25,14 @@ from sellos.access.roles import ROLES, ensure_roles
 from sellos.access.test_permission_matrix import import_all_sellos_modules, matrix_problems
 from sellos.crm import notifications
 from sellos.crm.pipeline import DEFAULT_STAGES
+from sellos.telephony.settings import save_telephony_settings
 from sellos.testing.users import TEST_USERS, create_test_users
 from sellos.tests import phones
 
 SECRET_NAME = "P105 Secret Buyer"
 SECRET_PHONE = phones.in_mobile(105)
+# SOS-P2-07: the 022 number the fake provider rings from, made from a generated number.
+LANDLINE_022 = f"{phones.in_mobile(2007)[:3]}22{phones.in_mobile(2007)[-8:]}"
 ACTIVITY_NOTE = "p105-secret-activity-note"
 ADMIN = "company_admin"
 
@@ -171,6 +174,13 @@ SAMPLE_CALLS = {
 	"sellos.telephony.settings.get_telephony_settings": {},
 	"sellos.telephony.settings.save_telephony_settings": {},
 	"sellos.telephony.settings.check_connection": {},
+	# SOS-P2-07: click to call. The Company Admin has a mobile number here and the fake provider is on, and
+	# the call log is the Company Admin's own, ended, so its outcome can be recorded.
+	"sellos.telephony.click_to_call.call_preview": {"lead": "{lead}"},
+	"sellos.telephony.click_to_call.click_to_call": {"lead": "{lead}"},
+	"sellos.telephony.click_to_call.call_status": {"call_log": "{call_log}"},
+	"sellos.telephony.click_to_call.pending_outcomes": {},
+	"sellos.telephony.click_to_call.record_outcome": {"call_log": "{call_log}", "outcome": "Wrong number"},
 	"sellos.access.field_history.getdoc": {"doctype": "Client", "name": "{client}"},
 	"sellos.access.field_history.get_docinfo": {"doctype": "Client", "name": "{client}"},
 }
@@ -327,7 +337,23 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		notification = notifications.notify(
 			TEST_USERS[ADMIN]["email"], notifications.LEAD_ASSIGNED, "P123 permission suite"
 		)
+		# SOS-P2-07: click to call rings the user's own mobile, through the fake provider.
+		frappe.db.set_value("User", TEST_USERS[ADMIN]["email"], "mobile_no", phones.in_mobile(2007))
+		frappe.db.set_single_value("Telephony Settings", "provider", "fake")
+		save_telephony_settings("FAKEOK-P207", "token-for-the-fake", LANDLINE_022)
+		call_row = frappe.get_doc(
+			{
+				"doctype": "Call Log",
+				"lead": lead.name,
+				"provider": "fake",
+				"call_id": "fake-p207-suite",
+				"purpose": "Service",
+				"state": "completed",
+				"agent": TEST_USERS[ADMIN]["email"],
+			}
+		).insert(ignore_permissions=True)
 		self.names = {
+			"call_log": call_row.name,
 			"notification": notification,
 			"task": task.name,
 			"visit": visit.name,

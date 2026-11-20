@@ -7,6 +7,7 @@ an out of order event, and the Call Log update (SOS-P2-05). The tenant is the si
 on. After a call ends with a recording the recording is fetched in a background job.
 """
 
+import dataclasses
 import hmac
 
 import frappe
@@ -14,7 +15,7 @@ from frappe import _
 from frappe.utils.file_manager import save_file
 
 from sellos.access.webhooks import WebhookRequest, provider_webhook
-from sellos.telephony import call_log, settings
+from sellos.telephony import call_log, click_to_call, settings
 from sellos.telephony.base import CallEvent, ProviderError
 from sellos.telephony.plivo import PlivoProvider, signature_v3
 from sellos.telephony.provider import get_provider
@@ -89,10 +90,13 @@ def plivo_call_event(request: WebhookRequest):
 
 
 def apply_plivo_event(event: CallEvent) -> str | None:
-	"""Update the Call Log for one event, in order. Returns the log name when something was written."""
+	"""Update the Call Log for one event, in order. Returns the log name when something was written.
+
+	An event may belong to the agent's leg (the log's own call ID) or, for click to call (SOS-P2-07), to the
+	lead's leg. When the agent answers a click to call, the lead is rung."""
 	name = frappe.db.get_value(call_log.DOCTYPE, {"call_id": event.call_id}, ["name", "state"], as_dict=True)
 	if not name:
-		return None
+		return _apply_lead_leg_event(event)
 	what = plan(name.state, event)
 	if not what:
 		return None
@@ -103,13 +107,43 @@ def apply_plivo_event(event: CallEvent) -> str | None:
 		cause = event.raw.get("HangupCauseName") or event.raw.get("HangupCause")
 	call_log.apply_event(event, hangup_cause=cause)
 	if event.recording_url:
-		frappe.enqueue(
-			"sellos.telephony.webhook.fetch_recording",
-			queue="short",
-			enqueue_after_commit=True,
-			log=name.name,
-		)
+		_enqueue_recording(name.name)
+	if event.state == "in-progress" and what == "all":
+		click_to_call.connect_lead(name.name)
 	return name.name
+
+
+def _enqueue_recording(log):
+	frappe.enqueue(
+		"sellos.telephony.webhook.fetch_recording",
+		queue="short",
+		enqueue_after_commit=True,
+		log=log,
+	)
+
+
+def _apply_lead_leg_event(event: CallEvent) -> str | None:
+	"""An event of the lead's leg of a click to call: track it in `lead_state`. The end of the lead's leg
+	ends the call, with its duration, and its recording goes on the log."""
+	row = click_to_call.lead_leg(event.call_id)
+	if not row:
+		return None
+	what = plan(row.lead_state, event)
+	if not what:
+		return None
+	if what == "all":
+		frappe.db.set_value(call_log.DOCTYPE, row.name, "lead_state", event.state)
+	as_log = dataclasses.replace(event, call_id=row.call_id)
+	if STATE_RANK.get(event.state, 0) >= FINAL_RANK or event.recording_url:
+		log_plan = plan(row.state, as_log)
+		if log_plan == "recording":
+			as_log.state = row.state
+		if log_plan:
+			cause = event.raw.get("HangupCauseName") or event.raw.get("HangupCause")
+			call_log.apply_event(as_log, hangup_cause=cause if log_plan == "all" else None)
+	if event.recording_url:
+		_enqueue_recording(row.name)
+	return row.name
 
 
 def fetch_recording(log: str) -> str | None:

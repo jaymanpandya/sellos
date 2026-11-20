@@ -18,14 +18,12 @@
 					>
 				</p>
 			</div>
-			<AppButton
-				v-if="canLog"
-				type="button"
-				data-testid="sellos-lead-archive"
-				@click="archive"
-			>
-				Archive
-			</AppButton>
+			<div v-if="canLog" class="flex flex-wrap items-center gap-ui-sm">
+				<ClickToCall :lead="route.params.name" check-pending @done="load" />
+				<AppButton type="button" data-testid="sellos-lead-archive" @click="archive">
+					Archive
+				</AppButton>
+			</div>
 		</div>
 
 		<div
@@ -863,6 +861,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
+import ClickToCall from "../components/ClickToCall.vue";
 import FormField from "../components/FormField.vue";
 import MoneyField from "../components/MoneyField.vue";
 import ListCard from "../components/ListCard.vue";

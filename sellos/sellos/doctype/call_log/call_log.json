@@ -19,6 +19,11 @@
   "cost_rupees",
   "hangup_cause",
   "recording_link",
+  "section_click_to_call",
+  "agent",
+  "lead_call_id",
+  "lead_state",
+  "bridge_error",
   "section_consent",
   "consent_check",
   "consent_record"
@@ -38,6 +43,11 @@
   {"fieldname": "cost_rupees", "fieldtype": "Currency", "label": "Cost (rupees)", "precision": "4", "options": "INR", "read_only": 1, "description": "Always stored in rupees."},
   {"fieldname": "hangup_cause", "fieldtype": "Data", "label": "Hangup cause", "read_only": 1},
   {"fieldname": "recording_link", "fieldtype": "Data", "label": "Recording link", "read_only": 1},
+  {"fieldname": "section_click_to_call", "fieldtype": "Section Break", "label": "Click to call"},
+  {"fieldname": "agent", "fieldtype": "Link", "label": "Agent", "options": "User", "read_only": 1, "description": "The agent whose mobile was rung first (SOS-P2-07). Empty for a call placed another way."},
+  {"fieldname": "lead_call_id", "fieldtype": "Data", "label": "Lead leg call ID", "read_only": 1, "search_index": 1, "description": "The provider's id for the second leg, to the lead. Set when the agent answers."},
+  {"fieldname": "lead_state", "fieldtype": "Select", "label": "Lead leg state", "options": "\nqueued\nringing\nin-progress\ncompleted\nbusy\nno-answer\nfailed\ncancelled", "read_only": 1},
+  {"fieldname": "bridge_error", "fieldtype": "Small Text", "label": "Connection error", "read_only": 1, "description": "Why the lead could not be connected after the agent answered."},
   {"fieldname": "section_consent", "fieldtype": "Section Break", "label": "Consent"},
   {"fieldname": "consent_check", "fieldtype": "Link", "label": "Consent Check", "options": "Consent Check", "read_only": 1, "description": "The consent status and its warning are read from the check."},
   {"fieldname": "consent_record", "fieldtype": "Link", "label": "Consent Record", "options": "Consent Record", "read_only": 1, "description": "The live Consent Record when the call was placed, if one existed."}

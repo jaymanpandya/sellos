@@ -693,6 +693,10 @@ def seed_regression_data():
 	* Telephony Settings (SOS-P2-01): the Plivo India account saved with fake keys, a 022 number
 	  made by landline_022(TELEPHONY_SEED), and the fake provider switched on, so Test connection reports success.
 
+	* Click to call (SOS-P2-07): the gate agent has the Indian mobile number made by
+	  phones.in_mobile(CLICK_TO_CALL_SEED), set by the Company Admin through the users API, so the Call
+	  button on a lead rings the agent's phone first through the fake provider and shows the lead's warning.
+
 	* The company setup wizard (SOS-P1-03) left half way: profile, colours and the eleven pipeline
 	  stages saved, the users step still to do, so it opens on that step.
 
@@ -873,6 +877,7 @@ def seed_regression_data():
 	_seed_bought_list(admin)
 	_seed_support_grants(admin)
 	_seed_telephony(admin)
+	_seed_click_to_call_agent(admin, agent_one)
 	_seed_control_site()
 	_seed_setup_wizard(admin)
 	_seed_sales_teams(admin, agent_one, agent_two, agent_three)
@@ -1365,6 +1370,92 @@ def _seed_telephony(admin):
 			auth_token=TELEPHONY_FAKE_TOKEN,
 			phone_number=landline_022(TELEPHONY_SEED),
 		)
+
+
+CLICK_TO_CALL_SEED = 2301
+
+
+def _seed_click_to_call_agent(admin, agent):
+	"""The agent's Indian mobile number (SOS-P2-07), saved by the Company Admin through the users API, so
+	click to call can ring them first. Safe to run again: a number already saved is left alone."""
+	from sellos.access import users
+
+	if frappe.db.get_value("User", agent, "mobile_no"):
+		return
+	with _as_user(admin):
+		users.save_user(agent, {"mobile_no": phones.in_mobile(CLICK_TO_CALL_SEED)})
+
+
+def seed_click_to_call():
+	"""What the click to call spec needs (SOS-P2-07): the fake provider on, the Plivo account saved with fake
+	keys and a 022 number, the test agent's Indian mobile number, and the caller queue's six leads (one for
+	each consent case, SOS-P2-09) owned by the test agent. Returns the queue seed and the agent's number
+	(the agent's own, which they may see). remove_click_to_call undoes it."""
+	from sellos.access import users
+	from sellos.telephony import settings
+
+	use_fake_telephony_provider()
+	seed = seed_caller_queue()
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	with _as_user(admin):
+		settings.save_telephony_settings(
+			auth_id=TELEPHONY_FAKE_ID,
+			auth_token=TELEPHONY_FAKE_TOKEN,
+			phone_number=landline_022(TELEPHONY_SEED),
+		)
+		users.save_user(agent, {"mobile_no": phones.in_mobile(CLICK_TO_CALL_SEED)})
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return seed
+
+
+def set_click_to_call_agent_mobile(abroad=True):
+	"""Give the test agent a mobile number outside India (or an Indian one again), so the spec can check the
+	clear error. The users API refuses a foreign number, so this goes to the field (tests only)."""
+	agent = TEST_USERS["agent"]["email"]
+	number = phones.au_mobile(CLICK_TO_CALL_SEED) if abroad else phones.in_mobile(CLICK_TO_CALL_SEED)
+	frappe.db.set_value("User", agent, "mobile_no", number)
+	frappe.db.commit()  # nosemgrep
+	return {"abroad": bool(abroad)}
+
+
+def play_click_to_call(step):
+	"""Play one step of the fake provider's call for the test agent's latest click to call (SOS-P2-07).
+
+	Steps: "agent_answers" (the agent's phone is answered, so the lead is rung), "lead_answers" and
+	"hangup" (the lead's leg ends after 42 seconds). Each goes through the same function the Plivo webhook
+	uses, so the Call Log moves as it would in a real call. Returns the call's status as the agent sees it."""
+	from sellos.telephony import click_to_call, webhook
+	from sellos.telephony.base import CallEvent
+
+	agent = TEST_USERS["agent"]["email"]
+	log = frappe.get_all(
+		"Call Log", filters={"agent": agent}, order_by="creation desc", limit=1, pluck="name"
+	)[0]
+	call_id, lead_leg = frappe.db.get_value("Call Log", log, ["call_id", "lead_call_id"])
+	events = {
+		"agent_answers": CallEvent(call_id, "in-progress"),
+		"lead_answers": CallEvent(lead_leg or "", "in-progress"),
+		"hangup": CallEvent(lead_leg or "", "completed", duration=42),
+	}
+	webhook.apply_plivo_event(events[step])
+	frappe.db.commit()  # nosemgrep
+	with _as_user(agent):
+		return click_to_call.call_status(log)
+
+
+def remove_click_to_call():
+	"""Undo seed_click_to_call (tests only): the agent's Call Logs and Consent Checks, the telephony account,
+	the agent's mobile number and the six leads. The app deletes none of them, so this goes to the tables."""
+	agent = TEST_USERS["agent"]["email"]
+	logs = frappe.get_all("Call Log", filters={"agent": agent}, pluck="name")
+	if logs:
+		frappe.db.delete("Consent Check", {"reference_doctype": "Call Log", "reference_name": ["in", logs]})
+		frappe.db.delete("Version", {"ref_doctype": "Call Log", "docname": ["in", logs]})
+		frappe.db.delete("Call Log", {"name": ["in", logs]})
+	frappe.db.set_value("User", agent, "mobile_no", "")
+	remove_telephony_settings()
+	return remove_seeded_leads()
 
 
 def _seed_setup_wizard(admin):

@@ -58,7 +58,10 @@ class FakeProvider(TelephonyProvider):
 		self._check_keys()
 		if not from_number or not to_number:
 			raise ProviderError(_("Both numbers are needed to place a call."))
-		return PlacedCall(call_id=f"fake-{from_number[-6:]}-{to_number[-6:]}")
+		# Unique per call, as a real provider's id is: two calls to one number are two calls (SOS-P2-07).
+		return PlacedCall(
+			call_id=f"fake-{from_number[-6:]}-{to_number[-6:]}-{frappe.generate_hash(length=8)}"
+		)
 
 	def read_webhook(self, payload: dict, url: str = "", headers: dict | None = None) -> list[CallEvent]:
 		"""The fake payload is {"call_id", "state", "duration", "from", "to", "recording_url"}."""

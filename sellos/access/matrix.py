@@ -118,6 +118,12 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.save_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.check_connection": _ADMIN_ONLY,
+	# SOS-P2-07: click to call, its status during the call and the outcome form after it.
+	"sellos.telephony.click_to_call.call_preview": _LOGGERS,
+	"sellos.telephony.click_to_call.click_to_call": _LOGGERS,
+	"sellos.telephony.click_to_call.call_status": _LOGGERS,
+	"sellos.telephony.click_to_call.pending_outcomes": _LOGGERS,
+	"sellos.telephony.click_to_call.record_outcome": _LOGGERS,
 	"sellos.access.field_history.getdoc": _OPENERS,
 	"sellos.access.field_history.get_docinfo": _OPENERS,
 }
