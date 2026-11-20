@@ -77,33 +77,35 @@ export const frappeVariables = {
 	"--surface-red-4": status.danger.ink,
 	"--surface-red-5": "#8A2016", // solid danger button: gold/500 on it is 5.1
 	"--surface-red-6": "#6F180F",
+	"--surface-red-7": "#5A130C",
+	"--surface-blue-3": primitives["teal-500"],
 	// Text
-	"--text-ink-white": "var(--sos-on-brand-accent)", // text/button on the solid button
-	"--text-ink-gray-9": T900,
-	"--text-ink-gray-8": primitives["teal-700"], // text/onLight
-	"--text-ink-gray-7": primitives["teal-500"],
-	"--text-ink-gray-6": primitives["teal-500"],
-	"--text-ink-gray-5": derived.muted,
-	"--text-ink-gray-4": "#577777", // placeholder: 4.9 on white
-	"--text-ink-gray-3": "#8DA5A3",
-	"--text-ink-gray-2": "#B8C7C5",
-	"--text-ink-gray-1": "#D8E1DF",
-	"--text-ink-blue-1": WHITE,
-	"--text-ink-blue-2": status.info.ink,
-	"--text-ink-blue-3": primitives["teal-700"], // links
-	"--text-ink-blue-4": T900,
-	"--text-ink-blue-link": primitives["teal-700"],
-	"--text-ink-green-1": WHITE,
-	"--text-ink-green-2": status.success.ink,
-	"--text-ink-green-3": status.success.ink,
-	"--text-ink-amber-1": WHITE,
-	"--text-ink-amber-2": status.warning.ink,
-	"--text-ink-amber-3": status.warning.ink,
-	"--text-ink-cyan-1": status.info.ink,
-	"--text-ink-red-1": WHITE,
-	"--text-ink-red-2": status.danger.ink,
-	"--text-ink-red-3": status.danger.ink,
-	"--text-ink-red-4": status.danger.ink,
+	"--ink-white": "var(--sos-on-brand-accent)", // text/button on the solid button
+	"--ink-gray-9": T900,
+	"--ink-gray-8": primitives["teal-700"], // text/onLight
+	"--ink-gray-7": primitives["teal-500"],
+	"--ink-gray-6": primitives["teal-500"],
+	"--ink-gray-5": derived.muted,
+	"--ink-gray-4": "#577777", // placeholder: 4.9 on white
+	"--ink-gray-3": "#8DA5A3",
+	"--ink-gray-2": "#B8C7C5",
+	"--ink-gray-1": "#D8E1DF",
+	"--ink-blue-1": WHITE,
+	"--ink-blue-2": status.info.ink,
+	"--ink-blue-3": primitives["teal-700"], // links
+	"--ink-blue-4": T900,
+	"--ink-blue-link": primitives["teal-700"],
+	"--ink-green-1": WHITE,
+	"--ink-green-2": status.success.ink,
+	"--ink-green-3": status.success.ink,
+	"--ink-amber-1": WHITE,
+	"--ink-amber-2": status.warning.ink,
+	"--ink-amber-3": status.warning.ink,
+	"--ink-cyan-1": status.info.ink,
+	"--ink-red-1": WHITE,
+	"--ink-red-2": status.danger.ink,
+	"--ink-red-3": status.danger.ink,
+	"--ink-red-4": status.danger.ink,
 	// Borders
 	"--outline-white": WHITE,
 	"--outline-gray-1": lines.soft,

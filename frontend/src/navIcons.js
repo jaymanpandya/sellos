@@ -1,0 +1,16 @@
+// Lucide icons (frappe-ui's set, the one PAMAA uses) by menu key.
+export const ICONS = {
+	home: "lucide-house",
+	leads: "lucide-users",
+	queue: "lucide-phone-call",
+	visits: "lucide-map-pinned",
+	import: "lucide-file-up",
+	users: "lucide-user-cog",
+	support: "lucide-life-buoy",
+	telephony: "lucide-phone",
+	"call-lists": "lucide-list-checks",
+	teams: "lucide-users-round",
+	assignment: "lucide-shuffle",
+	"team-report": "lucide-chart-column",
+	tenants: "lucide-building-2",
+};

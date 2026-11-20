@@ -1,5 +1,5 @@
 <template>
-	<div class="max-w-3xl" data-testid="sellos-teams-page">
+	<div data-testid="sellos-teams-page">
 		<h1 class="ui-page-title">Sales teams</h1>
 		<p class="mt-2 text-ink-muted">
 			Group agents in teams and give each team a manager. A manager sees the leads of their

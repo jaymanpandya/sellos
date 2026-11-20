@@ -24,6 +24,11 @@
 					exact-active-class="ui-nav-active"
 					class="ui-nav-item flex min-h-touch items-center rounded-input px-3 text-base text-on-brand transition-colors duration-150 hover:bg-white/10"
 				>
+					<span
+						:class="ICONS[item.key] || 'lucide-circle'"
+						class="icon-inherit mr-3 size-4 shrink-0"
+						aria-hidden="true"
+					/>
 					{{ item.label }}
 				</router-link>
 			</div>
@@ -49,6 +54,7 @@
 import { computed } from "vue";
 
 import CompanyBrand from "./CompanyBrand.vue";
+import { ICONS } from "../navIcons";
 import { navFor, personaFor } from "../personas";
 import { session, signOut } from "../session";
 

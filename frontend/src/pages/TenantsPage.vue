@@ -1,5 +1,5 @@
 <template>
-	<div class="max-w-4xl" data-testid="sellos-tenants-page">
+	<div data-testid="sellos-tenants-page">
 		<h1 class="ui-page-title">Companies</h1>
 		<p class="mt-2 text-ink-muted">
 			Every company has its own site. A new company starts as Requested, then moves to

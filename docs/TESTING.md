@@ -5,6 +5,11 @@ to the agent, then runs the real gate (`scripts/run-tests.sh`) and commits only 
 `docs/DEV_STRATEGY.md` for the loop and for the holes in the BuildOS strategy that this gate closes.
 The agent never commits. Git hooks are not used.
 
+Run a backend module through the bench, never with `python -m unittest` from the app folder: Frappe writes its
+logs to `../logs` relative to the folder you start in, so a plain run from `apps/sellos` fails with
+`FileNotFoundError: .../apps/logs/cssutils.log`. From `~/iespl-bench`:
+`bench --site sellos_test.localhost run-tests --app sellos --module sellos.tests.test_demo_environment`.
+
 ## What the gate runs, in order
 
 1. New files are marked intent-to-add (`git ls-files --others --exclude-standard -z | xargs -0 git add

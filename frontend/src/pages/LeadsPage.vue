@@ -1,9 +1,5 @@
 <template>
-	<div
-		:class="view === 'board' ? 'max-w-full' : 'max-w-5xl'"
-		data-testid="sellos-leads-page"
-		:data-view="view"
-	>
+	<div data-testid="sellos-leads-page" :data-view="view">
 		<PageHeader
 			title="Leads"
 			text="Everyone who has asked about a property, and where each enquiry stands."
@@ -42,6 +38,32 @@
 				{{ creating ? "Cancel" : "New lead" }}
 			</AppButton>
 		</PageHeader>
+
+		<div
+			v-if="view === 'list' && !loadError"
+			class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4"
+			data-testid="sellos-leads-stats"
+		>
+			<StatCard label="Total leads" :value="stats.total" icon="lucide-users" />
+			<StatCard
+				label="New this week"
+				:value="stats.newThisWeek"
+				icon="lucide-calendar-plus"
+				tone="success"
+			/>
+			<StatCard
+				label="Overdue follow ups"
+				:value="stats.overdue"
+				icon="lucide-clock-alert"
+				tone="danger"
+			/>
+			<StatCard
+				label="Untouched"
+				:value="stats.untouched"
+				icon="lucide-hourglass"
+				tone="warning"
+			/>
+		</div>
 
 		<form
 			v-if="creating"
@@ -196,18 +218,14 @@
 					}
 				"
 			/>
-			<FormField
-				v-model.number="filters.budget_min"
-				type="number"
+			<MoneyField
+				v-model="filters.budget_min"
 				label="Budget from (₹)"
-				min="0"
 				data-testid="sellos-leads-filter-budget-min"
 			/>
-			<FormField
-				v-model.number="filters.budget_max"
-				type="number"
+			<MoneyField
+				v-model="filters.budget_max"
 				label="Budget to (₹)"
-				min="0"
 				data-testid="sellos-leads-filter-budget-max"
 			/>
 			<FormField
@@ -443,6 +461,7 @@
 			/>
 			<AppButton
 				type="submit"
+				variant="primary"
 				:disabled="!selected.length"
 				data-testid="sellos-bulk-reassign"
 			>
@@ -465,31 +484,48 @@
 				{{ bulkError }}
 			</p>
 		</form>
-		<ListCard v-if="view === 'list' && leads.length" class="!p-0">
-			<ul class="divide-y divide-line-soft">
-				<li
-					v-for="lead in leads"
-					:key="lead.name"
-					data-testid="sellos-lead-row"
-					class="flex items-center"
+		<ListCard
+			v-if="view === 'list' && leads.length"
+			title="All leads"
+			data-testid="sellos-leads-list"
+		>
+			<div class="-mx-ui-md sm:-mx-ui-lg">
+				<div
+					class="hidden items-center gap-ui-md border-b border-line px-ui-md py-2 text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted sm:px-ui-lg md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,2fr)]"
+					:class="canReassign ? 'md:pl-[4.25rem]' : ''"
+					role="row"
 				>
-					<AppCheckbox
-						v-if="canReassign"
-						:model-value="selected.includes(lead.name)"
-						:value="lead.name"
-						:aria-label="`Select ${lead.client_name}`"
-						class="ml-ui-sm"
-						data-testid="sellos-lead-select"
-						@update:model-value="toggleSelected(lead.name, $event)"
-					/>
-					<router-link
-						:to="{ path: `${basePath}/${lead.name}`, query: $route.query }"
-						class="flex flex-1 flex-wrap items-center justify-between gap-ui-sm px-ui-md py-ui-md hover:bg-brand-soft"
+					<span>Name</span>
+					<span>Source</span>
+					<span>Stage</span>
+					<span>Next follow up</span>
+					<span>Flags</span>
+				</div>
+				<ul>
+					<li
+						v-for="lead in leads"
+						:key="lead.name"
+						data-testid="sellos-lead-row"
+						class="flex items-center border-b border-line-soft last:border-b-0"
 					>
-						<span>
-							<span class="block font-medium text-ink">{{ lead.client_name }}</span>
+						<AppCheckbox
+							v-if="canReassign"
+							:model-value="selected.includes(lead.name)"
+							:value="lead.name"
+							:aria-label="`Select ${lead.client_name}`"
+							class="ml-ui-sm"
+							data-testid="sellos-lead-select"
+							@update:model-value="toggleSelected(lead.name, $event)"
+						/>
+						<router-link
+							:to="{ path: `${basePath}/${lead.name}`, query: $route.query }"
+							class="grid flex-1 grid-cols-1 items-center gap-x-ui-md gap-y-1 px-ui-md py-ui-md hover:bg-brand-soft sm:px-ui-lg md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,2fr)]"
+						>
+							<span class="truncate font-medium text-ink">{{
+								lead.client_name
+							}}</span>
 							<span
-								class="block text-sm text-ink-muted"
+								class="truncate text-sm text-ink-muted"
 								data-testid="sellos-lead-source"
 								>{{
 									lead.campaign
@@ -497,54 +533,57 @@
 										: lead.source
 								}}</span
 							>
-						</span>
-						<span class="flex flex-wrap items-center gap-ui-sm">
-							<StatusBadge
-								v-if="lead.stage"
-								:label="lead.stage"
-								tone="neutral"
-								data-testid="sellos-lead-row-stage"
-							/>
-							<StatusBadge
-								v-if="lead.untouched"
-								tone="warning"
-								data-testid="sellos-untouched"
-							>
-								No activity for {{ untouchedDays }} days
-							</StatusBadge>
-							<span
-								v-if="lead.next_follow_up"
-								data-testid="sellos-lead-next-follow-up"
-								:data-state="lead.follow_up_state"
-								class="text-xs text-ink-muted"
-							>
-								Next follow up {{ shortWhen(lead.next_follow_up) }}
+							<span>
+								<StatusBadge
+									v-if="lead.stage"
+									:label="lead.stage"
+									tone="neutral"
+									data-testid="sellos-lead-row-stage"
+								/>
 							</span>
-							<StatusBadge
-								v-if="lead.follow_up_state === 'overdue'"
-								tone="danger"
-								data-testid="sellos-follow-up-overdue"
-							>
-								Follow up overdue
-							</StatusBadge>
-							<StatusBadge
-								v-if="lead.follow_up_untouched"
-								tone="warning"
-								data-testid="sellos-follow-up-untouched"
-							>
-								Untouched, no follow up for {{ followUpDays }} days
-							</StatusBadge>
-							<StatusBadge
-								v-if="lead.overdue_tasks"
-								tone="danger"
-								data-testid="sellos-lead-overdue"
-							>
-								{{ lead.overdue_tasks }} overdue
-							</StatusBadge>
-						</span>
-					</router-link>
-				</li>
-			</ul>
+							<span class="text-sm text-ink-muted">
+								<span
+									v-if="lead.next_follow_up"
+									data-testid="sellos-lead-next-follow-up"
+									:data-state="lead.follow_up_state"
+								>
+									Next follow up {{ shortWhen(lead.next_follow_up) }}
+								</span>
+							</span>
+							<span class="flex flex-wrap items-center gap-ui-sm">
+								<StatusBadge
+									v-if="lead.untouched"
+									tone="warning"
+									data-testid="sellos-untouched"
+								>
+									No activity for {{ untouchedDays }} days
+								</StatusBadge>
+								<StatusBadge
+									v-if="lead.follow_up_state === 'overdue'"
+									tone="danger"
+									data-testid="sellos-follow-up-overdue"
+								>
+									Follow up overdue
+								</StatusBadge>
+								<StatusBadge
+									v-if="lead.follow_up_untouched"
+									tone="warning"
+									data-testid="sellos-follow-up-untouched"
+								>
+									Untouched, no follow up for {{ followUpDays }} days
+								</StatusBadge>
+								<StatusBadge
+									v-if="lead.overdue_tasks"
+									tone="danger"
+									data-testid="sellos-lead-overdue"
+								>
+									{{ lead.overdue_tasks }} overdue
+								</StatusBadge>
+							</span>
+						</router-link>
+					</li>
+				</ul>
+			</div>
 		</ListCard>
 	</div>
 </template>
@@ -560,10 +599,12 @@ import AppCheckbox from "../components/AppCheckbox.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FilterBar from "../components/FilterBar.vue";
 import FormField from "../components/FormField.vue";
+import MoneyField from "../components/MoneyField.vue";
 import LeadBoard from "../components/LeadBoard.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import StatCard from "../components/StatCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { session } from "../session";
 import { shell } from "../shell";
@@ -604,6 +645,19 @@ const options = reactive({ agents: [], teams: [], consent_statuses: [] });
 const filterSources = ref([]);
 const board = reactive({ columns: [] });
 const view = ref("list");
+
+// The numbers above the list count the leads in view, so they follow the filters (the list holds up to 100).
+const stats = computed(() => {
+	const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+	return {
+		total: leads.value.length,
+		newThisWeek: leads.value.filter(
+			(l) => new Date(String(l.creation).replace(" ", "T")).getTime() >= weekAgo
+		).length,
+		overdue: leads.value.filter((l) => l.follow_up_state === "overdue").length,
+		untouched: leads.value.filter((l) => l.untouched).length,
+	};
+});
 
 // A select's first choice is "Any ..." with an empty value, so the filter is off until a choice is made.
 const withAny = (label, items) => [{ label, value: "" }, ...items];

@@ -1,5 +1,5 @@
 <template>
-	<div class="max-w-4xl" data-testid="sellos-users-page">
+	<div data-testid="sellos-users-page">
 		<h1 class="ui-page-title">Users</h1>
 		<p class="mt-2 text-ink-muted">
 			Invite the people who work in your company, set the mobile number that click to call

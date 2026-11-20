@@ -11,18 +11,24 @@
 			:data-testid="`sellos-phone-nav-${item.key}`"
 			:active-class="item.key === 'home' ? '' : 'ui-bar-active'"
 			exact-active-class="ui-bar-active"
-			class="flex min-h-[56px] min-w-touch flex-1 items-center justify-center px-1 text-center text-xs font-medium"
+			class="flex min-h-[56px] min-w-touch flex-1 flex-col items-center justify-center gap-0.5 px-1 text-center text-xs font-medium"
 		>
+			<span
+				:class="ICONS[item.key] || 'lucide-circle'"
+				class="icon-inherit size-5"
+				aria-hidden="true"
+			/>
 			{{ item.label }}
 		</router-link>
 		<button
 			v-if="rest.length"
 			type="button"
-			class="flex min-h-[56px] min-w-touch flex-1 items-center justify-center px-1 text-xs font-medium"
+			class="flex min-h-[56px] min-w-touch flex-1 flex-col items-center justify-center gap-0.5 px-1 text-xs font-medium"
 			:aria-expanded="shell.menuOpen ? 'true' : 'false'"
 			data-testid="sellos-phone-more"
 			@click="shell.menuOpen = !shell.menuOpen"
 		>
+			<span class="lucide-ellipsis icon-inherit size-5" aria-hidden="true" />
 			More
 		</button>
 	</nav>
@@ -47,6 +53,11 @@
 					class="flex min-h-touch items-center rounded-input px-3 text-base"
 					@click="closeMenu"
 				>
+					<span
+						:class="ICONS[item.key] || 'lucide-circle'"
+						class="icon-inherit mr-3 size-4"
+						aria-hidden="true"
+					/>
 					{{ item.label }}
 				</router-link>
 			</div>
@@ -59,6 +70,7 @@
 // the other places in the drawer. A menu of five or fewer places shows them all.
 import { computed } from "vue";
 
+import { ICONS } from "../navIcons";
 import { navFor, personaFor } from "../personas";
 import { session } from "../session";
 import { closeMenu, shell } from "../shell";
