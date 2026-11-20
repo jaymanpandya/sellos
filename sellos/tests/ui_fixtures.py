@@ -183,6 +183,43 @@ def seed_consent_leads():
 	return made
 
 
+def seed_caller_queue():
+	"""The leads the caller queue spec needs (SOS-P2-09), through sellos.crm.api as the company admin. The
+	test agent owns one lead in each case: Gate Consent Soon (a live Inquiry, 7 days), Gate Consent Months (a
+	live Application, 3 months), Gate Consent Forever (a Consent record, no expiry), Gate Consent Unknown,
+	Gate Consent Opted out and Gate Consent Dnd. Returns {key: lead name} and {key: client name}.
+	remove_seeded_leads removes them (the names start with Gate Consent)."""
+	from sellos.crm import api as crm
+
+	_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	tag = frappe.generate_hash(length=6)
+	leads, titles = {}, {}
+	with _as_user(admin):
+		for seed, key in enumerate(("soon", "months", "forever", "unknown", "opted", "dnd"), start=81):
+			title = f"Gate Consent Queue {key.title()} {tag}"
+			client = crm.save_client(
+				values={"client_name": title, "client_type": "Buyer", "phone": phones.in_mobile(seed)}
+			)
+			lead = crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": agent})
+			name = lead["lead"]["name"]
+			evidence = "https://example.com/evidence/queue"
+			if key == "soon":
+				crm.record_consent(name, "Inquiry", evidence)
+			elif key == "months":
+				crm.record_consent(name, "Application", evidence)
+			elif key == "forever":
+				crm.record_consent(name, "Consent", evidence)
+			elif key == "opted":
+				crm.record_opt_out(name, "WhatsApp")
+			elif key == "dnd":
+				crm.record_dnd_result(name, 1)
+			leads[key], titles[key] = name, title
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"leads": leads, "titles": titles}
+
+
 def seed_board_leads():
 	"""Make the leads the pipeline board and list filter spec needs (SOS-P1-24), through sellos.crm.api
 	as the company admin. The test agent owns three: Gate Board Agent A (Referral, Qualified, budget up to
@@ -608,6 +645,9 @@ def seed_regression_data():
 	* Two support grants (SOS-P1-13) for the gate platform admin: one the Company Admin ended early
 	  and one still active for 2 hours, each with its Granted (and Revoked) line in the access log.
 
+	* The caller queue (SOS-P2-09): Regression Queue Application, a gate agent lead with a live Application
+	  consent (three months), beside Buyer Two's Inquiry (seven days) and Buyer One's Consent (no expiry).
+
 	* Two sales teams (SOS-P1-18): Regression Team North, run by the Sales Manager test user with the gate
 	  agent and Regression Agent Two, and Regression Team South, run by Regression Manager Two with
 	  Regression Agent Three. The Sales Manager sees the first two agents' leads and not the third's.
@@ -829,6 +869,7 @@ def seed_regression_data():
 	_seed_call_outcomes(admin, agent_one)
 	_seed_users(admin)
 	_seed_dormant_lead(admin, agent_one)
+	_seed_queue_lead(admin, agent_one)
 	_seed_bought_list(admin)
 	_seed_support_grants(admin)
 	_seed_telephony(admin)
@@ -1093,6 +1134,26 @@ def _seed_dormant_lead(admin, agent_one):
 			}
 		)["lead"]["name"]
 	frappe.db.set_value("Lead", lead, "creation", add_days(now_datetime(), -30), update_modified=False)
+
+
+def _seed_queue_lead(admin, agent_one):
+	"""Regression Queue Application (SOS-P2-09): a lead with a live Application consent, which lapses in
+	three months, so the caller queue has lapsing leads with different expiries (this one after Buyer Two's
+	Inquiry, which lapses in seven days). Made through the API. Safe to run again."""
+	from sellos.crm import api as crm
+
+	title = f"{REGRESSION_PREFIX}Queue Application"
+	if frappe.db.exists("Client", {"client_name": title}):
+		return
+	with _as_user(admin):
+		client = crm.save_client(
+			values={"client_name": title, "client_type": "Buyer", "phone": phones.in_mobile(131)}
+		)
+		lead = crm.save_lead(
+			values={"client": client["name"], "source": "Website", "assigned_to": agent_one}
+		)["lead"]["name"]
+	with _as_user(agent_one):
+		crm.record_consent(lead, "Application", "https://example.com/regression/application-queue")
 
 
 def _seed_pipeline_stages():

@@ -195,3 +195,11 @@ FLOW SOS-P1-26-3 | agent | /sellos | On Regression chase the site visit click Lo
 FLOW SOS-P1-26-4 | sales_manager | /sellos | Sign in as the Sales Manager. | Today says it is the team's day and each list is grouped by agent: the gate agent and Regression Agent Two, with a count beside each name. The counts at the top add up the agents' counts, and Regression Agent Three's records are not shown.
 FLOW SOS-UI-2-1 | agent | /sellos | Sign in as the gate agent and look at the home page on a computer. | The page is light grey with dark text in Inter. A 240px white sidebar on the left shows the company name and the navigation, each item 44px tall; the open item is white on an indigo gradient. The title is 24px and bold, and the content sits in white cards with rounded corners.
 FLOW SOS-UI-2-2 | agent | /sellos | Open the same page on a phone width. | There is no sidebar. A header shows the company name and Sign out, and a bottom bar holds the navigation with the open item in indigo.
+
+## SOS-P2-09: the caller queue
+
+FLOW SOS-P2-09-1 | agent | /sellos/crm/queue | Sign in as the gate agent and click Call queue. | Every lead of the gate agent is listed. Consented leads come first with the soonest expiry first: Regression Buyer Two (Inquiry, about 7 days left) then Regression Queue Application (about 3 months left), then Regression Buyer One (Consented, No expiry). The leads that are not Consented follow.
+FLOW SOS-P2-09-2 | agent | /sellos/crm/queue | Look at the consent mark of each lead below the Consented ones. | Unknown and Registered DND leads have an amber mark and a warning line, and an Opted out lead has a red mark and a red warning line. No lead is missing for its status.
+FLOW SOS-P2-09-3 | agent | /sellos/crm/queue | Click Call on an Opted out lead and on an Unknown lead. | The number opens masked, never in full, and Call is not disabled for any lead.
+FLOW SOS-P2-09-4 | sales_manager | /sellos/crm/queue | Sign in as the Sales Manager and click Call queue. | The queue holds the leads of Regression Team North only, in the same order, and none of Regression Agent Three's.
+FLOW SOS-P2-09-5 | company_admin | /sellos/crm/queue | Sign in as the Company Admin and click Call queue. | Every lead is listed, including unassigned ones, with full phone numbers after Call.

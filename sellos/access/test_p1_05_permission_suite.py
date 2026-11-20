@@ -109,6 +109,8 @@ SAMPLE_CALLS = {
 	"sellos.crm.api.set_archived": {"doctype": "Lead", "name": "{lead}", "archived": 0},
 	# SOS-P1-26: the Today screen, read only.
 	"sellos.crm.api.today_screen": {},
+	# SOS-P2-09: the caller queue, read only.
+	"sellos.crm.api.caller_queue": {},
 	# SOS-P1-22: a follow up made for the test, completed with a note. The setting is the Company Admin's.
 	"sellos.crm.api.complete_follow_up": {"name": "{task}", "notes": "p122 done"},
 	"sellos.crm.api.list_follow_ups": {},

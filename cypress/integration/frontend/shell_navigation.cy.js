@@ -47,7 +47,7 @@ context("SOS-P0-10: app shell", () => {
 		cy.getByTestId("page-body").find('[data-testid="sellos-no-access"]').should("exist");
 	});
 
-	it("shows the company name and the Home, Leads and Site visits links for an agent", () => {
+	it("shows the company name and the Home, Leads, Call queue and Site visits links for an agent", () => {
 		cy.signInFresh("agent");
 		cy.bootOverride((boot) => {
 			boot.company.name = "Pandya Realtors";
@@ -58,6 +58,7 @@ context("SOS-P0-10: app shell", () => {
 			.find("a")
 			.then(($links) => {
 				expect([...$links].map((a) => a.innerText.trim()).sort()).to.deep.equal([
+					"Call queue",
 					"Home",
 					"Leads",
 					"Site visits",
@@ -88,7 +89,9 @@ context("SOS-P0-10: app shell", () => {
 	it("sign out posts to logout, clears the session and goes to login", () => {
 		cy.signInFresh("agent");
 		cy.intercept("POST", "**/api/method/logout").as("logout");
+		cy.intercept("POST", "**/api/method/sellos.crm.api.today_screen").as("today");
 		cy.visit("/sellos");
+		cy.wait("@today");
 		cy.getByTestId("signout").click();
 		cy.wait("@logout").its("request.method").should("eq", "POST");
 		cy.location("pathname").should("eq", "/login");

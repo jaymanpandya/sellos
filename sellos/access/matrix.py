@@ -73,6 +73,8 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.site_visit_options": _LOGGERS,
 	# SOS-P1-26: the Today screen reads what the caller may see.
 	"sellos.crm.api.today_screen": _LOGGERS,
+	# SOS-P2-09: the caller queue reads the leads the caller may see.
+	"sellos.crm.api.caller_queue": _LOGGERS,
 	# SOS-P1-22: follow ups. The untouched setting is the Company Admin's.
 	"sellos.crm.api.complete_follow_up": _LOGGERS,
 	"sellos.crm.api.list_follow_ups": _LOGGERS,

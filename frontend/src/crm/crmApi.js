@@ -59,6 +59,8 @@ export const crmApi = {
 		call("save_follow_up_settings", { untouched_days: untouchedDays }),
 	// The Today screen (SOS-P1-26): four lists and their counts, by agent for a Sales Manager.
 	todayScreen: () => call("today_screen"),
+	// The caller queue (SOS-P2-09): every lead the user may see, Consented first by soonest expiry.
+	callerQueue: () => call("caller_queue"),
 	// Site visits (SOS-P1-25): book, the calendar, tomorrow's confirmations, confirm and mark done.
 	saveSiteVisit: (values, name = null) => call("save_site_visit", { name, values }),
 	siteVisitOptions: () => call("site_visit_options"),

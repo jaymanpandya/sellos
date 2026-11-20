@@ -27,6 +27,7 @@ from sellos.crm import (
 	today,
 )
 from sellos.crm.requirements import REQUIREMENT_FIELDS, join_values, requirements_view
+from sellos.telephony import queue as caller_queue_rows
 
 # SOS-P1-18: a Sales Manager works like an Agent, on the leads of their team, with masked phone numbers.
 READERS = (AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER)
@@ -752,6 +753,25 @@ def today_screen():
 		log_full_number_shown(clients)
 	view["full_numbers"] = cint(_sees_phone())
 	return view
+
+
+@sellos_api(*LOGGERS)
+def caller_queue():
+	"""The caller queue (SOS-P2-09): every lead the user may see, Consented leads first with the soonest
+	expiry first and the time left, then the rest. Each row carries its consent warning (amber for Unknown
+	and Registered DND, red for Opted out) and never blocks a call. Phone numbers are masked except for a
+	Company Admin (the full number shown is logged, P1.06B)."""
+	rows = caller_queue_rows.caller_queue()
+	clients = sorted({row["client"] for row in rows if row["client"]})
+	phones = {}
+	for name in clients:
+		shown = client_view(frappe.get_doc("Client", name), log=False)
+		phones[name] = {"phone": shown["phone"], "overseas_phone": shown["overseas_phone"]}
+	for row in rows:
+		row.update(phones.get(row["client"], {"phone": "", "overseas_phone": ""}))
+	if _sees_phone():
+		log_full_number_shown(clients)
+	return {"total": len(rows), "full_numbers": cint(_sees_phone()), "leads": rows}
 
 
 def _writable_lead(lead):

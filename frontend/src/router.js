@@ -7,6 +7,7 @@ const HomePage = () => import("./pages/HomePage.vue");
 const LeadsPage = () => import("./pages/LeadsPage.vue");
 const LeadPage = () => import("./pages/LeadPage.vue");
 const ImportLeadsPage = () => import("./pages/ImportLeadsPage.vue");
+const CallQueuePage = () => import("./pages/CallQueuePage.vue");
 const SiteVisitsPage = () => import("./pages/SiteVisitsPage.vue");
 const SupportPage = () => import("./pages/SupportPage.vue");
 const UsersPage = () => import("./pages/UsersPage.vue");
@@ -36,6 +37,12 @@ export function createAppRouter() {
 				path: "/crm/import",
 				name: "import-leads",
 				component: ImportLeadsPage,
+				meta: { area: "crm" },
+			},
+			{
+				path: "/crm/queue",
+				name: "call-queue",
+				component: CallQueuePage,
 				meta: { area: "crm" },
 			},
 			{
