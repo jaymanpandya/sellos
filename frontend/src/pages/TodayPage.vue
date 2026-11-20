@@ -1,57 +1,59 @@
 <template>
 	<div data-testid="sellos-today">
-		<h2 class="text-xl font-semibold text-ink">Today</h2>
-		<p class="mt-1 text-sm text-ink-muted" data-testid="sellos-today-scope">{{ scopeNote }}</p>
-		<p v-if="error" role="alert" data-testid="sellos-today-error" class="mt-3 text-accent">
-			{{ error }}
+		<p class="mb-ui-md text-sm text-ink-muted" data-testid="sellos-today-scope">
+			{{ scopeNote }}
 		</p>
+		<LoadError
+			v-if="error"
+			class="mb-ui-md"
+			data-testid="sellos-today-error"
+			:message="error"
+			@retry="onRetry"
+		/>
+		<LoadingSkeleton v-else-if="!view" />
 
 		<template v-if="view">
-			<ul
-				class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4"
+			<div
+				class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4"
 				data-testid="sellos-today-counts"
 			>
-				<li
+				<StatCard
 					v-for="s in SECTIONS"
 					:key="s.key"
-					class="rounded-input border border-line bg-surface p-3"
-				>
-					<a :href="`#today-${s.key}`" class="block text-sm text-ink-muted">{{
-						s.label
-					}}</a>
-					<span class="ui-page-title" :data-testid="`sellos-today-count-${s.key}`">{{
-						view.counts[s.key]
-					}}</span>
-				</li>
-			</ul>
+					:label="s.label"
+					:value="view.counts[s.key]"
+					:icon="s.icon"
+					:tone="s.tone"
+					:value-testid="`sellos-today-count-${s.key}`"
+				/>
+			</div>
 
-			<section
+			<ListCard
 				v-for="s in SECTIONS"
 				:id="`today-${s.key}`"
 				:key="s.key"
-				class="mt-4 rounded-input border border-line bg-surface p-4"
+				:title="s.label"
+				class="mb-ui-md"
 				:data-testid="`sellos-today-section-${s.key}`"
 			>
-				<h3 class="font-medium text-ink">{{ s.label }}</h3>
-				<p
+				<EmptyState
 					v-if="!view[s.key].length"
 					:data-testid="`sellos-today-empty-${s.key}`"
-					class="mt-2 text-ink-muted"
-				>
-					{{ s.empty }}
-				</p>
+					:title="s.empty"
+					:icon="s.icon"
+				/>
 				<template v-if="team">
 					<div
 						v-for="group in groups(s.key)"
 						:key="group.agent"
-						class="mt-3"
+						class="mt-ui-md"
 						data-testid="sellos-today-agent"
 						:data-agent="group.agent"
 					>
-						<h4 class="text-sm font-medium text-ink">
+						<h3 class="text-sm font-medium text-ink">
 							{{ group.agent_name }} ({{ group.rows.length }})
-						</h4>
-						<ul class="mt-1 space-y-2">
+						</h3>
+						<ul class="mt-1 space-y-ui-sm">
 							<TodayRow
 								v-for="row in group.rows"
 								:key="row.name || row.lead"
@@ -63,7 +65,7 @@
 							>
 								<VisitConfirm
 									v-if="s.key === 'visits_tomorrow'"
-									class="mt-2"
+									class="mt-ui-sm"
 									:visit="row"
 									:confirmations="confirmations"
 									@changed="load"
@@ -72,7 +74,7 @@
 						</ul>
 					</div>
 				</template>
-				<ul v-else class="mt-2 space-y-2">
+				<ul v-else class="space-y-ui-sm">
 					<TodayRow
 						v-for="row in view[s.key]"
 						:key="row.name || row.lead"
@@ -84,14 +86,14 @@
 					>
 						<VisitConfirm
 							v-if="s.key === 'visits_tomorrow'"
-							class="mt-2"
+							class="mt-ui-sm"
 							:visit="row"
 							:confirmations="confirmations"
 							@changed="load"
 						/>
 					</TodayRow>
 				</ul>
-			</section>
+			</ListCard>
 		</template>
 	</div>
 </template>
@@ -99,6 +101,11 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 
+import EmptyState from "../components/EmptyState.vue";
+import ListCard from "../components/ListCard.vue";
+import LoadError from "../components/LoadError.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import StatCard from "../components/StatCard.vue";
 import VisitConfirm from "../components/VisitConfirm.vue";
 import TodayRow from "../components/TodayRow.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
@@ -106,13 +113,33 @@ import { crmApi, serverMessage } from "../crm/crmApi";
 // The Today screen (SOS-P1-26): what to do now, in four lists. A Sales Manager sees the same lists for
 // the team, each grouped by agent. The counts come from the same answer as the lists.
 const SECTIONS = [
-	{ key: "follow_ups", label: "Follow ups due and overdue", empty: "No follow ups due today." },
-	{ key: "new_leads", label: "New leads", empty: "No new leads waiting." },
-	{ key: "visits_today", label: "Site visits today", empty: "No site visits today." },
+	{
+		key: "follow_ups",
+		label: "Follow ups due and overdue",
+		empty: "No follow ups due today.",
+		icon: "lucide-clock-alert",
+		tone: "danger",
+	},
+	{
+		key: "new_leads",
+		label: "New leads",
+		empty: "No new leads waiting.",
+		icon: "lucide-user-plus",
+		tone: "success",
+	},
+	{
+		key: "visits_today",
+		label: "Site visits today",
+		empty: "No site visits today.",
+		icon: "lucide-calendar-check",
+		tone: "info",
+	},
 	{
 		key: "visits_tomorrow",
 		label: "Tomorrow's visits to confirm",
 		empty: "No site visits tomorrow.",
+		icon: "lucide-calendar-clock",
+		tone: "warning",
 	},
 ];
 
@@ -151,7 +178,7 @@ async function load() {
 	}
 }
 
-onMounted(async () => {
+async function init() {
 	try {
 		const [list, options] = await Promise.all([
 			crmApi.listCallOutcomes(),
@@ -163,5 +190,8 @@ onMounted(async () => {
 		error.value = serverMessage(e, "Today could not be loaded.");
 	}
 	await load();
-});
+}
+
+const onRetry = init;
+onMounted(init);
 </script>

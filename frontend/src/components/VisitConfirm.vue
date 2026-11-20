@@ -1,39 +1,43 @@
 <template>
-	<div class="flex flex-wrap items-center gap-2" data-testid="sellos-visit-confirm">
-		<select
-			:value="visit.confirmation_status"
-			aria-label="Confirmation"
+	<div class="flex flex-wrap items-end gap-ui-sm" data-testid="sellos-visit-confirm">
+		<FormField
+			:model-value="visit.confirmation_status"
+			type="select"
+			label="Confirmation"
+			:options="confirmations"
 			data-testid="sellos-visit-confirm-status"
-			class="field w-auto"
 			:disabled="visit.status === 'Done'"
-			@change="choose($event.target.value)"
-		>
-			<option v-for="c in confirmations" :key="c" :value="c">{{ c }}</option>
-		</select>
+			@update:model-value="choose"
+		/>
 		<form
 			v-if="rescheduling"
-			class="flex flex-wrap items-center gap-2"
+			class="flex flex-wrap items-end gap-ui-sm"
 			data-testid="sellos-visit-reschedule-form"
 			@submit.prevent="save('Rescheduled', when)"
 		>
-			<input
+			<FormField
 				v-model="when"
 				required
 				type="datetime-local"
-				aria-label="New date and time"
+				label="New date and time"
 				data-testid="sellos-visit-reschedule-when"
-				class="field w-auto"
 			/>
-			<button type="submit" class="btn" data-testid="sellos-visit-reschedule-save">
+			<AppButton type="submit" variant="primary" data-testid="sellos-visit-reschedule-save">
 				Reschedule
-			</button>
-			<button type="button" class="btn" @click="cancelReschedule">Cancel</button>
+			</AppButton>
+			<AppButton
+				type="button"
+				data-testid="sellos-visit-reschedule-cancel"
+				@click="cancelReschedule"
+			>
+				Cancel
+			</AppButton>
 		</form>
 		<p
 			v-if="error"
 			role="alert"
 			data-testid="sellos-visit-confirm-error"
-			class="text-sm text-accent"
+			class="text-sm text-tone-danger"
 		>
 			{{ error }}
 		</p>
@@ -44,6 +48,8 @@
 import { ref } from "vue";
 
 import { crmApi, serverMessage } from "../crm/crmApi";
+import AppButton from "./AppButton.vue";
+import FormField from "./FormField.vue";
 
 // The confirmation of one site visit, set by the agent after the call the day before (SOS-P1-25).
 // Rescheduled asks for the new date and time. The parent reads the list again on "changed".

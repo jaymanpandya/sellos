@@ -9,7 +9,7 @@
 				<span :class="icon" class="icon-inherit size-5" />
 			</span>
 			<div class="min-w-0">
-				<h1 class="ui-page-title" data-testid="sellos-page-title">{{ title }}</h1>
+				<h1 class="ui-page-title" :data-testid="titleTestid">{{ title }}</h1>
 				<p v-if="text" class="ui-page-lead">{{ text }}</p>
 			</div>
 		</div>
@@ -26,5 +26,6 @@ defineProps({
 	title: { type: String, required: true },
 	text: { type: String, default: "" },
 	icon: { type: String, default: "" },
+	titleTestid: { type: String, default: "sellos-page-title" },
 });
 </script>

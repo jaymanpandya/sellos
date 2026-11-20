@@ -1,8 +1,8 @@
 <template>
 	<div v-if="show" ref="root" class="relative" data-testid="sellos-notifications">
-		<button
-			type="button"
-			class="relative flex min-h-touch min-w-touch items-center justify-center rounded-badge px-2 text-sm text-on-brand hover:bg-white/10"
+		<Button
+			variant="ghost"
+			class="!relative !flex !min-h-touch !min-w-touch !items-center !justify-center !rounded-badge !px-2 !text-sm !text-on-brand hover:!bg-white/10"
 			aria-label="Notifications"
 			:aria-expanded="open"
 			data-testid="sellos-notification-bell"
@@ -28,7 +28,7 @@
 				data-testid="sellos-notification-count"
 				>{{ state.unread }}</span
 			>
-		</button>
+		</Button>
 		<div
 			v-if="open"
 			class="fixed inset-x-2 top-14 z-30 max-h-[70vh] overflow-y-auto rounded-card border border-line bg-surface text-ink shadow-lift sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80"
@@ -38,15 +38,14 @@
 		>
 			<div class="flex items-center justify-between border-b border-line px-3 py-2">
 				<span class="text-sm font-semibold text-ink">Unread</span>
-				<button
-					type="button"
-					class="text-sm text-brand hover:underline disabled:text-ink-muted disabled:no-underline"
+				<Button
+					variant="ghost"
 					:disabled="state.unread === 0"
 					data-testid="sellos-notification-mark-all"
 					@click="markAllNotificationsRead()"
 				>
 					Mark all read
-				</button>
+				</Button>
 			</div>
 			<p
 				v-if="state.items.length === 0"
@@ -69,17 +68,17 @@
 					>
 						<ItemText :item="item" />
 					</router-link>
-					<button
+					<Button
 						v-else
-						type="button"
-						class="block w-full px-3 py-2 text-left hover:bg-brand-light"
+						variant="ghost"
+						class="!block !h-auto !w-full !justify-start !whitespace-normal !px-3 !py-2 !text-left hover:!bg-brand-light"
 						data-testid="sellos-notification-item"
 						:data-name="item.name"
 						:data-event="item.event"
 						@click="openItem(item)"
 					>
 						<ItemText :item="item" />
-					</button>
+					</Button>
 				</li>
 			</ul>
 		</div>
@@ -88,6 +87,7 @@
 
 <script setup>
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { Button } from "frappe-ui";
 import { useRoute } from "vue-router";
 
 import { session } from "../session";

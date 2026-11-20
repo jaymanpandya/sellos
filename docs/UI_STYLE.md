@@ -141,8 +141,8 @@ pieces on frappe-ui components. The decision for each, with the file in `fronten
 | Top bar with breadcrumbs (`AppTopBar.vue`) | adapt | `AppTopBar.vue` | Breadcrumb from the route title, search, bell, user menu. Role switch, offline badge and waiting-to-send are left out (SellOS has none of them) |
 | Search (`GlobalSearch.vue`) | adapt | `SearchDialog.vue` | PAMAA searches many record types; SellOS has one searchable list, so a frappe-ui Dialog sends the text to Leads as `?q=` |
 | Help (`HelpPanel.vue`) | **skip** | none | It shows PAMAA's own guide content from `help.js`; SellOS has no help content. Add one when there is something to say |
-| Page header (`ListHeader.vue`) | copy | `PageHeader.vue` | Title, one line, actions on the right |
-| Stat card (`StatCard.vue`) | adapt | `StatCard.vue` | Without the count-up and area colours. Not used by a screen yet |
+| Page header (`ListHeader.vue`) | copy | `PageHeader.vue` | Title, one line, actions on the right. `titleTestid` names the title's test id (Home welcome) |
+| Stat card (`StatCard.vue`) | adapt | `StatCard.vue` | Without the count-up and area colours. `valueTestid` names the number's test id (Today counts) |
 | List card (`.pamaa-card` + `DataTable.vue`) | adapt | `ListCard.vue` | PAMAA has no list card component. The Leads rows keep their links and test ids, so PAMAA's table is not copied; phone card rows follow later with SOS-UI-3 |
 | Filter bar | **new** | `FilterBar.vue` | PAMAA has none; its screens place inputs by hand. A card, a grid of labelled fields, Apply and Clear |
 | Form field (`AccessField.vue`) | adapt | `FormField.vue` | On frappe-ui `FormControl`; label always visible, red `*`, hint |

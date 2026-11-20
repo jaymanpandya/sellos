@@ -48,3 +48,65 @@ context("SOS-UI-2B: Pandya palette on the app shell", () => {
 			.and("have.css", "background-color", "rgb(255, 255, 255)");
 	});
 });
+
+// SOS-UI-3A: Home, Call queue and Site visits are built from the shared components (docs/UI_STYLE.md).
+context("SOS-UI-3A: Home, Call queue and Site visits follow the style", () => {
+	const pages = [
+		{ name: "Home", path: "/sellos", title: "home-welcome", ready: "today-counts" },
+		{ name: "Call queue", path: "/sellos/crm/queue", title: "page-title", ready: "queue" },
+		{
+			name: "Site visits",
+			path: "/sellos/crm/visits",
+			title: "page-title",
+			ready: "visits-page",
+		},
+	];
+
+	pages.forEach((page) => {
+		it(`${page.name}: page colours, 24px/600 title, 16px card with the teal line`, () => {
+			cy.signInFresh("agent");
+			cy.visit(page.path);
+			cy.getByTestId(page.ready, { timeout: 15000 }).should("be.visible");
+			cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
+			cy.get("body").should("have.css", "color", "rgb(0, 60, 60)");
+			cy.getByTestId(page.title)
+				.should("have.css", "font-size", "24px")
+				.and("have.css", "font-weight", "600");
+			cy.getByTestId("app-shell")
+				.find(".ui-card, .rounded-card")
+				.first()
+				.should("have.css", "border-top-left-radius", "16px")
+				.and("have.css", "border-top-width", "1px")
+				.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)");
+		});
+
+		it(`${page.name}: every control is a frappe-ui control`, () => {
+			cy.signInFresh("agent");
+			cy.visit(page.path);
+			cy.getByTestId(page.ready, { timeout: 15000 }).should("be.visible");
+			cy.getByTestId("app-shell")
+				.find("main")
+				.then(($main) => {
+					// No native select, and no text input outside a frappe-ui FormControl.
+					expect($main.find("select").length, "native selects").to.eq(0);
+					$main.find("button").each((_, el) => {
+						expect(
+							el.className,
+							`button ${el.textContent.trim()} is a frappe-ui Button`
+						).to.match(/inline-flex|\bflex\b/);
+					});
+				});
+		});
+	});
+
+	it("Call queue: the Call button is solid button/bg with text/button", () => {
+		cy.bench("sellos.tests.ui_fixtures.seed_caller_queue");
+		cy.signInFresh("agent");
+		cy.visit("/sellos/crm/queue");
+		cy.getByTestId("queue-call")
+			.first()
+			.should("have.css", "background-color", "rgb(0, 60, 60)")
+			.and("have.css", "color", "rgb(228, 179, 60)");
+		cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads");
+	});
+});

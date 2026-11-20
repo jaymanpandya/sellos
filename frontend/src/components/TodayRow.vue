@@ -1,66 +1,59 @@
 <template>
 	<li
-		class="rounded-input border border-line p-3"
+		class="rounded-input border border-line-soft p-ui-md"
 		data-testid="sellos-today-row"
 		:data-lead="row.lead"
 		:data-section="section"
 	>
-		<div class="flex flex-wrap items-center justify-between gap-2">
-			<div class="min-w-0">
+		<div class="flex flex-wrap items-center justify-between gap-ui-sm">
+			<div class="flex min-w-0 flex-wrap items-center gap-ui-sm">
 				<router-link
 					:to="`/crm/leads/${row.lead}`"
-					class="font-medium text-ink underline"
+					class="ui-link font-medium"
 					data-testid="sellos-today-lead"
 					>{{ row.lead_title }}</router-link
 				>
-				<span class="ml-2 text-sm text-ink-muted" data-testid="sellos-today-detail">{{
+				<span class="text-sm text-ink-muted" data-testid="sellos-today-detail">{{
 					detail
 				}}</span>
-				<span
+				<StatusBadge
 					v-if="row.state === 'overdue'"
+					tone="danger"
+					label="Overdue"
 					data-testid="sellos-today-overdue"
-					class="ml-2 rounded-input border border-accent px-2 py-1 text-xs text-accent"
-					>Overdue</span
-				>
-				<span
+				/>
+				<StatusBadge
 					v-if="row.consent_warning"
+					:tone="row.consent_warning === 'red' ? 'danger' : 'warning'"
+					:label="row.consent_status"
 					data-testid="sellos-today-consent"
 					:data-level="row.consent_warning"
 					:title="row.consent_message"
-					class="ml-2 rounded-input border px-2 py-1 text-xs"
-					:class="
-						row.consent_warning === 'red'
-							? 'border-accent text-accent'
-							: 'border-line text-ink-muted'
-					"
-					>{{ row.consent_status }}</span
-				>
+				/>
 			</div>
-			<div class="flex flex-wrap gap-2">
-				<button
+			<div class="flex flex-wrap gap-ui-sm">
+				<AppButton
 					type="button"
-					class="btn"
 					data-testid="sellos-today-call"
 					:aria-expanded="showNumber"
 					@click="showNumber = !showNumber"
 				>
 					Call
-				</button>
-				<button
+				</AppButton>
+				<AppButton
 					type="button"
-					class="btn"
 					data-testid="sellos-today-log"
 					:aria-expanded="logging"
 					@click="logging = !logging"
 				>
 					Log
-				</button>
+				</AppButton>
 			</div>
 		</div>
 
-		<p v-if="showNumber" class="mt-2 text-sm text-ink" data-testid="sellos-today-number">
+		<p v-if="showNumber" class="mt-ui-sm text-sm text-ink" data-testid="sellos-today-number">
 			<template v-if="row.phone">
-				<a v-if="fullNumbers" :href="`tel:${row.phone}`" class="underline">{{
+				<a v-if="fullNumbers" :href="`tel:${row.phone}`" class="ui-link">{{
 					row.phone
 				}}</a>
 				<span v-else>{{ row.phone }}</span>
@@ -71,50 +64,44 @@
 
 		<form
 			v-if="logging"
-			class="mt-2 space-y-2"
+			class="mt-ui-sm space-y-ui-sm"
 			data-testid="sellos-today-log-form"
 			@submit.prevent="save"
 		>
-			<div class="flex flex-wrap gap-2">
-				<select
+			<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
+				<FormField
 					v-model="form.outcome"
+					type="select"
+					label="Outcome"
 					required
-					aria-label="Outcome"
+					:options="outcomeOptions"
 					data-testid="sellos-today-log-outcome"
-					class="field w-auto"
-				>
-					<option value="">Outcome</option>
-					<option v-for="o in outcomes" :key="o.name" :value="o.name">
-						{{ o.name }}
-					</option>
-				</select>
-				<input
+				/>
+				<FormField
 					v-model="form.notes"
-					placeholder="Notes"
-					aria-label="Notes"
+					label="Notes"
 					data-testid="sellos-today-log-notes"
-					class="field flex-1"
 				/>
 			</div>
-			<label v-if="chosen?.needs_follow_up" class="block text-sm text-ink-muted">
-				Follow up on
-				<input
-					v-model="form.followUp"
-					required
-					type="datetime-local"
-					data-testid="sellos-today-log-follow-up"
-					class="field w-auto"
-				/>
-			</label>
+			<FormField
+				v-if="chosen?.needs_follow_up"
+				v-model="form.followUp"
+				required
+				type="datetime-local"
+				label="Follow up on"
+				data-testid="sellos-today-log-follow-up"
+			/>
 			<p
 				v-if="error"
 				role="alert"
 				data-testid="sellos-today-log-error"
-				class="text-sm text-accent"
+				class="text-sm text-tone-danger"
 			>
 				{{ error }}
 			</p>
-			<button type="submit" class="btn" data-testid="sellos-today-log-save">Save</button>
+			<AppButton type="submit" variant="primary" data-testid="sellos-today-log-save">
+				Save
+			</AppButton>
 		</form>
 		<slot />
 	</li>
@@ -124,6 +111,9 @@
 import { computed, reactive, ref } from "vue";
 
 import { crmApi, serverMessage } from "../crm/crmApi";
+import AppButton from "./AppButton.vue";
+import FormField from "./FormField.vue";
+import StatusBadge from "./StatusBadge.vue";
 
 // One row of the Today screen (SOS-P1-26). Call shows the number the person's role may see (a Company
 // Admin's is a link to dial, an Agent's and a Sales Manager's is masked). Log records a call in place:
@@ -141,6 +131,10 @@ const showNumber = ref(false);
 const logging = ref(false);
 const error = ref("");
 const form = reactive({ outcome: "", notes: "", followUp: "" });
+const outcomeOptions = computed(() => [
+	{ label: "Choose an outcome", value: "" },
+	...props.outcomes.map((o) => ({ label: o.name, value: o.name })),
+]);
 const chosen = computed(() => props.outcomes.find((o) => o.name === form.outcome));
 
 const detail = computed(() => {

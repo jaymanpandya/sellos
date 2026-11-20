@@ -1,27 +1,35 @@
 <template>
 	<div class="max-w-4xl" data-testid="sellos-home">
-		<h1 class="ui-page-title" data-testid="sellos-home-welcome">
-			Welcome{{ session.fullName ? ", " + session.fullName : "" }}
-		</h1>
+		<PageHeader
+			:title="`Welcome${session.fullName ? ', ' + session.fullName : ''}`"
+			title-testid="sellos-home-welcome"
+			text="Your day at a glance."
+			icon="lucide-house"
+		/>
 		<router-link
 			v-if="showSetup"
 			to="/company/setup"
-			class="mt-3 block rounded-input border border-line bg-brand-soft p-3 text-ink"
+			class="ui-card mb-ui-md block text-ink"
 			data-testid="sellos-home-setup-banner"
 		>
 			Finish setting up your company. It takes a few minutes.
 		</router-link>
 		<!-- SOS-P1-26: an Agent and a Sales Manager land on Today. -->
-		<TodayPage v-if="showToday" class="mt-4" />
-		<p v-else class="ui-page-lead">
-			This is the SellOS app shell. Each role sees its own screens as they are built.
-		</p>
+		<TodayPage v-if="showToday" />
+		<EmptyState
+			v-else
+			title="This is the SellOS app shell."
+			text="Each role sees its own screens as they are built."
+			icon="lucide-layout-dashboard"
+		/>
 	</div>
 </template>
 
 <script setup>
 import { computed } from "vue";
 
+import EmptyState from "../components/EmptyState.vue";
+import PageHeader from "../components/PageHeader.vue";
 import { session } from "../session";
 import TodayPage from "./TodayPage.vue";
 
