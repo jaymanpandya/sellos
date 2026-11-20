@@ -42,3 +42,24 @@ export function logRequestError(label, error) {
 	if (leavingPage) return;
 	console.error(label, error);
 }
+
+// SOS-FLAKE: a request that was cut off (the browser dropped it before any answer: "Failed to fetch",
+// an abort, a network drop) has no response. A server answer of 400 and above does have one, and stays a
+// real error. Reads that are best effort (the bell, the lists a page asks for as it opens) use
+// logBackgroundError: a cut off one is a warning, since the next poll or visit asks again, and anything
+// the server answered is still console.error.
+export function isCutOff(error) {
+	return !error?.response && !error?.status;
+}
+
+export function logBackgroundError(label, error) {
+	if (leavingPage) return;
+	if (isCutOff(error)) {
+		console.warn(label, error);
+		return;
+	}
+	console.error(label, error);
+}
+
+// True once the page is being left. A poller checks it so it does not start a request that will be cut.
+export const isLeavingPage = () => leavingPage;

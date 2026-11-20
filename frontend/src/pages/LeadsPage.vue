@@ -620,7 +620,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { CLIENT_TYPES, CONFIGURATIONS, TIMELINES, crmApi, serverMessage } from "../crm/crmApi";
-import { logRequestError } from "../api";
+import { logBackgroundError } from "../api";
 import AppButton from "../components/AppButton.vue";
 import AppCheckbox from "../components/AppCheckbox.vue";
 import EmptyState from "../components/EmptyState.vue";
@@ -764,7 +764,7 @@ async function loadOptions() {
 		stages.value = st || [];
 		filterSources.value = so.sources || [];
 	} catch (e) {
-		logRequestError("lead_filter_options failed", e);
+		logBackgroundError("lead_filter_options failed", e);
 	}
 }
 // Bulk reassignment (SOS-P1-19): a Company Admin or Sales Manager moves the selected leads to one agent.
@@ -798,7 +798,7 @@ async function loadReassignAgents() {
 	try {
 		reassignAgents.value = (await crmApi.reassignOptions()).agents || [];
 	} catch (e) {
-		logRequestError("reassign_options failed", e);
+		logBackgroundError("reassign_options failed", e);
 	}
 }
 
@@ -840,7 +840,7 @@ async function loadSources() {
 		canManageSources.value = !!result.can_manage;
 	} catch (e) {
 		sources.value = [];
-		logRequestError("list_lead_sources failed", e);
+		logBackgroundError("list_lead_sources failed", e);
 	}
 }
 
@@ -897,7 +897,7 @@ async function load() {
 		leads.value = [];
 		board.columns = [];
 		loadError.value = serverMessage(e, "The leads could not be loaded.");
-		logRequestError("list_leads failed", e);
+		logBackgroundError("list_leads failed", e);
 	} finally {
 		if (seq === loadSeq) loading.value = false;
 	}

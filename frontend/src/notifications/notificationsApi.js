@@ -1,6 +1,6 @@
 import { reactive } from "vue";
 
-import { apiRequest, logRequestError } from "../api";
+import { apiRequest, isLeavingPage, logBackgroundError, logRequestError } from "../api";
 import { personaFor } from "../personas";
 
 // The bell (SOS-P1-23). Each call is one whitelisted method of sellos.crm.api that returns the signed in
@@ -33,12 +33,32 @@ function apply(result) {
 	notificationState.loaded = true;
 }
 
+// A background poll is best effort: a cut off one is a warning (the next poll asks again) and a server
+// error (400 and above) is still an error. It is not started while the page is hidden or being left.
 export async function refreshNotifications() {
+	if (isLeavingPage()) return;
 	try {
-		apply(await call("list_notifications"));
+		const result = await call("list_notifications");
+		if (isLeavingPage()) return;
+		apply(result);
 	} catch (error) {
-		logRequestError("Could not load notifications", error);
+		logBackgroundError("Could not load notifications", error);
 	}
+}
+
+function poll() {
+	if (document.visibilityState === "hidden") return;
+	refreshNotifications();
+}
+
+function stopTimer() {
+	clearInterval(timer);
+	timer = null;
+}
+
+// Hidden pages do not poll; coming back reads the list at once. Leaving the page stops the timer.
+function onVisibility() {
+	if (document.visibilityState === "visible") refreshNotifications();
 }
 
 // Opening one marks it read. The list is updated at once and then read again from the server.
@@ -65,19 +85,21 @@ export async function markAllNotificationsRead() {
 const POLL_MS = 60000;
 let timer = null;
 let watchers = 0;
+window.addEventListener("pagehide", () => stopTimer());
 
 // Read the list now and then every minute while a bell is on screen.
 export function watchNotifications() {
 	watchers += 1;
 	if (watchers === 1) {
 		refreshNotifications();
-		timer = setInterval(refreshNotifications, POLL_MS);
+		timer = setInterval(poll, POLL_MS);
+		document.addEventListener("visibilitychange", onVisibility);
 	}
 	return () => {
 		watchers -= 1;
 		if (watchers === 0) {
-			clearInterval(timer);
-			timer = null;
+			stopTimer();
+			document.removeEventListener("visibilitychange", onVisibility);
 		}
 	};
 }

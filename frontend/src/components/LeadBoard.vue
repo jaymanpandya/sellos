@@ -123,7 +123,7 @@
 <script setup>
 import { ref } from "vue";
 
-import { logRequestError } from "../api";
+import { logBackgroundError, logRequestError } from "../api";
 import { crmApi, serverMessage } from "../crm/crmApi";
 
 // The pipeline board (SOS-P1-24). A card drags to any column, or moves with the box on the card, and
@@ -175,7 +175,7 @@ async function request(lead, stage) {
 				lostReasons.value = (await crmApi.listLostReasons()).lost_reasons || [];
 			}
 		} catch (e) {
-			logRequestError("list_lost_reasons failed", e);
+			logBackgroundError("list_lost_reasons failed", e);
 		}
 		lostReason.value = "";
 		pending.value = { lead, stage };
