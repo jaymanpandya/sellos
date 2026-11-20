@@ -1,5 +1,5 @@
-// SOS-UI-2: the PAMAA tokens of docs/UI_STYLE.md are applied to the app shell.
-context("SOS-UI-2: PAMAA style on the app shell", () => {
+// SOS-UI-2, SOS-UI-2B: the Pandya palette on PAMAA's layout (docs/UI_STYLE.md) is applied to the app shell.
+context("SOS-UI-2B: Pandya palette on the app shell", () => {
 	beforeEach(() => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos");
@@ -7,8 +7,8 @@ context("SOS-UI-2: PAMAA style on the app shell", () => {
 	});
 
 	it("uses the page background, the ink text colour and Inter", () => {
-		cy.get("body").should("have.css", "background-color", "rgb(244, 245, 247)");
-		cy.get("body").should("have.css", "color", "rgb(29, 34, 43)");
+		cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
+		cy.get("body").should("have.css", "color", "rgb(0, 60, 60)");
 		cy.get("body").invoke("css", "font-family").should("match", /Inter/);
 		cy.get("body").should("have.css", "font-size", "16px");
 	});
@@ -18,19 +18,31 @@ context("SOS-UI-2: PAMAA style on the app shell", () => {
 		cy.getByTestId("home-welcome").should("have.css", "font-weight", "600");
 	});
 
-	it("gives the sidebar 240px, 44px navigation items and the 10px control radius", () => {
-		cy.getByTestId("nav").filter(":visible").parent().should("have.css", "width", "240px");
+	it("gives the sidebar 240px on the dark surface, 44px items and the 8px control radius", () => {
+		cy.getByTestId("nav")
+			.filter(":visible")
+			.parents("aside")
+			.should("have.css", "width", "240px");
+		cy.getByTestId("nav")
+			.filter(":visible")
+			.parents("aside")
+			.should("have.css", "background-color", "rgb(0, 60, 60)");
 		cy.getByTestId("nav-home").should("have.css", "min-height", "44px");
-		cy.getByTestId("nav-home").should("have.css", "border-top-left-radius", "10px");
+		cy.getByTestId("nav-home").should("have.css", "border-top-left-radius", "8px");
+		cy.getByTestId("nav-leads").should("have.css", "color", "rgb(255, 220, 156)");
 	});
 
-	it("gives a card the 14px radius, a 1px line border and the card shadow", () => {
+	it("puts the top bar on the dark surface", () => {
+		cy.getByTestId("phone-topbar").should("have.css", "background-color", "rgb(0, 60, 60)");
+	});
+
+	it("gives a card the 16px radius, a 1px teal line at low opacity and white fill", () => {
 		cy.signInFresh("basic");
 		cy.visit("/sellos");
 		cy.getByTestId("no-access")
-			.should("have.css", "border-top-left-radius", "14px")
+			.should("have.css", "border-top-left-radius", "16px")
 			.and("have.css", "border-top-width", "1px")
-			.and("have.css", "border-top-color", "rgb(221, 226, 236)")
+			.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)")
 			.and("have.css", "background-color", "rgb(255, 255, 255)");
 	});
 });

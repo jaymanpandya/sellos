@@ -13,13 +13,35 @@ export const session = reactive({
 	loaded: false,
 });
 
+// A company's own brand colour replaces the Pandya default for the sidebar and top bar band, the main
+// button and links' accent. Text on it flips to white or near black so it stays readable (4.5:1) on any colour.
+function luminance(hex) {
+	const n = parseInt(hex.slice(1), 16);
+	const channel = (v) => {
+		v /= 255;
+		return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+	};
+	return (
+		0.2126 * channel((n >> 16) & 255) +
+		0.7152 * channel((n >> 8) & 255) +
+		0.0722 * channel(n & 255)
+	);
+}
+
 export function applyCompanyTheme(company) {
 	if (!company?.brandColor) return;
 	const root = document.documentElement;
-	root.style.setProperty("--sos-brand", company.brandColor);
-	// The dark and light shades are derived from the company colour in a later story.
-	root.style.setProperty("--sos-brand-dark", company.brandColor);
-	root.style.setProperty("--sos-brand-mid", company.brandColor);
+	const colour = company.brandColor;
+	root.style.setProperty("--sos-brand", colour);
+	root.style.setProperty("--sos-brand-dark", colour);
+	// The current sidebar item and button hover sit a little lighter than the band.
+	const mid = `color-mix(in srgb, ${colour} 85%, white)`;
+	root.style.setProperty("--sos-brand-mid", mid);
+	if (/^#[0-9a-f]{6}$/i.test(colour)) {
+		const text = luminance(colour) > 0.4 ? "#111111" : "#FFFFFF";
+		root.style.setProperty("--sos-on-brand", text);
+		root.style.setProperty("--sos-on-brand-accent", text);
+	}
 }
 
 export async function loadSession() {

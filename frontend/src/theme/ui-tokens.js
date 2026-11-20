@@ -1,89 +1,147 @@
-// SellOS UI tokens, taken from PAMAA's frontend/src/tokens.js and frontend/tailwind.config.js (SOS-UI-1).
-// Pure data: nothing imports this yet. SOS-UI-2 wires it into tailwind.config.js and applies it.
-// Values are PAMAA's own; docs/UI_STYLE.md says where each one is used.
+// SellOS UI tokens (SOS-UI-2B). Colours, radius and spacing are the Pandya Realtors website tokens,
+// copied from docs/ui-reference/pandya-website-design-tokens.md. Fonts and the type scale stay PAMAA's
+// (Inter, 16px body). docs/UI_STYLE.md says where each value is used and records every contrast ratio.
+// Pure data; tokens.js and tailwind.config.js read it, ui-tokens.css repeats it as CSS variables.
 
-export const brand = {
-	indigo: "#323CE9",
-	violet: "#5962ED",
-	"tint-from": "#F4F5F7",
-	"tint-to": "#EEF1F8",
-};
-
-export const colors = {
-	ink: "#1D222B", // text and strong borders
-	body: "#3F4A5C", // secondary text, field labels
-	muted: "#525F78", // small print, table headings, breadcrumb
-	line: "#DDE2EC", // card and top bar borders
-	"line-soft": "#EBEEF4", // table row lines, skeleton rows
-	dash: "#D5DBE6",
-	field: "#8A96AD", // input borders
-	page: brand["tint-from"], // page background
-	subtle: "#EEF1F6", // locked or switched off areas
-	faint: "#F8F9FB", // quiet boxes
-	link: brand.indigo,
-	"info-bg": "#E4E7FD", // small tags
-	danger: "#B42318", // required mark, error text
-	"danger-bg": "#FEF0EC",
-	brand: brand.indigo,
-	"brand-2": brand.violet,
-	"brand-soft": "#F0F1FE", // hover and selected tint of the brand
+// Primitives, as the website names them (color/teal/900 and so on).
+export const primitives = {
+	"teal-900": "#002D2D",
+	"teal-700": "#003C3C",
+	"teal-500": "#004848",
+	"gold-200": "#FFDC9C",
+	"gold-500": "#E4B33C",
+	"cream-100": "#FFF2DC",
+	"teal-700-a25": "rgba(0, 60, 60, 0.25)",
 	white: "#FFFFFF",
 };
 
-// Each tone has a word and an icon as well as a colour, never colour alone.
+// Semantic colours, the website's own names. The `surface/dark` token is `surface-dark` here.
+export const semantic = {
+	"surface-dark": primitives["teal-700"], // sidebar and top bar
+	"surface-darkest": primitives["teal-900"],
+	"surface-accent": primitives["teal-500"], // current sidebar item
+	"surface-gold": primitives["gold-200"],
+	"surface-cream": primitives["cream-100"], // page background
+	"text-on-dark": primitives["gold-200"],
+	"text-on-light": primitives["teal-700"],
+	"text-accent": primitives["gold-500"], // only on teal, never on gold/200 (1.5:1)
+	"text-button": primitives["gold-500"],
+	"border-default": primitives["teal-900"],
+	"border-on-dark": primitives["gold-500"],
+	"button-bg": primitives["teal-700"],
+	"button-ghost-bg": primitives["teal-700-a25"],
+	"button-ghost-border": primitives["teal-900"],
+};
+
+// Values the website tokens do not give. Each is derived from the palette; docs/UI_STYLE.md lists them.
+export const derived = {
+	body: primitives["teal-500"], // labels and secondary text (9.4 on cream)
+	muted: "#3F6767", // small print, table headings, breadcrumb (5.7 on cream, 6.3 on white)
+	faint: "#FFF8EE", // quiet boxes: cream at 50% over white
+	subtle: "#F0E7D2", // locked areas: teal/700 at 6% over cream
+	"brand-soft": "#EBEFEF", // hover and selected tint: teal/700 at 8% over white
+	"tag-bg": "#E1E9E8",
+};
+
+// Jayman's call (20 Nov 2026): cards and inputs are white with a thin teal/900 line at low opacity.
+// The field line is stronger because an input's edge must reach 3:1 against white (WCAG 1.4.11).
+export const lines = {
+	card: "rgba(0, 45, 45, 0.20)", // cards, top bar, dividers on light
+	soft: "rgba(0, 45, 45, 0.10)", // table row lines
+	field: "rgba(0, 45, 45, 0.55)", // input borders: 3.6:1 on white
+};
+
+// The website has no status colours. These four fit the palette; each has a word and an icon as well.
 export const status = {
-	success: { ink: "#08724E", bg: "#ECFAF5", line: "#9FE5CD", icon: "lucide-circle-check" },
-	warn: { ink: "#8A4B00", bg: "#FEF8ED", line: "#F5D48A", icon: "lucide-triangle-alert" },
-	danger: { ink: "#BE3910", bg: "#FEF0EC", line: "#F8B5A1", icon: "lucide-circle-alert" },
-	neutral: { ink: "#3F4A5C", bg: "#F0F3F9", line: "#D5DBE6", icon: "lucide-circle-dashed" },
-	info: { ink: "#1E248B", bg: "#F3F4FF", line: "#ABB1F6", icon: "lucide-circle-dot" },
+	success: { ink: "#0B5D3B", bg: "#DDEFDF", line: "#8FC4A0", icon: "lucide-circle-check" },
+	warning: { ink: "#7A4A00", bg: "#FFEBC0", line: "#E4B33C", icon: "lucide-triangle-alert" },
+	danger: { ink: "#A4281B", bg: "#FBE1DC", line: "#E0958B", icon: "lucide-circle-alert" },
+	info: { ink: "#1B5A78", bg: "#DCEAF2", line: "#8DB6CC", icon: "lucide-circle-dot" },
+	// Not a status colour: a badge with no tone, built from the palette (teal/700 on the ghost fill).
+	neutral: {
+		ink: "#003C3C",
+		bg: "#E1E9E8",
+		line: "rgba(0, 45, 45, 0.20)",
+		icon: "lucide-circle-dashed",
+	},
+};
+
+export const colors = {
+	ink: semantic["text-on-light"],
+	body: derived.body,
+	muted: derived.muted,
+	line: lines.card,
+	"line-soft": lines.soft,
+	dash: lines.card,
+	field: lines.field,
+	page: semantic["surface-cream"],
+	subtle: derived.subtle,
+	faint: derived.faint,
+	link: primitives["teal-700"], // underlined
+	"info-bg": derived["tag-bg"],
+	danger: status.danger.ink, // required mark, error text
+	"danger-bg": status.danger.bg,
+	brand: primitives["teal-700"],
+	"brand-2": primitives["teal-500"],
+	"brand-soft": derived["brand-soft"],
+	white: primitives.white,
+	// Shell
+	"shell-bg": semantic["surface-dark"],
+	"shell-ink": semantic["text-on-dark"],
+	"shell-current-bg": semantic["surface-accent"],
+	"shell-current-ink": semantic["text-accent"],
+	"shell-line": "rgba(255, 255, 255, 0.15)", // dividers on the dark band
+	"button-ink": semantic["text-button"],
+	"ghost-bg": semantic["button-ghost-bg"],
+	"ghost-border": semantic["button-ghost-border"],
 };
 
 export const gradients = {
-	"grad-brand": `linear-gradient(135deg, ${brand.indigo} 0%, #4650EC 100%)`, // primary button, active nav item, brand tile
-	"grad-tint": `linear-gradient(180deg, ${brand["tint-from"]} 0%, ${brand["tint-to"]} 100%)`,
-	"grad-empty": `linear-gradient(135deg, #FAFBFD 0%, ${brand["tint-to"]} 100%)`, // empty states
+	// Text is solid colour only and so are buttons: the website keeps gradients to photo shapes.
+	"grad-brand": "none",
+	"grad-empty": `linear-gradient(135deg, ${primitives.white} 0%, ${primitives["cream-100"]} 100%)`,
 };
 
+// Fonts stay PAMAA's: Inter, self hosted (ui-tokens.css), not the website's stangith or Figtree.
 export const fontFamily = {
-	sans: ["Inter", "InterVar", "system-ui", '"Segoe UI"', "sans-serif"],
+	sans: ["Inter", "system-ui", '"Segoe UI"', "sans-serif"],
 };
 
-// Type scale. PAMAA raises Tailwind's sizes: its "small" is 16px and its "extra small" is 14px.
+// Type scale stays PAMAA's: 16px body, 14px small, 24px title.
 export const typography = {
-	title: ["1.5rem", { lineHeight: "1.25", fontWeight: "600" }], // page title, card title on sign in
-	heading: ["0.8125rem", { lineHeight: "1.4", letterSpacing: "0.06em", fontWeight: "600" }], // card heading, uppercase
-	xs: ["0.875rem", { lineHeight: "1.35rem" }], // table heading, label under a value, badge, hint
-	sm: ["1rem", { lineHeight: "1.55rem" }], // body text, buttons, fields
+	title: ["1.5rem", { lineHeight: "1.25", fontWeight: "600" }],
+	heading: ["0.8125rem", { lineHeight: "1.4", letterSpacing: "0.06em", fontWeight: "600" }],
+	xs: ["0.875rem", { lineHeight: "1.35rem" }],
+	sm: ["1rem", { lineHeight: "1.55rem" }],
 	base: ["1rem", { lineHeight: "1.6rem" }],
-	stat: ["1.5rem", { lineHeight: "2rem", fontWeight: "600" }], // number on a stat card, tabular figures
+	stat: ["1.5rem", { lineHeight: "2rem", fontWeight: "600" }],
 };
 
-// Spacing is Tailwind's 4px scale. These are the sizes PAMAA fixes.
+// Spacing is the website scale: xs 4, sm 8, md 14, lg 24, xl 48. The website's page margin is 69 on a 1728
+// canvas; the app uses the scale instead (docs/UI_STYLE.md). Names carry a ui- prefix so they cannot clash
+// with Tailwind's own xs..xl.
 export const spacing = {
-	touch: "44px", // minimum height and width of any control
-	sidebar: "15rem", // 240px
-	topbar: "61px", // minimum height of the header and the sidebar logo row
-	"page-x": "1rem", // page side padding, 1.5rem from 640px
-	"page-x-sm": "1.5rem",
-	"page-y": "1.25rem",
-	card: "1rem", // card padding, 1.25rem from 640px
-	"card-sm": "1.25rem",
-	"card-sign-in": "2rem",
+	"ui-xs": "4px",
+	"ui-sm": "8px",
+	"ui-md": "14px",
+	"ui-lg": "24px",
+	"ui-xl": "48px",
+	touch: "44px", // minimum height and width of any control (PAMAA)
+	sidebar: "15rem",
+	topbar: "61px",
 };
 
+// Radius is the website's: 8 for buttons and inputs, 16 for cards, 100 for round chips.
 export const radius = {
-	card: "14px", // cards, banners, empty states, menus
-	control: "10px", // buttons, fields, menu rows, nav items
-	"sign-in-input": "8px", // frappe-ui text input on the sign in page (its radius step 4)
-	tile: "10px", // brand tile in the sidebar (9px in the compact header)
-	pill: "9999px", // status badges, chips, avatars
+	card: "16px",
+	control: "8px",
+	pill: "9999px",
 };
 
 export const shadows = {
-	card: "0 1px 2px rgba(17, 24, 39, 0.04), 0 6px 20px -8px rgba(17, 24, 39, 0.10)",
-	lift: "0 2px 4px rgba(17, 24, 39, 0.05), 0 14px 32px -12px rgba(17, 24, 39, 0.18)", // sign in card, menus, toasts
-	button: "0 1px 2px rgba(30, 36, 139, 0.25), 0 4px 12px -4px rgba(50, 60, 233, 0.4)",
+	card: "0 1px 2px rgba(0, 45, 45, 0.05), 0 6px 20px -8px rgba(0, 45, 45, 0.12)",
+	lift: "0 2px 4px rgba(0, 45, 45, 0.06), 0 14px 32px -12px rgba(0, 45, 45, 0.22)",
+	button: "none",
 };
 
 export const motion = {
@@ -94,13 +152,12 @@ export const motion = {
 };
 
 export const controls = {
-	height: "44px", // fields and buttons inside the app
-	"sign-in-input-height": "32px",
+	height: "44px",
 	"font-size": "1rem",
-	"focus-ring": "0 0 0 2px rgba(50, 60, 233, 0.4)", // plus a 1px offset
+	"focus-ring": "0 0 0 2px rgba(228, 179, 60, 0.9)", // gold/500 ring on teal and cream
 };
 
-// The same values as CSS variables, for plain CSS and for the page background.
+// The same values as CSS variables, for plain CSS and for frappe-ui (see tailwind.config.js).
 export function uiCssVariables() {
 	const vars = {};
 	for (const [k, v] of Object.entries(colors)) vars[`--ui-${k}`] = v;

@@ -1,53 +1,106 @@
-/* SellOS UI tokens as CSS variables (SOS-UI-1), values from PAMAA's frontend/src/tokens.js.
-   Not imported anywhere yet: SOS-UI-2 imports it. Same values as ui-tokens.js. */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+/* SellOS UI tokens as CSS variables (SOS-UI-2B): the Pandya Realtors website palette, radius and spacing,
+   with PAMAA's Inter. Same values as ui-tokens.js. Inter is self hosted (SIL Open Font License 1.1, from
+   Frappe's copy), so no request goes to Google Fonts. */
+@font-face {
+	font-family: "Inter";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("./fonts/Inter-Regular.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Inter";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("./fonts/Inter-Medium.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Inter";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("./fonts/Inter-SemiBold.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Inter";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("./fonts/Inter-Bold.woff2") format("woff2");
+}
 
 :root {
-	--ui-font: Inter, InterVar, system-ui, "Segoe UI", sans-serif;
+	--ui-font: Inter, system-ui, "Segoe UI", sans-serif;
 
-	--ui-ink: #1d222b;
-	--ui-body: #3f4a5c;
-	--ui-muted: #525f78;
-	--ui-line: #dde2ec;
-	--ui-line-soft: #ebeef4;
-	--ui-dash: #d5dbe6;
-	--ui-field: #8a96ad;
-	--ui-page: #f4f5f7;
-	--ui-subtle: #eef1f6;
-	--ui-faint: #f8f9fb;
-	--ui-link: #323ce9;
-	--ui-brand: #323ce9;
-	--ui-brand-2: #5962ed;
-	--ui-brand-soft: #f0f1fe;
-	--ui-info-bg: #e4e7fd;
-	--ui-danger: #b42318;
-	--ui-danger-bg: #fef0ec;
+	/* Primitives */
+	--color-teal-900: #002d2d;
+	--color-teal-700: #003c3c;
+	--color-teal-500: #004848;
+	--color-gold-200: #ffdc9c;
+	--color-gold-500: #e4b33c;
+	--color-cream-100: #fff2dc;
+	--color-teal-700-a25: rgba(0, 60, 60, 0.25);
 
-	--ui-success: #08724e;
-	--ui-success-bg: #ecfaf5;
-	--ui-success-line: #9fe5cd;
-	--ui-warn: #8a4b00;
-	--ui-warn-bg: #fef8ed;
-	--ui-warn-line: #f5d48a;
-	--ui-danger-ink: #be3910;
-	--ui-danger-line: #f8b5a1;
-	--ui-neutral: #3f4a5c;
-	--ui-neutral-bg: #f0f3f9;
-	--ui-neutral-line: #d5dbe6;
-	--ui-info: #1e248b;
-	--ui-info-line: #abb1f6;
+	/* Semantic */
+	--ui-ink: #003c3c;
+	--ui-body: #004848;
+	--ui-muted: #3f6767;
+	--ui-line: rgba(0, 45, 45, 0.2);
+	--ui-line-soft: rgba(0, 45, 45, 0.1);
+	--ui-dash: rgba(0, 45, 45, 0.2);
+	--ui-field: rgba(0, 45, 45, 0.55);
+	--ui-page: #fff2dc;
+	--ui-subtle: #f0e7d2;
+	--ui-faint: #fff8ee;
+	--ui-link: #003c3c;
+	--ui-brand: #003c3c;
+	--ui-brand-2: #004848;
+	--ui-brand-soft: #ebefef;
+	--ui-info-bg: #e1e9e8;
+	--ui-white: #ffffff;
+	--ui-shell-bg: #003c3c;
+	--ui-shell-ink: #ffdc9c;
+	--ui-shell-current-bg: #004848;
+	--ui-shell-current-ink: #e4b33c;
+	--ui-shell-line: rgba(255, 255, 255, 0.15);
+	--ui-button-ink: #e4b33c;
+	--ui-ghost-bg: rgba(0, 60, 60, 0.25);
+	--ui-ghost-border: #002d2d;
 
-	--ui-grad-brand: linear-gradient(135deg, #323ce9 0%, #4650ec 100%);
-	--ui-grad-empty: linear-gradient(135deg, #fafbfd 0%, #eef1f8 100%);
+	/* Status (added by SellOS; the website has none) */
+	--ui-success: #0b5d3b;
+	--ui-success-bg: #ddefdf;
+	--ui-success-line: #8fc4a0;
+	--ui-warning: #7a4a00;
+	--ui-warning-bg: #ffebc0;
+	--ui-warning-line: #e4b33c;
+	--ui-danger: #a4281b;
+	--ui-danger-bg: #fbe1dc;
+	--ui-danger-line: #e0958b;
+	--ui-info: #1b5a78;
+	--ui-info-line: #8db6cc;
+	--ui-neutral: #003c3c;
+	--ui-neutral-bg: #e1e9e8;
+	--ui-neutral-line: rgba(0, 45, 45, 0.2);
 
-	--ui-radius-card: 14px;
-	--ui-radius-control: 10px;
-	--ui-radius-sign-in-input: 8px;
+	--ui-grad-brand: none;
+	--ui-grad-empty: linear-gradient(135deg, #ffffff 0%, #fff2dc 100%);
+
+	/* Spacing scale */
+	--ui-xs: 4px;
+	--ui-sm: 8px;
+	--ui-md: 14px;
+	--ui-lg: 24px;
+	--ui-xl: 48px;
+
+	--ui-radius-card: 16px;
+	--ui-radius-control: 8px;
 	--ui-radius-pill: 9999px;
 
-	--ui-shadow-card: 0 1px 2px rgba(17, 24, 39, 0.04), 0 6px 20px -8px rgba(17, 24, 39, 0.1);
-	--ui-shadow-lift: 0 2px 4px rgba(17, 24, 39, 0.05), 0 14px 32px -12px rgba(17, 24, 39, 0.18);
-	--ui-shadow-button: 0 1px 2px rgba(30, 36, 139, 0.25), 0 4px 12px -4px rgba(50, 60, 233, 0.4);
+	--ui-shadow-card: 0 1px 2px rgba(0, 45, 45, 0.05), 0 6px 20px -8px rgba(0, 45, 45, 0.12);
+	--ui-shadow-lift: 0 2px 4px rgba(0, 45, 45, 0.06), 0 14px 32px -12px rgba(0, 45, 45, 0.22);
+	--ui-shadow-button: none;
 
 	--ui-touch: 44px;
 	--ui-ease: cubic-bezier(0.16, 1, 0.3, 1);

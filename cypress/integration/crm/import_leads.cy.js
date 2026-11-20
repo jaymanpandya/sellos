@@ -85,6 +85,8 @@ context("SOS-P1-12: import the bought lead lists", () => {
 		cy.getByTestId("lead-consent-warning")
 			.should("have.attr", "data-level", "amber")
 			.and("contain", "You can still call and message this lead");
+		// The lead replaces the list (SOS-UI-2B), so go back to it.
+		cy.getByTestId("lead-back").click();
 		cy.getByTestId("lead-row")
 			.contains("Gate Import Alpha")
 			.closest("a")

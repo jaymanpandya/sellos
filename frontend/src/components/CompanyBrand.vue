@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex items-center gap-2 text-base font-semibold tracking-[0.08em] text-ink"
+		class="flex items-center gap-2 text-base font-semibold tracking-[0.08em] text-on-brand"
 		data-testid="sellos-brand"
 	>
 		<img

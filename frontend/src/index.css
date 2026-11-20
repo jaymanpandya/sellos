@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SOS-UI-2: the PAMAA look of docs/UI_STYLE.md. Values come from the tokens, never written by hand. */
+/* SOS-UI-2B: PAMAA's layout in the Pandya palette (docs/UI_STYLE.md). Values come from the tokens, never written by hand. */
 body {
 	@apply bg-surface-muted font-sans text-base text-ink antialiased;
 	font-family: var(--ui-font);
@@ -26,41 +26,39 @@ h3 {
 		@apply mt-1 max-w-3xl text-base text-ink-body;
 	}
 
-	/* Cards: white, 14px, 1px line, card shadow. */
+	/* Cards: white, 16px radius, 1px teal/900 line at 20%, card shadow. */
 	.ui-card {
-		@apply rounded-card border border-line bg-surface p-4 shadow-card sm:p-5;
+		@apply rounded-card border border-line bg-surface p-ui-md shadow-card sm:p-ui-lg;
 	}
 	.ui-card-heading {
 		@apply text-heading uppercase text-ink-muted;
 	}
 
-	/* Buttons: 44px, 10px radius. Outlined by default, solid for the one main action. */
+	/* Buttons: 44px, 8px radius. Secondary (ghost fill and border) by default, solid for the one main action. */
 	.btn,
 	.ui-button {
-		@apply inline-flex min-h-touch min-w-touch items-center justify-center gap-2 rounded-input border bg-surface px-[18px] text-base font-medium text-brand transition active:scale-[0.94] disabled:opacity-50;
-		border-color: color-mix(in srgb, var(--sos-brand) 35%, transparent);
+		@apply inline-flex min-h-touch min-w-touch items-center justify-center gap-2 rounded-input border border-ghost-border bg-ghost-bg px-[18px] text-base font-medium text-ink transition active:scale-[0.98] disabled:opacity-50;
 	}
 	.btn:hover,
 	.ui-button:hover {
-		@apply bg-brand-soft;
+		background-color: color-mix(in srgb, var(--sos-brand) 35%, transparent);
 	}
 	.ui-button-solid {
-		@apply border-transparent text-white shadow-button hover:brightness-110;
-		background-image: var(--ui-grad-brand);
+		@apply border-transparent text-on-brand-accent;
 		background-color: var(--sos-brand);
 	}
 	.ui-button-solid:hover {
-		background-color: var(--sos-brand);
+		background-color: var(--sos-brand-mid);
 	}
 	.btn:focus-visible,
 	.field:focus,
 	.ui-field:focus {
 		@apply outline-none;
 		border-color: var(--sos-brand);
-		box-shadow: 0 0 0 2px color-mix(in srgb, var(--sos-brand) 40%, transparent);
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--sos-brand) 70%, transparent);
 	}
 
-	/* Fields: 44px, 10px radius, 1px field border, 16px text. */
+	/* Fields: 44px, 8px radius, 1px teal/900 line at 55% (3.6:1 on white), 16px text. */
 	.field,
 	.ui-field {
 		@apply block min-h-touch w-full rounded-input border border-line-field bg-surface px-3 text-base text-ink;
@@ -76,6 +74,11 @@ h3 {
 	}
 	.ui-error {
 		@apply text-xs text-danger;
+	}
+	/* Links: teal/700, underlined. */
+	.ui-link,
+	a:not([class]) {
+		@apply text-link underline underline-offset-2;
 	}
 
 	/* Tables inside a card. */
@@ -101,10 +104,10 @@ h3 {
 		@apply border-tone-success-line bg-tone-success-bg text-tone-success;
 	}
 	.ui-badge-warn {
-		@apply border-tone-warn-line bg-tone-warn-bg text-tone-warn;
+		@apply border-tone-warning-line bg-tone-warning-bg text-tone-warning;
 	}
 	.ui-badge-danger {
-		@apply border-tone-danger-line bg-tone-danger-bg text-tone-danger-ink;
+		@apply border-tone-danger-line bg-tone-danger-bg text-tone-danger;
 	}
 	.ui-badge-neutral {
 		@apply border-tone-neutral-line bg-tone-neutral-bg text-tone-neutral;
@@ -120,11 +123,79 @@ h3 {
 		background-image: var(--ui-grad-empty);
 	}
 	.ui-error-box {
-		@apply rounded-card border border-tone-warn-line bg-tone-warn-bg p-4 text-base text-tone-warn;
+		@apply rounded-card border border-tone-warning-line bg-tone-warning-bg p-4 text-base text-tone-warning;
 	}
 	.ui-toast {
 		@apply flex min-h-touch max-w-sm items-center gap-2 rounded-card border bg-surface px-3 text-base shadow-lift;
 	}
+}
+
+/* frappe-ui's icon classes set their own colour; an icon that should take its text colour says so. */
+[class*="lucide-"].icon-inherit {
+	color: inherit;
+}
+
+/* Phone and tablet: the page ends above the bottom bar, so its last row is never hidden behind it. */
+@media (max-width: 1023.98px) {
+	.ui-with-bar {
+		--ui-bar: 57px;
+	}
+	.ui-with-bar > main {
+		padding-bottom: calc(57px + 1.5rem);
+	}
+}
+
+/* frappe-ui controls are 44px tall, as PAMAA's .pamaa-control. */
+input.form-input,
+textarea.form-textarea,
+[data-slot="trigger"] {
+	min-height: var(--ui-touch);
+}
+[data-slot="trigger"] {
+	width: 100%;
+}
+.form-input:focus-visible,
+[data-slot="trigger"]:focus-visible {
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--sos-brand) 70%, transparent);
+}
+
+/* Shimmer rows while a list loads (PAMAA's skeleton), in the palette. */
+.ui-shimmer {
+	background: linear-gradient(90deg, rgba(0, 60, 60, 0.08) 0%, rgba(0, 60, 60, 0.03) 45%, rgba(0, 60, 60, 0.08) 90%);
+	background-size: 220% 100%;
+	animation: ui-shimmer 1.3s linear infinite;
+}
+@keyframes ui-shimmer {
+	from {
+		background-position: 120% 0;
+	}
+	to {
+		background-position: -100% 0;
+	}
+}
+
+/* Toasts slide in from the bottom and out to the side; the More drawer rises from the bottom. */
+.ui-toast-enter-active {
+	transition: transform 220ms var(--ui-ease), opacity 220ms var(--ui-ease);
+}
+.ui-toast-leave-active {
+	transition: transform 180ms ease-in, opacity 180ms ease-in;
+}
+.ui-toast-enter-from {
+	opacity: 0;
+	transform: translateY(12px);
+}
+.ui-toast-leave-to {
+	opacity: 0;
+	transform: translateX(24px);
+}
+.ui-sheet-enter-active,
+.ui-sheet-leave-active {
+	transition: opacity 180ms var(--ui-ease);
+}
+.ui-sheet-enter-from,
+.ui-sheet-leave-to {
+	opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

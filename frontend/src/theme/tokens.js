@@ -1,21 +1,24 @@
-// Design tokens for SellOS. SOS-UI-2 moved the defaults to the PAMAA values of docs/UI_STYLE.md
-// (the raw values are in ui-tokens.js and ui-tokens.css, SOS-UI-1). The brand colours stay CSS
-// variables so each company can still set its own brand at runtime (see applyCompanyTheme in
-// session.js); everything else is the PAMAA token.
+// Design tokens for SellOS (SOS-UI-2B): the Pandya palette of ui-tokens.js as Tailwind theme values.
+// The brand colours stay CSS variables so each company can still set its own brand at runtime (see
+// applyCompanyTheme in session.js); the Pandya palette is the default. Everything else is the token.
 import {
 	colors as ui,
 	fontFamily as uiFont,
 	radius as uiRadius,
 	shadows,
+	spacing as uiSpacing,
+	status,
 	typography as uiType,
 } from "./ui-tokens.js";
 
 const defaults = {
-	"--sos-brand": ui.brand,
+	"--sos-brand": ui.brand, // button/bg, sidebar and top bar band
 	"--sos-brand-dark": ui.brand,
-	"--sos-brand-mid": ui["brand-2"],
+	"--sos-brand-mid": ui["shell-current-bg"], // current sidebar item
 	"--sos-brand-light": ui["brand-soft"],
-	"--sos-accent": ui["brand-2"],
+	"--sos-accent": ui.danger, // legacy `accent` on pages not yet moved (SOS-UI-3): error text and alert badges
+	"--sos-on-brand": ui["shell-ink"], // text/onDark: text on the brand band
+	"--sos-on-brand-accent": ui["shell-current-ink"], // text/accent, text/button
 	"--sos-surface": ui.white,
 	"--sos-surface-muted": ui.page,
 	"--sos-ink": ui.ink,
@@ -32,6 +35,7 @@ export const colors = {
 		soft: ui["brand-soft"],
 	},
 	accent: "var(--sos-accent)",
+	"on-brand": { DEFAULT: "var(--sos-on-brand)", accent: "var(--sos-on-brand-accent)" },
 	surface: {
 		DEFAULT: "var(--sos-surface)",
 		muted: "var(--sos-surface-muted)",
@@ -48,24 +52,16 @@ export const colors = {
 		soft: ui["line-soft"],
 		field: ui.field,
 	},
+	ghost: { bg: ui["ghost-bg"], border: ui["ghost-border"] },
+	link: ui.link,
 	danger: { DEFAULT: ui.danger, bg: ui["danger-bg"] },
-	tone: {
-		success: "#08724E",
-		"success-bg": "#ECFAF5",
-		"success-line": "#9FE5CD",
-		warn: "#8A4B00",
-		"warn-bg": "#FEF8ED",
-		"warn-line": "#F5D48A",
-		"danger-ink": "#BE3910",
-		"danger-bg": "#FEF0EC",
-		"danger-line": "#F8B5A1",
-		neutral: "#3F4A5C",
-		"neutral-bg": "#F0F3F9",
-		"neutral-line": "#D5DBE6",
-		info: "#1E248B",
-		"info-bg": "#F3F4FF",
-		"info-line": "#ABB1F6",
-	},
+	tone: Object.fromEntries(
+		Object.entries(status).flatMap(([tone, v]) => [
+			[tone, v.ink],
+			[`${tone}-bg`, v.bg],
+			[`${tone}-line`, v.line],
+		])
+	),
 };
 
 export const fontFamily = {
@@ -81,11 +77,7 @@ export const radius = {
 
 export const boxShadow = shadows;
 
-export const spacing = {
-	touch: "44px",
-	sidebar: "15rem",
-	topbar: "61px",
-};
+export const spacing = uiSpacing;
 
 export const typography = {
 	title: uiType.title,

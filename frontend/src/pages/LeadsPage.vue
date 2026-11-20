@@ -1,120 +1,129 @@
 <template>
 	<div
-		:class="view === 'board' ? 'max-w-full' : 'max-w-3xl'"
+		:class="view === 'board' ? 'max-w-full' : 'max-w-5xl'"
 		data-testid="sellos-leads-page"
 		:data-view="view"
 	>
-		<div class="flex items-center justify-between gap-3">
-			<h1 class="ui-page-title">Leads</h1>
-			<div class="flex gap-2" role="group" aria-label="View">
-				<button
+		<PageHeader
+			title="Leads"
+			text="Everyone who has asked about a property, and where each enquiry stands."
+			icon="lucide-users"
+		>
+			<div class="flex gap-ui-sm" role="group" aria-label="View">
+				<AppButton
 					type="button"
-					class="btn"
 					:aria-pressed="view === 'list'"
+					:active="view === 'list'"
 					data-testid="sellos-leads-view-list"
 					@click="setView('list')"
 				>
 					List
-				</button>
-				<button
+				</AppButton>
+				<AppButton
 					type="button"
-					class="btn"
 					:aria-pressed="view === 'board'"
+					:active="view === 'board'"
 					data-testid="sellos-leads-view-board"
 					@click="setView('board')"
 				>
 					Board
-				</button>
+				</AppButton>
 			</div>
-			<button
+			<AppButton
 				v-if="canCreate"
 				type="button"
-				class="btn"
+				variant="primary"
 				data-testid="sellos-leads-new"
 				@click="creating = !creating"
 			>
+				<template #prefix
+					><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+				/></template>
 				{{ creating ? "Cancel" : "New lead" }}
-			</button>
-		</div>
+			</AppButton>
+		</PageHeader>
 
 		<form
 			v-if="creating"
-			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
+			class="ui-card mb-ui-md"
 			data-testid="sellos-lead-form"
 			@submit.prevent="create(false)"
 		>
-			<input
-				v-model="form.client_name"
-				data-testid="sellos-lead-form-name"
-				required
-				placeholder="Client name"
-				class="field"
-			/>
-			<select v-model="form.client_type" data-testid="sellos-lead-form-type" class="field">
-				<option v-for="t in CLIENT_TYPES" :key="t">{{ t }}</option>
-			</select>
-			<input
-				v-model="form.phone"
-				data-testid="sellos-lead-form-phone"
-				placeholder="Phone"
-				class="field"
-			/>
-			<input
-				v-if="form.client_type === 'NRI'"
-				v-model="form.overseas_phone"
-				placeholder="Overseas phone (optional)"
-				class="field"
-			/>
-			<input
-				v-if="form.client_type === 'NRI'"
-				v-model="form.country_of_residence"
-				placeholder="Country of residence (optional)"
-				class="field"
-			/>
-			<input
-				v-model="form.email"
-				data-testid="sellos-lead-form-email"
-				type="email"
-				placeholder="Email"
-				class="field"
-			/>
-			<select
-				v-model="form.source"
-				data-testid="sellos-lead-form-source"
-				required
-				class="field"
-			>
-				<option value="" disabled>Choose a source</option>
-				<option v-for="s in sources" :key="s.name" :value="s.name">{{ s.name }}</option>
-			</select>
-			<div v-if="canManageSources" class="flex gap-2" data-testid="sellos-lead-source-add">
-				<input
-					v-model="newSource"
-					data-testid="sellos-lead-source-new"
-					placeholder="Add a source to the list"
-					class="field"
-					@keydown.enter.prevent="addSource"
+			<h2 class="ui-card-heading mb-ui-md">New lead</h2>
+			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+				<FormField
+					v-model="form.client_name"
+					label="Client name"
+					required
+					data-testid="sellos-lead-form-name"
 				/>
-				<button
-					type="button"
-					class="btn"
-					data-testid="sellos-lead-source-add-button"
-					@click="addSource"
+				<FormField
+					v-model="form.client_type"
+					type="select"
+					label="Client type"
+					:options="CLIENT_TYPES"
+					data-testid="sellos-lead-form-type"
+				/>
+				<FormField
+					v-model="form.phone"
+					label="Phone"
+					data-testid="sellos-lead-form-phone"
+				/>
+				<FormField
+					v-model="form.email"
+					type="email"
+					label="Email"
+					data-testid="sellos-lead-form-email"
+				/>
+				<FormField
+					v-if="form.client_type === 'NRI'"
+					v-model="form.overseas_phone"
+					label="Overseas phone (optional)"
+				/>
+				<FormField
+					v-if="form.client_type === 'NRI'"
+					v-model="form.country_of_residence"
+					label="Country of residence (optional)"
+				/>
+				<FormField
+					v-model="form.source"
+					type="select"
+					label="Source"
+					required
+					:options="sourceOptions"
+					data-testid="sellos-lead-form-source"
+				/>
+				<FormField
+					v-model="form.campaign"
+					label="Campaign (optional)"
+					data-testid="sellos-lead-form-campaign"
+				/>
+				<div
+					v-if="canManageSources"
+					class="flex items-end gap-ui-sm md:col-span-2"
+					data-testid="sellos-lead-source-add"
 				>
-					Add source
-				</button>
+					<FormField
+						v-model="newSource"
+						label="Add a source to the list"
+						class="flex-1"
+						data-testid="sellos-lead-source-new"
+						@keydown.enter.prevent="addSource"
+					/>
+					<AppButton
+						type="button"
+						data-testid="sellos-lead-source-add-button"
+						@click="addSource"
+					>
+						Add source
+					</AppButton>
+				</div>
 			</div>
-			<input
-				v-model="form.campaign"
-				data-testid="sellos-lead-form-campaign"
-				placeholder="Campaign (optional)"
-				class="field"
-			/>
 			<section
 				v-if="duplicates.length"
 				role="alert"
 				data-testid="sellos-duplicate-warning"
-				class="space-y-3 rounded-input border border-[#e8954a] bg-[#fdf1e3] p-3 text-sm text-[#7a4a10]"
+				class="mt-ui-md space-y-ui-md rounded-card border border-tone-warning-line bg-tone-warning-bg p-ui-md text-sm text-tone-warning"
 			>
 				<p class="font-medium">
 					This person is already in SellOS. Add the enquiry to them instead of making a
@@ -125,7 +134,7 @@
 					:key="match.name"
 					data-testid="sellos-duplicate-match"
 					:data-visible="match.visible ? 'yes' : 'no'"
-					class="rounded-input border border-line bg-surface p-3 text-ink"
+					class="rounded-card border border-line bg-surface p-ui-md text-ink"
 				>
 					<p data-testid="sellos-duplicate-name" class="font-medium">
 						{{ match.visible ? match.client_name : "A client of another agent" }}
@@ -146,219 +155,259 @@
 					<p v-if="!match.can_add" class="mt-1 text-ink-muted">
 						You cannot see this client. Ask a Company Admin to look at it.
 					</p>
-					<button
+					<AppButton
 						v-else
 						type="button"
-						class="btn mt-2"
+						class="mt-ui-sm"
 						data-testid="sellos-duplicate-add"
 						@click="addToExisting(match)"
 					>
 						Add this enquiry to {{ match.client_name }}
-					</button>
+					</AppButton>
 				</div>
-				<button
-					type="button"
-					class="btn"
-					data-testid="sellos-duplicate-new"
-					@click="create(true)"
-				>
+				<AppButton type="button" data-testid="sellos-duplicate-new" @click="create(true)">
 					Save as a new client anyway
-				</button>
+				</AppButton>
 			</section>
-			<p v-if="error" data-testid="sellos-lead-form-error" class="text-sm text-accent">
+			<p
+				v-if="error"
+				data-testid="sellos-lead-form-error"
+				class="mt-ui-md text-sm text-danger"
+			>
 				{{ error }}
 			</p>
-			<button type="submit" class="btn" data-testid="sellos-lead-form-save">
-				Save lead
-			</button>
+			<div class="mt-ui-md">
+				<AppButton type="submit" variant="primary" data-testid="sellos-lead-form-save">
+					Save lead
+				</AppButton>
+			</div>
 		</form>
 
-		<input
-			v-model="search"
-			data-testid="sellos-leads-search"
-			placeholder="Search leads"
-			class="field mt-4"
-			@input="load"
-		/>
-		<form
-			class="mt-4 flex flex-wrap gap-2 rounded-input border border-line bg-surface p-3"
-			data-testid="sellos-leads-filters"
-			@submit.prevent="load"
-		>
-			<input
+		<FilterBar data-testid="sellos-leads-filters" @apply="load" @clear="clearFilters">
+			<FormField
+				:model-value="search"
+				label="Search leads"
+				class="sm:col-span-2"
+				data-testid="sellos-leads-search"
+				@update:model-value="
+					(v) => {
+						search = v;
+						load();
+					}
+				"
+			/>
+			<FormField
 				v-model.number="filters.budget_min"
+				type="number"
+				label="Budget from (₹)"
+				min="0"
 				data-testid="sellos-leads-filter-budget-min"
-				type="number"
-				min="0"
-				placeholder="Budget from (rupees)"
-				class="field w-auto"
 			/>
-			<input
+			<FormField
 				v-model.number="filters.budget_max"
-				data-testid="sellos-leads-filter-budget-max"
 				type="number"
+				label="Budget to (₹)"
 				min="0"
-				placeholder="Budget to (rupees)"
-				class="field w-auto"
+				data-testid="sellos-leads-filter-budget-max"
 			/>
-			<select
+			<FormField
 				v-model="filters.configuration"
+				type="select"
+				label="Configuration"
+				:options="withAny('Any configuration', CONFIGURATIONS)"
 				data-testid="sellos-leads-filter-configuration"
-				class="field w-auto"
-			>
-				<option value="">Any configuration</option>
-				<option v-for="c in CONFIGURATIONS" :key="c">{{ c }}</option>
-			</select>
-			<input
-				v-model="filters.locality"
-				data-testid="sellos-leads-filter-locality"
-				placeholder="Locality"
-				class="field w-auto"
 			/>
-			<select
+			<FormField
+				v-model="filters.locality"
+				label="Locality"
+				data-testid="sellos-leads-filter-locality"
+			/>
+			<FormField
 				v-model="filters.timeline"
+				type="select"
+				label="Timeline"
+				:options="withAny('Any timeline', TIMELINES)"
 				data-testid="sellos-leads-filter-timeline"
-				class="field w-auto"
-			>
-				<option value="">Any timeline</option>
-				<option v-for="t in TIMELINES" :key="t">{{ t }}</option>
-			</select>
-			<select
-				v-model="filters.stage"
+			/>
+			<FormField
+				:model-value="filters.stage"
+				type="select"
+				label="Stage"
+				:options="
+					withAny(
+						'Any stage',
+						stages.map((st) => st.name)
+					)
+				"
 				data-testid="sellos-leads-filter-stage"
-				aria-label="Stage"
-				class="field w-auto"
-				@change="load"
-			>
-				<option value="">Any stage</option>
-				<option v-for="st in stages" :key="st.name" :value="st.name">{{ st.name }}</option>
-			</select>
-			<select
-				v-model="filters.assigned_to"
+				@update:model-value="
+					(v) => {
+						filters.stage = v;
+						load();
+					}
+				"
+			/>
+			<FormField
+				:model-value="filters.assigned_to"
+				type="select"
+				label="Agent"
+				:options="
+					withAny(
+						'Any agent',
+						options.agents.map((a) => ({ value: a.name, label: a.full_name }))
+					)
+				"
 				data-testid="sellos-leads-filter-agent"
-				aria-label="Agent"
-				class="field w-auto"
-				@change="load"
-			>
-				<option value="">Any agent</option>
-				<option v-for="a in options.agents" :key="a.name" :value="a.name">
-					{{ a.full_name }}
-				</option>
-			</select>
-			<select
+				@update:model-value="
+					(v) => {
+						filters.assigned_to = v;
+						load();
+					}
+				"
+			/>
+			<FormField
 				v-if="options.teams.length"
-				v-model="filters.team"
+				:model-value="filters.team"
+				type="select"
+				label="Team"
+				:options="
+					withAny(
+						'Any team',
+						options.teams.map((t) => ({ value: t.name, label: t.team_name }))
+					)
+				"
 				data-testid="sellos-leads-filter-team"
-				aria-label="Team"
-				class="field w-auto"
-				@change="load"
-			>
-				<option value="">Any team</option>
-				<option v-for="t in options.teams" :key="t.name" :value="t.name">
-					{{ t.team_name }}
-				</option>
-			</select>
-			<select
-				v-model="filters.source"
+				@update:model-value="
+					(v) => {
+						filters.team = v;
+						load();
+					}
+				"
+			/>
+			<FormField
+				:model-value="filters.source"
+				type="select"
+				label="Source"
+				:options="
+					withAny(
+						'Any source',
+						filterSources.map((so) => so.name)
+					)
+				"
 				data-testid="sellos-leads-filter-source"
-				aria-label="Source"
-				class="field w-auto"
-				@change="load"
-			>
-				<option value="">Any source</option>
-				<option v-for="so in filterSources" :key="so.name" :value="so.name">
-					{{ so.name }}
-				</option>
-			</select>
-			<select
-				v-model="filters.consent_status"
+				@update:model-value="
+					(v) => {
+						filters.source = v;
+						load();
+					}
+				"
+			/>
+			<FormField
+				:model-value="filters.consent_status"
+				type="select"
+				label="Consent status"
+				:options="withAny('Any consent status', options.consent_statuses)"
 				data-testid="sellos-leads-filter-consent"
-				aria-label="Consent status"
-				class="field w-auto"
-				@change="load"
-			>
-				<option value="">Any consent status</option>
-				<option v-for="c in options.consent_statuses" :key="c">{{ c }}</option>
-			</select>
-			<label class="flex items-center gap-1 text-sm text-ink-muted">
-				Last contacted from
-				<input
-					v-model="filters.last_contacted_from"
-					type="date"
-					data-testid="sellos-leads-filter-contacted-from"
-					class="field w-auto"
-					@input="load"
-				/>
-			</label>
-			<label class="flex items-center gap-1 text-sm text-ink-muted">
-				to
-				<input
-					v-model="filters.last_contacted_to"
-					type="date"
-					data-testid="sellos-leads-filter-contacted-to"
-					class="field w-auto"
-					@input="load"
-				/>
-			</label>
-			<select
-				v-model="filters.follow_up"
+				@update:model-value="
+					(v) => {
+						filters.consent_status = v;
+						load();
+					}
+				"
+			/>
+			<FormField
+				:model-value="filters.last_contacted_from"
+				type="date"
+				label="Last contacted from"
+				data-testid="sellos-leads-filter-contacted-from"
+				@update:model-value="
+					(v) => {
+						filters.last_contacted_from = v;
+						load();
+					}
+				"
+			/>
+			<FormField
+				:model-value="filters.last_contacted_to"
+				type="date"
+				label="Last contacted to"
+				data-testid="sellos-leads-filter-contacted-to"
+				@update:model-value="
+					(v) => {
+						filters.last_contacted_to = v;
+						load();
+					}
+				"
+			/>
+			<FormField
+				:model-value="filters.follow_up"
+				type="select"
+				label="Follow up"
+				:options="followUpOptions"
 				data-testid="sellos-leads-filter-follow-up"
-				aria-label="Follow up"
-				class="field w-auto"
-				@change="load"
-			>
-				<option value="">Any follow up</option>
-				<option value="overdue">Overdue follow up</option>
-				<option value="open">Has an open follow up</option>
-				<option value="none">No open follow up</option>
-				<option value="untouched">
-					Untouched, no follow up for {{ followUpDays }} days
-				</option>
-			</select>
-			<select
-				v-model="filters.sort"
+				@update:model-value="
+					(v) => {
+						filters.follow_up = v;
+						load();
+					}
+				"
+			/>
+			<FormField
+				:model-value="filters.sort"
+				type="select"
+				label="Sort"
+				:options="sortOptions"
 				data-testid="sellos-leads-sort"
-				aria-label="Sort"
-				class="field w-auto"
-				@change="load"
-			>
-				<option value="">Newest change first</option>
-				<option value="next_follow_up">Next follow up first</option>
-			</select>
-			<label class="flex items-center gap-1 text-sm text-ink-muted">
-				<input
-					v-model="untouchedOnly"
-					type="checkbox"
-					data-testid="sellos-leads-filter-untouched"
-					@change="load"
-				/>
-				No activity for {{ untouchedDays }} days
-			</label>
-			<button type="submit" class="btn" data-testid="sellos-leads-filter-apply">
-				Filter
-			</button>
-			<button
-				type="button"
-				class="btn"
-				data-testid="sellos-leads-filter-clear"
-				@click="clearFilters"
-			>
-				Clear filters
-			</button>
-		</form>
-		<p v-if="loadError" data-testid="sellos-leads-error" role="alert" class="mt-4 text-accent">
-			{{ loadError }}
-		</p>
-		<p v-else-if="loading" data-testid="sellos-leads-loading" class="mt-4 text-ink-muted">
-			Loading leads.
-		</p>
-		<p
+				@update:model-value="
+					(v) => {
+						filters.sort = v;
+						load();
+					}
+				"
+			/>
+			<FormField
+				:model-value="untouchedOnly"
+				type="checkbox"
+				:label="`No activity for ${untouchedDays} days`"
+				data-testid="sellos-leads-filter-untouched"
+				@update:model-value="
+					(v) => {
+						untouchedOnly = v;
+						load();
+					}
+				"
+			/>
+			<template #actions>
+				<AppButton type="submit" variant="primary" data-testid="sellos-leads-filter-apply">
+					Filter
+				</AppButton>
+				<AppButton
+					type="button"
+					data-testid="sellos-leads-filter-clear"
+					@click="clearFilters"
+				>
+					Clear filters
+				</AppButton>
+			</template>
+		</FilterBar>
+
+		<LoadError
+			v-if="loadError"
+			:message="loadError"
+			class="mb-ui-md"
+			data-testid="sellos-leads-error"
+			@retry="load"
+		/>
+		<ListCard v-else-if="loading" class="mb-ui-md">
+			<LoadingSkeleton :rows="4" label="Loading leads." data-testid="sellos-leads-loading" />
+		</ListCard>
+		<EmptyState
 			v-else-if="view === 'list' && !leads.length"
+			title="No leads yet"
+			text="Leads you may see will be listed here. Try clearing the filters, or add a lead."
+			icon="lucide-users"
 			data-testid="sellos-leads-empty"
-			class="mt-4 text-ink-muted"
-		>
-			No leads yet.
-		</p>
+		/>
 		<LeadBoard
 			v-if="view === 'board' && !loadError"
 			:columns="board.columns"
@@ -369,42 +418,36 @@
 		/>
 		<form
 			v-if="view === 'list' && canReassign && leads.length"
-			class="mt-4 flex flex-wrap items-center gap-2 rounded-input border border-line bg-surface p-3"
+			class="ui-card mb-ui-md flex flex-wrap items-end gap-ui-md"
 			data-testid="sellos-bulk"
 			@submit.prevent="bulkReassign"
 		>
-			<label class="flex items-center gap-1 text-sm text-ink">
-				<input
-					type="checkbox"
-					:checked="allSelected"
-					data-testid="sellos-bulk-select-all"
-					@change="toggleAll($event.target.checked)"
-				/>
-				Select all {{ leads.length }} shown
-			</label>
-			<span class="text-sm text-ink-muted" data-testid="sellos-bulk-count">
+			<FormField
+				type="checkbox"
+				:model-value="allSelected"
+				:label="`Select all ${leads.length} shown`"
+				data-testid="sellos-bulk-select-all"
+				@update:model-value="toggleAll"
+			/>
+			<span class="pb-3 text-sm text-ink-muted" data-testid="sellos-bulk-count">
 				{{ selected.length }} selected
 			</span>
-			<select
+			<FormField
 				v-model="bulkAgent"
+				type="select"
+				label="Give the selected leads to"
 				required
-				aria-label="Give the selected leads to"
+				:options="reassignAgents.map((a) => ({ value: a.name, label: a.full_name }))"
+				class="min-w-[14rem]"
 				data-testid="sellos-bulk-agent"
-				class="field w-auto"
-			>
-				<option value="" disabled>Give the selected leads to</option>
-				<option v-for="a in reassignAgents" :key="a.name" :value="a.name">
-					{{ a.full_name }}
-				</option>
-			</select>
-			<button
+			/>
+			<AppButton
 				type="submit"
-				class="btn"
 				:disabled="!selected.length"
 				data-testid="sellos-bulk-reassign"
 			>
 				Reassign selected
-			</button>
+			</AppButton>
 			<p
 				v-if="bulkNotice"
 				role="status"
@@ -416,103 +459,114 @@
 			<p
 				v-if="bulkError"
 				role="alert"
-				class="w-full text-sm text-accent"
+				class="w-full text-sm text-danger"
 				data-testid="sellos-bulk-error"
 			>
 				{{ bulkError }}
 			</p>
 		</form>
-		<ul
-			v-if="view === 'list'"
-			class="mt-4 divide-y divide-line rounded-input border border-line bg-surface"
-		>
-			<li
-				v-for="lead in leads"
-				:key="lead.name"
-				data-testid="sellos-lead-row"
-				class="flex items-center"
-			>
-				<input
-					v-if="canReassign"
-					v-model="selected"
-					type="checkbox"
-					:value="lead.name"
-					:aria-label="`Select ${lead.client_name}`"
-					data-testid="sellos-lead-select"
-					class="ml-4"
-				/>
-				<router-link
-					:to="{ path: `${basePath}/${lead.name}`, query: $route.query }"
-					class="flex flex-1 items-center justify-between gap-3 px-4 py-3 hover:bg-brand-light"
+		<ListCard v-if="view === 'list' && leads.length" class="!p-0">
+			<ul class="divide-y divide-line-soft">
+				<li
+					v-for="lead in leads"
+					:key="lead.name"
+					data-testid="sellos-lead-row"
+					class="flex items-center"
 				>
-					<span>
-						<span class="block font-medium text-ink">{{ lead.client_name }}</span>
-						<span
-							class="block text-sm text-ink-muted"
-							data-testid="sellos-lead-source"
-							>{{
-								lead.campaign ? `${lead.source} · ${lead.campaign}` : lead.source
-							}}</span
-						>
-					</span>
-					<span
-						v-if="lead.stage"
-						data-testid="sellos-lead-row-stage"
-						class="rounded-input border border-line px-2 py-1 text-xs text-ink-muted"
+					<AppCheckbox
+						v-if="canReassign"
+						:model-value="selected.includes(lead.name)"
+						:value="lead.name"
+						:aria-label="`Select ${lead.client_name}`"
+						class="ml-ui-sm"
+						data-testid="sellos-lead-select"
+						@update:model-value="toggleSelected(lead.name, $event)"
+					/>
+					<router-link
+						:to="{ path: `${basePath}/${lead.name}`, query: $route.query }"
+						class="flex flex-1 flex-wrap items-center justify-between gap-ui-sm px-ui-md py-ui-md hover:bg-brand-soft"
 					>
-						{{ lead.stage }}
-					</span>
-					<span
-						v-if="lead.untouched"
-						data-testid="sellos-untouched"
-						class="rounded-input bg-accent px-2 py-1 text-xs text-white"
-					>
-						No activity for {{ untouchedDays }} days
-					</span>
-					<span
-						v-if="lead.next_follow_up"
-						data-testid="sellos-lead-next-follow-up"
-						:data-state="lead.follow_up_state"
-						class="text-xs text-ink-muted"
-					>
-						Next follow up {{ shortWhen(lead.next_follow_up) }}
-					</span>
-					<span
-						v-if="lead.follow_up_state === 'overdue'"
-						data-testid="sellos-follow-up-overdue"
-						class="rounded-input bg-accent px-2 py-1 text-xs text-white"
-					>
-						Follow up overdue
-					</span>
-					<span
-						v-if="lead.follow_up_untouched"
-						data-testid="sellos-follow-up-untouched"
-						class="rounded-input border border-accent px-2 py-1 text-xs text-accent"
-					>
-						Untouched, no follow up for {{ followUpDays }} days
-					</span>
-					<span
-						v-if="lead.overdue_tasks"
-						data-testid="sellos-lead-overdue"
-						class="rounded-input bg-accent px-2 py-1 text-xs text-white"
-					>
-						{{ lead.overdue_tasks }} overdue
-					</span>
-				</router-link>
-			</li>
-		</ul>
-		<router-view />
+						<span>
+							<span class="block font-medium text-ink">{{ lead.client_name }}</span>
+							<span
+								class="block text-sm text-ink-muted"
+								data-testid="sellos-lead-source"
+								>{{
+									lead.campaign
+										? `${lead.source} · ${lead.campaign}`
+										: lead.source
+								}}</span
+							>
+						</span>
+						<span class="flex flex-wrap items-center gap-ui-sm">
+							<StatusBadge
+								v-if="lead.stage"
+								:label="lead.stage"
+								tone="neutral"
+								data-testid="sellos-lead-row-stage"
+							/>
+							<StatusBadge
+								v-if="lead.untouched"
+								tone="warning"
+								data-testid="sellos-untouched"
+							>
+								No activity for {{ untouchedDays }} days
+							</StatusBadge>
+							<span
+								v-if="lead.next_follow_up"
+								data-testid="sellos-lead-next-follow-up"
+								:data-state="lead.follow_up_state"
+								class="text-xs text-ink-muted"
+							>
+								Next follow up {{ shortWhen(lead.next_follow_up) }}
+							</span>
+							<StatusBadge
+								v-if="lead.follow_up_state === 'overdue'"
+								tone="danger"
+								data-testid="sellos-follow-up-overdue"
+							>
+								Follow up overdue
+							</StatusBadge>
+							<StatusBadge
+								v-if="lead.follow_up_untouched"
+								tone="warning"
+								data-testid="sellos-follow-up-untouched"
+							>
+								Untouched, no follow up for {{ followUpDays }} days
+							</StatusBadge>
+							<StatusBadge
+								v-if="lead.overdue_tasks"
+								tone="danger"
+								data-testid="sellos-lead-overdue"
+							>
+								{{ lead.overdue_tasks }} overdue
+							</StatusBadge>
+						</span>
+					</router-link>
+				</li>
+			</ul>
+		</ListCard>
 	</div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { CLIENT_TYPES, CONFIGURATIONS, TIMELINES, crmApi, serverMessage } from "../crm/crmApi";
 import { logRequestError } from "../api";
+import AppButton from "../components/AppButton.vue";
+import AppCheckbox from "../components/AppCheckbox.vue";
+import EmptyState from "../components/EmptyState.vue";
+import FilterBar from "../components/FilterBar.vue";
+import FormField from "../components/FormField.vue";
 import LeadBoard from "../components/LeadBoard.vue";
+import ListCard from "../components/ListCard.vue";
+import LoadError from "../components/LoadError.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import StatusBadge from "../components/StatusBadge.vue";
 import { session } from "../session";
+import { shell } from "../shell";
 
 const route = useRoute();
 const router = useRouter();
@@ -550,6 +604,20 @@ const options = reactive({ agents: [], teams: [], consent_statuses: [] });
 const filterSources = ref([]);
 const board = reactive({ columns: [] });
 const view = ref("list");
+
+// A select's first choice is "Any ..." with an empty value, so the filter is off until a choice is made.
+const withAny = (label, items) => [{ label, value: "" }, ...items];
+const followUpOptions = computed(() => [
+	{ label: "Any follow up", value: "" },
+	{ label: "Overdue follow up", value: "overdue" },
+	{ label: "Has an open follow up", value: "open" },
+	{ label: "No open follow up", value: "none" },
+	{ label: `Untouched, no follow up for ${followUpDays.value} days`, value: "untouched" },
+]);
+const sortOptions = [
+	{ label: "Newest change first", value: "" },
+	{ label: "Next follow up first", value: "next_follow_up" },
+];
 
 // The URL keeps the view, the search and every filter, so a filtered view can be bookmarked (SOS-P1-24).
 // The numbers in it are the same names the server takes, and the search is q.
@@ -612,6 +680,12 @@ const allSelected = computed(
 	() => leads.value.length > 0 && selected.value.length === leads.value.length
 );
 
+function toggleSelected(name, on) {
+	selected.value = on
+		? [...selected.value.filter((n) => n !== name), name]
+		: selected.value.filter((n) => n !== name);
+}
+
 function toggleAll(on) {
 	selected.value = on ? leads.value.map((lead) => lead.name) : [];
 }
@@ -649,6 +723,10 @@ const form = reactive({
 	campaign: "",
 });
 const sources = ref([]);
+const sourceOptions = computed(() => [
+	{ label: "Choose a source", value: "" },
+	...sources.value.map((so) => ({ label: so.name, value: so.name })),
+]);
 const canManageSources = ref(false);
 const newSource = ref("");
 
@@ -788,6 +866,17 @@ async function addToExisting(match) {
 
 // Only someone who can make a lead needs the source list. A channel partner's screen never asks for
 // it, so leaving that screen cuts no request off half way.
+// The search dialog in the top bar asks this screen for a search while it is open (shell.searchRequest);
+// from another screen it navigates here with ?q=, which readUrl reads.
+watch(
+	() => shell.searchRequest,
+	(request) => {
+		if (!request) return;
+		search.value = request.q;
+		load();
+	}
+);
+
 onMounted(() => {
 	readUrl();
 	load();

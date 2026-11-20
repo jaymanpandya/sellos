@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import { base, session } from "./session";
 import { inAreas, personaFor, routeArea } from "./personas";
+import { setPageTitle } from "./shell";
 
 const HomePage = () => import("./pages/HomePage.vue");
 const LeadsPage = () => import("./pages/LeadsPage.vue");
@@ -24,99 +25,116 @@ export function createAppRouter() {
 	const router = createRouter({
 		history: createWebHistory(base),
 		routes: [
-			{ path: "/", name: "home", component: HomePage, meta: { area: "home" } },
-			// A lead opens beside the list, so the list stays on screen (SOS-P1-06A).
+			{
+				path: "/",
+				name: "home",
+				component: HomePage,
+				meta: { area: "home", title: "Home" },
+			},
+			// A lead replaces the list (SOS-UI-2B, it used to open under it). The list and the lead are sibling
+			// routes, so the list is not on screen while a lead is; its filters ride along in the query and
+			// "Back to leads" returns to them.
 			{
 				path: "/crm/leads",
 				name: "leads",
 				component: LeadsPage,
-				meta: { area: "crm" },
-				children: [{ path: ":name", name: "lead", component: LeadPage }],
+				meta: { area: "crm", title: "Leads" },
+			},
+			{
+				path: "/crm/leads/:name",
+				name: "lead",
+				component: LeadPage,
+				meta: { area: "crm", title: "Lead", crumb: "Leads" },
 			},
 			{
 				path: "/crm/import",
 				name: "import-leads",
 				component: ImportLeadsPage,
-				meta: { area: "crm" },
+				meta: { area: "crm", title: "Import leads" },
 			},
 			{
 				path: "/crm/queue",
 				name: "call-queue",
 				component: CallQueuePage,
-				meta: { area: "crm" },
+				meta: { area: "crm", title: "Call queue" },
 			},
 			{
 				path: "/crm/visits",
 				name: "site-visits",
 				component: SiteVisitsPage,
-				meta: { area: "crm" },
+				meta: { area: "crm", title: "Site visits" },
 			},
 			{
 				path: "/partner/leads",
 				name: "partner-leads",
 				component: LeadsPage,
-				meta: { area: "partner" },
-				children: [{ path: ":name", name: "partner-lead", component: LeadPage }],
+				meta: { area: "partner", title: "Leads" },
+			},
+			{
+				path: "/partner/leads/:name",
+				name: "partner-lead",
+				component: LeadPage,
+				meta: { area: "partner", title: "Lead", crumb: "Leads" },
 			},
 			{
 				path: "/company/support",
 				name: "support-access",
 				component: SupportPage,
-				meta: { area: "company" },
+				meta: { area: "company", title: "Support access" },
 			},
 			{
 				path: "/company/users",
 				name: "users",
 				component: UsersPage,
-				meta: { area: "company" },
+				meta: { area: "company", title: "Users" },
 			},
 			{
 				path: "/company/telephony",
 				name: "telephony",
 				component: TelephonyPage,
-				meta: { area: "company" },
+				meta: { area: "company", title: "Telephony" },
 			},
 			{
 				path: "/company/call-lists",
 				name: "call-lists",
 				component: CallListsPage,
-				meta: { area: "company" },
+				meta: { area: "company", title: "Call lists" },
 			},
 			{
 				path: "/company/teams",
 				name: "teams",
 				component: TeamsPage,
-				meta: { area: "company" },
+				meta: { area: "company", title: "Teams" },
 			},
 			{
 				path: "/company/assignment",
 				name: "assignment-rules",
 				component: AssignmentRulesPage,
-				meta: { area: "company" },
+				meta: { area: "company", title: "Assignment" },
 			},
 			{
 				path: "/reports/team",
 				name: "team-report",
 				component: TeamReportPage,
-				meta: { area: "reports" },
+				meta: { area: "reports", title: "Team report" },
 			},
 			{
 				path: "/company/setup",
 				name: "setup-wizard",
 				component: SetupWizardPage,
-				meta: { area: "company" },
+				meta: { area: "company", title: "Setup" },
 			},
 			{
 				path: "/control/tenants",
 				name: "tenants",
 				component: TenantsPage,
-				meta: { area: "platform" },
+				meta: { area: "platform", title: "Companies" },
 			},
 			{
 				path: "/no-access",
 				name: "no-access",
 				component: NoAccessPage,
-				meta: { area: "home" },
+				meta: { area: "home", title: "No access" },
 			},
 		],
 	});
@@ -128,6 +146,9 @@ export function createAppRouter() {
 		if (!persona || !inAreas(persona, routeArea(to))) return { name: "no-access" };
 		return true;
 	});
+
+	// The top bar's breadcrumb and the browser tab follow the route's title (a lead page sets its own).
+	router.afterEach((to) => setPageTitle(to.meta.title || ""));
 
 	return router;
 }

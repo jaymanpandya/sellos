@@ -219,3 +219,57 @@ Cypress.Commands.add(
 		if (campaign) cy.getByTestId("lead-form-campaign").type(campaign);
 	}
 );
+
+// SOS-UI-2B: the screens use frappe-ui's Select, which is a button that opens a list, not a native
+// <select>. cy.select() keeps working on both: on a native <select> it is Cypress's own command; on the
+// frappe-ui trigger it opens the list and clicks the option whose text is the label. A value that is not
+// a label (a user's email, a record name) is looked up in the trigger's data-option-values map, which
+// FormField writes ({ value: label }), so a spec may pass either, as it could with a native select.
+Cypress.Commands.overwrite("select", (original, subject, valueOrText, options) => {
+	const $el = Cypress.$(subject);
+	if ($el.is("select")) return original(subject, valueOrText, options);
+	const tidy = (text) => String(text).replace(/\s+/g, " ").trim();
+	// Read on every retry: a list that loads when it opens (the merge choices) fills the map late.
+	const labelNow = () => {
+		try {
+			const map = JSON.parse($el.attr("data-option-values") || "{}");
+			if (map[String(valueOrText)] !== undefined) return tidy(map[String(valueOrText)]);
+		} catch (e) {
+			// no map: the label is the text given
+		}
+		return tidy(valueOrText);
+	};
+	cy.wrap(subject, { log: false }).click();
+	// A click can miss when the list is still settling (it opens with a short animation). If the list is
+	// still open after the click, click again, up to three times.
+	const pick = (attempt) => {
+		cy.get('[role="option"]', { log: false })
+			.filter((_, el) => tidy(el.innerText) === labelNow())
+			.first()
+			.then(($option) => {
+				// Scroll only as far as needed inside the list (the eleven stages do not all fit), so the
+				// list itself does not move, then click where the option is.
+				$option[0].scrollIntoView({ block: "nearest" });
+				cy.wrap($option, { log: false }).click({ scrollBehavior: false });
+			});
+		cy.wait(300, { log: false });
+		cy.get("body", { log: false }).then(($body) => {
+			if ($body.find('[role="listbox"]').length && attempt < 3) pick(attempt + 1);
+		});
+	};
+	pick(1);
+	return cy.wrap(subject, { log: false });
+});
+
+// SOS-UI-2B: the texts of a frappe-ui Select's options, in order. Opens the list, reads it, closes it.
+// cy.optionTexts("lead-stage-select").should("deep.eq", [...]).
+Cypress.Commands.add("optionTexts", (testId) => {
+	cy.getByTestId(testId).click();
+	return cy
+		.get('[role="option"]', { log: false })
+		.then(($options) => [...$options].map((o) => o.innerText.trim()))
+		.then((texts) => {
+			cy.get("body", { log: false }).type("{esc}", { log: false });
+			return cy.wrap(texts, { log: false });
+		});
+});

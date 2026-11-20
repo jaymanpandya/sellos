@@ -1,83 +1,182 @@
-# SellOS UI style guide (SOS-UI-1)
+# SellOS UI style guide (SOS-UI-1, SOS-UI-2B)
 
-SellOS looks like PAMAA. Every value here is read from PAMAA's source
-(`~/iespl-bench/apps/pamaa_erp/frontend`: `src/tokens.js`, `tailwind.config.js`, `src/index.css` and the files in
-`src/components/`), not from notes. PAMAA is read only. The tokens are in `frontend/src/theme/ui-tokens.js` (JS) and
-`frontend/src/theme/ui-tokens.css` (CSS variables, plus Inter). Neither is wired in yet: SOS-UI-2 does that.
+SellOS has PAMAA's layout and components in the **Pandya Realtors palette**. Three sources, each used for one thing:
 
-Where the brief's starting values and PAMAA's source differ, the source is used:
+| What | Source |
+| --- | --- |
+| Colours, radius, spacing | `docs/ui-reference/pandya-website-design-tokens.md` (copied from `~/iespl-baseline/pandya-website-design-tokens.md`) |
+| Fonts and type scale | PAMAA (`~/iespl-bench/apps/pamaa_erp/frontend`, read only): Inter, 16px body, PAMAA's title sizes. **Not** the website's stangith or Figtree, and not its 20px body |
+| Layout and components | PAMAA's shell, sidebar, top bar, page header, cards, badges, toasts, empty and error states (list in "Copied from PAMAA" below) |
 
-| Item | Brief | PAMAA source (used) |
+The tokens are in `frontend/src/theme/ui-tokens.js` (data), `ui-tokens.css` (CSS variables and the self hosted Inter), `tokens.js`
+(Tailwind theme, brand variables) and `frappe-ui-map.js` (frappe-ui's palette). `scripts/contrast.py` computes every ratio below.
+Screenshot of PAMAA's sign in page: `docs/ui-reference/pamaa-sign-in.png`. The other PAMAA
+patterns could not be photographed: that needs a PAMAA login, which this work must not create. Jayman compares the SellOS demo with
+PAMAA at `pamaa-demo.localhost:8020` in their own browser.
+
+## Colours
+
+Primitives (the website's names): teal/900 `#002D2D`, teal/700 `#003C3C`, teal/500 `#004848`, gold/200 `#FFDC9C`, gold/500 `#E4B33C`,
+cream/100 `#FFF2DC`, teal/700 at 25%.
+
+| Use | Token | Value |
 | --- | --- | --- |
-| Indigo accent / button | about #3B3FE0 | `#323CE9`; the button is a gradient `#323CE9` to `#4650EC` |
-| Page background, text | #F4F5F7, #1D222B | same |
-| Sign in card | white, 14px, 1px border, two layer shadow | same: border `#DDE2EC`, shadow `lift` |
-| Sign in input | 8px, about 34px, 14px | 8px radius, **32px** high, **16px** text (frappe-ui text input, size md) |
-| In app field | not given | **10px** radius, **44px** high, 16px text (`.pamaa-control`) |
-| Brand tile | square, company initial | square on sign in (44px, no radius, because frappe's radius scale has no `rounded-xl`); 10px rounded in the sidebar, 9px in the header |
-| Top accent bar | indigo | 3px gradient from `#323CE9` to `#5962ED` (`brand-2`) along the card's top edge |
+| Page background | surface/cream | `#FFF2DC` |
+| Sidebar and top bar | surface/dark | `#003C3C` |
+| Text on the sidebar and top bar | text/onDark | `#FFDC9C` |
+| Current sidebar item | surface/accent, text/accent | `#004848`, `#E4B33C` |
+| Primary button | button/bg, text/button | `#003C3C`, `#E4B33C` |
+| Secondary button | button/ghostBg, button/ghostBorder | teal/700 at 25%, `#002D2D` |
+| Text on light | text/onLight | `#003C3C` |
+| Links | teal/700, underlined | `#003C3C` |
+| Cards and inputs | white, 1px teal/900 line at low opacity | see below |
+| Dividers on dark | white at 15% (a quieter border/onDark: full gold/500 lines are too loud between menu items) | `rgba(255, 255, 255, 0.15)` |
 
-PAMAA's body text is 16px and its "extra small" is 14px (it raises Tailwind's scale). Page background is `#F4F5F7` with a
-faint blue, teal and green radial wash in the corners.
+**Jayman's call (approved 20 Nov 2026):** cards and inputs are white with a thin teal/900 line at low opacity, not a solid border. Cards use
+20% (`--ui-line`), table row lines 10%. The website tokens have no input border. An input's edge must reach 3:1 against white (WCAG 1.4.11), and
+teal/900 at 20% gives 1.5:1, so **inputs use the same teal/900 at 55%** (3.6:1). That 55% is the one number to change if the line should be
+lighter; it lives in `ui-tokens.js` as `lines.field`.
 
-Screenshot: `docs/ui-reference/pamaa-sign-in.png` (PAMAA's sign in page, captured from the running app). The other
-patterns could not be photographed: that needs a PAMAA login, and none was available to me. Each section below names the
-PAMAA file to open instead. Add the screenshots when someone with a PAMAA login can capture them.
+### Added tokens (derived, because the website has none)
 
-## Tokens
+| Token | Value | Why |
+| --- | --- | --- |
+| text body | `#004848` (teal/500) | labels, secondary text |
+| text muted | `#3F6767` | small print, table headings, breadcrumb; 5.7 on cream, 6.3 on white |
+| faint | `#FFF8EE` | cream at 50% over white |
+| subtle | `#F0E7D2` | teal/700 at 6% over cream (locked areas) |
+| brand soft | `#EBEFEF` | teal/700 at 8% over white (hover, selected) |
+| tag background | `#E1E9E8` | small tags, the neutral badge |
 
-* **Font:** Inter 400, 500, 600, 700 (`ui-tokens.css` loads it from Google Fonts, as PAMAA does). Fallbacks: InterVar, system-ui, Segoe UI, sans-serif.
-* **Text colours:** ink `#1D222B` (text), body `#3F4A5C` (labels, secondary), muted `#525F78` (small print, table headings, crumbs).
-* **Borders:** line `#DDE2EC` (cards, header), line-soft `#EBEEF4` (table row lines), field `#8A96AD` (input borders).
-* **Surfaces:** page `#F4F5F7`, white cards, faint `#F8F9FB` (quiet boxes), subtle `#EEF1F6` (locked areas).
-* **Brand:** `#323CE9`; second `#5962ED`; soft tint `#F0F1FE` (hover, selected); link `#323CE9`; tag background `#E4E7FD`.
-* **Status tones** (ink / background / line): success `#08724E / #ECFAF5 / #9FE5CD`; warn `#8A4B00 / #FEF8ED / #F5D48A`;
-  danger `#BE3910 / #FEF0EC / #F8B5A1`; neutral `#3F4A5C / #F0F3F9 / #D5DBE6`; info `#1E248B / #F3F4FF / #ABB1F6`.
-  Required mark and error text: `#B42318`.
-* **Type scale:** title 24px/1.25, 600; heading 13px, 600, uppercase, 0.06em tracking; small 14px; body 16px; stat number 24px, 600, tabular figures. Line height 1.5.
-* **Spacing:** Tailwind's 4px scale. Page padding 16px (24px from 640px wide), top 20px. Card padding 16px (20px from 640px; 32px on sign in). Form grid gaps 20px across, 16px down. Controls at least 44px tall and wide.
-* **Radius:** card 14px, control 10px, sign in input 8px, pill 9999px.
-* **Shadows:** card `0 1px 2px rgba(17,24,39,.04), 0 6px 20px -8px rgba(17,24,39,.10)`; lift `0 2px 4px rgba(17,24,39,.05), 0 14px 32px -12px rgba(17,24,39,.18)` (sign in card, menus, toasts); button `0 1px 2px rgba(30,36,139,.25), 0 4px 12px -4px rgba(50,60,233,.4)`.
-* **Motion:** 120, 180, 250 ms, ease `cubic-bezier(0.16, 1, 0.3, 1)`. All of it is switched off under `prefers-reduced-motion`.
-* **Icons:** Lucide.
+### Status colours (approved: success, warning, danger, info)
+
+Each badge shows a word and an icon as well as a colour. Never colour alone.
+
+| Tone | Ink | Background | Line | Icon |
+| --- | --- | --- | --- | --- |
+| success | `#0B5D3B` | `#DDEFDF` | `#8FC4A0` | circle-check |
+| warning | `#7A4A00` | `#FFEBC0` | `#E4B33C` | triangle-alert |
+| danger | `#A4281B` | `#FBE1DC` | `#E0958B` | circle-alert |
+| info | `#1B5A78` | `#DCEAF2` | `#8DB6CC` | circle-dot |
+| neutral (not a status; a badge with no tone) | `#003C3C` | `#E1E9E8` | teal/900 at 20% | circle-dashed |
+
+Rule from the website: **never gold/500 text on gold/200** (1.5:1). gold/500 text is only for teal surfaces.
+
+### Contrast, every pairing
+
+Text needs 4.5:1, an input edge 3:1, decorative lines nothing. `FAIL` on the NEVER row is the point of that row.
+
+| Pairing | Foreground | Background | Ratio | Needs | Result |
+| --- | --- | --- | --- | --- | --- |
+| text/onDark on surface/dark (sidebar, top bar) | #FFDC9C | #003C3C | 9.3 | 4.5 | pass |
+| text/accent on surface/dark | #E4B33C | #003C3C | 6.3 | 4.5 | pass |
+| text/accent on surface/accent (current sidebar item) | #E4B33C | #004848 | 5.4 | 4.5 | pass |
+| text/onDark on surface/accent | #FFDC9C | #004848 | 7.9 | 4.5 | pass |
+| text/onDark on sidebar hover (surface/accent at 50%) | #FFDC9C | #004242 | 8.6 | 4.5 | pass |
+| text/onLight on surface/cream (page) | #003C3C | #FFF2DC | 11.1 | 4.5 | pass |
+| text/onLight on white (cards, inputs) | #003C3C | #FFFFFF | 12.3 | 4.5 | pass |
+| text/onLight on surface/gold | #003C3C | #FFDC9C | 9.3 | 4.5 | pass |
+| text/button on button/bg (primary button) | #E4B33C | #003C3C | 6.3 | 4.5 | pass |
+| text/onLight on button/ghostBg over white (secondary button) | #003C3C | #BFCECE | 7.6 | 4.5 | pass |
+| text/onLight on button/ghostBg over cream | #003C3C | #BFC4B4 | 6.9 | 4.5 | pass |
+| link teal/700 on cream | #003C3C | #FFF2DC | 11.1 | 4.5 | pass |
+| link teal/700 on white | #003C3C | #FFFFFF | 12.3 | 4.5 | pass |
+| input border teal/900 at 55% on white (field) | #738C8C | #FFFFFF | 3.6 | 3.0 | pass |
+| card border teal/900 at 20% on cream (decorative) | #CCCBB9 | #FFF2DC | 1.5 | 1.0 | pass |
+| NEVER: text/accent gold/500 on surface/gold gold/200 | #E4B33C | #FFDC9C | 1.5 | 4.5 | FAIL |
+| success ink on success background (badge) | #0B5D3B | #DDEFDF | 6.6 | 4.5 | pass |
+| success ink on white | #0B5D3B | #FFFFFF | 7.9 | 4.5 | pass |
+| success ink on cream | #0B5D3B | #FFF2DC | 7.2 | 4.5 | pass |
+| success line on success background (border, decorative) | #8FC4A0 | #DDEFDF | 1.7 | 1.0 | pass |
+| warning ink on warning background (badge) | #7A4A00 | #FFEBC0 | 6.4 | 4.5 | pass |
+| warning ink on white | #7A4A00 | #FFFFFF | 7.5 | 4.5 | pass |
+| warning ink on cream | #7A4A00 | #FFF2DC | 6.8 | 4.5 | pass |
+| warning line on warning background (border, decorative) | #E4B33C | #FFEBC0 | 1.7 | 1.0 | pass |
+| danger ink on danger background (badge) | #A4281B | #FBE1DC | 5.8 | 4.5 | pass |
+| danger ink on white | #A4281B | #FFFFFF | 7.2 | 4.5 | pass |
+| danger ink on cream | #A4281B | #FFF2DC | 6.6 | 4.5 | pass |
+| danger line on danger background (border, decorative) | #E0958B | #FBE1DC | 1.9 | 1.0 | pass |
+| info ink on info background (badge) | #1B5A78 | #DCEAF2 | 6.1 | 4.5 | pass |
+| info ink on white | #1B5A78 | #FFFFFF | 7.6 | 4.5 | pass |
+| info ink on cream | #1B5A78 | #FFF2DC | 6.8 | 4.5 | pass |
+| info line on info background (border, decorative) | #8DB6CC | #DCEAF2 | 1.8 | 1.0 | pass |
+
+## Type, spacing, radius, shadow
+
+* **Font:** Inter 400, 500, 600, 700, **self hosted** as WOFF2 (`frontend/src/theme/fonts/`, from Frappe's copy, SIL Open Font License 1.1) with
+  `font-display: swap`. No request goes to Google Fonts.
+* **Type scale (PAMAA's):** title 24px/1.25, 600; card heading 13px, 600, uppercase, 0.06em tracking; small 14px; body 16px; stat number 24px, 600, tabular figures.
+* **Spacing (the website's):** xs 4, sm 8, md 14, lg 24, xl 48 (`gap-ui-md`, `p-ui-lg`). Card padding 14px, 24px from 640px. Controls are at least 44px tall and wide (PAMAA's touch size). The website's page margin of 69px is for a 1728px canvas; the app uses the scale.
+* **Radius (the website's):** 8px for buttons and inputs (`rounded-input`), 16px for cards, menus and dialogs (`rounded-card`), full for chips and badges.
+* **Shadows:** PAMAA's soft two layer card and lift shadows, tinted teal/900 instead of grey. No button shadow, no gradients: the website keeps gradients to photo shapes.
+* **Motion:** 120, 180, 250 ms, off under `prefers-reduced-motion`. **Icons:** Lucide.
+
+## Company brand colour
+
+`CompanyBrand` and `applyCompanyTheme` (session.js) keep the per company override. The Pandya palette is the default. A company's `brand_color`
+replaces the sidebar and top bar band and the primary button (`--sos-brand`); the current item and button hover use a lighter mix (`--sos-brand-mid`);
+text on the band switches to white or near black by luminance so it stays readable on any colour (`--sos-on-brand`, `--sos-on-brand-accent`).
+The rest of the palette (cream page, cards, status colours) does not change.
+
+## frappe-ui
+
+frappe-ui takes its colours from the Tailwind config. `frontend/tailwind.config.js` remaps them: `frappe-ui-map.js` replaces its semantic
+variables (`--surface-gray-7` is button/bg, `--text-ink-white` is text/button, `--outline-gray-2` is the input line, the green, amber, red and
+blue badge variables are the four status tones) and its static ramps (gray, blue, green, red, orange, amber, cyan). A frappe-ui Button, Input,
+Select, Badge, Dialog or Toast picks the Pandya palette up with no extra class. Components in `frontend/src/components` wrap frappe-ui:
+`AppButton` (Button), `FormField` (FormControl, always with a label), `StatusBadge` (Badge). Dialogs use frappe-ui's `Dialog` directly.
+
+frappe-ui's Select is a button that opens a list, not a native `<select>`. `cy.select()` is overwritten in `cypress/support/commands.js` to click the trigger and the option, so specs read the same.
+
+## Copied from PAMAA
+
+PAMAA imports only `TextInput` and `Password` from frappe-ui; its other pieces are plain HTML with its own Tailwind classes. SellOS builds the same
+pieces on frappe-ui components. The decision for each, with the file in `frontend/src/components` (or `src`):
+
+| PAMAA piece | Decision | SellOS file | Why |
+| --- | --- | --- | --- |
+| Shell and layout (`AppShell.vue`) | adapt | `AppShell.vue`, `viewport.js` (copied as is), `shell.js` | Same frame. The sidebar and bottom bar switch by CSS at 1024px so both stay in the page; no page fade, no area colours |
+| Sidebar (`AppSidebar.vue`) | adapt | `AppSidebar.vue` | Menu comes from `personas.js`, grouped by area; sections stay open (the longest menu has 11 places); the highlight does not slide; dark surface |
+| Bottom bar and More drawer | adapt | `BottomBar.vue` | Four places and More; the rest in the drawer |
+| Top bar with breadcrumbs (`AppTopBar.vue`) | adapt | `AppTopBar.vue` | Breadcrumb from the route title, search, bell, user menu. Role switch, offline badge and waiting-to-send are left out (SellOS has none of them) |
+| Search (`GlobalSearch.vue`) | adapt | `SearchDialog.vue` | PAMAA searches many record types; SellOS has one searchable list, so a frappe-ui Dialog sends the text to Leads as `?q=` |
+| Help (`HelpPanel.vue`) | **skip** | none | It shows PAMAA's own guide content from `help.js`; SellOS has no help content. Add one when there is something to say |
+| Page header (`ListHeader.vue`) | copy | `PageHeader.vue` | Title, one line, actions on the right |
+| Stat card (`StatCard.vue`) | adapt | `StatCard.vue` | Without the count-up and area colours. Not used by a screen yet |
+| List card (`.pamaa-card` + `DataTable.vue`) | adapt | `ListCard.vue` | PAMAA has no list card component. The Leads rows keep their links and test ids, so PAMAA's table is not copied; phone card rows follow later with SOS-UI-3 |
+| Filter bar | **new** | `FilterBar.vue` | PAMAA has none; its screens place inputs by hand. A card, a grid of labelled fields, Apply and Clear |
+| Form field (`AccessField.vue`) | adapt | `FormField.vue` | On frappe-ui `FormControl`; label always visible, red `*`, hint |
+| Badge (`StatusPill.vue`) | adapt | `StatusBadge.vue` | On frappe-ui `Badge`, word and icon, four status tones plus neutral; no flash |
+| Button (`.pamaa-button`) | adapt | `AppButton.vue` | On frappe-ui `Button`: primary, secondary, danger |
+| (checkbox) | **new** | `AppCheckbox.vue` | frappe-ui's Checkbox puts every attribute on its wrapper and its input, so a test id would exist twice; this wrapper keeps it on the input only |
+| Dialog | **not in PAMAA** | frappe-ui `Dialog` | Used directly (search) |
+| Toast (`ToastHost.vue`) | adapt | `ToastHost.vue`, `shell.js` | Same host and `showToast`; tones success, warning, danger, info |
+| Empty state (`EmptyState.vue`) | copy | `EmptyState.vue` | |
+| Load error, loading skeleton | copy | `LoadError.vue`, `LoadingSkeleton.vue` | Rows only |
 
 ## Patterns
 
-**Sign in** (`pages/app/Login.vue`, `components/PageCard.vue`, `BrandMark.vue`). Centred card, `max-w-md` (448px), 12vh from the top, white, 14px radius, 1px line border, `lift` shadow, 32px padding, a 3px gradient bar on its top edge. Brand tile 44px, brand gradient, white initial 18px/600, `shadow button`, then the name 18px/600 with 0.08em tracking and the company line 16px muted. Title 24px/600, text muted. Labels 16px body colour with a red `*` when required. Full width solid button.
+**Shell.** Sidebar 240px from 1024px wide, surface/dark, text/onDark, items 44px tall with an 8px radius, the current one on surface/accent in text/accent, sign out at the foot. Top bar at least 61px, surface/dark, breadcrumb on the left, search, bell and user menu on the right. Below 1024px: a bottom bar (four places and More) and the brand in the top bar. Main has 14px side padding, 24px from 640px.
 
-**Shell** (`components/AppShell.vue`). Computer: fixed sidebar 240px on the left with a right border, header on top, main with 16/24px side padding. Phone and tablet: no sidebar; a bottom bar (max five places plus More, items 56px tall, active item in the brand colour with a soft round icon background) and a More drawer that rises from the bottom.
+**Page header.** Title 24px/600, one line of text, actions on the right. One primary button per screen.
 
-**Sidebar** (`AppSidebar.vue`). White at 80% with a backdrop blur. Logo row 61px tall: 36px tile (10px radius, brand gradient, white initial 14px/600, `shadow button`) and the name 16px/600, 0.08em tracking. Sections are collapsible: a 24px round soft chip with an icon, the section name in the heading style (13px uppercase, muted), a chevron. Items are 44px tall, 10px radius, 16px body colour, hover on the page colour. The open item is white, semibold, on a brand gradient highlight that slides between items.
+**Cards.** White, 16px radius, 1px teal/900 line at 20%, card shadow, an uppercase 13px heading. **Tables and lists:** inside a card, row lines at 10%, row hover on brand soft, shimmer rows while loading.
 
-**Header** (`AppTopBar.vue`). Sticky, at least 61px, white at 85% with blur, 1px bottom line. Left: breadcrumb 16px muted with the current page in bold ink. Right: search, help, status chips, then the user button (36px round soft avatar with initials, name from 768px) which opens a menu: 256px, 14px radius, `lift` shadow, 44px rows with a muted icon.
+**Forms.** Label above every field (16px, teal/500, red `*` if required), 44px field, 8px radius, 1px line at 55%, focus ring in the brand colour. Hints and errors 14px under the field; errors in the danger ink. One column on a phone, two from 640px, four from 1280px in a filter bar.
 
-**Page header** (`ListHeader.vue`). Title 24px/600, one line of body-colour text under it (16px, max 48rem), actions on the right. A 44px round area chip with an icon sits to the left from 640px. The main action is a solid button.
+**Buttons.** 44px, 8px radius, 16px/500. Primary: button/bg with text/button. Secondary: button/ghostBg with a button/ghostBorder line. Disabled 50%.
 
-**Cards** (`.pamaa-card`). White, 14px radius, 1px line border, `card` shadow. A card heading is the uppercase muted style. Stat cards add the 3px top bar, a 32px chip, a 24px number and a 14px muted note, and lift 2px on hover (mouse only). Never put a gradient behind a table or a long form.
+**Badges, empty and error states, toasts.** As PAMAA, in the palette above.
 
-**Tables** (`DataTable.vue`). Inside a card. Header cells 14px, 600, uppercase, 0.06em, muted, with a 1px line under them. Body cells 16px, padding 8px by 10px, a 1px line-soft under each row, one line unless the text is over 40 characters. A clickable row gets the brand soft tint on hover and focus. The table scrolls inside its card. On a phone each row becomes a card: a two column list of small muted label over value. While loading, show shimmer rows, never the bare word.
+## Checklist for a new screen
 
-**Forms** (`FormSection.vue`, `AccessField.vue`). A section is a card with an uppercase heading, an optional 16px body line, and a one column grid that goes to two or three columns from 768px. Label above the field, 16px body colour, red `*` when required. Field: white, 10px radius, 1px `#8A96AD` border, 16px text, 44px tall, 12px side padding. Focus: brand border and a 2px brand ring at 40%. A wrong field turns its border red. Hints and errors are 14px under the field (muted, or `#B42318` as an alert). Checkboxes are 20px.
+1. Colours, radius, spacing and fonts come from the tokens. No colour, size or font written by hand.
+2. It sits in the shell and starts with a `PageHeader`.
+3. Content is in `ListCard` or `.ui-card`.
+4. Every control is a frappe-ui component (`AppButton`, `FormField`, `StatusBadge`, `Dialog`); every field has a label.
+5. A list with no rows shows `EmptyState`, a failed load `LoadError` with Try again, a save or failure a toast.
+6. Money shows in rupees with Indian grouping (`₹50,00,000`).
+7. Keep every `data-testid`.
 
-**Buttons** (`.pamaa-button`, `.pamaa-button-solid`). 44px tall, 10px radius, 16px/500, 18px side padding, 8px gap for an icon. Outlined: white, brand text, brand border at 35%, soft tint on hover. Solid (one per screen, the main action): brand gradient, white text, transparent border, `button` shadow, brighter on hover. Disabled: 50% opacity. They squeeze to 94% when pressed. Focus ring as for fields.
-
-**Status badges** (`StatusPill.vue`). Pill, 1px line in the tone's line colour, tone background, tone ink, 14px/500, `2px 10px` padding, a 14px icon then the word. Always the word and the icon, never colour alone. Tones: success (on track, done), warn (at risk), danger (late), info (in progress), neutral (not started).
-
-**Empty state** (`EmptyState.vue`). A 14px radius box with a dashed border (brand at 25%), the `grad-empty` background, centred, 32px vertical padding: a 44px round chip with an icon, a semibold title, a 16px muted line (max 28rem), then an optional action.
-
-**Error and load error** (`LoadError.vue`, `ErrorPage.vue`). A load error is a warn tone box: 14px radius, warn line and background, 16px warn ink text, a warn icon, and a "Try again" link under the message. A whole page error uses the sign in card with a solid "Try again" button. Errors say what happened in plain words and offer the next step.
-
-**Toasts** (`ToastHost.vue`). Bottom centre on a phone, bottom right from 640px; white, 14px radius, 1px border in the tone's line colour, `lift` shadow, 44px tall, max 384px, the tone icon (a drawn check for success), ink text, and a 44px close button. They slide up in 220ms and leave to the side.
-
-## How a new screen must look (checklist)
-
-1. Colours, radii, shadows and fonts come from `ui-tokens.js` / `ui-tokens.css`. No colour, size or font written by hand.
-2. Page background is the page colour, text is ink, font is Inter. Body text is 16px; small print is 14px muted.
-3. The screen sits in the shell: sidebar on a computer, bottom bar on a phone, header with breadcrumb. It starts with a page header: title 24px/600, one line of text, the main action on the right.
-4. Content is in white cards: 14px radius, 1px line border, `card` shadow, 16 to 20px padding, an uppercase heading.
-5. Lists are tables in a card with the PAMAA header style, line-soft row lines, and card rows on a phone. Loading shows shimmer rows.
-6. Forms: label above, 44px fields with 10px radius, red `*` for required, hints and errors in 14px under the field, one column on a phone.
-7. One solid brand button per screen (the main action); everything else outlined. Every control is at least 44px.
-8. Status is a pill with a word, an icon and a tone from the five tones. Never colour alone.
-9. A list with no rows shows the empty state with a next step. A failed load shows the load error with "Try again". Saved or failed actions show a toast.
-10. Keep every existing `data-testid`. No gradients behind tables or forms. Motion is short and off under reduced motion.
+Screens not yet moved (everything except Leads and the lead page) still use the older `.btn`, `.field` and `.ui-card` classes. Those now take the Pandya
+colours from the tokens, and the old `accent` colour is the danger red until SOS-UI-3 moves them.

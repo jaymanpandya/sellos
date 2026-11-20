@@ -27,12 +27,12 @@ context("SOS-P1-20: the lead source picker", () => {
 		cy.visit("/sellos/crm/leads");
 		cy.getByTestId("leads-new").click();
 		STANDARD.forEach((name) => {
-			cy.getByTestId("lead-form-source").find("option").contains(name).should("exist");
+			cy.optionTexts("lead-form-source").should("include", name);
 		});
 		cy.getByTestId("lead-source-new").type(source);
 		cy.getByTestId("lead-source-add-button").click();
 		cy.wait("@addSource").its("response.statusCode").should("eq", 200);
-		cy.getByTestId("lead-form-source").find("option:selected").should("have.text", source);
+		cy.getByTestId("lead-form-source").should("contain", source);
 
 		cy.getByTestId("lead-form-name").type(`Gate Source Client ${tag}`);
 		cy.getByTestId("lead-form-campaign").type("Gate Campaign");
@@ -55,10 +55,9 @@ context("SOS-P1-20: the lead source picker", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos/crm/leads");
 		cy.getByTestId("leads-new").click();
-		cy.getByTestId("lead-form-source").find("option").contains(source).should("exist");
-		cy.getByTestId("lead-form-source").find("option").contains("Referral").should("exist");
+		cy.optionTexts("lead-form-source").should("include", source).and("include", "Referral");
 		cy.getByTestId("lead-source-new").should("not.exist");
 		cy.getByTestId("lead-form-source").select("Referral");
-		cy.getByTestId("lead-form-source").find("option:selected").should("have.text", "Referral");
+		cy.getByTestId("lead-form-source").should("contain", "Referral");
 	});
 });

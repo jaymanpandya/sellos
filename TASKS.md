@@ -444,6 +444,25 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Dependencies:** SOS-UI-1
 - **Status:** Complete
 
+### SOS-UI-2B: Move SellOS to the Pandya palette and PAMAA's components, starting with Leads
+- **Epic:** Web app, roles and security
+- **Description:** As a user, I want SellOS to use the Pandya Realtors colours with PAMAA's layout and components, so that the product looks like one family and its controls are frappe-ui components. Replace the indigo tokens with the Pandya website tokens (`docs/ui-reference/pandya-website-design-tokens.md`), keeping PAMAA's Inter font and type scale. Copy PAMAA's shell, sidebar, top bar, page header, stat card, list card, filter bar, form field, badge, button, dialog, toast and empty state into SellOS (read only from PAMAA) and adapt names, routes, API calls and the menu. Convert the Leads list and the lead page first, using frappe-ui components for every control. Other pages stay as they are until SOS-UI-3.
+- **Acceptance Criteria:**
+  - `ui-tokens.js`, `ui-tokens.css`, `tokens.js` and `docs/UI_STYLE.md` use the Pandya palette, radius 8 (buttons, inputs) and 16 (cards), with every colour pairing's contrast ratio recorded; success, warning, danger and info tokens are listed.
+  - frappe-ui's palette is remapped in the Tailwind config; CompanyBrand's per company colour override still works, with the Pandya palette as the default.
+  - Inter is self hosted as WOFF2 with `font-display: swap`; no Google Fonts call.
+  - Leads and the lead page use frappe-ui components for every control, every field has a label, budgets show as rupees, and the lead detail replaces the list.
+  - The "You do not have permission to do this" message under Assigned agent does not show for a Company Admin.
+- **Test Criteria:** Existing Leads and lead Cypress specs run unchanged; a person compares the demo with PAMAA.
+- **Notes:** Added on Jayman's instruction (20 November 2026). Claude Code, interactive, not the loop. Cards and inputs use a thin teal/900 line at low opacity (Jayman's decision); links are teal/700 underlined. A person marks it Complete after comparing the demo with PAMAA at pamaa-demo.localhost:8020. Then SOS-UI-3 is rewritten as "move every other page to these components the same way". Waiting, so the loop does not pick it.
+- **Owner:** Claude Code, interactive
+- **Priority:** P2
+- **Launch:** Dec 20
+- **Browser spec:** required
+- **Story Points:** 8
+- **Dependencies:** SOS-UI-2
+- **Status:** Waiting
+
 ### SOS-UI-3: Restyle every existing screen
 - **Epic:** Web app, roles and security
 - **Description:** As a user, I want every screen to match the new style, so that the product is consistent. Restyle Home, Leads and the lead page, Support access, Setup, Telephony, Companies and the partner view to `docs/UI_STYLE.md`. Add a screenshot of each screen to `docs/regression` for review.

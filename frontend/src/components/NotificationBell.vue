@@ -2,7 +2,7 @@
 	<div v-if="show" ref="root" class="relative" data-testid="sellos-notifications">
 		<button
 			type="button"
-			class="relative rounded-input px-3 py-2 text-sm text-ink hover:bg-brand-light"
+			class="relative flex min-h-touch min-w-touch items-center justify-center rounded-badge px-2 text-sm text-on-brand hover:bg-white/10"
 			aria-label="Notifications"
 			:aria-expanded="open"
 			data-testid="sellos-notification-bell"
@@ -21,19 +21,17 @@
 				<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
 				<path d="M13.7 21a2 2 0 0 1-3.4 0" />
 			</svg>
-			<span class="ml-2 hidden align-middle sm:inline" aria-hidden="true"
-				>Notifications</span
-			>
+
 			<span
 				v-if="state.unread > 0"
-				class="ml-2 rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-ink"
+				class="ml-1 rounded-badge bg-on-brand-accent px-2 py-0.5 text-xs font-semibold text-brand"
 				data-testid="sellos-notification-count"
 				>{{ state.unread }}</span
 			>
 		</button>
 		<div
 			v-if="open"
-			class="fixed inset-x-2 top-14 z-30 max-h-[70vh] overflow-y-auto rounded-input border border-line bg-surface shadow-lg sm:absolute sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 sm:w-80"
+			class="fixed inset-x-2 top-14 z-30 max-h-[70vh] overflow-y-auto rounded-card border border-line bg-surface text-ink shadow-lift sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80"
 			role="dialog"
 			aria-label="Notifications"
 			data-testid="sellos-notification-panel"

@@ -88,7 +88,7 @@
 							<span
 								v-if="lead.untouched"
 								data-testid="sellos-untouched"
-								class="rounded-input bg-accent px-2 py-0.5 text-xs text-white"
+								class="rounded-badge border border-tone-warning-line bg-tone-warning-bg px-2 py-0.5 text-xs text-tone-warning"
 							>
 								No activity for {{ untouchedDays }} days
 							</span>

@@ -50,11 +50,7 @@ context("SOS-P1-07: the buyer pipeline", () => {
 
 	it("lists the eleven stages in order", () => {
 		open("Consented");
-		cy.getByTestId("lead-stage-select")
-			.find("option")
-			.then(($options) => {
-				expect([...$options].map((o) => o.textContent.trim())).to.deep.eq(STAGES);
-			});
+		cy.optionTexts("lead-stage-select").should("deep.eq", STAGES);
 	});
 
 	it("moves a Consented lead to Contacted with no warning, and logs the move", () => {

@@ -10,6 +10,8 @@ import {
 	spacing,
 	typography,
 } from "./src/theme/tokens.js";
+import { frappePalette, frappeVariables } from "./src/theme/frappe-ui-map.js";
+import { gradients } from "./src/theme/ui-tokens.js";
 
 export default {
 	presets: [frappeUIPreset],
@@ -20,17 +22,20 @@ export default {
 	],
 	theme: {
 		extend: {
-			colors,
+			// frappe-ui's own palette, remapped to the SellOS tokens (src/theme/frappe-ui-map.js).
+			colors: { ...frappePalette, ...colors },
 			fontFamily,
 			fontSize: typography,
 			spacing,
 			borderRadius: radius,
 			boxShadow,
+			backgroundImage: gradients,
 		},
 	},
 	plugins: [
 		plugin(({ addBase }) => {
-			addBase({ ":root": cssVariables() });
+			// After the frappe-ui preset's own :root block, so these win.
+			addBase({ ":root": { ...frappeVariables, ...cssVariables() } });
 		}),
 	],
 };

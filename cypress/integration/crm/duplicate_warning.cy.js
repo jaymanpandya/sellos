@@ -69,13 +69,19 @@ context("SOS-P1-16: duplicates", () => {
 	it("lets a Company Admin merge two clients and gives an agent no merge", () => {
 		cy.signInFresh("company_admin");
 		cy.intercept("**/api/method/sellos.crm.api.merge_clients*").as("merge");
+		cy.intercept("**/api/method/sellos.crm.api.list_clients*").as("clients");
 		cy.visit(`/sellos/crm/leads/${seeded.twin_a_lead}`);
 		cy.getByTestId("merge").should("be.visible");
 		cy.getByTestId("merge-select").select(seeded.twin_b_client);
 		cy.getByTestId("merge-save").click();
 		cy.wait("@merge").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("merge-done").should("contain", "1 lead");
-		cy.getByTestId("merge-select").should("not.contain", seeded.twin_b_name);
+		// The screen asks for the client list when it opens and again after a merge; let both finish.
+		cy.wait("@clients");
+		cy.wait("@clients");
+		cy.optionTexts("merge-select").then((texts) => {
+			expect(texts.join("|")).not.to.contain(seeded.twin_b_name);
+		});
 		cy.visit(`/sellos/crm/leads/${seeded.twin_b_lead}`);
 		cy.getByTestId("lead-name").should("contain", seeded.twin_a_name);
 

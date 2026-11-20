@@ -89,14 +89,25 @@ start_server() {
   return 1
 }
 
+# A running server keeps the roles and permissions it cached before the seed changed them (found 20 Nov 2026:
+# a Company Admin got "You do not have permission to do this" under Assigned agent, from a server started
+# 18 Nov, while the same calls passed in a fresh process). Seeding runs in another process, so restart the
+# server after it, so what the browser sees is what the seed wrote.
+restart_if_running() {
+  [ "$WRITE_ONLY" = "1" ] && return 0
+  if loaded; then launchctl kickstart -k "$DOMAIN/$LABEL" >/dev/null 2>&1 || true; fi
+}
+
 case "$1" in
   seed)
     demo seed
+    restart_if_running
     start_server
     echo "Sign ins: docs/DEMO.md"
     ;;
   reset)
     demo reset
+    restart_if_running
     start_server
     echo "Sign ins: docs/DEMO.md"
     ;;

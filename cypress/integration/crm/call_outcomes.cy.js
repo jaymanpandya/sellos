@@ -35,20 +35,18 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 
 	it("lists the seven outcomes the Company Admin keeps", () => {
 		open("Consented");
-		cy.getByTestId("lead-call-outcome")
-			.find("option")
-			.then(($options) => {
-				expect([...$options].map((o) => o.textContent.trim())).to.deep.eq([
-					"Outcome",
-					"Interested",
-					"Call back later",
-					"Not reachable",
-					"Busy",
-					"Wrong number",
-					"Not interested",
-					"Site visit booked",
-				]);
-			});
+		cy.optionTexts("lead-call-outcome").then((texts) => {
+			expect(texts).to.deep.eq([
+				"Outcome",
+				"Interested",
+				"Call back later",
+				"Not reachable",
+				"Busy",
+				"Wrong number",
+				"Not interested",
+				"Site visit booked",
+			]);
+		});
 	});
 
 	["Consented", "Unknown", "Opted out", "Registered DND"].forEach((status) => {
@@ -95,18 +93,14 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 		cy.getByTestId("lead-call-suggestion")
 			.should("be.visible")
 			.and("contain", "Suggested stage: Site visit booked");
-		cy.getByTestId("lead-call-stage")
-			.find("option:selected")
-			.should("contain", "Keep the stage");
+		cy.getByTestId("lead-call-stage").should("contain", "Keep the stage");
 		logCall();
 		// Offered, not forced: the lead is still on New.
 		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "New");
 
 		cy.getByTestId("lead-call-outcome").select("Site visit booked");
 		cy.getByTestId("lead-call-suggestion").click();
-		cy.getByTestId("lead-call-stage")
-			.find("option:selected")
-			.should("contain", "Site visit booked");
+		cy.getByTestId("lead-call-stage").should("contain", "Site visit booked");
 		logCall();
 		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Site visit booked");
 
@@ -121,7 +115,12 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 		open("Registered DND");
 		cy.getByTestId("lead-call-outcome").select("Not interested");
 		cy.getByTestId("lead-call-suggestion").should("contain", "Closed lost").click();
-		cy.getByTestId("lead-call-lost-reason").should("be.visible").and("have.attr", "required");
+		// A frappe-ui select has no native required attribute; the field's label carries the red star.
+		cy.getByTestId("lead-call-lost-reason").should("be.visible");
+		cy.getByTestId("lead-call-lost-reason")
+			.parents("div.space-y-1\\.5")
+			.first()
+			.should("contain", "*");
 		cy.getByTestId("lead-call-lost-reason").select("Bought elsewhere");
 		logCall();
 		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Closed lost");
@@ -141,7 +140,7 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 		cy.getByTestId("lead-stage-select").should("have.value", "New");
 
 		cy.getByTestId("lead-stage-select").select("Closed lost");
-		cy.getByTestId("lead-lost-reason").find("option").should("contain", "Budget too low");
+		cy.optionTexts("lead-lost-reason").should("include", "Budget too low");
 		cy.getByTestId("lead-lost-reason").select("Budget too low");
 		cy.getByTestId("lead-lost-save").click();
 		cy.wait("@move").its("response.statusCode").should("eq", 200);
@@ -176,12 +175,12 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 
 		cy.signInFresh("agent");
 		cy.visit(`/sellos/crm/leads/${leads.Unknown}`);
-		cy.getByTestId("lead-call-outcome").find("option").contains(outcome).should("exist");
+		cy.optionTexts("lead-call-outcome").should("include", outcome);
 		cy.getByTestId("lead-call-outcome").select(outcome);
 		cy.getByTestId("lead-call-follow-up").should("be.visible");
 		cy.getByTestId("lead-call-suggestion").should("contain", "Contacted");
 		cy.getByTestId("lead-stage-select").select("Closed lost");
-		cy.getByTestId("lead-lost-reason").find("option").contains(reason).should("exist");
+		cy.optionTexts("lead-lost-reason").should("include", reason);
 	});
 
 	it("an agent cannot open the call lists", () => {

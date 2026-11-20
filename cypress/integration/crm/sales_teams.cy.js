@@ -40,11 +40,10 @@ context("SOS-P1-18: sales teams and the Sales Manager", () => {
 				seed.phone_forms.forEach((form) => expect(text).not.to.contain(form));
 			});
 		cy.getByTestId("reassign-select").should("be.visible");
-		cy.getByTestId("reassign-select").contains("option", seed.agent_name);
-		cy.getByTestId("reassign-select")
-			.contains("option", seed.other_agent_name)
-			.should("not.exist");
-		cy.getByTestId("reassign-select").contains("option", seed.spare_name).should("not.exist");
+		cy.optionTexts("reassign-select").should("include", seed.agent_name);
+		cy.optionTexts("reassign-select")
+			.should("not.include", seed.other_agent_name)
+			.and("not.include", seed.spare_name);
 		cy.getByTestId("merge").should("not.exist");
 	});
 
