@@ -32,15 +32,11 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 
 	it("offers the three roles and never the Platform Admin", () => {
 		open();
-		cy.getByTestId("users-role")
-			.find("option")
-			.then(($options) => {
-				expect([...$options].map((o) => o.textContent.trim())).to.deep.eq([
-					"Company Admin",
-					"Agent",
-					"Channel Partner",
-				]);
-			});
+		cy.optionTexts("users-role").should("deep.eq", [
+			"Company Admin",
+			"Agent",
+			"Channel Partner",
+		]);
 	});
 
 	it("invites an agent with a mobile number and one without", () => {
@@ -125,9 +121,10 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 				cy.getByTestId("users-work-task")
 					.should("have.length", 1)
 					.and("contain", "Gate users task");
-				cy.getByTestId("users-handover-agent").select(noMobile);
-				cy.getByTestId("users-handover-confirm").click();
 			});
+		// The list of a frappe-ui select opens outside the row, so the choice is made outside `within`.
+		row(agent).find('[data-testid="sellos-users-handover-agent"]').select(noMobile);
+		row(agent).find('[data-testid="sellos-users-handover-confirm"]').click();
 		cy.wait("@deactivate").its("response.statusCode").should("eq", 200);
 		row(agent)
 			.should("have.attr", "data-status", "Deactivated")

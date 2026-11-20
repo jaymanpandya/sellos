@@ -620,7 +620,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Browser spec:** required
 - **Story Points:** 5
 - **Dependencies:** SOS-UI-2B
-- **Status:** In Progress
+- **Status:** Complete
 
 ### SOS-UI-3D: Move Companies, sign in and the setup wizard to the shared components
 - **Epic:** Web app, roles and security

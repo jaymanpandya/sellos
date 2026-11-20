@@ -203,3 +203,107 @@ context("SOS-UI-3B: Import leads, Board, Call lists and Assignment follow the st
 		}
 	});
 });
+
+// SOS-UI-3C: Users, Teams, Team report, Support access and Telephony are built from the shared components.
+context("SOS-UI-3C: Users, Teams, Team report, Support and Telephony follow the style", () => {
+	const pages = [
+		{
+			name: "Users",
+			role: "company_admin",
+			path: "/sellos/company/users",
+			ready: "users-list",
+		},
+		{
+			name: "Teams",
+			role: "company_admin",
+			path: "/sellos/company/teams",
+			ready: "teams-form",
+		},
+		{
+			name: "Team report",
+			role: "sales_manager",
+			path: "/sellos/reports/team",
+			ready: "teamreport-total",
+		},
+		{
+			name: "Support access",
+			role: "company_admin",
+			path: "/sellos/company/support",
+			ready: "support-form",
+		},
+		{
+			name: "Telephony",
+			role: "company_admin",
+			path: "/sellos/company/telephony",
+			ready: "telephony-form",
+		},
+	];
+
+	pages.forEach((page) => {
+		it(`${page.name}: page colours, 24px/600 title, 16px card with the teal line`, () => {
+			cy.signInFresh(page.role);
+			cy.visit(page.path);
+			cy.getByTestId(page.ready, { timeout: 15000 }).should("be.visible");
+			cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
+			cy.get("body").should("have.css", "color", "rgb(0, 60, 60)");
+			cy.getByTestId("page-title")
+				.should("have.css", "font-size", "24px")
+				.and("have.css", "font-weight", "600");
+			cy.getByTestId("app-shell")
+				.find(".ui-card, .rounded-card")
+				.first()
+				.should("have.css", "border-top-left-radius", "16px")
+				.and("have.css", "border-top-width", "1px")
+				.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)");
+		});
+
+		it(`${page.name}: every control is a frappe-ui control`, () => {
+			cy.signInFresh(page.role);
+			cy.visit(page.path);
+			cy.getByTestId(page.ready, { timeout: 15000 }).should("be.visible");
+			cy.getByTestId("app-shell")
+				.find("main")
+				.then(($main) => {
+					expect($main.find("select").length, "native selects").to.eq(0);
+					$main.find("button").each((_, el) => {
+						expect(
+							el.className,
+							`button ${el.textContent.trim()} is a frappe-ui Button`
+						).to.match(/inline-flex|\bflex\b/);
+					});
+				});
+		});
+	});
+
+	it("Users: the invite button is solid button/bg with text/button", () => {
+		cy.signInFresh("company_admin");
+		cy.visit("/sellos/company/users");
+		cy.getByTestId("users-invite")
+			.should("have.css", "background-color", "rgb(0, 60, 60)")
+			.and("have.css", "color", "rgb(228, 179, 60)");
+	});
+
+	it("Teams: the add team button is solid button/bg with text/button", () => {
+		cy.signInFresh("company_admin");
+		cy.visit("/sellos/company/teams");
+		cy.getByTestId("teams-add")
+			.should("have.css", "background-color", "rgb(0, 60, 60)")
+			.and("have.css", "color", "rgb(228, 179, 60)");
+	});
+
+	it("Support access: the give access button is solid button/bg with text/button", () => {
+		cy.signInFresh("company_admin");
+		cy.visit("/sellos/company/support");
+		cy.getByTestId("support-grant")
+			.should("have.css", "background-color", "rgb(0, 60, 60)")
+			.and("have.css", "color", "rgb(228, 179, 60)");
+	});
+
+	it("Telephony: the save button is solid button/bg with text/button", () => {
+		cy.signInFresh("company_admin");
+		cy.visit("/sellos/company/telephony");
+		cy.getByTestId("telephony-save")
+			.should("have.css", "background-color", "rgb(0, 60, 60)")
+			.and("have.css", "color", "rgb(228, 179, 60)");
+	});
+});

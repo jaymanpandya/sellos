@@ -1,17 +1,27 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-support-page">
-		<h1 class="ui-page-title">Support access</h1>
-		<p class="mt-2 text-ink-muted">
-			Let SellOS support read your company's records for a limited time. Support can look and
-			change nothing. Access ends by itself, after 4 hours at most, and every action is
-			logged below.
-		</p>
+		<PageHeader
+			title="Support access"
+			text="Let SellOS support read your company's records for a limited time. Support can look and change nothing. Access ends by itself, after 4 hours at most, and every action is logged below."
+			icon="lucide-life-buoy"
+		/>
+
+		<div class="mb-ui-md grid grid-cols-2 gap-ui-md" data-testid="sellos-support-stats">
+			<StatCard
+				label="Access now"
+				:value="activeCount"
+				icon="lucide-shield-check"
+				:tone="activeCount ? 'warning' : 'success'"
+			/>
+			<StatCard label="Times given" :value="grants.length" icon="lucide-history" />
+		</div>
 
 		<form
-			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
+			class="ui-card space-y-ui-md"
 			data-testid="sellos-support-form"
 			@submit.prevent="grant"
 		>
+			<h2 class="ui-card-heading">Give access</h2>
 			<p
 				v-if="!loading && !users.length"
 				data-testid="sellos-support-no-users"
@@ -19,32 +29,26 @@
 			>
 				No support user is set up for this company yet.
 			</p>
-			<select
+			<FormField
 				v-model="form.user"
+				type="select"
+				label="Support user"
 				required
+				:options="userOptions"
 				data-testid="sellos-support-user"
-				class="field"
-				aria-label="Support user"
-			>
-				<option v-for="u in users" :key="u.user" :value="u.user">
-					{{ u.full_name || u.user }}
-				</option>
-			</select>
-			<select
-				v-model.number="form.minutes"
+			/>
+			<FormField
+				v-model="form.minutes"
+				type="select"
+				label="How long"
+				:options="durationOptions"
 				data-testid="sellos-support-duration"
-				class="field"
-				aria-label="How long"
-			>
-				<option v-for="d in DURATIONS" :key="d.minutes" :value="d.minutes">
-					{{ d.label }}
-				</option>
-			</select>
-			<input
+			/>
+			<FormField
 				v-model="form.reason"
+				label="What do you need help with?"
+				hint="Optional."
 				data-testid="sellos-support-reason"
-				placeholder="What do you need help with? (optional)"
-				class="field"
 			/>
 			<p
 				v-if="error"
@@ -54,98 +58,109 @@
 			>
 				{{ error }}
 			</p>
-			<button
+			<AppButton
 				type="submit"
-				class="btn"
+				variant="primary"
 				data-testid="sellos-support-grant"
 				:disabled="!users.length"
 			>
 				Give access
-			</button>
+			</AppButton>
 		</form>
 
-		<p
-			v-if="loadError"
-			data-testid="sellos-support-load-error"
-			role="alert"
-			class="mt-4 text-accent"
-		>
-			{{ loadError }}
-		</p>
-		<p v-else-if="loading" class="mt-4 text-ink-muted">Loading.</p>
-		<p
-			v-else-if="!grants.length"
-			data-testid="sellos-support-empty"
-			class="mt-4 text-ink-muted"
-		>
-			Support has no access, and has never been given any.
-		</p>
-		<ul class="mt-4 divide-y divide-line rounded-input border border-line bg-surface">
-			<li
-				v-for="g in grants"
-				:key="g.name"
-				data-testid="sellos-support-grant-row"
-				class="px-4 py-3"
-			>
-				<div class="flex items-center justify-between gap-3">
-					<span>
-						<span class="block font-medium text-ink">{{ g.support_user_name }}</span>
-						<span class="block text-sm text-ink-muted">
-							{{ g.starts_at.slice(0, 16) }} to {{ g.expires_at.slice(0, 16) }}
-							<span v-if="g.reason"> · {{ g.reason }}</span>
-						</span>
-					</span>
-					<span class="flex items-center gap-2">
-						<span
-							data-testid="sellos-support-status"
-							class="rounded-input bg-brand-light px-2 py-1 text-xs text-ink"
-						>
-							{{ g.status }}
-						</span>
-						<button
-							v-if="g.status === 'Active'"
-							type="button"
-							class="rounded-input px-3 py-1 text-sm text-ink-muted hover:bg-brand-light"
-							data-testid="sellos-support-revoke"
-							@click="revoke(g)"
-						>
-							End now
-						</button>
-						<button
-							type="button"
-							class="rounded-input px-3 py-1 text-sm text-ink-muted hover:bg-brand-light"
-							data-testid="sellos-support-show-log"
-							@click="toggleLog(g)"
-						>
-							{{ open === g.name ? "Hide log" : "Show log" }}
-						</button>
-					</span>
-				</div>
-				<ul
-					v-if="open === g.name"
-					class="mt-3 space-y-1 text-sm"
-					data-testid="sellos-support-log"
-				>
+		<div class="mt-ui-md">
+			<div v-if="loadError" data-testid="sellos-support-load-error">
+				<LoadError :message="loadError" @retry="load" />
+			</div>
+			<LoadingSkeleton v-else-if="loading" />
+			<div v-else-if="!grants.length" data-testid="sellos-support-empty">
+				<EmptyState
+					title="Support has no access"
+					text="Support has no access, and has never been given any."
+					icon="lucide-shield"
+				/>
+			</div>
+			<ListCard v-else title="Access given">
+				<ul class="divide-y divide-line-soft">
 					<li
-						v-for="(line, i) in log"
-						:key="i"
-						data-testid="sellos-support-log-row"
-						class="text-ink-muted"
+						v-for="g in grants"
+						:key="g.name"
+						data-testid="sellos-support-grant-row"
+						class="py-ui-sm"
 					>
-						{{ line.timestamp.slice(0, 19) }} · {{ line.user }} · {{ line.action }}
-						<span v-if="line.path"> · {{ line.http_method }} {{ line.path }}</span>
+						<div class="flex flex-wrap items-center justify-between gap-3">
+							<span>
+								<span class="block font-medium text-ink">{{
+									g.support_user_name
+								}}</span>
+								<span class="block text-sm text-ink-muted">
+									{{ g.starts_at.slice(0, 16) }} to
+									{{ g.expires_at.slice(0, 16) }}
+									<span v-if="g.reason"> · {{ g.reason }}</span>
+								</span>
+							</span>
+							<span class="flex flex-wrap items-center gap-2">
+								<StatusBadge
+									:tone="STATUS_TONE[g.status] || 'neutral'"
+									:label="g.status"
+									data-testid="sellos-support-status"
+								/>
+								<AppButton
+									v-if="g.status === 'Active'"
+									type="button"
+									data-testid="sellos-support-revoke"
+									@click="revoke(g)"
+								>
+									End now
+								</AppButton>
+								<AppButton
+									type="button"
+									data-testid="sellos-support-show-log"
+									@click="toggleLog(g)"
+								>
+									{{ open === g.name ? "Hide log" : "Show log" }}
+								</AppButton>
+							</span>
+						</div>
+						<ul
+							v-if="open === g.name"
+							class="mt-3 space-y-1 text-sm"
+							data-testid="sellos-support-log"
+						>
+							<li
+								v-for="(line, i) in log"
+								:key="i"
+								data-testid="sellos-support-log-row"
+								class="text-ink-muted"
+							>
+								{{ line.timestamp.slice(0, 19) }} · {{ line.user }} ·
+								{{ line.action }}
+								<span v-if="line.path">
+									· {{ line.http_method }} {{ line.path }}</span
+								>
+							</li>
+						</ul>
 					</li>
 				</ul>
-			</li>
-		</ul>
+			</ListCard>
+		</div>
 	</div>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 
+import AppButton from "../components/AppButton.vue";
+import EmptyState from "../components/EmptyState.vue";
+import FormField from "../components/FormField.vue";
+import ListCard from "../components/ListCard.vue";
+import LoadError from "../components/LoadError.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import PageHeader from "../components/PageHeader.vue";
+import StatCard from "../components/StatCard.vue";
+import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
-import { logRequestError } from "../api";
+import { logBackgroundError } from "../api";
 import { DURATIONS, supportApi } from "../support/supportApi";
 
 const users = ref([]);
@@ -157,6 +172,13 @@ const loadError = ref("");
 const error = ref("");
 const form = reactive({ user: "", minutes: 60, reason: "" });
 
+const userOptions = computed(() =>
+	users.value.map((u) => ({ label: u.full_name || u.user, value: u.user }))
+);
+const durationOptions = DURATIONS.map((d) => ({ label: d.label, value: d.minutes }));
+const STATUS_TONE = { Active: "success", Expired: "neutral", Revoked: "danger" };
+const activeCount = computed(() => grants.value.filter((g) => g.status === "Active").length);
+
 async function load() {
 	loadError.value = "";
 	try {
@@ -164,7 +186,7 @@ async function load() {
 		if (!form.user && users.value.length) form.user = users.value[0].user;
 	} catch (e) {
 		loadError.value = serverMessage(e, "Support access could not be loaded.");
-		logRequestError("support access failed", e);
+		logBackgroundError("support access failed", e);
 	} finally {
 		loading.value = false;
 	}

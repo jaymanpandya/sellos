@@ -84,7 +84,11 @@ context("SOS-P1-18: sales teams and the Sales Manager", () => {
 
 		cy.getByTestId("teams-name").type(teamName);
 		cy.getByTestId("teams-manager-select").select(seed.other_manager_name);
-		cy.getByTestId("teams-agents").contains("label", seed.spare_name).find("input").check();
+		cy.getByTestId("teams-agents")
+			.contains("label", seed.spare_name)
+			.parent()
+			.find("input")
+			.check();
 		cy.getByTestId("teams-add").click();
 		cy.wait("@listTeams");
 		cy.getByTestId("teams-error").should("not.exist");

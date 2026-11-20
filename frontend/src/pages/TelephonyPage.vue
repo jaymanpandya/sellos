@@ -1,96 +1,105 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-telephony-page">
-		<h1 class="ui-page-title">Telephony</h1>
-		<p class="mt-2 text-ink-muted">
-			Enter your Plivo India account once, so calling works for your company. The keys are
-			stored encrypted and are never shown again after you save them.
-		</p>
+		<PageHeader
+			title="Telephony"
+			text="Enter your Plivo India account once, so calling works for your company. The keys are stored encrypted and are never shown again after you save them."
+			icon="lucide-phone"
+		/>
 
-		<p
-			v-if="loadError"
-			data-testid="sellos-telephony-load-error"
-			role="alert"
-			class="mt-4 text-accent"
-		>
-			{{ loadError }}
-		</p>
-		<p v-else-if="loading" class="mt-4 text-ink-muted">Loading.</p>
+		<div v-if="loadError" data-testid="sellos-telephony-load-error">
+			<LoadError :message="loadError" @retry="load" />
+		</div>
+		<LoadingSkeleton v-else-if="loading" />
 
-		<form
-			v-else
-			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
-			data-testid="sellos-telephony-form"
-			@submit.prevent="save"
-		>
-			<label class="block">
-				<span class="block text-sm text-ink-muted">Auth ID</span>
-				<input
+		<template v-else>
+			<div class="mb-ui-md grid grid-cols-1 gap-ui-md sm:grid-cols-3">
+				<StatCard
+					label="Auth ID"
+					:value="state.auth_id_set ? 'Saved' : 'Not set'"
+					icon="lucide-key-round"
+					:tone="state.auth_id_set ? 'success' : 'warning'"
+				/>
+				<StatCard
+					label="Auth token"
+					:value="state.auth_token_set ? 'Saved' : 'Not set'"
+					icon="lucide-lock"
+					:tone="state.auth_token_set ? 'success' : 'warning'"
+				/>
+				<StatCard
+					label="022 number"
+					:value="state.phone_number || 'Not set'"
+					icon="lucide-phone"
+				/>
+			</div>
+			<form
+				class="ui-card space-y-ui-md"
+				data-testid="sellos-telephony-form"
+				@submit.prevent="save"
+			>
+				<h2 class="ui-card-heading">Plivo account</h2>
+				<FormField
 					v-model="form.authId"
 					type="password"
+					label="Auth ID"
 					autocomplete="off"
-					data-testid="sellos-telephony-auth-id"
-					class="field"
 					:placeholder="state.auth_id_set ? 'Saved. Type to replace it.' : ''"
+					data-testid="sellos-telephony-auth-id"
 				/>
-			</label>
-			<label class="block">
-				<span class="block text-sm text-ink-muted">Auth token</span>
-				<input
+				<FormField
 					v-model="form.authToken"
 					type="password"
+					label="Auth token"
 					autocomplete="off"
-					data-testid="sellos-telephony-auth-token"
-					class="field"
 					:placeholder="state.auth_token_set ? 'Saved. Type to replace it.' : ''"
+					data-testid="sellos-telephony-auth-token"
 				/>
-			</label>
-			<label class="block">
-				<span class="block text-sm text-ink-muted">022 number</span>
-				<input
+				<FormField
 					v-model="form.phoneNumber"
+					type="tel"
+					label="022 number"
 					inputmode="tel"
-					data-testid="sellos-telephony-number"
-					class="field"
 					placeholder="022 followed by eight digits"
+					data-testid="sellos-telephony-number"
 				/>
-			</label>
-			<p class="text-sm text-ink-muted" data-testid="sellos-telephony-status">
-				{{ statusText }}
-			</p>
-			<p
-				v-if="error"
-				data-testid="sellos-telephony-error"
-				role="alert"
-				class="text-sm text-accent"
-			>
-				{{ error }}
-			</p>
-			<p v-if="saved" data-testid="sellos-telephony-saved" class="text-sm text-ink">
-				Saved.
-			</p>
-			<div class="flex items-center gap-3">
-				<button type="submit" class="btn" data-testid="sellos-telephony-save">Save</button>
-				<button
-					type="button"
-					class="rounded-input px-3 py-2 text-sm text-ink-muted hover:bg-brand-light"
-					data-testid="sellos-telephony-test"
-					:disabled="testing"
-					@click="test"
+				<p class="text-sm text-ink-muted" data-testid="sellos-telephony-status">
+					{{ statusText }}
+				</p>
+				<p
+					v-if="error"
+					data-testid="sellos-telephony-error"
+					role="alert"
+					class="text-sm text-accent"
 				>
-					Test connection
-				</button>
-			</div>
-			<p
-				v-if="result"
-				:data-testid="
-					result.ok ? 'sellos-telephony-test-ok' : 'sellos-telephony-test-error'
-				"
-				:role="result.ok ? 'status' : 'alert'"
-				:class="result.ok ? 'text-sm text-ink' : 'text-sm text-accent'"
-			>
-				{{ result.message }}
-			</p>
-		</form>
+					{{ error }}
+				</p>
+				<p v-if="saved" data-testid="sellos-telephony-saved" class="text-sm text-ink">
+					Saved.
+				</p>
+				<div class="flex flex-wrap items-center gap-ui-sm">
+					<AppButton type="submit" variant="primary" data-testid="sellos-telephony-save">
+						Save
+					</AppButton>
+					<AppButton
+						type="button"
+						data-testid="sellos-telephony-test"
+						:disabled="testing"
+						@click="test"
+					>
+						Test connection
+					</AppButton>
+				</div>
+				<p
+					v-if="result"
+					:data-testid="
+						result.ok ? 'sellos-telephony-test-ok' : 'sellos-telephony-test-error'
+					"
+					:role="result.ok ? 'status' : 'alert'"
+					:class="result.ok ? 'text-sm text-ink' : 'text-sm text-accent'"
+				>
+					{{ result.message }}
+				</p>
+			</form>
+		</template>
 		<CallingRules v-if="!loading && !loadError" />
 	</div>
 </template>
@@ -99,7 +108,13 @@
 import { computed, onMounted, reactive, ref } from "vue";
 
 import { logRequestError } from "../api";
+import AppButton from "../components/AppButton.vue";
 import CallingRules from "../components/CallingRules.vue";
+import FormField from "../components/FormField.vue";
+import LoadError from "../components/LoadError.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import PageHeader from "../components/PageHeader.vue";
+import StatCard from "../components/StatCard.vue";
 import { serverMessage } from "../crm/crmApi";
 import { telephonyApi } from "../telephony/telephonyApi";
 
@@ -124,6 +139,7 @@ function apply(next) {
 }
 
 async function load() {
+	loading.value = true;
 	loadError.value = "";
 	try {
 		apply(await telephonyApi.get());
