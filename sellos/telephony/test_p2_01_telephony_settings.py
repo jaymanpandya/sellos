@@ -108,7 +108,19 @@ class TestSettings(TelephonyCase):
 		meta = frappe.get_meta(settings.DOCTYPE)
 		self.assertTrue(meta.issingle)
 		self.assertEqual(
-			[f.fieldname for f in meta.fields], ["auth_id", "auth_token", "phone_number", "provider"]
+			[f.fieldname for f in meta.fields],
+			[
+				"auth_id",
+				"auth_token",
+				"phone_number",
+				"provider",
+				# SOS-P2-10 added the calling hours section
+				"section_calling_hours",
+				"calling_hours_enabled",
+				"calling_hours_start",
+				"calling_hours_end",
+				"calling_days",
+			],
 		)
 		self.assertEqual({meta.get_field(n).fieldtype for n in ("auth_id", "auth_token")}, {"Password"})
 		self.assertEqual((meta.get_field("provider").hidden, meta.get_field("provider").read_only), (1, 1))
