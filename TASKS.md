@@ -602,7 +602,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Browser spec:** required
 - **Story Points:** 5
 - **Dependencies:** SOS-UI-2B
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-UI-3C: Move Users, Teams, Team report, Support access and Telephony to the shared components
 - **Epic:** Web app, roles and security
