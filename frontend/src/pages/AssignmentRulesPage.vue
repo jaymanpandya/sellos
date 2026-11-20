@@ -1,134 +1,135 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-assignment-page">
-		<h1 class="ui-page-title">Lead assignment</h1>
-		<p class="mt-2 text-ink-muted">
-			Every new lead goes to an agent at once. Rules are tried from the lowest order up. A
-			rule names a team, and the team's active agents take the leads in turn. A lead no rule
-			matches goes to the default team.
-		</p>
-		<p
+		<PageHeader
+			title="Lead assignment"
+			text="Every new lead goes to an agent at once. Rules are tried from the lowest order up. A rule names a team, and the team's active agents take the leads in turn. A lead no rule matches goes to the default team."
+			icon="lucide-shuffle"
+		/>
+		<LoadError
 			v-if="error"
-			role="alert"
+			class="mb-ui-md"
 			data-testid="sellos-assignment-error"
-			class="mt-3 text-accent"
-		>
-			{{ error }}
-		</p>
+			:message="error"
+			@retry="load"
+		/>
 
-		<section class="mt-4 space-y-2 rounded-input border border-line bg-surface p-4">
-			<h2 class="font-medium text-ink">Default team</h2>
-			<select
-				v-model="defaultTeam"
-				aria-label="Default team"
+		<ListCard title="Default team" class="mb-ui-md">
+			<FormField
+				:model-value="defaultTeam"
+				type="select"
+				label="Default team"
+				:options="defaultTeamOptions"
 				data-testid="sellos-assignment-default"
-				class="field"
-				@change="saveDefault"
-			>
-				<option value="">No default team</option>
-				<option v-for="t in teams" :key="t.name" :value="t.name">{{ t.team_name }}</option>
-			</select>
-		</section>
+				@update:model-value="saveDefault"
+			/>
+		</ListCard>
 
-		<ul class="mt-4 space-y-2" data-testid="sellos-assignment-rules">
-			<li
-				v-for="r in rules"
-				:key="r.name"
-				data-testid="sellos-assignment-rule"
-				:data-name="r.name"
-				class="flex flex-wrap items-center gap-3 rounded-input border border-line bg-surface p-3"
-			>
-				<span class="font-medium text-ink">{{ r.rule_name }}</span>
-				<span class="text-sm text-ink-muted">
-					{{ describe(r) }} to {{ teamName(r.team) }}, order {{ r.priority }}
-				</span>
-				<label class="flex items-center gap-1 text-sm text-ink-muted">
-					<input
-						type="checkbox"
-						:checked="Boolean(r.enabled)"
-						data-testid="sellos-assignment-rule-enabled"
-						@change="save(r.name, { enabled: $event.target.checked ? 1 : 0 })"
-					/>
-					Enabled
-				</label>
-				<button
-					type="button"
-					class="btn"
-					data-testid="sellos-assignment-rule-remove"
-					@click="remove(r)"
+		<ListCard title="Rules" class="mb-ui-md">
+			<EmptyState
+				v-if="!rules.length"
+				title="No rules yet."
+				text="Every lead goes to the default team until a rule is added."
+				icon="lucide-shuffle"
+			/>
+			<ul class="space-y-ui-sm" data-testid="sellos-assignment-rules">
+				<li
+					v-for="r in rules"
+					:key="r.name"
+					data-testid="sellos-assignment-rule"
+					:data-name="r.name"
+					class="flex flex-wrap items-center gap-ui-md rounded-input border border-line-soft p-ui-sm"
 				>
-					Remove
-				</button>
-			</li>
-		</ul>
+					<span class="font-medium text-ink">{{ r.rule_name }}</span>
+					<span class="text-sm text-ink-muted">
+						{{ describe(r) }} to {{ teamName(r.team) }}, order {{ r.priority }}
+					</span>
+					<AppCheckbox
+						:model-value="Boolean(r.enabled)"
+						label="Enabled"
+						data-testid="sellos-assignment-rule-enabled"
+						@update:model-value="save(r.name, { enabled: $event ? 1 : 0 })"
+					/>
+					<AppButton
+						type="button"
+						data-testid="sellos-assignment-rule-remove"
+						@click="remove(r)"
+					>
+						Remove
+					</AppButton>
+				</li>
+			</ul>
+		</ListCard>
 
-		<form
-			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
-			data-testid="sellos-assignment-form"
-			@submit.prevent="add"
-		>
-			<h2 class="font-medium text-ink">Add a rule</h2>
-			<input
-				v-model="form.rule_name"
-				required
-				placeholder="Rule name"
-				aria-label="Rule name"
-				data-testid="sellos-assignment-name"
-				class="field"
-			/>
-			<select
-				v-model="form.rule_type"
-				aria-label="Assign by"
-				data-testid="sellos-assignment-type"
-				class="field"
-			>
-				<option v-for="t in ruleTypes" :key="t" :value="t">{{ t }}</option>
-			</select>
-			<select
-				v-if="form.rule_type === 'Source'"
-				v-model="form.source"
-				required
-				aria-label="Source"
-				data-testid="sellos-assignment-source"
-				class="field"
-			>
-				<option value="" disabled>Choose a source</option>
-				<option v-for="s in sources" :key="s.name" :value="s.name">{{ s.name }}</option>
-			</select>
-			<input
-				v-if="form.rule_type === 'Locality'"
-				v-model="form.locality"
-				required
-				placeholder="Locality"
-				aria-label="Locality"
-				data-testid="sellos-assignment-locality"
-				class="field"
-			/>
-			<select
-				v-model="form.team"
-				required
-				aria-label="Team"
-				data-testid="sellos-assignment-team"
-				class="field"
-			>
-				<option value="" disabled>Choose a team</option>
-				<option v-for="t in teams" :key="t.name" :value="t.name">{{ t.team_name }}</option>
-			</select>
-			<input
-				v-model.number="form.priority"
-				type="number"
-				min="0"
-				aria-label="Order"
-				data-testid="sellos-assignment-priority"
-				class="field"
-			/>
-			<button type="submit" class="btn" data-testid="sellos-assignment-add">Add rule</button>
+		<form data-testid="sellos-assignment-form" @submit.prevent="add">
+			<ListCard title="Add a rule">
+				<div class="grid gap-ui-md sm:grid-cols-2">
+					<FormField
+						v-model="form.rule_name"
+						label="Rule name"
+						required
+						placeholder="For example Pune website leads"
+						data-testid="sellos-assignment-name"
+					/>
+					<FormField
+						v-model="form.rule_type"
+						type="select"
+						label="Assign by"
+						:options="typeOptions"
+						data-testid="sellos-assignment-type"
+					/>
+					<FormField
+						v-if="form.rule_type === 'Source'"
+						v-model="form.source"
+						type="select"
+						label="Source"
+						required
+						:options="sourceOptions"
+						data-testid="sellos-assignment-source"
+					/>
+					<FormField
+						v-if="form.rule_type === 'Locality'"
+						v-model="form.locality"
+						label="Locality"
+						required
+						placeholder="For example Baner"
+						data-testid="sellos-assignment-locality"
+					/>
+					<FormField
+						v-model="form.team"
+						type="select"
+						label="Team"
+						required
+						:options="teamOptions"
+						data-testid="sellos-assignment-team"
+					/>
+					<FormField
+						v-model="form.priority"
+						type="number"
+						min="0"
+						label="Order"
+						data-testid="sellos-assignment-priority"
+					/>
+				</div>
+				<div class="mt-ui-md">
+					<AppButton variant="primary" type="submit" data-testid="sellos-assignment-add">
+						Add rule
+					</AppButton>
+				</div>
+			</ListCard>
 		</form>
 	</div>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 
+import AppButton from "../components/AppButton.vue";
+import AppCheckbox from "../components/AppCheckbox.vue";
+import EmptyState from "../components/EmptyState.vue";
+import FormField from "../components/FormField.vue";
+import ListCard from "../components/ListCard.vue";
+import LoadError from "../components/LoadError.vue";
+import PageHeader from "../components/PageHeader.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
 
 // The Company Admin's assignment rules and default team (SOS-P1-19). Every change is saved on the
@@ -148,6 +149,17 @@ const blank = () => ({
 	priority: 10,
 });
 const form = reactive(blank());
+
+const choose = (label, items, key = "name", text = key) => [
+	{ label, value: "" },
+	...items.map((i) => ({ label: i[text], value: i[key] })),
+];
+const defaultTeamOptions = computed(() =>
+	choose("No default team", teams.value, "name", "team_name")
+);
+const teamOptions = computed(() => choose("Choose a team", teams.value, "name", "team_name"));
+const sourceOptions = computed(() => choose("Choose a source", sources.value));
+const typeOptions = computed(() => ruleTypes.value.map((t) => ({ label: t, value: t })));
 
 const teamName = (name) => teams.value.find((t) => t.name === name)?.team_name || name;
 const describe = (r) =>
@@ -180,15 +192,30 @@ async function run(action, fallback) {
 	await load();
 }
 
-const saveDefault = () =>
-	run(() => crmApi.setDefaultTeam(defaultTeam.value), "The default team could not be saved.");
+const saveDefault = (value) => {
+	defaultTeam.value = value;
+	return run(() => crmApi.setDefaultTeam(value), "The default team could not be saved.");
+};
 const save = (name, values) =>
 	run(() => crmApi.saveAssignmentRule(values, name), "The rule could not be saved.");
 const remove = (r) =>
 	run(() => crmApi.deleteAssignmentRule(r.name), "The rule could not be removed.");
 
+// A frappe-ui select has no native "required", so the form checks what a rule needs before it saves.
 async function add() {
-	await run(() => crmApi.saveAssignmentRule({ ...form }), "The rule could not be added.");
+	const missing =
+		!form.rule_name.trim() ||
+		!form.team ||
+		(form.rule_type === "Source" && !form.source) ||
+		(form.rule_type === "Locality" && !form.locality.trim());
+	if (missing) {
+		error.value = "Fill in the rule name, what it assigns by, and the team.";
+		return;
+	}
+	await run(
+		() => crmApi.saveAssignmentRule({ ...form, priority: Number(form.priority) }),
+		"The rule could not be added."
+	);
 	if (!error.value) Object.assign(form, blank());
 }
 

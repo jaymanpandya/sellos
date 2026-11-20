@@ -149,6 +149,7 @@ pieces on frappe-ui components. The decision for each, with the file in `fronten
 | Badge (`StatusPill.vue`) | adapt | `StatusBadge.vue` | On frappe-ui `Badge`, word and icon, four status tones plus neutral; no flash |
 | Button (`.pamaa-button`) | adapt | `AppButton.vue` | On frappe-ui `Button`: primary, secondary, danger |
 | (checkbox) | **new** | `AppCheckbox.vue` | frappe-ui's Checkbox puts every attribute on its wrapper and its input, so a test id would exist twice; this wrapper keeps it on the input only |
+| (file chooser) | **new** | `FileField.vue` | frappe-ui's FormControl has no file input. The one native file input lives in the shared folder, with a visible label and the Pandya tokens; `data-testid` sits on the input (SOS-UI-3B) |
 | Dialog | **not in PAMAA** | frappe-ui `Dialog` | Used directly (search) |
 | Toast (`ToastHost.vue`) | adapt | `ToastHost.vue`, `shell.js` | Same host and `showToast`; tones success, warning, danger, info |
 | Empty state (`EmptyState.vue`) | copy | `EmptyState.vue` | |

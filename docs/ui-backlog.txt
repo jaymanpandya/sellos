@@ -6,9 +6,6 @@
 # components (docs/UI_STYLE.md), following the Leads list and the lead page. Never add a page here.
 #
 # Counts are raw tags at 20 November 2026: buttons / inputs / selects.
-frontend/src/pages/AssignmentRulesPage.vue  # 2 / 4 / 4
-frontend/src/pages/CallListsPage.vue  # 3 / 7 / 2
-frontend/src/pages/ImportLeadsPage.vue  # 1 / 2 / 1
 frontend/src/pages/SetupWizardPage.vue  # 12 / 11 / 2
 frontend/src/pages/SupportPage.vue  # 3 / 1 / 2
 frontend/src/pages/TeamsPage.vue  # 2 / 2 / 1
@@ -17,4 +14,4 @@ frontend/src/pages/TenantsPage.vue  # 2 / 3 / 1
 frontend/src/pages/UsersPage.vue  # 7 / 5 / 2
 #
 # Not checked by the guard, because they live in frontend/src/components, but still raw and converted
-# by the same tasks: LeadBoard.vue (SOS-UI-3B), (NotificationBell.vue, TodayRow.vue and VisitConfirm.vue were converted in SOS-UI-3A).
+# by the same tasks: (LeadBoard.vue was converted in SOS-UI-3B; NotificationBell.vue, TodayRow.vue and VisitConfirm.vue were converted in SOS-UI-3A).

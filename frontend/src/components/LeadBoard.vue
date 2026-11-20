@@ -1,45 +1,49 @@
 <template>
-	<section data-testid="sellos-board" class="mt-4">
-		<p
+	<section data-testid="sellos-board" class="mt-ui-md">
+		<div
 			v-if="notice"
 			role="status"
 			data-testid="sellos-board-notice"
 			:data-level="notice.level"
-			class="mb-3 rounded-input border border-line bg-surface p-3 text-sm text-ink"
+			class="mb-ui-md flex items-start gap-ui-sm rounded-card border border-line bg-surface p-ui-md text-sm text-ink"
 		>
-			{{ notice.message }}
-		</p>
+			<StatusBadge
+				:tone="noticeTone(notice.level)"
+				:label="notice.level === 'error' ? 'Not moved' : 'Moved, with a warning'"
+			/>
+			<span>{{ notice.message }}</span>
+		</div>
 		<form
 			v-if="pending"
-			class="mb-3 flex flex-wrap items-center gap-2 rounded-input border border-line bg-surface p-3"
+			class="ui-card mb-ui-md flex flex-wrap items-end gap-ui-md"
 			data-testid="sellos-board-lost-form"
 			@submit.prevent="confirmLost"
 		>
-			<label class="text-sm text-ink-muted" for="sellos-board-lost-reason">
-				Why was this lead lost?
-			</label>
-			<select
-				id="sellos-board-lost-reason"
+			<FormField
 				v-model="lostReason"
+				type="select"
+				label="Why was this lead lost?"
 				required
-				class="field w-auto"
+				:options="reasonOptions"
+				class="min-w-64"
 				data-testid="sellos-board-lost-reason"
-			>
-				<option value="" disabled>Choose a reason</option>
-				<option v-for="r in lostReasons" :key="r.name" :value="r.name">
-					{{ r.name }}
-				</option>
-			</select>
-			<button type="submit" class="btn" data-testid="sellos-board-lost-save">
+			/>
+			<AppButton variant="primary" type="submit" data-testid="sellos-board-lost-save">
 				Move to {{ pending.stage }}
-			</button>
-			<button type="button" class="btn" @click="pending = null">Cancel</button>
+			</AppButton>
+			<AppButton
+				type="button"
+				data-testid="sellos-board-lost-cancel"
+				@click="pending = null"
+			>
+				Cancel
+			</AppButton>
 		</form>
-		<div class="flex gap-3 overflow-x-auto pb-3">
+		<div class="flex gap-ui-md overflow-x-auto pb-ui-md">
 			<div
 				v-for="column in columns"
 				:key="column.stage"
-				class="w-60 shrink-0 rounded-input border border-line bg-surface"
+				class="w-64 shrink-0 rounded-card border border-line bg-surface shadow-card"
 				data-testid="sellos-board-column"
 				:data-stage="column.stage"
 				:data-over="overStage === column.stage ? 'yes' : 'no'"
@@ -47,9 +51,9 @@
 				@dragleave="overStage === column.stage && (overStage = '')"
 				@drop.prevent="onDrop(column.stage, $event)"
 			>
-				<header class="border-b border-line p-3">
-					<h2 class="text-sm font-semibold text-ink">{{ column.stage }}</h2>
-					<p class="text-xs text-ink-muted">
+				<header class="border-b border-line-soft p-ui-md">
+					<h2 class="ui-card-heading">{{ column.stage }}</h2>
+					<p class="mt-1 text-sm text-ink-muted">
 						<span data-testid="sellos-board-count">{{ column.count }}</span>
 						{{ column.count === 1 ? "lead" : "leads" }}
 						·
@@ -60,11 +64,11 @@
 						>
 					</p>
 				</header>
-				<ul class="min-h-[3rem] space-y-2 p-2">
+				<ul class="min-h-[3rem] space-y-ui-sm p-ui-sm">
 					<li
 						v-for="lead in column.leads"
 						:key="lead.name"
-						class="rounded-input border border-line bg-white p-2 text-sm"
+						class="rounded-input border border-line-soft bg-white p-ui-sm text-sm"
 						data-testid="sellos-board-card"
 						:data-lead="lead.name"
 						:data-budget="lead.budget"
@@ -75,44 +79,40 @@
 					>
 						<router-link
 							:to="{ path: `${basePath}/${lead.name}`, query: $route.query }"
-							class="block font-medium text-ink"
+							class="ui-link block font-medium"
 							data-testid="sellos-board-card-name"
 						>
 							{{ lead.client_name }}
 						</router-link>
-						<p class="text-xs text-ink-muted">{{ lead.source }}</p>
-						<p v-if="lead.budget" class="text-xs text-ink-muted">
+						<p class="text-sm text-ink-muted">{{ lead.source }}</p>
+						<p v-if="lead.budget" class="text-sm text-ink-muted">
 							{{ rupees(lead.budget) }}
 						</p>
 						<p class="mt-1 flex flex-wrap gap-1">
-							<span
+							<StatusBadge
 								v-if="lead.untouched"
 								data-testid="sellos-untouched"
-								class="rounded-badge border border-tone-warning-line bg-tone-warning-bg px-2 py-0.5 text-xs text-tone-warning"
-							>
-								No activity for {{ untouchedDays }} days
-							</span>
-							<span
+								tone="warning"
+								:label="`No activity for ${untouchedDays} days`"
+							/>
+							<StatusBadge
 								v-if="lead.consent_status !== 'Consented'"
 								data-testid="sellos-board-card-consent"
 								:data-status="lead.consent_status"
-								class="rounded-input border border-line px-2 py-0.5 text-xs text-ink-muted"
-							>
-								{{ lead.consent_status }}
-							</span>
+								:tone="CONSENT_TONE[lead.consent_status] || 'neutral'"
+								:label="lead.consent_status"
+							/>
 						</p>
-						<select
+						<FormField
 							v-if="canMove"
-							:value="column.stage"
-							class="field mt-2"
-							aria-label="Move to stage"
+							:model-value="column.stage"
+							type="select"
+							label="Move to stage"
+							:options="stageOptions"
+							class="mt-ui-sm"
 							data-testid="sellos-board-card-move"
-							@change="request(lead, $event.target.value)"
-						>
-							<option v-for="c in columns" :key="c.stage" :value="c.stage">
-								{{ c.stage }}
-							</option>
-						</select>
+							@update:model-value="request(lead, $event)"
+						/>
 					</li>
 				</ul>
 			</div>
@@ -121,8 +121,11 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
+import AppButton from "./AppButton.vue";
+import FormField from "./FormField.vue";
+import StatusBadge from "./StatusBadge.vue";
 import { logBackgroundError, logRequestError } from "../api";
 import { crmApi, serverMessage } from "../crm/crmApi";
 
@@ -141,6 +144,16 @@ const notice = ref(null);
 const pending = ref(null);
 const lostReason = ref("");
 const lostReasons = ref([]);
+
+const reasonOptions = computed(() => [
+	{ label: "Choose a reason", value: "" },
+	...lostReasons.value.map((r) => ({ label: r.name, value: r.name })),
+]);
+const stageOptions = computed(() =>
+	props.columns.map((c) => ({ label: c.stage, value: c.stage }))
+);
+const CONSENT_TONE = { "Opted out": "danger", "Registered DND": "warning" };
+const noticeTone = (level) => (level === "error" ? "danger" : "warning");
 
 const rupees = (value) =>
 	new Intl.NumberFormat("en-IN", {
@@ -185,6 +198,7 @@ async function request(lead, stage) {
 }
 
 async function confirmLost() {
+	if (!lostReason.value) return;
 	const { lead, stage } = pending.value;
 	await move(lead, stage, lostReason.value);
 }

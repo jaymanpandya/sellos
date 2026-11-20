@@ -1,123 +1,141 @@
 <template>
 	<div class="max-w-3xl" data-testid="sellos-import-page">
-		<h1 class="ui-page-title">Import a bought lead list</h1>
-		<p class="mt-2 text-ink-muted">
-			Choose a CSV file. Every lead comes in from the source Bought list with the consent
-			status Unknown, or Registered DND when the file says the number is on the do not call
-			list. A person already in SellOS, or twice in the file, is merged into one. Nothing
-			here stops a call or a message: the warning shows on the lead.
-		</p>
-		<p v-if="error" role="alert" data-testid="sellos-import-error" class="mt-3 text-accent">
-			{{ error }}
-		</p>
+		<PageHeader
+			title="Import a bought lead list"
+			text="Choose a CSV file. Every lead comes in from the source Bought list with the consent status Unknown, or Registered DND when the file says the number is on the do not call list. A person already in SellOS, or twice in the file, is merged into one. Nothing here stops a call or a message: the warning shows on the lead."
+			icon="lucide-file-up"
+		/>
+		<LoadError
+			v-if="error"
+			class="mb-ui-md"
+			data-testid="sellos-import-error"
+			:message="error"
+			@retry="retry"
+		/>
 
-		<section class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4">
-			<label class="block text-sm text-ink-muted">
-				CSV file
-				<input
-					type="file"
+		<ListCard title="The file" class="mb-ui-md">
+			<div class="space-y-ui-md">
+				<FileField
+					label="CSV file"
 					accept=".csv,text/csv,text/plain"
-					aria-label="CSV file"
 					data-testid="sellos-import-file"
-					class="field mt-1"
 					@change="chooseFile"
 				/>
-			</label>
-			<label class="block text-sm text-ink-muted">
-				Name of the list
-				<input
+				<FormField
 					v-model="listName"
+					label="Name of the list"
 					placeholder="For example Magicbricks Pune, November"
 					data-testid="sellos-import-list-name"
-					class="field mt-1"
 				/>
-			</label>
-		</section>
+			</div>
+		</ListCard>
 
-		<section
-			v-if="preview"
-			class="mt-4 space-y-3 rounded-input border border-line bg-surface p-4"
-			data-testid="sellos-import-preview"
-		>
-			<h2 class="font-medium text-ink">Which column is which</h2>
-			<div class="grid gap-2 sm:grid-cols-2">
-				<label
-					v-for="f in preview.fields"
-					:key="f.field"
-					class="block text-sm text-ink-muted"
-				>
-					{{ f.label }}
-					<select
-						v-model="mapping[f.field]"
-						:aria-label="f.label"
-						:data-testid="`sellos-import-map-${f.field}`"
-						class="field mt-1"
-						@change="refresh"
-					>
-						<option value="">Not in the file</option>
-						<option v-for="h in preview.headers" :key="h" :value="h">{{ h }}</option>
-					</select>
-				</label>
+		<div v-if="preview" data-testid="sellos-import-preview">
+			<div class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4">
+				<StatCard label="Rows" :value="preview.counts.rows" icon="lucide-rows-3" />
+				<StatCard
+					label="New leads"
+					:value="preview.counts.new_leads"
+					icon="lucide-user-plus"
+					tone="success"
+				/>
+				<StatCard
+					label="Merged"
+					:value="preview.counts.merged_with_existing + preview.counts.merged_in_file"
+					icon="lucide-merge"
+					tone="info"
+				/>
+				<StatCard
+					label="Skipped"
+					:value="preview.counts.skipped"
+					icon="lucide-circle-slash"
+					tone="warning"
+				/>
 			</div>
 
-			<p class="text-sm text-ink" data-testid="sellos-import-counts">
-				{{ preview.counts.rows }} rows: {{ preview.counts.new_leads }} new leads,
-				{{ preview.counts.merged_with_existing }} merged with people already in SellOS,
-				{{ preview.counts.merged_in_file }} merged within the file,
-				{{ preview.counts.registered_dnd }} on the do not call list,
-				{{ preview.counts.skipped }} skipped.
-			</p>
-			<p v-if="preview.counts.unrecognised_dnd" class="text-sm text-ink-muted">
-				{{ preview.counts.unrecognised_dnd }} do not call values were not recognised and
-				are treated as no result.
-			</p>
-			<table class="ui-table" data-testid="sellos-import-sample">
-				<thead>
-					<tr class="text-left text-ink-muted">
-						<th>Rows</th>
-						<th>Name</th>
-						<th>Phone</th>
-						<th>Email</th>
-						<th>What happens</th>
-						<th>Do not call</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr
-						v-for="r in preview.sample"
-						:key="r.rows"
-						data-testid="sellos-import-sample-row"
-					>
-						<td>{{ r.rows }}</td>
-						<td>{{ r.name }}</td>
-						<td>{{ r.phone }}</td>
-						<td>{{ r.email }}</td>
-						<td>{{ actions[r.action] }}</td>
-						<td>{{ r.do_not_call }}</td>
-					</tr>
-				</tbody>
-			</table>
-			<ul
-				v-if="preview.skipped.length"
-				class="text-sm text-ink-muted"
-				data-testid="sellos-import-skipped"
-			>
-				<li v-for="s in preview.skipped" :key="s.row">Row {{ s.row }}: {{ s.reason }}</li>
-			</ul>
-			<button
-				type="button"
-				class="btn"
-				:disabled="busy || !canImport"
-				data-testid="sellos-import-run"
-				@click="run"
-			>
-				Import {{ preview.counts.rows - preview.counts.skipped }} rows
-			</button>
-		</section>
+			<ListCard title="Which column is which" class="mb-ui-md">
+				<div class="grid gap-ui-md sm:grid-cols-2">
+					<FormField
+						v-for="f in preview.fields"
+						:key="f.field"
+						:model-value="mapping[f.field]"
+						type="select"
+						:label="f.label"
+						:options="columnOptions"
+						:data-testid="`sellos-import-map-${f.field}`"
+						@update:model-value="mapColumn(f.field, $event)"
+					/>
+				</div>
 
-		<section
+				<p class="mt-ui-md text-sm text-ink" data-testid="sellos-import-counts">
+					{{ preview.counts.rows }} rows: {{ preview.counts.new_leads }} new leads,
+					{{ preview.counts.merged_with_existing }} merged with people already in SellOS,
+					{{ preview.counts.merged_in_file }} merged within the file,
+					{{ preview.counts.registered_dnd }} on the do not call list,
+					{{ preview.counts.skipped }} skipped.
+				</p>
+				<p v-if="preview.counts.unrecognised_dnd" class="text-sm text-ink-muted">
+					{{ preview.counts.unrecognised_dnd }} do not call values were not recognised
+					and are treated as no result.
+				</p>
+			</ListCard>
+
+			<ListCard title="A sample of the rows" class="mb-ui-md">
+				<div class="overflow-x-auto">
+					<table class="ui-table" data-testid="sellos-import-sample">
+						<thead>
+							<tr class="text-left text-ink-muted">
+								<th>Rows</th>
+								<th>Name</th>
+								<th>Phone</th>
+								<th>Email</th>
+								<th>What happens</th>
+								<th>Do not call</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr
+								v-for="r in preview.sample"
+								:key="r.rows"
+								data-testid="sellos-import-sample-row"
+							>
+								<td>{{ r.rows }}</td>
+								<td>{{ r.name }}</td>
+								<td>{{ r.phone }}</td>
+								<td>{{ r.email }}</td>
+								<td>{{ actions[r.action] }}</td>
+								<td>{{ r.do_not_call }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<ul
+					v-if="preview.skipped.length"
+					class="mt-ui-sm text-sm text-ink-muted"
+					data-testid="sellos-import-skipped"
+				>
+					<li v-for="s in preview.skipped" :key="s.row">
+						Row {{ s.row }}: {{ s.reason }}
+					</li>
+				</ul>
+				<div class="mt-ui-md">
+					<AppButton
+						variant="primary"
+						type="button"
+						:disabled="busy || !canImport"
+						data-testid="sellos-import-run"
+						@click="run"
+					>
+						Import {{ preview.counts.rows - preview.counts.skipped }} rows
+					</AppButton>
+				</div>
+			</ListCard>
+		</div>
+
+		<ListCard
 			v-if="result"
-			class="mt-4 rounded-input border border-line bg-surface p-4"
+			title="Import done"
+			class="mb-ui-md"
 			data-testid="sellos-import-result"
 			role="status"
 		>
@@ -129,23 +147,30 @@
 				{{ result.counts.registered_dnd }} are registered on the do not call list. They can
 				still be called, with the warning shown.
 			</p>
-			<ul v-if="result.skipped.length" class="mt-2 text-sm text-ink-muted">
+			<ul v-if="result.skipped.length" class="mt-ui-sm text-sm text-ink-muted">
 				<li v-for="s in result.skipped" :key="s.row">Row {{ s.row }}: {{ s.reason }}</li>
 			</ul>
 			<router-link
-				class="btn mt-3 inline-block"
+				class="ui-link mt-ui-md inline-flex min-h-touch items-center font-medium"
 				:to="{ path: '/crm/leads', query: { source: 'Bought list' } }"
 				data-testid="sellos-import-view-leads"
 			>
 				See the imported leads
 			</router-link>
-		</section>
+		</ListCard>
 	</div>
 </template>
 
 <script setup>
 import { computed, reactive, ref } from "vue";
 
+import AppButton from "../components/AppButton.vue";
+import FileField from "../components/FileField.vue";
+import FormField from "../components/FormField.vue";
+import ListCard from "../components/ListCard.vue";
+import LoadError from "../components/LoadError.vue";
+import PageHeader from "../components/PageHeader.vue";
+import StatCard from "../components/StatCard.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
 
 // The Company Admin's bought list import (SOS-P1-12). The file is read in the browser and sent as text.
@@ -157,6 +182,7 @@ const preview = ref(null);
 const result = ref(null);
 const error = ref("");
 const busy = ref(false);
+const retry = () => (csvText.value ? load(cleanMapping()) : (error.value = ""));
 const actions = {
 	create: "New lead",
 	"add lead": "New lead for a client already in SellOS",
@@ -206,6 +232,16 @@ async function chooseFile(event) {
 }
 
 const refresh = () => load(cleanMapping());
+
+// A column is chosen from a frappe-ui select: the value goes in the mapping, then the preview is read again.
+const mapColumn = (field, value) => {
+	mapping[field] = value;
+	refresh();
+};
+const columnOptions = computed(() => [
+	{ label: "Not in the file", value: "" },
+	...(preview.value?.headers || []).map((h) => ({ label: h, value: h })),
+]);
 
 async function run() {
 	const data = await ask(
