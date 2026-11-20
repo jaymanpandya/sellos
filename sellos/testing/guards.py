@@ -7,6 +7,9 @@ a second, without a database or a bench, and the backend tests run the same func
 
 * raw_phone_numbers: sellos/tests/test_no_raw_phone_numbers.py (SOS-P1-06)
 * modules_running_commands: sellos/provisioning/test_p1_02_worker.py (SOS-P1-02)
+* raw_controls (SOS-UI-2B follow up): a .vue page outside frontend/src/components that writes a raw <button>,
+  <input> or <select> instead of the shared components (docs/UI_STYLE.md). docs/ui-backlog.txt lists the
+  pages that still do, and only shrinks.
 * unpinned_serve_commands: sellos/tests/test_sellos_server_port.py (SOS-SETUP-13). Added by SOS-SETUP-34:
   CI run 92 failed on 9cbace7 because a hand commit wrote the serve command with variables, and only
   the full suite ran this check.
@@ -54,6 +57,12 @@ FIXES = {
 		"Write every serve command as the pinned SellOS one, literally: "
 		"bench --site sellos_test.localhost serve --port 8004 (no variables for the site or the port). "
 		"A line that warns against the unpinned form names it after the word 'without' and '--site'."
+	),
+	"controls": (
+		"Build the page from the shared components in frontend/src/components (AppButton, FormField, "
+		"MoneyField, AppCheckbox, StatusBadge, ListCard, FilterBar, PageHeader) and docs/UI_STYLE.md, never a "
+		"raw <button>, <input> or <select>. Follow the Leads list and the lead page. A page already on "
+		"docs/ui-backlog.txt comes off it when it is converted; nothing is ever added to it."
 	),
 	"commands": (
 		"Only sellos/provisioning runs commands (SOS-P1-02). Call a helper in that package "
@@ -136,7 +145,60 @@ def unpinned_serve_commands(root=APP_ROOT):
 	return found
 
 
-CHECKS = {"phones": raw_phone_numbers, "commands": modules_running_commands, "serve": unpinned_serve_commands}
+# SOS-UI-2B follow up: the screens use frappe-ui through the shared components (AppButton, FormField,
+# MoneyField, StatusBadge, AppCheckbox...). A page outside frontend/src/components may not write a raw
+# <button>, <input> or <select>. The pages that still do are listed in docs/ui-backlog.txt, the starting
+# backlog: a page not on it that writes one fails, and a page on it that no longer does must come off it.
+CONTROL_BACKLOG = "docs/ui-backlog.txt"
+SHARED_FOLDER = "frontend/src/components/"
+RAW_CONTROL = re.compile(r"<(button|input|select)(?=[\s/>])")
+BLANKABLE = re.compile(r"<script\b.*?</script>|<style\b.*?</style>|<!--.*?-->", re.S)
+
+
+def _controls_in(text):
+	"""(line, tag) of the first raw control in a .vue file's template, or None."""
+	template = BLANKABLE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
+	match = RAW_CONTROL.search(template)
+	return (template.count("\n", 0, match.start()) + 1, match.group(0)) if match else None
+
+
+def backlog_pages(root=APP_ROOT):
+	path = root / CONTROL_BACKLOG
+	if not path.exists():
+		return set()
+	lines = (line.split("#", 1)[0].strip() for line in path.read_text(encoding="utf-8").splitlines())
+	return {line for line in lines if line}
+
+
+def raw_controls(root=APP_ROOT):
+	"""Lines for every page outside the shared components that writes a raw control and is not on the
+	backlog, and for every backlog entry that no longer needs to be there."""
+	listed = backlog_pages(root)
+	found = []
+	offenders = set()
+	for path in sorted((root / "frontend" / "src").rglob("*.vue")):
+		rel = path.relative_to(root).as_posix()
+		if rel.startswith(SHARED_FOLDER):
+			continue
+		hit = _controls_in(path.read_text(encoding="utf-8"))
+		if not hit:
+			continue
+		offenders.add(rel)
+		if rel not in listed:
+			found.append(f"{rel}:{hit[0]}: {hit[1]}>")
+	for rel in sorted(listed - offenders):
+		found.append(
+			f"{CONTROL_BACKLOG}: {rel} has no raw control now, or is gone; remove it from the backlog"
+		)
+	return found
+
+
+CHECKS = {
+	"phones": raw_phone_numbers,
+	"commands": modules_running_commands,
+	"serve": unpinned_serve_commands,
+	"controls": raw_controls,
+}
 
 
 def message(name, found):

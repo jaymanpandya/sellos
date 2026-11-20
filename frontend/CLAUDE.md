@@ -14,7 +14,8 @@ Run from this folder, with Node 24:
 
 ## Where things live
 
-* Tokens (colours, fonts, spacing, radii): `src/theme/tokens.js`, wired into `tailwind.config.js`. Colours are CSS variables so each company can set its brand. The approved SellOS defaults (SOS-P1-06A) are brand #0f4c35, `--sos-brand-mid` #2a7a5a, accent #e8954a, Syne headings and DM Sans body text (served from the `@fontsource` packages). Do not hard code colours in components.
+* Tokens (colours, fonts, spacing, radii): `src/theme/ui-tokens.js` (the Pandya palette, with PAMAA's Inter, self hosted), read by `src/theme/tokens.js` and `tailwind.config.js`; `src/theme/frappe-ui-map.js` remaps frappe-ui's palette. Colours are CSS variables so each company can set its brand (`--sos-brand`). Do not hard code colours in components. `docs/UI_STYLE.md` says where each one is used.
+* Shared components: `src/components` (`AppButton`, `FormField`, `MoneyField`, `AppCheckbox`, `StatusBadge`, `ListCard`, `FilterBar`, `PageHeader`, `StatCard`, `EmptyState`, `LoadError`, `LoadingSkeleton`). A page is built from them, as `LeadsPage.vue` and `LeadPage.vue` are, with no raw `<button>`, `<input>` or `<select>` (the `controls` guard).
 * Personas and roles: `src/personas.js`. It lists the roles, their areas and their navigation (the Sales Manager persona was added in SOS-P1-18), with `personaFor`, `routeArea` and `inAreas`.
 * Routes: `src/router.js`. Pages are lazy loaded from `src/pages/`, and each route declares its `meta.area`, which `personas.js` checks.
 * Start up: `src/main.js`. API calls: `src/api.js`. Session: `src/session.js`.

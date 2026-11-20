@@ -140,6 +140,7 @@ context("SOS-P1-24: pipeline board and lead list filters", () => {
 
 	it("filters by consent status", () => {
 		openList("agent");
+		cy.openMoreFilters();
 		cy.getByTestId("leads-filter-consent").select("Opted out");
 		cy.wait("@list");
 		rows().should("have.length", 1).and("contain", seed.agent_b);
@@ -148,6 +149,7 @@ context("SOS-P1-24: pipeline board and lead list filters", () => {
 	it("filters by last contacted and by untouched", () => {
 		openList("agent");
 		// Five days ago by the site's date and time zone, never the browser clock.
+		cy.openMoreFilters();
 		cy.bench("sellos.tests.ui_fixtures.site_date", { days: -5 }).then((r) =>
 			cy.getByTestId("leads-filter-contacted-from").type(r.date)
 		);
@@ -162,6 +164,7 @@ context("SOS-P1-24: pipeline board and lead list filters", () => {
 
 	it("filters by budget, and the filters combine", () => {
 		openList("agent");
+		cy.openMoreFilters();
 		cy.getByTestId("leads-filter-budget-min").type("5000000");
 		cy.getByTestId("leads-filter-apply").click();
 		cy.wait("@list");

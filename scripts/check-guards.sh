@@ -59,8 +59,9 @@ else
 fi
 
 # 1, 2 and 10. Raw phone numbers, commands outside sellos/provisioning, and (SOS-SETUP-34) a serve command
-# that is not the pinned SellOS one (sellos/testing/guards.py).
-for g in phones commands serve; do
+# that is not the pinned SellOS one (sellos/testing/guards.py). 11: a page with a raw <button>, <input> or
+# <select> that is not on docs/ui-backlog.txt (same file).
+for g in phones commands serve controls; do
   out="$(python3 -c 'import sys; sys.path.insert(0, "."); from sellos.testing import guards; sys.exit(guards.main(sys.argv[1:]))' "$g" 2>&1)"
   rc=$?
   if [ "$rc" -eq 0 ]; then

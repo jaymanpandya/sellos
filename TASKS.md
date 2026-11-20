@@ -461,24 +461,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Browser spec:** required
 - **Story Points:** 8
 - **Dependencies:** SOS-UI-2
-- **Status:** Waiting
-
-### SOS-UI-3: Restyle every existing screen
-- **Epic:** Web app, roles and security
-- **Description:** As a user, I want every screen to match the new style, so that the product is consistent. Restyle Home, Leads and the lead page, Support access, Setup, Telephony, Companies and the partner view to `docs/UI_STYLE.md`. Add a screenshot of each screen to `docs/regression` for review.
-- **Acceptance Criteria:**
-  - Each listed screen follows `docs/UI_STYLE.md`.
-  - `docs/regression` holds a screenshot of each screen.
-  - No behaviour or permission changes, every `data-testid` is unchanged, and all current Cypress specs pass.
-- **Test Criteria:** The existing Cypress specs, run unchanged.
-- **Notes:** Added by SOS-SETUP-40 (18 November 2026).
-- **Owner:** Claude Code
-- **Priority:** P2
-- **Launch:** Jan 1
-- **Browser spec:** required
-- **Story Points:** 8
-- **Dependencies:** SOS-UI-2
-- **Status:** Not Started
+- **Status:** Complete
 
 ### SOS-P2-05: Extend the Call Log
 - **Epic:** Calling
@@ -582,6 +565,78 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Dependencies:** SOS-P2-04, SOS-N10, SOS-P2-03, SOS-P2-05, SOS-P2-09
 - **Status:** Not Started
 - **Browser spec:** required
+
+### SOS-UI-3A: Move Home, Call queue and Site visits to the shared components
+- **Epic:** Web app, roles and security
+- **Description:** As a user, I want these screens to look and work like the Leads list and the lead page, so that the product is consistent. Move Home (the Today screen and its lists), Call queue and Site visits, with `TodayRow.vue`, `VisitConfirm.vue` and `NotificationBell.vue` to the shared components. Use the shared components in `frontend/src/components` (`AppButton`, `FormField`, `MoneyField`, `AppCheckbox`, `StatusBadge`, `ListCard`, `FilterBar`, `PageHeader`, `StatCard`, `EmptyState`, `LoadError`, `LoadingSkeleton`, frappe-ui's `Dialog`) and follow the Leads list and the lead page as the pattern (`docs/UI_STYLE.md`, "Patterns" and the checklist): a page header with one primary action, content in cards, a stat row where the page has counts, filters in a `FilterBar`, two columns on a detail page, every field labelled, money in rupees with Indian grouping, status as a badge with a word and an icon, an empty state and a load error with Try again. No raw `<button>`, `<input>` or `<select>`.
+- **Acceptance Criteria:**
+  - Each listed page is built from the shared components and follows `docs/UI_STYLE.md`, as the Leads list and the lead page do.
+  - `frontend/src/pages` files in this task come off `docs/ui-backlog.txt` (frontend/src/pages/CallQueuePage.vue, frontend/src/pages/SiteVisitsPage.vue), and `scripts/check-guards.sh` passes the controls guard.
+  - `cypress/integration/frontend/ui_style.cy.js` has a case for each listed page that passes: the page background and text colour, the 24px/600 title, 16px card radius with the 1px teal line, the primary button as solid button/bg with text/button, and that every control on the page is a frappe-ui control.
+  - No behaviour or permission changes, home-welcome, today-counts and every other Home, queue and visit `data-testid` are unchanged, and every current Cypress spec passes (specs that read a native `<option>` use `cy.optionTexts`).
+- **Test Criteria:** The Cypress style check in `ui_style.cy.js` for each page, plus the existing specs for these pages, run unchanged apart from select helpers.
+- **Notes:** Rewritten from SOS-UI-3 on Jayman's instruction (20 November 2026, after SOS-UI-2B was approved). Interactive-quality work, but it runs in the loop: build on the shared components, never a second copy of one. A page that needs a component that does not exist adds it to `frontend/src/components` and `docs/UI_STYLE.md`. frappe-ui's Select is not a native `<select>`: `cy.select()` is overwritten for it in `cypress/support/commands.js`.
+- **Owner:** Claude Code
+- **Priority:** P2
+- **Launch:** Dec 20
+- **Browser spec:** required
+- **Story Points:** 5
+- **Dependencies:** SOS-UI-2B
+- **Status:** Not Started
+
+### SOS-UI-3B: Move Import leads, the pipeline Board, Call lists and Assignment to the shared components
+- **Epic:** Web app, roles and security
+- **Description:** As a user, I want these screens to look and work like the Leads list and the lead page, so that the product is consistent. Move Import leads, the pipeline Board (`LeadBoard.vue`, the Board view of the Leads page), Call lists and Assignment to the shared components. Use the shared components in `frontend/src/components` (`AppButton`, `FormField`, `MoneyField`, `AppCheckbox`, `StatusBadge`, `ListCard`, `FilterBar`, `PageHeader`, `StatCard`, `EmptyState`, `LoadError`, `LoadingSkeleton`, frappe-ui's `Dialog`) and follow the Leads list and the lead page as the pattern (`docs/UI_STYLE.md`, "Patterns" and the checklist): a page header with one primary action, content in cards, a stat row where the page has counts, filters in a `FilterBar`, two columns on a detail page, every field labelled, money in rupees with Indian grouping, status as a badge with a word and an icon, an empty state and a load error with Try again. No raw `<button>`, `<input>` or `<select>`.
+- **Acceptance Criteria:**
+  - Each listed page is built from the shared components and follows `docs/UI_STYLE.md`, as the Leads list and the lead page do.
+  - `frontend/src/pages` files in this task come off `docs/ui-backlog.txt` (frontend/src/pages/ImportLeadsPage.vue, frontend/src/pages/CallListsPage.vue, frontend/src/pages/AssignmentRulesPage.vue), and `scripts/check-guards.sh` passes the controls guard.
+  - `cypress/integration/frontend/ui_style.cy.js` has a case for each listed page that passes: the page background and text colour, the 24px/600 title, 16px card radius with the 1px teal line, the primary button as solid button/bg with text/button, and that every control on the page is a frappe-ui control.
+  - No behaviour or permission changes, every import, board, call list and assignment `data-testid` are unchanged, and every current Cypress spec passes (specs that read a native `<option>` use `cy.optionTexts`).
+- **Test Criteria:** The Cypress style check in `ui_style.cy.js` for each page, plus the existing specs for these pages, run unchanged apart from select helpers.
+- **Notes:** Rewritten from SOS-UI-3 on Jayman's instruction (20 November 2026, after SOS-UI-2B was approved). Interactive-quality work, but it runs in the loop: build on the shared components, never a second copy of one. A page that needs a component that does not exist adds it to `frontend/src/components` and `docs/UI_STYLE.md`. frappe-ui's Select is not a native `<select>`: `cy.select()` is overwritten for it in `cypress/support/commands.js`.
+- **Owner:** Claude Code
+- **Priority:** P2
+- **Launch:** Dec 20
+- **Browser spec:** required
+- **Story Points:** 5
+- **Dependencies:** SOS-UI-2B
+- **Status:** Not Started
+
+### SOS-UI-3C: Move Users, Teams, Team report, Support access and Telephony to the shared components
+- **Epic:** Web app, roles and security
+- **Description:** As a user, I want these screens to look and work like the Leads list and the lead page, so that the product is consistent. Move Users, Teams, Team report, Support access and Telephony to the shared components. Use the shared components in `frontend/src/components` (`AppButton`, `FormField`, `MoneyField`, `AppCheckbox`, `StatusBadge`, `ListCard`, `FilterBar`, `PageHeader`, `StatCard`, `EmptyState`, `LoadError`, `LoadingSkeleton`, frappe-ui's `Dialog`) and follow the Leads list and the lead page as the pattern (`docs/UI_STYLE.md`, "Patterns" and the checklist): a page header with one primary action, content in cards, a stat row where the page has counts, filters in a `FilterBar`, two columns on a detail page, every field labelled, money in rupees with Indian grouping, status as a badge with a word and an icon, an empty state and a load error with Try again. No raw `<button>`, `<input>` or `<select>`.
+- **Acceptance Criteria:**
+  - Each listed page is built from the shared components and follows `docs/UI_STYLE.md`, as the Leads list and the lead page do.
+  - `frontend/src/pages` files in this task come off `docs/ui-backlog.txt` (frontend/src/pages/UsersPage.vue, frontend/src/pages/TeamsPage.vue, frontend/src/pages/SupportPage.vue, frontend/src/pages/TelephonyPage.vue), and `scripts/check-guards.sh` passes the controls guard.
+  - `cypress/integration/frontend/ui_style.cy.js` has a case for each listed page that passes: the page background and text colour, the 24px/600 title, 16px card radius with the 1px teal line, the primary button as solid button/bg with text/button, and that every control on the page is a frappe-ui control.
+  - No behaviour or permission changes, every user, team, team report, support access and telephony `data-testid` are unchanged, and every current Cypress spec passes (specs that read a native `<option>` use `cy.optionTexts`).
+- **Test Criteria:** The Cypress style check in `ui_style.cy.js` for each page, plus the existing specs for these pages, run unchanged apart from select helpers.
+- **Notes:** Rewritten from SOS-UI-3 on Jayman's instruction (20 November 2026, after SOS-UI-2B was approved). Interactive-quality work, but it runs in the loop: build on the shared components, never a second copy of one. A page that needs a component that does not exist adds it to `frontend/src/components` and `docs/UI_STYLE.md`. frappe-ui's Select is not a native `<select>`: `cy.select()` is overwritten for it in `cypress/support/commands.js`.
+- **Owner:** Claude Code
+- **Priority:** P2
+- **Launch:** Dec 20
+- **Browser spec:** required
+- **Story Points:** 5
+- **Dependencies:** SOS-UI-2B
+- **Status:** Not Started
+
+### SOS-UI-3D: Move Companies, sign in and the setup wizard to the shared components
+- **Epic:** Web app, roles and security
+- **Description:** As a user, I want these screens to look and work like the Leads list and the lead page, so that the product is consistent. Move Companies (the Platform Admin list), the sign in page and the setup wizard. Sign in today is Frappe's own `/login`: give it a SellOS template (the SellOS brand tile, Inter, the Pandya tokens, a frappe-ui style form) through the app's `www` and hooks, with no change to how sign in works to the shared components. Use the shared components in `frontend/src/components` (`AppButton`, `FormField`, `MoneyField`, `AppCheckbox`, `StatusBadge`, `ListCard`, `FilterBar`, `PageHeader`, `StatCard`, `EmptyState`, `LoadError`, `LoadingSkeleton`, frappe-ui's `Dialog`) and follow the Leads list and the lead page as the pattern (`docs/UI_STYLE.md`, "Patterns" and the checklist): a page header with one primary action, content in cards, a stat row where the page has counts, filters in a `FilterBar`, two columns on a detail page, every field labelled, money in rupees with Indian grouping, status as a badge with a word and an icon, an empty state and a load error with Try again. No raw `<button>`, `<input>` or `<select>`.
+- **Acceptance Criteria:**
+  - Each listed page is built from the shared components and follows `docs/UI_STYLE.md`, as the Leads list and the lead page do.
+  - `frontend/src/pages` files in this task come off `docs/ui-backlog.txt` (frontend/src/pages/TenantsPage.vue, frontend/src/pages/SetupWizardPage.vue), and `scripts/check-guards.sh` passes the controls guard.
+  - `cypress/integration/frontend/ui_style.cy.js` has a case for each listed page that passes: the page background and text colour, the 24px/600 title, 16px card radius with the 1px teal line, the primary button as solid button/bg with text/button, and that every control on the page is a frappe-ui control.
+  - No behaviour or permission changes, every companies, sign in and setup `data-testid` are unchanged, and every current Cypress spec passes (specs that read a native `<option>` use `cy.optionTexts`).
+- **Test Criteria:** The Cypress style check in `ui_style.cy.js` for each page, plus the existing specs for these pages, run unchanged apart from select helpers.
+- **Notes:** Rewritten from SOS-UI-3 on Jayman's instruction (20 November 2026, after SOS-UI-2B was approved). Interactive-quality work, but it runs in the loop: build on the shared components, never a second copy of one. A page that needs a component that does not exist adds it to `frontend/src/components` and `docs/UI_STYLE.md`. frappe-ui's Select is not a native `<select>`: `cy.select()` is overwritten for it in `cypress/support/commands.js`.
+- **Owner:** Claude Code
+- **Priority:** P2
+- **Launch:** Dec 20
+- **Browser spec:** required
+- **Story Points:** 5
+- **Dependencies:** SOS-UI-2B
+- **Status:** Not Started
 
 ### SOS-P2-11: Build call reports
 - **Epic:** Calling
@@ -2443,7 +2498,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P6
 - **Launch:** Jan 1
-- **Dependencies:** SOS-N12, SOS-N14, SOS-N15, SOS-N16, SOS-N21, SOS-N21A, SOS-P0-01, SOS-P0-02, SOS-P0-03, SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-07, SOS-P0-06L, SOS-P0-08, SOS-P0-09, SOS-P0-12, SOS-P1-06A, SOS-P1-06B, SOS-P1-14, SOS-P6-12, SOS-P0-10, SOS-P1-04, SOS-P1-05, SOS-P1-13, SOS-P5-10, SOS-P0-11, SOS-P1-01, SOS-P1-02, SOS-P1-03, SOS-P1-11, SOS-P1-07, SOS-P1-08, SOS-P1-09, SOS-P1-10, SOS-P1-12, SOS-P2-01, SOS-P2-02, SOS-P2-03, SOS-P2-04, SOS-P2-05, SOS-P2-06, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-13, SOS-P2-14, SOS-P3-01, SOS-P3-02, SOS-P3-03, SOS-P3-04, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12, SOS-P3-13, SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07, SOS-P4-08, SOS-P4-09, SOS-P4-10, SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06, SOS-P5-07, SOS-P5-08, SOS-P5-09, SOS-P6-01, SOS-P6-02, SOS-P6-03, SOS-P6-15, SOS-P6-04, SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-09, SOS-P6-10, SOS-P6-11, SOS-P6-16, SOS-P6-17, SOS-P6-13, SOS-P6-14, SOS-REG-A, SOS-REG-B, SOS-REG-C, SOS-FIX-1, SOS-P0-05D, SOS-P0-06D, SOS-P0-08D, SOS-P1-14D, SOS-P6-12D, SOS-P2-02L, SOS-P3-01L, SOS-P3-04A, SOS-P3-10L, SOS-P4-10C, SOS-P5-07L, SOS-P5-09A, SOS-P6-02A, SOS-P6-03L, SOS-P6-15L, SOS-P6-06A, SOS-P6-10L, SOS-P6-11L, SOS-P6-13C, SOS-N22, SOS-N23, SOS-P0-13, SOS-P1-15, SOS-P1-16, SOS-P1-17, SOS-P1-18, SOS-P1-19, SOS-P1-20, SOS-P1-21, SOS-P1-22, SOS-P1-23, SOS-P1-24, SOS-P1-25, SOS-P1-26, SOS-P7-01, SOS-P7-02, SOS-P7-03, SOS-P7-04, SOS-P7-05, SOS-P7-06, SOS-P7-07, SOS-P7-08, SOS-P7-09, SOS-P7-10, SOS-P7-11, SOS-P7-12, SOS-P7-13, SOS-P7-14, SOS-UI-1, SOS-UI-2, SOS-UI-2B, SOS-UI-3
+- **Dependencies:** SOS-N12, SOS-N14, SOS-N15, SOS-N16, SOS-N21, SOS-N21A, SOS-P0-01, SOS-P0-02, SOS-P0-03, SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-07, SOS-P0-06L, SOS-P0-08, SOS-P0-09, SOS-P0-12, SOS-P1-06A, SOS-P1-06B, SOS-P1-14, SOS-P6-12, SOS-P0-10, SOS-P1-04, SOS-P1-05, SOS-P1-13, SOS-P5-10, SOS-P0-11, SOS-P1-01, SOS-P1-02, SOS-P1-03, SOS-P1-11, SOS-P1-07, SOS-P1-08, SOS-P1-09, SOS-P1-10, SOS-P1-12, SOS-P2-01, SOS-P2-02, SOS-P2-03, SOS-P2-04, SOS-P2-05, SOS-P2-06, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-13, SOS-P2-14, SOS-P3-01, SOS-P3-02, SOS-P3-03, SOS-P3-04, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12, SOS-P3-13, SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07, SOS-P4-08, SOS-P4-09, SOS-P4-10, SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06, SOS-P5-07, SOS-P5-08, SOS-P5-09, SOS-P6-01, SOS-P6-02, SOS-P6-03, SOS-P6-15, SOS-P6-04, SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-09, SOS-P6-10, SOS-P6-11, SOS-P6-16, SOS-P6-17, SOS-P6-13, SOS-P6-14, SOS-REG-A, SOS-REG-B, SOS-REG-C, SOS-FIX-1, SOS-P0-05D, SOS-P0-06D, SOS-P0-08D, SOS-P1-14D, SOS-P6-12D, SOS-P2-02L, SOS-P3-01L, SOS-P3-04A, SOS-P3-10L, SOS-P4-10C, SOS-P5-07L, SOS-P5-09A, SOS-P6-02A, SOS-P6-03L, SOS-P6-15L, SOS-P6-06A, SOS-P6-10L, SOS-P6-11L, SOS-P6-13C, SOS-N22, SOS-N23, SOS-P0-13, SOS-P1-15, SOS-P1-16, SOS-P1-17, SOS-P1-18, SOS-P1-19, SOS-P1-20, SOS-P1-21, SOS-P1-22, SOS-P1-23, SOS-P1-24, SOS-P1-25, SOS-P1-26, SOS-P7-01, SOS-P7-02, SOS-P7-03, SOS-P7-04, SOS-P7-05, SOS-P7-06, SOS-P7-07, SOS-P7-08, SOS-P7-09, SOS-P7-10, SOS-P7-11, SOS-P7-12, SOS-P7-13, SOS-P7-14, SOS-UI-1, SOS-UI-2, SOS-UI-2B, SOS-UI-3A, SOS-UI-3B, SOS-UI-3C, SOS-UI-3D
 - **Status:** Waiting
 
 ### SOS-N07: Counsel reviews the consent basis and calling script

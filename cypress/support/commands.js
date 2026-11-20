@@ -273,3 +273,12 @@ Cypress.Commands.add("optionTexts", (testId) => {
 			return cy.wrap(texts, { log: false });
 		});
 });
+
+// SOS-UI-2B: the Leads filters show one row (search, stage, agent, source); the rest are under "More
+// filters". cy.openMoreFilters() opens them if they are closed, so a spec may call it more than once.
+Cypress.Commands.add("openMoreFilters", () => {
+	cy.getByTestId("leads-filters-toggle").then(($toggle) => {
+		if ($toggle.attr("aria-expanded") !== "true") cy.wrap($toggle).click();
+	});
+	cy.getByTestId("filters-more").should("be.visible");
+});

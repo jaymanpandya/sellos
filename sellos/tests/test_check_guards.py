@@ -26,6 +26,7 @@ GUARD_NAMES = (
 	"lint",
 	"semgrep",
 	"serve",
+	"controls",
 )
 
 
@@ -63,6 +64,37 @@ class TestGuardFunctions(unittest.TestCase):
 		(self.root / "sellos/provisioning/credentials.py").write_text("import subprocess\n", encoding="utf-8")
 		found = guards.modules_running_commands(self.root / "sellos")
 		self.assertEqual(found, ["sellos/voice/keys.py:1 runs commands (subprocess)"])
+
+	def test_a_raw_control_on_a_page_is_found_unless_the_backlog_lists_it(self):
+		"""SOS-UI-2B follow up: a page outside the shared components may not write a raw control."""
+		pages = self.root / "frontend/src/pages"
+		pages.mkdir(parents=True)
+		components = self.root / "frontend/src/components"
+		components.mkdir(parents=True)
+		(self.root / "docs").mkdir()
+		raw = "<template>\n\t<div>\n\t\t<" + "button>Go</" + "button>\n\t</div>\n</template>\n"
+		(pages / "A.vue").write_text(raw, encoding="utf-8")
+		(components / "Shared.vue").write_text(raw, encoding="utf-8")  # the shared folder is exempt
+		(pages / "Clean.vue").write_text(
+			"<template>\n\t<AppButton>Go</AppButton>\n</template>\n<script setup>\n// a <"
+			+ "button> in a comment\n</script>\n",
+			encoding="utf-8",
+		)
+		found = guards.raw_controls(self.root)
+		self.assertEqual(len(found), 1, found)
+		self.assertTrue(found[0].startswith("frontend/src/pages/A.vue:3:"), found)
+		(self.root / "docs/ui-backlog.txt").write_text(
+			"frontend/src/pages/A.vue  # 1 button\n", encoding="utf-8"
+		)
+		self.assertEqual(guards.raw_controls(self.root), [])
+		# A page that is converted must come off the backlog.
+		(pages / "A.vue").write_text(
+			"<template>\n\t<AppButton>Go</AppButton>\n</template>\n", encoding="utf-8"
+		)
+		found = guards.raw_controls(self.root)
+		self.assertEqual(len(found), 1, found)
+		self.assertIn("remove it from the backlog", found[0])
+		self.assertIn("AppButton", guards.message("controls", ["x"]))
 
 	def test_each_message_names_its_fix(self):
 		self.assertIn("sellos.tests.phones", guards.message("phones", ["x"]))

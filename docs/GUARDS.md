@@ -38,6 +38,7 @@ literal. The phone guard's message had named the fix from the start.
 | 8 | lint | `pre-commit` (gitleaks, ruff, ruff format, prettier, eslint, file checks) | 1 |
 | 9 | semgrep | Semgrep with the Frappe rules and `r/python.lang.correctness` | 1 |
 | 10 | serve | `sellos/testing/guards.py` over every file git knows | 1 |
+| 11 | controls | `sellos/testing/guards.py` over `frontend/src` pages | 1 |
 
 A missing tool (pre-commit, Semgrep or its rules) exits 3. That is a problem with the environment, not the code.
 
@@ -156,3 +157,11 @@ check in a second.
 **How to comply.** Write the command out literally, in every script, document and test:
 `bench --site sellos_test.localhost serve --port 8004`. A line that warns against the unpinned form names it after
 the word "without" and `--site`.
+
+## 11. controls: no raw button, input or select on a page
+
+A `.vue` file outside `frontend/src/components` may not write a raw `<button>`, `<input>` or `<select>`. Build the page from the shared
+components (`AppButton`, `FormField`, `MoneyField`, `AppCheckbox`, `StatusBadge`, `ListCard`, `FilterBar`, `PageHeader`) as the Leads list and
+the lead page do, and follow `docs/UI_STYLE.md`. `docs/ui-backlog.txt` lists the pages that still have raw controls (the starting backlog, set on 20
+November 2026). A page that is not on it and writes one fails the guard; a page on it that no longer has one fails too, until it is taken off the
+list, so the list only shrinks. Never add a page to it. The SOS-UI-3 tasks convert the listed pages.

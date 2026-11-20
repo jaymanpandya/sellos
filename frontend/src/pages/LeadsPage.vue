@@ -205,11 +205,15 @@
 			</div>
 		</form>
 
-		<FilterBar data-testid="sellos-leads-filters" @apply="load" @clear="clearFilters">
+		<FilterBar
+			:open="moreOpen"
+			data-testid="sellos-leads-filters"
+			@apply="load"
+			@clear="clearFilters"
+		>
 			<FormField
 				:model-value="search"
 				label="Search leads"
-				class="sm:col-span-2"
 				data-testid="sellos-leads-search"
 				@update:model-value="
 					(v) => {
@@ -217,35 +221,6 @@
 						load();
 					}
 				"
-			/>
-			<MoneyField
-				v-model="filters.budget_min"
-				label="Budget from (₹)"
-				data-testid="sellos-leads-filter-budget-min"
-			/>
-			<MoneyField
-				v-model="filters.budget_max"
-				label="Budget to (₹)"
-				data-testid="sellos-leads-filter-budget-max"
-			/>
-			<FormField
-				v-model="filters.configuration"
-				type="select"
-				label="Configuration"
-				:options="withAny('Any configuration', CONFIGURATIONS)"
-				data-testid="sellos-leads-filter-configuration"
-			/>
-			<FormField
-				v-model="filters.locality"
-				label="Locality"
-				data-testid="sellos-leads-filter-locality"
-			/>
-			<FormField
-				v-model="filters.timeline"
-				type="select"
-				label="Timeline"
-				:options="withAny('Any timeline', TIMELINES)"
-				data-testid="sellos-leads-filter-timeline"
 			/>
 			<FormField
 				:model-value="filters.stage"
@@ -284,25 +259,6 @@
 				"
 			/>
 			<FormField
-				v-if="options.teams.length"
-				:model-value="filters.team"
-				type="select"
-				label="Team"
-				:options="
-					withAny(
-						'Any team',
-						options.teams.map((t) => ({ value: t.name, label: t.team_name }))
-					)
-				"
-				data-testid="sellos-leads-filter-team"
-				@update:model-value="
-					(v) => {
-						filters.team = v;
-						load();
-					}
-				"
-			/>
-			<FormField
 				:model-value="filters.source"
 				type="select"
 				label="Source"
@@ -320,84 +276,155 @@
 					}
 				"
 			/>
-			<FormField
-				:model-value="filters.consent_status"
-				type="select"
-				label="Consent status"
-				:options="withAny('Any consent status', options.consent_statuses)"
-				data-testid="sellos-leads-filter-consent"
-				@update:model-value="
-					(v) => {
-						filters.consent_status = v;
-						load();
-					}
-				"
-			/>
-			<FormField
-				:model-value="filters.last_contacted_from"
-				type="date"
-				label="Last contacted from"
-				data-testid="sellos-leads-filter-contacted-from"
-				@update:model-value="
-					(v) => {
-						filters.last_contacted_from = v;
-						load();
-					}
-				"
-			/>
-			<FormField
-				:model-value="filters.last_contacted_to"
-				type="date"
-				label="Last contacted to"
-				data-testid="sellos-leads-filter-contacted-to"
-				@update:model-value="
-					(v) => {
-						filters.last_contacted_to = v;
-						load();
-					}
-				"
-			/>
-			<FormField
-				:model-value="filters.follow_up"
-				type="select"
-				label="Follow up"
-				:options="followUpOptions"
-				data-testid="sellos-leads-filter-follow-up"
-				@update:model-value="
-					(v) => {
-						filters.follow_up = v;
-						load();
-					}
-				"
-			/>
-			<FormField
-				:model-value="filters.sort"
-				type="select"
-				label="Sort"
-				:options="sortOptions"
-				data-testid="sellos-leads-sort"
-				@update:model-value="
-					(v) => {
-						filters.sort = v;
-						load();
-					}
-				"
-			/>
-			<FormField
-				:model-value="untouchedOnly"
-				type="checkbox"
-				:label="`No activity for ${untouchedDays} days`"
-				data-testid="sellos-leads-filter-untouched"
-				@update:model-value="
-					(v) => {
-						untouchedOnly = v;
-						load();
-					}
-				"
-			/>
+			<template #more>
+				<MoneyField
+					v-model="filters.budget_min"
+					label="Budget from (₹)"
+					data-testid="sellos-leads-filter-budget-min"
+				/>
+				<MoneyField
+					v-model="filters.budget_max"
+					label="Budget to (₹)"
+					data-testid="sellos-leads-filter-budget-max"
+				/>
+				<FormField
+					v-model="filters.configuration"
+					type="select"
+					label="Configuration"
+					:options="withAny('Any configuration', CONFIGURATIONS)"
+					data-testid="sellos-leads-filter-configuration"
+				/>
+				<FormField
+					v-model="filters.locality"
+					label="Locality"
+					data-testid="sellos-leads-filter-locality"
+				/>
+				<FormField
+					v-model="filters.timeline"
+					type="select"
+					label="Timeline"
+					:options="withAny('Any timeline', TIMELINES)"
+					data-testid="sellos-leads-filter-timeline"
+				/>
+				<FormField
+					v-if="options.teams.length"
+					:model-value="filters.team"
+					type="select"
+					label="Team"
+					:options="
+						withAny(
+							'Any team',
+							options.teams.map((t) => ({ value: t.name, label: t.team_name }))
+						)
+					"
+					data-testid="sellos-leads-filter-team"
+					@update:model-value="
+						(v) => {
+							filters.team = v;
+							load();
+						}
+					"
+				/>
+				<FormField
+					:model-value="filters.consent_status"
+					type="select"
+					label="Consent status"
+					:options="withAny('Any consent status', options.consent_statuses)"
+					data-testid="sellos-leads-filter-consent"
+					@update:model-value="
+						(v) => {
+							filters.consent_status = v;
+							load();
+						}
+					"
+				/>
+				<FormField
+					:model-value="filters.last_contacted_from"
+					type="date"
+					label="Last contacted from"
+					data-testid="sellos-leads-filter-contacted-from"
+					@update:model-value="
+						(v) => {
+							filters.last_contacted_from = v;
+							load();
+						}
+					"
+				/>
+				<FormField
+					:model-value="filters.last_contacted_to"
+					type="date"
+					label="Last contacted to"
+					data-testid="sellos-leads-filter-contacted-to"
+					@update:model-value="
+						(v) => {
+							filters.last_contacted_to = v;
+							load();
+						}
+					"
+				/>
+				<FormField
+					:model-value="filters.follow_up"
+					type="select"
+					label="Follow up"
+					:options="followUpOptions"
+					data-testid="sellos-leads-filter-follow-up"
+					@update:model-value="
+						(v) => {
+							filters.follow_up = v;
+							load();
+						}
+					"
+				/>
+				<FormField
+					:model-value="filters.sort"
+					type="select"
+					label="Sort"
+					:options="sortOptions"
+					data-testid="sellos-leads-sort"
+					@update:model-value="
+						(v) => {
+							filters.sort = v;
+							load();
+						}
+					"
+				/>
+				<FormField
+					:model-value="untouchedOnly"
+					type="checkbox"
+					:label="`No activity for ${untouchedDays} days`"
+					data-testid="sellos-leads-filter-untouched"
+					@update:model-value="
+						(v) => {
+							untouchedOnly = v;
+							load();
+						}
+					"
+				/>
+			</template>
 			<template #actions>
 				<AppButton type="submit" variant="primary" data-testid="sellos-leads-filter-apply">
 					Filter
+				</AppButton>
+				<AppButton
+					type="button"
+					:aria-expanded="moreOpen ? 'true' : 'false'"
+					data-testid="sellos-leads-filters-toggle"
+					@click="moreOpen = !moreOpen"
+				>
+					<template #prefix>
+						<span
+							:class="moreOpen ? 'lucide-chevron-up' : 'lucide-chevron-down'"
+							class="icon-inherit size-4"
+							aria-hidden="true"
+						/>
+					</template>
+					{{ moreOpen ? "Fewer filters" : "More filters" }}
+					<span
+						v-if="moreActive && !moreOpen"
+						class="ml-1 rounded-badge bg-brand px-1.5 text-xs text-on-brand-accent"
+						data-testid="sellos-leads-filters-more-count"
+						>{{ moreActive }}</span
+					>
 				</AppButton>
 				<AppButton
 					type="button"
@@ -645,6 +672,27 @@ const options = reactive({ agents: [], teams: [], consent_statuses: [] });
 const filterSources = ref([]);
 const board = reactive({ columns: [] });
 const view = ref("list");
+// One row of filters by default (search, stage, agent, source); the rest sit under "More filters", which
+// opens by itself when a bookmarked view already uses one of them.
+const MORE_KEYS = [
+	"budget_min",
+	"budget_max",
+	"configuration",
+	"locality",
+	"timeline",
+	"team",
+	"consent_status",
+	"last_contacted_from",
+	"last_contacted_to",
+	"follow_up",
+	"sort",
+];
+const moreOpen = ref(false);
+const moreActive = computed(
+	() =>
+		MORE_KEYS.filter((k) => filters[k] !== "" && filters[k] != null).length +
+		(untouchedOnly.value ? 1 : 0)
+);
 
 // The numbers above the list count the leads in view, so they follow the filters (the list holds up to 100).
 const stats = computed(() => {
@@ -683,6 +731,7 @@ function readUrl() {
 		filters[key] = typeof q[key] === "string" ? q[key] : "";
 	}
 	untouchedOnly.value = q.untouched === "1";
+	if (moreActive.value) moreOpen.value = true;
 }
 
 function writeUrl() {

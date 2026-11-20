@@ -70,6 +70,33 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 		});
 	});
 
+	it("shows one row of filters, and the rest under More filters", () => {
+		cy.signInFresh("company_admin");
+		cy.visit("/sellos/crm/leads");
+		["search", "filter-stage", "filter-agent", "filter-source"].forEach((id) =>
+			cy.getByTestId(`leads-${id}`).should("be.visible")
+		);
+		cy.getByTestId("leads-filter-budget-min").should("not.be.visible");
+		cy.getByTestId("leads-filter-contacted-from").should("not.be.visible");
+		cy.getByTestId("leads-filters-toggle").should("contain", "More filters").click();
+		cy.getByTestId("leads-filter-budget-min").should("be.visible");
+		cy.getByTestId("leads-filter-contacted-from").should("be.visible");
+		cy.getByTestId("leads-filters-toggle").should("contain", "Fewer filters").click();
+		cy.getByTestId("leads-filter-budget-min").should("not.be.visible");
+		// A bookmarked view that uses a hidden filter opens the panel by itself.
+		cy.visit("/sellos/crm/leads?budget_min=5000000");
+		cy.getByTestId("leads-filter-budget-min")
+			.should("be.visible")
+			.and("have.value", "50,00,000");
+		// A native checkbox is the teal box, not the browser's.
+		cy.getByTestId("leads-filter-untouched").check();
+		cy.getByTestId("leads-filter-untouched").should(
+			"have.css",
+			"background-color",
+			"rgb(0, 60, 60)"
+		);
+	});
+
 	it("shows a disabled button differently from a ghost button", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/crm/leads");

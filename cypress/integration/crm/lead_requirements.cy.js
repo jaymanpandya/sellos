@@ -50,6 +50,7 @@ context("SOS-P1-15: what each buyer wants", () => {
 			cy.getByTestId("lead-req-summary").should("contain", locality);
 
 			cy.visit("/sellos/crm/leads");
+			cy.openMoreFilters();
 			cy.getByTestId("leads-filter-locality").type(locality);
 			cy.getByTestId("leads-filter-apply").click();
 			cy.getByTestId("lead-row").should("have.length", 1).and("contain", own);

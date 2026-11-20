@@ -1,0 +1,22 @@
+# The starting backlog of the raw-controls guard (SOS-UI-2B follow up, 20 November 2026).
+#
+# Each page below still writes a raw <button>, <input> or <select>. The guard (scripts/check-guards.sh, guard
+# "controls") fails for a page that is NOT on this list, and for a page on it that no longer has one, so the
+# list only shrinks. A page comes off it in the SOS-UI-3 task that converts it, built from the shared
+# components (docs/UI_STYLE.md), following the Leads list and the lead page. Never add a page here.
+#
+# Counts are raw tags at 20 November 2026: buttons / inputs / selects.
+frontend/src/pages/AssignmentRulesPage.vue  # 2 / 4 / 4
+frontend/src/pages/CallListsPage.vue  # 3 / 7 / 2
+frontend/src/pages/CallQueuePage.vue  # 1 / 0 / 0
+frontend/src/pages/ImportLeadsPage.vue  # 1 / 2 / 1
+frontend/src/pages/SetupWizardPage.vue  # 12 / 11 / 2
+frontend/src/pages/SiteVisitsPage.vue  # 4 / 0 / 0
+frontend/src/pages/SupportPage.vue  # 3 / 1 / 2
+frontend/src/pages/TeamsPage.vue  # 2 / 2 / 1
+frontend/src/pages/TelephonyPage.vue  # 2 / 3 / 0
+frontend/src/pages/TenantsPage.vue  # 2 / 3 / 1
+frontend/src/pages/UsersPage.vue  # 7 / 5 / 2
+#
+# Not checked by the guard, because they live in frontend/src/components, but still raw and converted
+# by the same tasks: LeadBoard.vue (SOS-UI-3B), NotificationBell.vue and TodayRow.vue and VisitConfirm.vue (SOS-UI-3A).

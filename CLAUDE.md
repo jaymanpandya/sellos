@@ -80,7 +80,7 @@ Keys and passwords live in `site_config.json` or environment variables, never in
 
 ## Frontend
 
-* New screens follow `docs/UI_STYLE.md` once it exists (SOS-UI-1, SOS-SETUP-40): its tokens, components and patterns, not new colors, spacing or fonts of their own.
+* **New screens must use the shared components in `frontend/src/components` and follow `docs/UI_STYLE.md`** (SOS-UI-2B): `AppButton`, `FormField`, `MoneyField`, `AppCheckbox`, `StatusBadge`, `ListCard`, `FilterBar`, `PageHeader`, `StatCard`, `EmptyState`, `LoadError`, `LoadingSkeleton` and frappe-ui's `Dialog`, in the Pandya tokens. The Leads list and the lead page are the pattern. Never write a raw `<button>`, `<input>` or `<select>` on a page, never a colour, size or font of your own, and never build a second copy of a shared component: add what is missing to the shared folder and to `docs/UI_STYLE.md`. The guard `controls` (`scripts/check-guards.sh`) fails a page that does, and `docs/ui-backlog.txt` lists the old pages still to move (SOS-UI-3A to 3D); it only shrinks.
 
 See `frontend/CLAUDE.md`. The build plan is in `TASKS.md`, and the earlier brief is in `docs/legacy/`.
 
