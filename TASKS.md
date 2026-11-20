@@ -487,14 +487,16 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Invalid signatures are rejected.
   - Replayed events change nothing.
   - The recording link is stored after the call ends.
-- **Test Criteria:** Tests for valid, invalid signature, replayed and out of order events.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. The signature check is tested with a fake signing key and recorded Plivo event bodies. The check against Plivo's real events is SOS-P2-02L.
+  - The endpoint is a registered provider webhook (`sellos.access.webhooks`), the one allowed exception to "every API method needs a login": the signature is checked before any database work; an invalid or missing signature writes nothing and reveals nothing; replayed and out of order events are ignored; the body size is capped; requests are rate limited per tenant; the tenant is the site the request arrives on; the signing secret is a per tenant company setting that never appears in a log.
+  - `docs/permissions.md` lists it under "Provider webhooks", and `sellos/access/test_webhook_guest_guard.py` passes with it registered and declaring every check.
+- **Test Criteria:** Tests for valid, invalid signature (nothing written, nothing revealed), replayed, out of order, oversized and rate limited events, and the secret never in a log.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. The signature check is tested with a fake signing key and recorded Plivo event bodies. The check against Plivo's real events is SOS-P2-02L. **Decision (Jayman, 20 November 2026):** provider webhooks are the one allowed exception to "every API method needs a login", under the rules in `CLAUDE.md` ("Provider webhooks") and `docs/permissions.md`. Build the registry `sellos/access/webhooks.py` (`declared_webhooks()`, a decorator that registers the method, allows guests and records the checks `signature`, `replay`, `max_body_bytes`, `rate_limit_per_tenant` and `secret_setting`) and the shared checks once, here, so WhatsApp, email and payment webhooks (P5, P6) reuse them. `sellos/access/test_webhook_guest_guard.py` already fails the build for a guest method that is not registered. The loop stopped twice on this task (19 and 20 November 2026) for lack of this decision; the two failed branches held no work.
 - **Owner:** Claude Code
 - **Priority:** P2
 - **Launch:** Dec 20
 - **Story Points:** 5
 - **Dependencies:** SOS-P2-05
-- **Status:** Waiting
+- **Status:** Not Started
 
 ### SOS-P2-07: Build click to call
 - **Epic:** Calling

@@ -74,6 +74,20 @@ Platform Admin, Company Admin, Sales Manager, Agent, Client and Channel Partner.
 * Agents and partners see masked phone numbers. Only a Company Admin sees full numbers (permission level 1 on `phone` and `overseas_phone`).
 * A Channel Partner sees only their own leads and those leads' records, read only. They log nothing.
 
+## Provider webhooks
+
+Decided by Jayman on 20 November 2026 (SOS-P2-06). Every API method needs a login, with one exception: a **provider webhook**, the call a provider such as Plivo (calls, P2), WhatsApp or email (P5) or a payment provider (P6) makes to SellOS with no SellOS user. A webhook is a declared kind of method: it is registered as a webhook (`sellos.access.webhooks`, not `@sellos_api`), it is the only method that allows guests, and it is listed under its own heading in `docs/permissions.md`. Every webhook, whatever the provider:
+
+* **Signature first.** It checks the provider's signature before any database work. An invalid or missing signature writes nothing and reveals nothing: the same short answer for every refusal, no reason, no tenant or record named.
+* **Replays and order.** A replayed event changes nothing, and an out of order event is ignored (a late "ringing" never undoes "hung up"). The event id, or the provider's timestamp and nonce, is remembered per tenant.
+* **Body cap.** The body size is capped; a larger one is refused before it is read in full.
+* **Rate limit.** Requests are limited per tenant.
+* **Tenant.** The tenant is the site the request arrives on (every company is its own site). The body, headers and query never choose the tenant.
+* **Secret.** The signing secret is stored per tenant in company settings (a password field), never in code, a log, an error or a test fixture; tests use a fake key. It never appears in a log line.
+* **Build check.** `sellos/access/test_webhook_guest_guard.py` fails the build if any method in the sellos package allows guests and is not a registered webhook, or a registered webhook does not declare its checks. Never add `allow_guest=True` to anything else.
+
+A new provider adds a webhook under these rules in its own task, tests valid, invalid signature, replayed, out of order, oversized and rate limited requests, and adds its heading to `docs/permissions.md`.
+
 ## Secrets
 
 Keys and passwords live in `site_config.json` or environment variables, never in the repository. A gitleaks secret scan (P0.09) runs in pre-commit and in the Linters workflow. Still never commit keys, and check your diff for anything that looks like one. If a story needs a key you do not have, stop and ask Jayman.

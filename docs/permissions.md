@@ -99,6 +99,33 @@ Each story that adds a method adds a row here.
 
 `sellos/access/matrix.py` lists the roles for every method. The build fails when the list and the `@sellos_api` declarations disagree, or when a sellos method is whitelisted without a declaration (P1.05).
 
+## Provider webhooks
+
+Decided by Jayman on 20 November 2026 (SOS-P2-06). A provider webhook is the one kind of method that may be called without a
+login: the provider (Plivo, a WhatsApp or email provider, a payment provider) has no SellOS user. It is not an `@sellos_api`
+method. It is registered in `sellos.access.webhooks` as a webhook and allows guests, and nothing else in the `sellos` package may allow
+guests. `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is not registered with these checks.
+
+Each webhook, whatever the provider, has all of these:
+
+| Check | Rule |
+| --- | --- |
+| Signature | Verified before any database work. An invalid or missing signature writes nothing and reveals nothing (one short answer for every refusal) |
+| Replay and order | A replayed event changes nothing; an out of order event is ignored |
+| Body size | Capped; a larger body is refused before it is read in full |
+| Rate limit | Per tenant |
+| Tenant | The site the request arrives on. Never the body, a header or the query |
+| Secret | Per tenant in company settings, never in a log, an error or a test |
+
+Registered webhooks (one heading each as they are built):
+
+| Webhook | Provider | Task | Secret field | Writes |
+| --- | --- | --- | --- | --- |
+| none yet | | | | |
+
+Plivo call events (SOS-P2-06) is the first. WhatsApp and email (P5) and payment (P6) webhooks are added the same way, each under its own row
+here, and each task adds its row.
+
 ## The permission test suite (P1.05)
 
 `sellos/access/test_p1_05_permission_suite.py` calls every method in the matrix as each of the six roles,
