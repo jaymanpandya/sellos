@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "stt_provider",
+  "tts_provider",
+  "llm_provider",
+  "voice_agent_model",
+  "tts_voice",
+  "disclosure_line",
+  "keyterms",
+  "section_keys",
+  "sarvam_key",
+  "deepgram_key",
+  "elevenlabs_key",
+  "anthropic_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "stt_provider",
+   "fieldtype": "Data",
+   "label": "Speech to text provider",
+   "description": "sarvam-saaras-v3 or deepgram-nova-3. SOS-N21 chooses. The fake works only on a site that allows tests (SOS-P5-07)."
+  },
+  {
+   "fieldname": "tts_provider",
+   "fieldtype": "Data",
+   "label": "Text to speech provider",
+   "description": "sarvam-bulbul-v3 or elevenlabs. SOS-N21 chooses."
+  },
+  {
+   "fieldname": "llm_provider",
+   "fieldtype": "Data",
+   "label": "Language model provider",
+   "description": "anthropic."
+  },
+  {
+   "fieldname": "voice_agent_model",
+   "fieldtype": "Data",
+   "label": "Voice agent model",
+   "description": "The fast Anthropic model the voice agent speaks with. SOS-N21 chooses."
+  },
+  {
+   "fieldname": "tts_voice",
+   "fieldtype": "Data",
+   "label": "Voice",
+   "description": "The Sarvam speaker or the ElevenLabs voice ID. Empty uses the provider's default."
+  },
+  {
+   "fieldname": "disclosure_line",
+   "fieldtype": "Small Text",
+   "label": "AI disclosure line",
+   "default": "Namaste, main ek real estate agency ki AI assistant bol rahi hoon, koi insaan nahin. Kya main aapse do minute baat kar sakti hoon?",
+   "description": "Spoken first on every call, in Roman Hinglish. Starts as the SOS-N21A draft; SOS-N21 writes the final line."
+  },
+  {
+   "fieldname": "keyterms",
+   "fieldtype": "Long Text",
+   "label": "Real estate keyterms",
+   "default": "BHK\ncarpet area\nRERA\npossession\nmaintenance\nfloor rise\nstamp duty\nregistration\nbooking amount\npayment plan\nresale\nsite visit\nsea facing\nready to move\nsquare foot\nparking\nloan approval\nbrochure\nWhatsApp\nNRI\nBandra West\nAndheri East\nPowai\nGoregaon\nWorli",
+   "description": "One per line. Sent to the speech to text provider on every call. Starts as the SOS-N21A list."
+  },
+  {
+   "fieldname": "section_keys",
+   "fieldtype": "Section Break",
+   "label": "Provider keys"
+  },
+  {
+   "fieldname": "sarvam_key",
+   "fieldtype": "Password",
+   "label": "Sarvam key"
+  },
+  {
+   "fieldname": "deepgram_key",
+   "fieldtype": "Password",
+   "label": "Deepgram key"
+  },
+  {
+   "fieldname": "elevenlabs_key",
+   "fieldtype": "Password",
+   "label": "ElevenLabs key"
+  },
+  {
+   "fieldname": "anthropic_key",
+   "fieldtype": "Password",
+   "label": "Anthropic key"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Voice Agent Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

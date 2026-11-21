@@ -127,6 +127,9 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.telephony.click_to_call.pending_outcomes": _LOGGERS,
 	"sellos.telephony.click_to_call.record_outcome": _LOGGERS,
 	# SOS-P2-10: calling hours and the do not call list, for the Company Admin.
+	# SOS-P5-07: the voice agent's providers, model, disclosure line and keyterms; the keys are never returned.
+	"sellos.voice.agent.settings.get_voice_agent_settings": _ADMIN_ONLY,
+	"sellos.voice.agent.settings.save_voice_agent_settings": _ADMIN_ONLY,
 	"sellos.telephony.hours.get_calling_hours": _ADMIN_ONLY,
 	"sellos.telephony.hours.save_calling_hours": _ADMIN_ONLY,
 	"sellos.telephony.dnd.import_do_not_call_list": _ADMIN_ONLY,

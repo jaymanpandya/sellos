@@ -177,6 +177,9 @@ SAMPLE_CALLS = {
 	"sellos.telephony.settings.get_telephony_settings": {},
 	"sellos.telephony.settings.save_telephony_settings": {},
 	"sellos.telephony.settings.check_connection": {},
+	# SOS-P5-07: blank values keep what is saved.
+	"sellos.voice.agent.settings.get_voice_agent_settings": {},
+	"sellos.voice.agent.settings.save_voice_agent_settings": {},
 	# SOS-P2-07: click to call. The Company Admin has a mobile number here and the fake provider is on, and
 	# the call log is the Company Admin's own, ended, so its outcome can be recorded.
 	"sellos.telephony.click_to_call.call_preview": {"lead": "{lead}"},

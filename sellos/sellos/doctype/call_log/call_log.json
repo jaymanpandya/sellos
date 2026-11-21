@@ -26,7 +26,17 @@
   "bridge_error",
   "section_consent",
   "consent_check",
-  "consent_record"
+  "consent_record",
+  "section_ai",
+  "transcript",
+  "turn_latencies",
+  "turn_count",
+  "median_latency_ms",
+  "slowest_latency_ms",
+  "handed_over",
+  "handover_reason",
+  "ai_end_reason",
+  "ai_providers"
  ],
  "fields": [
   {"fieldname": "lead", "fieldtype": "Link", "label": "Lead", "options": "Lead", "reqd": 1, "read_only": 1, "in_list_view": 1, "in_standard_filter": 1},
@@ -50,7 +60,17 @@
   {"fieldname": "bridge_error", "fieldtype": "Small Text", "label": "Connection error", "read_only": 1, "description": "Why the lead could not be connected after the agent answered."},
   {"fieldname": "section_consent", "fieldtype": "Section Break", "label": "Consent"},
   {"fieldname": "consent_check", "fieldtype": "Link", "label": "Consent Check", "options": "Consent Check", "read_only": 1, "description": "The consent status and its warning are read from the check."},
-  {"fieldname": "consent_record", "fieldtype": "Link", "label": "Consent Record", "options": "Consent Record", "read_only": 1, "description": "The live Consent Record when the call was placed, if one existed."}
+  {"fieldname": "consent_record", "fieldtype": "Link", "label": "Consent Record", "options": "Consent Record", "read_only": 1, "description": "The live Consent Record when the call was placed, if one existed."},
+  {"fieldname": "section_ai", "fieldtype": "Section Break", "label": "AI voice agent"},
+  {"fieldname": "transcript", "fieldtype": "Long Text", "label": "Transcript", "read_only": 1, "description": "Roman script, one line per turn (SOS-P5-07)."},
+  {"fieldname": "turn_latencies", "fieldtype": "Long Text", "label": "Turn latencies (ms)", "read_only": 1, "description": "A JSON list: milliseconds from the end of the caller's speech to the first audio sent, one per turn."},
+  {"fieldname": "turn_count", "fieldtype": "Int", "label": "Turns", "read_only": 1},
+  {"fieldname": "median_latency_ms", "fieldtype": "Int", "label": "Median latency (ms)", "read_only": 1},
+  {"fieldname": "slowest_latency_ms", "fieldtype": "Int", "label": "Slowest latency (ms)", "read_only": 1},
+  {"fieldname": "handed_over", "fieldtype": "Check", "label": "Handed over to a human", "read_only": 1},
+  {"fieldname": "handover_reason", "fieldtype": "Data", "label": "Handover reason", "read_only": 1},
+  {"fieldname": "ai_end_reason", "fieldtype": "Data", "label": "How the AI call ended", "read_only": 1},
+  {"fieldname": "ai_providers", "fieldtype": "Data", "label": "Providers used", "read_only": 1, "description": "Speech to text, language model and text to speech, as set when the call ran."}
  ],
  "index_web_pages_for_search": 0,
  "links": [],
