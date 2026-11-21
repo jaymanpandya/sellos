@@ -1,0 +1,231 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "format:PR-{#####}",
+ "naming_rule": "Expression",
+ "title_field": "buyer_name",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1
+  },
+  {
+   "role": "SellOS Channel Partner",
+   "permlevel": 0,
+   "read": 1
+  }
+ ],
+ "name": "Partner Registration",
+ "field_order": [
+  "buyer_name",
+  "status",
+  "partner_firm",
+  "partner_user",
+  "column_break_1",
+  "lead",
+  "client",
+  "project_of_interest",
+  "phone_masked",
+  "note",
+  "section_consent",
+  "consent_wording",
+  "buyer_agreed",
+  "section_decision",
+  "registered_on",
+  "decided_by",
+  "rejection_reason",
+  "column_break_2",
+  "approved_on",
+  "protected_until",
+  "section_log",
+  "status_log",
+  "section_archive",
+  "archived",
+  "archived_on",
+  "archived_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "buyer_name",
+   "fieldtype": "Data",
+   "label": "Buyer name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Registered\nApproved\nVisited\nBooked\nExpired\nRejected",
+   "default": "Registered",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "partner_firm",
+   "fieldtype": "Link",
+   "label": "Partner firm",
+   "options": "Channel Partner Firm",
+   "reqd": 1,
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "partner_user",
+   "fieldtype": "Link",
+   "label": "Registered by",
+   "options": "User",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "label": "Lead",
+   "options": "Lead",
+   "reqd": 1,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "client",
+   "fieldtype": "Link",
+   "label": "Client",
+   "options": "Client",
+   "read_only": 1
+  },
+  {
+   "fieldname": "project_of_interest",
+   "fieldtype": "Data",
+   "label": "Project of interest"
+  },
+  {
+   "fieldname": "phone_masked",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  },
+  {
+   "fieldname": "section_consent",
+   "fieldtype": "Section Break",
+   "label": "Consent"
+  },
+  {
+   "fieldname": "consent_wording",
+   "fieldtype": "Small Text",
+   "label": "Consent wording shown",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buyer_agreed",
+   "fieldtype": "Check",
+   "label": "The partner confirmed the buyer agreed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_decision",
+   "fieldtype": "Section Break",
+   "label": "Decision and protection"
+  },
+  {
+   "fieldname": "registered_on",
+   "fieldtype": "Datetime",
+   "label": "Registered on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "decided_by",
+   "fieldtype": "Link",
+   "label": "Decided by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rejection_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason for the rejection",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "protected_until",
+   "fieldtype": "Datetime",
+   "label": "Protected until",
+   "read_only": 1,
+   "description": "Counted from the approval, for the company setting Partner protection days."
+  },
+  {
+   "fieldname": "section_log",
+   "fieldtype": "Section Break",
+   "label": "Log"
+  },
+  {
+   "fieldname": "status_log",
+   "fieldtype": "Table",
+   "label": "Log",
+   "options": "Partner Registration Change",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_archive",
+   "fieldtype": "Section Break",
+   "label": "Archive"
+  },
+  {
+   "fieldname": "archived",
+   "fieldtype": "Check",
+   "label": "Archived"
+  },
+  {
+   "fieldname": "archived_on",
+   "fieldtype": "Datetime",
+   "label": "Archived on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "archived_by",
+   "fieldtype": "Link",
+   "label": "Archived by",
+   "options": "User",
+   "read_only": 1
+  }
+ ]
+}

@@ -59,14 +59,14 @@ def partner_may_work(user=None) -> bool:
 	return status is None or status == APPROVED
 
 
-def _is_pure_partner(roles) -> bool:
+def is_pure_partner(roles) -> bool:
 	roles = set(roles)
 	return CHANNEL_PARTNER in roles and not roles & {AGENT, COMPANY_ADMIN, "System Manager"}
 
 
 def blocks_partner(user, roles) -> bool:
 	"""True for a user whose only way in is a Channel Partner login on a firm that is not Approved."""
-	return _is_pure_partner(roles) and not partner_may_work(user)
+	return is_pure_partner(roles) and not partner_may_work(user)
 
 
 # --- What each side sees --------------------------------------------------------------------------

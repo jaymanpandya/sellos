@@ -14,6 +14,11 @@ class SiteVisit(ArchiveOnly):
 		if self.has_value_changed("confirmation_status") and not self.is_new():
 			self.confirmed_on = now_datetime()
 
+	def on_update(self):
+		from sellos.access.partner_registrations import on_site_visit_saved
+
+		on_site_visit_saved(self)  # SOS-P7-02: a done visit moves a partner's registration to Visited
+
 	def sync_cancellation(self):
 		"""A cancelled visit and a Cancelled confirmation say the same thing, so one sets the other."""
 		if self.is_new() or self.has_value_changed("status"):

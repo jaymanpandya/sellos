@@ -9,6 +9,7 @@
   "lead_title",
   "source",
   "campaign",
+  "partner",
   "assigned_to",
   "stage",
   "lost_reason",
@@ -65,6 +66,15 @@
    "fieldtype": "Data",
    "label": "Campaign",
    "description": "Optional. The campaign that brought the lead."
+  },
+  {
+   "fieldname": "partner",
+   "fieldtype": "Link",
+   "label": "Channel partner firm",
+   "options": "Channel Partner Firm",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "The firm that registered this buyer, owed the commission. Set by the partner registration (SOS-P7-02). While the registration is protected only a Company Admin changes it."
   },
   {
    "fieldname": "assigned_to",

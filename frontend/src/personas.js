@@ -31,6 +31,12 @@ export const PERSONAS = [
 				to: "/company/partners",
 				area: "company",
 			},
+			{
+				key: "registrations",
+				label: "Partner registrations",
+				to: "/company/registrations",
+				area: "company",
+			},
 			{ key: "assignment", label: "Assignment", to: "/company/assignment", area: "company" },
 			{ key: "call-reports", label: "Call reports", to: "/reports/calls", area: "reports" },
 		],
@@ -66,6 +72,12 @@ export const PERSONAS = [
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
 			{ key: "firm", label: "Your firm", to: "/partner/firm", area: "partner" },
+			{
+				key: "register",
+				label: "Register a buyer",
+				to: "/partner/register",
+				area: "partner",
+			},
 			{ key: "leads", label: "Leads", to: "/partner/leads", area: "partner" },
 		],
 	},

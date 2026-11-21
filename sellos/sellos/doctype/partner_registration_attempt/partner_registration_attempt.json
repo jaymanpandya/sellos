@@ -1,0 +1,56 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "hash",
+ "permissions": [],
+ "description": "One row for each time a partner tried to register a buyer, so the hourly limit counts a refused attempt too (SOS-P7-02).",
+ "name": "Partner Registration Attempt",
+ "field_order": [
+  "partner_user",
+  "partner_firm",
+  "attempted_on",
+  "result"
+ ],
+ "fields": [
+  {
+   "fieldname": "partner_user",
+   "fieldtype": "Link",
+   "label": "Partner",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "partner_firm",
+   "fieldtype": "Link",
+   "label": "Partner firm",
+   "options": "Channel Partner Firm"
+  },
+  {
+   "fieldname": "attempted_on",
+   "fieldtype": "Datetime",
+   "label": "Attempted on",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "Registered\nNot accepted",
+   "in_list_view": 1
+  }
+ ]
+}

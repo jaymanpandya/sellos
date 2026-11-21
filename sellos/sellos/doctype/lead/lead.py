@@ -3,6 +3,7 @@ import frappe
 from frappe import _
 
 from sellos.access.lead_permissions import check_assignee_in_team
+from sellos.access.partner_registrations import check_partner_change
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN
 from sellos.crm import assignment
 from sellos.crm.base import ArchiveOnly, stamp_archive
@@ -23,6 +24,7 @@ class Lead(ArchiveOnly):
 		if self.assigned_to:
 			self._check_assignee()
 			check_assignee_in_team(self)  # SOS-P1-18
+		check_partner_change(self)  # SOS-P7-02: only the registration and a Company Admin set the partner
 		check_usable(self)
 		self.stage = self.stage or first_stage()  # SOS-P1-07
 		validate_requirements(self)

@@ -200,6 +200,26 @@ SAMPLE_CALLS = {
 		"filename": "p701_suite_agreement.pdf",
 		"content_base64": AGREEMENT_B64,
 	},
+	# SOS-P7-02: the Channel Partner's test login has no approved firm, so its calls are refused; the Company
+	# Admin's calls act on two spare registrations (approve one, reject the other).
+	"sellos.access.partner_registrations.partner_registration_form": {},
+	"sellos.access.partner_registrations.register_buyer": {
+		"buyer_name": "P702 Suite Buyer",
+		"phone": phones.in_mobile(7021),
+	},
+	"sellos.access.partner_registrations.my_partner_registrations": {},
+	"sellos.access.partner_registrations.list_partner_registrations": {},
+	"sellos.access.partner_registrations.approve_partner_registration": {"name": "{spare_registration}"},
+	"sellos.access.partner_registrations.reject_partner_registration": {
+		"name": "{spare_registration_two}",
+		"reason": "p702 not a buyer",
+	},
+	"sellos.access.partner_registrations.change_lead_partner": {
+		"lead": "{lead}",
+		"partner_firm": "{spare_firm}",
+	},
+	"sellos.access.partner_registrations.get_partner_settings": {},
+	"sellos.access.partner_registrations.save_partner_settings": {},
 	"sellos.reports.team.team_report": {},
 	"sellos.reports.calls.call_report": {},
 	"sellos.reports.calls.call_report_calls": {},
@@ -351,6 +371,28 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			}
 		).insert()
 		spare_firm.db_set("status", "Pending approval")
+		spare_registrations = []
+		for seed in (7022, 7023):
+			spare_client = frappe.get_doc(
+				{"doctype": "Client", "client_name": f"P702 Spare Buyer {seed}", "client_type": "Buyer"}
+			).insert()
+			spare_lead = frappe.get_doc(
+				{"doctype": "Lead", "client": spare_client.name, "source": "Channel partner"}
+			).insert()
+			spare_registrations.append(
+				frappe.get_doc(
+					{
+						"doctype": "Partner Registration",
+						"buyer_name": spare_client.client_name,
+						"partner_firm": spare_firm.name,
+						"partner_user": firm_user.name,
+						"lead": spare_lead.name,
+						"client": spare_client.name,
+					}
+				)
+				.insert()
+				.name
+			)
 		self.addCleanup(self._remove_agreement_files)
 		rule_team = frappe.get_doc(
 			{
@@ -430,6 +472,8 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_user": spare_user.name,
 			"spare_team": spare_team.name,
 			"spare_firm": spare_firm.name,
+			"spare_registration": spare_registrations[0],
+			"spare_registration_two": spare_registrations[1],
 			"spare_rule": spare_rule.name,
 			"rule_team": rule_team.name,
 			"agent": TEST_USERS["agent"]["email"],

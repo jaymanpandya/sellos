@@ -14,6 +14,9 @@
   "untouched_days",
   "default_team",
   "consent_enforcement",
+  "partner_lead_limit",
+  "partner_protection_days",
+  "consent_wording",
   "setup_steps_done",
   "setup_complete"
  ],
@@ -88,6 +91,26 @@
    "default": "0",
    "read_only": 1,
    "description": "Off by default. With it On, a call, an SMS or a WhatsApp message to a lead that is not Consented is refused and the refusal is logged. Only a Company Admin changes it, in the web app (SOS-P2-04)."
+  },
+  {
+   "fieldname": "partner_lead_limit",
+   "fieldtype": "Int",
+   "label": "Partner lead limit",
+   "default": "20",
+   "description": "The most leads one channel partner may register in an hour (SOS-P7-02)."
+  },
+  {
+   "fieldname": "partner_protection_days",
+   "fieldtype": "Int",
+   "label": "Partner protection days",
+   "default": "90",
+   "description": "How long an approved partner registration is protected in the partner's name, counted from the approval (SOS-P7-02)."
+  },
+  {
+   "fieldname": "consent_wording",
+   "fieldtype": "Small Text",
+   "label": "Consent wording",
+   "description": "The words shown to a channel partner when they confirm that the buyer agreed to be contacted (SOS-P7-02)."
   }
  ],
  "index_web_pages_for_search": 0,

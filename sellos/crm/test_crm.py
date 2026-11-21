@@ -170,7 +170,8 @@ class TestWhoSeesWhat(CrmCase):
 		self.assertEqual(len(api.get_lead(lead)["timeline"]), 1)
 
 	def test_a_partner_sees_their_leads_and_activity_but_cannot_log_or_edit_others(self):
-		_, lead = self.make_lead("channel_partner")
+		# SOS-P7-02: a partner makes no lead by hand (register_buyer does). The company gives them this one.
+		_, lead = self.make_lead("company_admin", assigned_to=TEST_USERS["channel_partner"]["email"])
 		as_user("agent")
 		self.assertEqual(api.list_leads(), [])  # the agent has no link to the partner's lead
 		as_user("company_admin")

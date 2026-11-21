@@ -750,6 +750,9 @@ def seed_regression_data():
 	  (waiting for its details), Regression Firm Pending (details and agreement in, waiting for approval),
 	  Regression Firm Approved and Regression Firm Suspended (reason "Regression: left the business").
 	  Each has a partner code, a status log, a PAN and a private signed agreement the Company Admin sees.
+	* Partner registrations (SOS-P7-02): three buyers the contact person of Regression Firm Approved registers
+	  through register_buyer: Regression Partner Buyer One (Registered, waiting), Two (Approved by the Company
+	  Admin, so protected, with the buyer's agreement recorded) and Three (Rejected with a reason).
 
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
@@ -775,6 +778,7 @@ def seed_regression_data():
 		_seed_site_visits(agent_one, agent_two)
 		_seed_call_reports_regression()
 		_seed_partner_firms(admin)
+		_seed_partner_registrations(admin)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -907,6 +911,7 @@ def seed_regression_data():
 	_seed_notifications(agent_one)
 	_seed_site_visits(agent_one, agent_two)
 	_seed_partner_firms(admin)
+	_seed_partner_registrations(admin)
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -2183,7 +2188,8 @@ def _seed_partner_firms(admin):
 def seed_gate_partner_firm(stage="pending"):
 	"""For the partner firm spec (SOS-P7-01): make a firm whose contact person is the gate channel partner,
 	through the production methods, and return {"name", "status"}. The firm is in the stage asked for:
-	"pending" (details and agreement in), or "invited"."""
+	"pending" (details and agreement in), "approved" (SOS-P7-02, which needs an approved firm to register), or
+	"invited"."""
 	from sellos.access import partner_firms
 	from sellos.tests.files import tiny_pdf_base64
 
@@ -2203,12 +2209,15 @@ def seed_gate_partner_firm(stage="pending"):
 				"email": partner,
 			}
 		).insert()
-	if stage == "pending":
+	if stage in ("pending", "approved"):
 		with _as_user(partner):
 			partner_firms.submit_partner_details(
 				{"phone": phones.in_mobile(7001), "rera_number": PARTNER_RERA, "pan": PARTNER_PAN}
 			)
 			partner_firms.upload_my_agreement("gate_agreement.pdf", tiny_pdf_base64())
+	if stage == "approved":
+		with _as_user(admin):
+			partner_firms.approve_partner_firm(doc.name)
 	frappe.db.commit()  # nosemgrep
 	return {"name": doc.name, "status": frappe.db.get_value("Channel Partner Firm", doc.name, "status")}
 
@@ -2250,3 +2259,124 @@ def remove_gate_partner_firms():
 			frappe.delete_doc("User", row.contact_user, force=True, ignore_permissions=True)
 	frappe.db.commit()  # nosemgrep
 	return {"firms": len(rows)}
+
+
+# --- Partner registrations (SOS-P7-02) ------------------------------------------------------------
+
+GATE_BUYER_PREFIX = "Gate Registration "
+REGRESSION_REGISTRATIONS = (
+	# buyer name, phone seed, what the Company Admin does: nothing, approve or reject
+	("Regression Partner Buyer One", 7020, "wait"),
+	("Regression Partner Buyer Two", 7021, "approve"),
+	("Regression Partner Buyer Three", 7022, "reject"),
+)
+
+
+def _seed_partner_registrations(admin):
+	"""Three buyers the Regression Firm Approved registered through register_buyer, as its contact person:
+	one waiting for approval, one approved (protected) and one rejected with a reason. Safe to run again:
+	a registration that exists is left alone."""
+	from sellos.access import partner_registrations
+
+	email = PARTNER_FIRM_SEEDS[2][1]  # Regression Firm Approved's contact person
+	for name, seed, decision in REGRESSION_REGISTRATIONS:
+		if frappe.db.exists("Partner Registration", {"buyer_name": name}):
+			continue
+		with _as_user(email):
+			result = partner_registrations.register_buyer(
+				name,
+				phones.in_mobile(seed),
+				"Regression Tower",
+				"Seeded for the regression",
+				1 if seed == 7021 else 0,
+			)
+		code = result["registration"]["name"]
+		with _as_user(admin):
+			if decision == "approve":
+				partner_registrations.approve_partner_registration(code)
+			elif decision == "reject":
+				partner_registrations.reject_partner_registration(
+					code, "Regression: the buyer is not interested"
+				)
+
+
+def seed_gate_partner_buyer():
+	"""For the partner registration spec (SOS-P7-02): a buyer the company already has, made by the Company
+	Admin, and the numbers the spec types. Returns {"existing_phone", "new_phone", "existing_name"}."""
+	from sellos.crm import api as crm
+
+	admin = TEST_USERS["company_admin"]["email"]
+	_test_users()
+	name = f"{GATE_BUYER_PREFIX}Existing"
+	if not frappe.db.exists("Client", {"client_name": name}):
+		with _as_user(admin):
+			client = crm.save_client(
+				values={"client_name": name, "client_type": "Buyer", "phone": phones.in_mobile(7401)}
+			)
+			crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": admin})
+	frappe.db.commit()  # nosemgrep
+	return {
+		"existing_phone": phones.in_mobile(7401),
+		"new_phone": phones.in_mobile(7402),
+		"existing_name": name,
+	}
+
+
+def gate_partner_registration_state(buyer_name):
+	"""Read back a registration for the spec (tests only, SOS-P7-02): its status, protection, log and lead."""
+	doc = frappe.get_doc("Partner Registration", {"buyer_name": buyer_name})
+	lead = frappe.get_doc("Lead", doc.lead)
+	return {
+		"name": doc.name,
+		"status": doc.status,
+		"protected_until": str(doc.protected_until or ""),
+		"approved_on": str(doc.approved_on or ""),
+		"log": [(row.from_status, row.to_status, row.changed_by) for row in doc.status_log],
+		"lead_partner": lead.partner,
+		"lead_source": lead.source,
+		"consent_status": lead.consent_status,
+		"count": frappe.db.count("Lead", {"client": doc.client}),
+	}
+
+
+def count_gate_partner_leads():
+	"""How many leads and registrations the gate buyers have, so the spec can see that a refused buyer made none."""
+	clients = frappe.get_all(
+		"Client", filters={"client_name": ["like", f"{GATE_BUYER_PREFIX}%"]}, pluck="name"
+	)
+	return {
+		"leads": frappe.db.count("Lead", {"client": ["in", clients]}) if clients else 0,
+		"registrations": frappe.db.count(
+			"Partner Registration", {"buyer_name": ["like", f"{GATE_BUYER_PREFIX}%"]}
+		),
+	}
+
+
+def remove_gate_partner_registrations():
+	"""Remove what the partner registration spec made (tests only, SOS-P7-02): the registrations, the leads
+	and clients of the buyers named Gate Registration, their consent records and the partner's attempts.
+	The app never deletes these, so this goes to the tables."""
+	partner = TEST_USERS["channel_partner"]["email"]
+	clients = frappe.get_all(
+		"Client", filters={"client_name": ["like", f"{GATE_BUYER_PREFIX}%"]}, pluck="name"
+	)
+	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name") if clients else []
+	registrations = frappe.get_all(
+		"Partner Registration", filters={"buyer_name": ["like", f"{GATE_BUYER_PREFIX}%"]}, pluck="name"
+	)
+	if registrations:
+		frappe.db.delete("Partner Registration Change", {"parent": ["in", registrations]})
+		frappe.db.delete("Version", {"ref_doctype": "Partner Registration", "docname": ["in", registrations]})
+		frappe.db.delete("Partner Registration", {"name": ["in", registrations]})
+	frappe.db.delete("Partner Registration Attempt", {"partner_user": partner})
+	if leads:
+		for doctype in ("Consent Record", "Lead Assignment", "Lead Activity", "Lead Task", "Site Visit"):
+			frappe.db.delete(doctype, {"lead": ["in", leads]})
+		frappe.db.delete("Lead Stage Change", {"parent": ["in", leads]})
+	for doctype, names in (("Lead", leads), ("Client", clients)):
+		if names:
+			frappe.db.delete("Version", {"ref_doctype": doctype, "docname": ["in", names]})
+			frappe.db.delete("Comment", {"reference_doctype": doctype, "reference_name": ["in", names]})
+			frappe.db.delete(doctype, {"name": ["in", names]})
+	frappe.db.commit()  # nosemgrep
+	return {"registrations": len(registrations), "leads": len(leads), "clients": len(clients)}

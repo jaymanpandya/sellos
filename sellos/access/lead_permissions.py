@@ -18,6 +18,7 @@
 import frappe
 from frappe import _
 
+from sellos.access.partner_firms import is_pure_partner
 from sellos.access.roles import AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, PLATFORM_ADMIN, SALES_MANAGER
 from sellos.access.support import has_support_access
 
@@ -30,6 +31,8 @@ CLIENT_DOCTYPE = "Client"
 LEAD_CHILDREN = ("Lead Activity", "Lead Task", "Site Visit", "Consent Record", "Call Log")
 # What a support grant allows (P1.13). A missing permission type means read.
 SUPPORT_PTYPES = frozenset({"read", "select", "print", "report"})
+# SOS-P7-02: a Channel Partner reads their own leads and logs nothing. The registration method makes the lead.
+PARTNER_REFUSED_PTYPES = frozenset({"write", "create", "delete", "submit", "cancel", "amend"})
 
 
 def scope_for(roles) -> str:
@@ -173,6 +176,11 @@ def _user_scope(user) -> str:
 	return scope
 
 
+def _partner_may_not(user, ptype) -> bool:
+	"""True when a user whose only way in is a Channel Partner login asks to change something."""
+	return ptype in PARTNER_REFUSED_PTYPES and is_pure_partner(frappe.get_roles(user))
+
+
 def _without_own(scope, ptype) -> bool:
 	"""The answer for a scope that is not 'own'. A support grant reads and does nothing else."""
 	if scope == "support":
@@ -184,6 +192,8 @@ def has_permission(doc, ptype=None, user=None, **kwargs):
 	user, scope = _scope(user)
 	if scope not in ("own", "team"):
 		return _without_own(scope, ptype)
+	if _partner_may_not(user, ptype):
+		return False
 	if ptype == "create":
 		return True  # a new lead has no owner yet, the doctype's role rows decide who may create
 	if set(visible_users(user, scope)) & {doc.get("owner"), doc.get("assigned_to")}:
@@ -201,6 +211,8 @@ def has_child_permission(doc, ptype=None, user=None, **kwargs):
 	user, scope = _scope(user)
 	if scope not in ("own", "team"):
 		return _without_own(scope, ptype)
+	if _partner_may_not(user, ptype):
+		return False
 	lead = doc.get("lead")
 	if not lead:
 		return False
@@ -211,6 +223,8 @@ def has_client_permission(doc, ptype=None, user=None, **kwargs):
 	user, scope = _scope(user)
 	if scope not in ("own", "team"):
 		return _without_own(scope, ptype)
+	if _partner_may_not(user, ptype):
+		return False
 	if ptype == "create" or doc.get("owner") in visible_users(user, scope):
 		return True
 	leads = frappe.get_all("Lead", filters={"client": doc.name}, pluck="name")

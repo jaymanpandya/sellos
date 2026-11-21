@@ -172,6 +172,7 @@ permission_query_conditions = {
 	"Call Log": f"{_LEAD_PERMS}.get_child_query_conditions",  # SOS-P2-05
 	"Sales Team": f"{_LEAD_PERMS}.get_team_query_conditions",  # SOS-P1-18
 	"Channel Partner Firm": "sellos.access.partner_firms.get_permission_query_conditions",  # SOS-P7-01
+	"Partner Registration": "sellos.access.partner_registrations.get_permission_query_conditions",  # SOS-P7-02
 }
 has_permission = {
 	"Lead": f"{_LEAD_PERMS}.has_permission",
@@ -183,6 +184,7 @@ has_permission = {
 	"Call Log": f"{_LEAD_PERMS}.has_child_permission",  # SOS-P2-05
 	"Sales Team": f"{_LEAD_PERMS}.has_team_permission",  # SOS-P1-18
 	"Channel Partner Firm": "sellos.access.partner_firms.has_permission",  # SOS-P7-01
+	"Partner Registration": "sellos.access.partner_registrations.has_permission",  # SOS-P7-02
 	"File": "sellos.access.partner_firms.has_file_permission",  # SOS-P7-01: the signed agreement
 }
 
@@ -210,6 +212,7 @@ scheduler_events = {
 	"hourly": [
 		"sellos.crm.consent.expire_due_records",
 		"sellos.crm.notifications.notify_site_visits",  # SOS-P1-23
+		"sellos.access.partner_registrations.expire_registrations",  # SOS-P7-02
 	],
 }
 # scheduler_events = {

@@ -20,6 +20,8 @@ const TeamReportPage = () => import("./pages/TeamReportPage.vue");
 const CallReportsPage = () => import("./pages/CallReportsPage.vue");
 const CallListsPage = () => import("./pages/CallListsPage.vue");
 const PartnerFirmsPage = () => import("./pages/PartnerFirmsPage.vue");
+const PartnerRegistrationsPage = () => import("./pages/PartnerRegistrationsPage.vue");
+const PartnerRegisterPage = () => import("./pages/PartnerRegisterPage.vue");
 const PartnerFirmPage = () => import("./pages/PartnerFirmPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
@@ -115,6 +117,18 @@ export function createAppRouter() {
 				name: "partner-firms",
 				component: PartnerFirmsPage,
 				meta: { area: "company", title: "Channel partners" },
+			},
+			{
+				path: "/company/registrations",
+				name: "partner-registrations",
+				component: PartnerRegistrationsPage,
+				meta: { area: "company", title: "Partner registrations" },
+			},
+			{
+				path: "/partner/register",
+				name: "partner-register",
+				component: PartnerRegisterPage,
+				meta: { area: "partner", title: "Register a buyer" },
 			},
 			{
 				path: "/partner/firm",

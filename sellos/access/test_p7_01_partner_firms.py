@@ -216,7 +216,8 @@ class TestNoWorkUntilApproved(PartnerFirmCase):
 		_as(email)
 		self.assertTrue(partner_firms.partner_may_work())
 		self.assertEqual(frappe.get_list("Lead", pluck="name"), [lead])
-		self.assertTrue(frappe.has_permission("Lead", "create", doc=frappe.new_doc("Lead")))
+		# SOS-P7-02: an approved partner makes a lead only through register_buyer and changes nothing after.
+		self.assertFalse(frappe.has_permission("Lead", "create", doc=frappe.new_doc("Lead")))
 
 	def test_the_partner_is_told_the_state_of_the_firm(self):
 		code = self.ready_firm()
