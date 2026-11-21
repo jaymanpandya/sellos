@@ -53,6 +53,21 @@
 						<span class="text-sm text-ink-muted">
 							{{ m.price ? rupees(m.price) : "No price yet" }}
 						</span>
+						<AppButton
+							type="button"
+							data-testid="sellos-lead-match-add"
+							@click="add(m)"
+						>
+							Add to shortlist
+						</AppButton>
+						<span
+							v-if="added[m.kind + m.name]"
+							role="status"
+							class="text-sm text-ink"
+							data-testid="sellos-lead-match-added"
+						>
+							{{ added[m.kind + m.name] }}
+						</span>
 					</div>
 					<MatchParts :parts="m.parts" />
 				</li>
@@ -62,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import EmptyState from "../components/EmptyState.vue";
@@ -70,12 +85,28 @@ import ListCard from "../components/ListCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import MatchParts from "./MatchParts.vue";
-import { matchApi, rupees, scoreTone } from "./inventoryApi";
+import { matchApi, rupees, scoreTone, shortlistApi } from "./inventoryApi";
 
 // The published listings and Available units that suit a lead, each scored with the reasons (SOS-P7-08).
 const props = defineProps({ lead: { type: String, required: true } });
+const emit = defineEmits(["added"]);
 const result = ref(null);
 const error = ref("");
+const added = reactive({});
+
+// SOS-P7-09: put the home on this lead's open shortlist (one is made when there is none).
+async function add(match) {
+	error.value = "";
+	try {
+		const answer = await shortlistApi.add(match.kind, match.name, props.lead);
+		added[match.kind + match.name] = answer.added
+			? "Added to the shortlist."
+			: "Already on the shortlist.";
+		emit("added");
+	} catch (e) {
+		error.value = serverMessage(e, "The home could not be added to the shortlist.");
+	}
+}
 
 async function load() {
 	error.value = "";

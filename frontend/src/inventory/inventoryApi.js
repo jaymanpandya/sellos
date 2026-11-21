@@ -163,3 +163,43 @@ export const matchApi = {
 // One tone per score: 70 and over is a good match, 40 and over a fair one.
 export const scoreTone = (score) =>
 	score >= 70 ? "success" : score >= 40 ? "warning" : "neutral";
+
+// Shortlists of homes for one client, and what the client sees of them (SOS-P7-09).
+const shortlists = (method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.inventory.shortlists.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const shortlistApi = {
+	list: (lead = "", client = "") => shortlists("list_shortlists", { lead, client }),
+	get: (name) => shortlists("get_shortlist", { name }),
+	create: (lead, title = "") => shortlists("create_shortlist", { lead, title }),
+	update: (name, values) => shortlists("update_shortlist", { name, ...values }),
+	add: (kind, target, lead = "", shortlist = "") =>
+		shortlists("add_to_shortlist", { kind, target, lead, shortlist }),
+	saveNote: (name, item, note) => shortlists("save_item_note", { name, item, note }),
+	remove: (name, item) => shortlists("remove_shortlist_item", { name, item }),
+	reorder: (name, order) => shortlists("reorder_shortlist", { name, order }),
+	archive: (name, archived = 1) => shortlists("archive_shortlist", { name, archived }),
+	share: (name, via) => shortlists("share_shortlist", { name, via }),
+	// The client's own methods.
+	mine: () => shortlists("my_shortlists"),
+	mineOne: (name) => shortlists("my_shortlist", { name }),
+	open: (name, item) => shortlists("open_shortlist_item", { name, item }),
+};
+
+// A server time ("2026-11-22 14:05:09.123456") as a short date and time for a person.
+export function whenText(value) {
+	if (!value) return "";
+	const date = new Date(String(value).replace(" ", "T"));
+	if (Number.isNaN(date.getTime())) return String(value);
+	return date.toLocaleString("en-IN", {
+		day: "numeric",
+		month: "short",
+		year: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+	});
+}

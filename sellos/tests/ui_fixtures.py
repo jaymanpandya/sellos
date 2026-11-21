@@ -328,6 +328,15 @@ def seed_duplicate_clients():
 	return made
 
 
+def _remove_shortlists(clients):
+	"""The shortlists of these clients, with their homes and history (tests only, SOS-P7-09)."""
+	names = frappe.get_all("Shortlist", filters={"client": ["in", clients]}, pluck="name")
+	if names:
+		frappe.db.delete("Shortlist Item", {"parent": ["in", names]})
+		frappe.db.delete("Version", {"ref_doctype": "Shortlist", "docname": ["in", names]})
+		frappe.db.delete("Shortlist", {"name": ["in", names]})
+
+
 def remove_seeded_leads():
 	"""Remove what seed_agent_leads and seed_client_with_phone committed (tests only, P1.06A), and the
 	Gate Buyer lead leads_by_role.cy.js makes through the form. Its phone comes from fresh_phone with a
@@ -359,6 +368,7 @@ def remove_seeded_leads():
 	if not clients:
 		return {"clients": 0, "leads": 0}
 	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name")
+	_remove_shortlists(clients)  # SOS-P7-09
 	if leads:
 		frappe.db.delete("Lead Stage Change", {"parent": ["in", leads]})
 		frappe.db.delete("App Notification", {"lead": ["in", leads]})  # SOS-P1-23
@@ -778,6 +788,13 @@ def seed_regression_data():
 	  Rs 83,20,000 before charges) and its published listing Regression Primary 2 BHK, each 100 out of 100, and
 	  the Held unit G102 of Regression Grid is never offered.
 
+	* Shortlists (SOS-P7-09): Regression Buyer One gets the email of the gate client user, so that user reads what
+	  is shared with them. The gate agent makes the shortlist Regression Shortlist for that lead (unit 1501 of
+	  Regression Pricing with the note "Corner flat, park facing", then the listing Regression Primary 2 BHK with
+	  its two photos) and shares it as a link, and keeps the draft Regression Draft Shortlist (unit 1501 only),
+	  which the client never sees. Nothing is opened yet, so the agent's marks read "Not opened yet". Made
+	  through the shortlist API.
+
 	* Sharing with partners (SOS-P7-03): the Company Admin shares Regression Pricing (all units, its price list
 	  in force and the brochure Regression Floor Plan) with Regression Firm Approved, shares Regression Heights
 	  (units 1201 and 1202 only) with every Approved firm, and shares Regression Grid with Regression Firm
@@ -829,6 +846,7 @@ def seed_regression_data():
 		_seed_partner_firms(admin)
 		_seed_partner_registrations(admin)
 		_seed_inventory(admin, agent_one)
+		_seed_shortlists(agent_one)
 		_seed_partner_shares(admin)
 		_seed_inbound_opt_in()
 		return _regression_summary()
@@ -965,6 +983,7 @@ def seed_regression_data():
 	_seed_partner_firms(admin)
 	_seed_partner_registrations(admin)
 	_seed_inventory(admin, agent_one)
+	_seed_shortlists(agent_one)
 	_seed_partner_shares(admin)
 	_seed_inbound_opt_in()
 
@@ -1480,6 +1499,7 @@ def _seed_telephony(admin):
 
 
 CLICK_TO_CALL_SEED = 2301
+SHORTLIST_AGENT_SEED = 7109  # SOS-P7-09: the gate agent's mobile number on the shortlist the client reads
 
 
 def _seed_click_to_call_agent(admin, agent):
@@ -2678,6 +2698,36 @@ def _picture(kind, colour, size=(32, 24)):
 	return out.getvalue()
 
 
+def _seed_shortlists(agent):
+	"""Regression shortlists (SOS-P7-09), through the shortlist API as the gate agent: Regression Shortlist (unit
+	1501 of Regression Pricing, then the listing Regression Primary 2 BHK) shared as a link with Regression Buyer
+	One, whose email is now the gate client user's, and the draft Regression Draft Shortlist. Safe to run again."""
+	from sellos.crm import api as crm
+	from sellos.inventory import shortlists
+
+	if frappe.db.exists("Shortlist", {"title": "Regression Shortlist"}):
+		return
+	client = frappe.db.get_value("Client", {"client_name": f"{REGRESSION_PREFIX}Buyer One"}, "name")
+	lead = frappe.db.get_value("Lead", {"client": client}, "name")
+	project = frappe.db.get_value("Project", {"project_name": "Regression Pricing"}, "name")
+	unit = frappe.db.get_value("Unit", {"project": project, "unit_number": "1501"}, "name")
+	listing = frappe.db.get_value("Listing", {"title": "Regression Primary 2 BHK"}, "name")
+	if not (client and lead and unit and listing):
+		return
+	with _as_user(agent):
+		crm.save_client(name=client, values={"email": TEST_USERS["client"]["email"]})
+		main = shortlists.create_shortlist(
+			lead=lead, title="Regression Shortlist", note="Two homes I think suit you."
+		)
+		for kind, target in (("Unit", unit), ("Listing", listing)):
+			shortlists.add_to_shortlist(kind, target, shortlist=main["name"])
+		first = shortlists.get_shortlist(main["name"])["items"][0]["name"]
+		shortlists.save_item_note(main["name"], first, "Corner flat, park facing")
+		shortlists.share_shortlist(main["name"], "Link")
+		draft = shortlists.create_shortlist(lead=lead, title="Regression Draft Shortlist")
+		shortlists.add_to_shortlist("Unit", unit, shortlist=draft["name"])
+
+
 def _seed_listing_media(agent):
 	"""Regression media (SOS-P4-03): two photos on Regression Primary 2 BHK, in the order Front view then Living
 	room, uploaded by the gate agent through the media API, and one library photo, Regression Floor Plan, on no
@@ -2948,6 +2998,45 @@ def make_gate_matches():
 		"admin_buyer": buyers["admin"],
 		"phone_forms": phones.forms(phones.in_mobile(41)),
 	}
+
+
+def make_gate_shortlists():
+	"""For the shortlist spec (tests only, SOS-P7-09): what make_gate_matches makes, the agent's buyer given the
+	email of the gate client user (so that user reads what is shared with them), and the gate agent given a
+	mobile number to show the client. remove_gate_shortlists puts the agent's number back. Returns what
+	make_gate_matches returns, with the client's email and the agent's number."""
+	made = make_gate_matches()
+	agent = TEST_USERS["agent"]["email"]
+	client = frappe.db.get_value("Lead", made["agent_lead"], "client")
+	number = phones.in_mobile(SHORTLIST_AGENT_SEED)
+	frappe.db.set_value("Client", client, "email", TEST_USERS["client"]["email"])
+	frappe.db.set_value("User", agent, "mobile_no", number)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {**made, "client_email": TEST_USERS["client"]["email"], "agent_phone": number}
+
+
+def remove_gate_shortlists():
+	"""Remove the shortlists of the gate buyers and take the agent's mobile number off (tests only, SOS-P7-09)."""
+	clients = frappe.get_all("Client", filters={"client_name": ["like", "Gate Match %"]}, pluck="name")
+	if clients:
+		_remove_shortlists(clients)
+	frappe.db.set_value("User", TEST_USERS["agent"]["email"], "mobile_no", None)
+	frappe.db.commit()  # nosemgrep
+	return {"clients": len(clients)}
+
+
+def set_gate_unit_status(unit, status):
+	"""Set a unit's status for the spec, as the sale or a hold would (tests only, SOS-P7-09)."""
+	frappe.db.set_value("Unit", unit, "status", status)
+	frappe.db.commit()  # nosemgrep
+	return {"unit": unit, "status": status}
+
+
+def set_gate_listing_published(listing, published):
+	"""Publish or unpublish a listing for the spec (tests only, SOS-P7-09)."""
+	frappe.db.set_value("Listing", listing, "published", 1 if int(published) else 0)
+	frappe.db.commit()  # nosemgrep
+	return {"listing": listing, "published": int(published)}
 
 
 def gate_unit_state(project, unit_number):

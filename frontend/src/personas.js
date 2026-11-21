@@ -95,7 +95,10 @@ export const PERSONAS = [
 		key: "client",
 		role: "SellOS Client",
 		areas: ["client", "home", "profile"],
-		nav: [{ key: "home", label: "Home", to: "/", area: "home" }],
+		nav: [
+			{ key: "home", label: "Home", to: "/", area: "home" },
+			{ key: "shortlists", label: "Shortlists", to: "/client/shortlists", area: "client" },
+		],
 	},
 ];
 

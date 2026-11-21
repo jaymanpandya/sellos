@@ -31,6 +31,8 @@ const ProjectPage = () => import("./pages/ProjectPage.vue");
 const CostSheetPage = () => import("./pages/CostSheetPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
+const ClientShortlistsPage = () => import("./pages/ClientShortlistsPage.vue");
+const ClientShortlistPage = () => import("./pages/ClientShortlistPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
 
 export function createAppRouter() {
@@ -207,6 +209,18 @@ export function createAppRouter() {
 				name: "tenants",
 				component: TenantsPage,
 				meta: { area: "platform", title: "Companies" },
+			},
+			{
+				path: "/client/shortlists",
+				name: "client-shortlists",
+				component: ClientShortlistsPage,
+				meta: { area: "client", title: "Your shortlists" },
+			},
+			{
+				path: "/client/shortlists/:name",
+				name: "client-shortlist",
+				component: ClientShortlistPage,
+				meta: { area: "client", title: "Shortlist", crumb: "Your shortlists" },
 			},
 			{
 				path: "/no-access",

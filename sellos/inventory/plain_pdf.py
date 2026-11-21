@@ -159,3 +159,63 @@ def _assemble(streams) -> bytes:
 		out += b"%010d 00000 n \n" % offset
 	out += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (len(objects) + 1, xref)
 	return bytes(out)
+
+
+def _wrap(text, size, limit) -> list[str]:
+	"""Break text into lines no wider than `limit` points."""
+	lines, line = [], ""
+	for word in str(text).split():
+		trial = f"{line} {word}".strip()
+		if line and _width(trial, size) > limit:
+			lines.append(line)
+			line = word
+		else:
+			line = trial
+	return [*lines, line] if line else lines
+
+
+def build_shortlist_pdf(view, inr) -> bytes:
+	"""SOS-P7-09: a shortlist as a plain PDF, for a machine without the page layout program. The same lines as
+	the layout version (company, client, agent, each home with its price, note and what is no longer
+	available) without the pictures; the layout version carries the photos."""
+	brand = view["brand"]
+	colour = _rgb(brand["colour"])
+	left, right = MARGIN, PAGE_W - MARGIN
+	pages = [_Page()]
+	state = {"y": PAGE_H - MARGIN}
+
+	def line(text, size=10, bold=False, gap=4, col=(0.13, 0.13, 0.13), indent=0):
+		for part in _wrap(text, size, right - left - indent) or [""]:
+			if state["y"] - size - gap < MARGIN:
+				pages.append(_Page())
+				state["y"] = PAGE_H - MARGIN
+			state["y"] -= size
+			pages[-1].text(left + indent, state["y"], part, size, bold, col)
+			state["y"] -= gap
+
+	line(brand["name"], 18, True, 4, colour)
+	contact = " | ".join(p for p in (brand["phone"], brand["email"]) if p)
+	if contact:
+		line(contact, 9)
+	if brand["address"]:
+		line(brand["address"], 9)
+	pages[-1].rule(state["y"] - 2, colour)
+	state["y"] -= 14
+	line(view["title"], 14, True, 6)
+	line(f"Chosen for {view['client_name']} on {view['made_on']}", 9)
+	agent = view["agent"]
+	line("Your contact: " + " | ".join(p for p in (agent["name"], agent["phone"]) if p), 9, gap=8)
+	if view["note"]:
+		line(view["note"], 10, gap=8)
+	for item in view["items"]:
+		price = inr(item["price"]) if item["price"] else "Price on request"
+		line(f"{item['position']}. {item['title']}", 11, True, 2, colour)
+		facts = " | ".join(p for p in (item["configuration"], item["locality"]) if p)
+		line(f"{price}" + (f" | {facts}" if facts else ""), 10, indent=14)
+		if item["unavailable"]:
+			line(str(item["reason"]), 10, True, 2, (0.7, 0, 0.13), indent=14)
+		if item["note"]:
+			line(item["note"], 9, indent=14)
+		state["y"] -= 6
+	line("Prices are in rupees and may change. A home marked as no longer available is not on offer.", 8)
+	return _assemble([b"\n".join(p.ops) for p in pages])

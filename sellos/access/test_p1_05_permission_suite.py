@@ -343,6 +343,37 @@ SAMPLE_CALLS = {
 		"locality": 25,
 		"property_type": 25,
 	},
+	# SOS-P7-09: shortlists of the spare units for the secret client. The reorder lists the main shortlist's
+	# two homes, an add, a removal and an archive each have a shortlist of their own.
+	"sellos.inventory.shortlists.list_shortlists": {},
+	"sellos.inventory.shortlists.get_shortlist": {"name": "{shortlist}"},
+	"sellos.inventory.shortlists.shortlist_pdf": {"name": "{shortlist}"},
+	"sellos.inventory.shortlists.create_shortlist": {"client": "{client}"},
+	"sellos.inventory.shortlists.update_shortlist": {"name": "{shortlist}", "title": "P709 Suite"},
+	"sellos.inventory.shortlists.add_to_shortlist": {
+		"kind": "Unit",
+		"target": "{shortlist_unit}",
+		"shortlist": "{shortlist_add}",
+	},
+	"sellos.inventory.shortlists.save_item_note": {
+		"name": "{shortlist}",
+		"item": "{shortlist_item}",
+		"note": "p709 note",
+	},
+	"sellos.inventory.shortlists.remove_shortlist_item": {
+		"name": "{shortlist_remove}",
+		"item": "{shortlist_remove_item}",
+	},
+	"sellos.inventory.shortlists.reorder_shortlist": {
+		"name": "{shortlist}",
+		"order": ["{shortlist_item_two}", "{shortlist_item}"],
+	},
+	"sellos.inventory.shortlists.archive_shortlist": {"name": "{shortlist_archive}"},
+	"sellos.inventory.shortlists.share_shortlist": {"name": "{shortlist}"},
+	"sellos.inventory.shortlists.my_shortlists": {},
+	"sellos.inventory.shortlists.my_shortlist": {"name": "{shortlist}"},
+	"sellos.inventory.shortlists.open_shortlist_item": {"name": "{shortlist}", "item": "{shortlist_item}"},
+	"sellos.inventory.shortlists.my_shortlist_pdf": {"name": "{shortlist}"},
 	"sellos.reports.team.team_report": {},
 	"sellos.crm.enquiry.get_enquiry_settings": {},  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": {},
@@ -552,6 +583,25 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			).insert()
 			for number, status in (("1", "Available"), ("2", "Held"), ("3", "Available"), ("4", "Blocked"))
 		)
+		# SOS-P7-09: an Available unit to add, and four shortlists of the secret client (see SAMPLE_CALLS).
+		shortlist_unit = frappe.get_doc(
+			{"doctype": "Unit", "project": spare_project.name, "unit_number": "P709-1", "carpet_area": 600}
+		).insert()
+
+		def make_shortlist(title, *units):
+			return frappe.get_doc(
+				{
+					"doctype": "Shortlist",
+					"title": title,
+					"client": client.name,
+					"items": [{"kind": "Unit", "unit": unit} for unit in units],
+				}
+			).insert()
+
+		shortlist = make_shortlist("P709 Suite", spare_unit.name, spare_unit_block.name)
+		shortlist_add = make_shortlist("P709 Add", spare_unit_blocked.name)
+		shortlist_remove = make_shortlist("P709 Remove", spare_unit_held.name)
+		shortlist_archive = make_shortlist("P709 Archive", spare_unit.name)
 		spare_tower, spare_tower_two = (
 			frappe.get_doc(
 				{
@@ -731,6 +781,14 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_unit_held": spare_unit_held.name,
 			"spare_unit_block": spare_unit_block.name,
 			"spare_unit_blocked": spare_unit_blocked.name,
+			"shortlist_unit": shortlist_unit.name,
+			"shortlist": shortlist.name,
+			"shortlist_item": shortlist.items[0].name,
+			"shortlist_item_two": shortlist.items[1].name,
+			"shortlist_add": shortlist_add.name,
+			"shortlist_remove": shortlist_remove.name,
+			"shortlist_remove_item": shortlist_remove.items[0].name,
+			"shortlist_archive": shortlist_archive.name,
 			"spare_plan": spare_plan.name,
 			"spare_plan_two": spare_plan_two.name,
 			"spare_sheet": spare_sheet["name"],

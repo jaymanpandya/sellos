@@ -27,6 +27,7 @@ _LOGGERS = frozenset({AGENT, COMPANY_ADMIN, SALES_MANAGER})
 _TEAM_USERS = frozenset({COMPANY_ADMIN, SALES_MANAGER})
 _ADMIN_ONLY = frozenset({COMPANY_ADMIN})
 _PARTNER_ONLY = frozenset({CHANNEL_PARTNER})
+_CLIENT_ONLY = frozenset({CLIENT})
 _INVENTORY_EDITORS = frozenset({COMPANY_ADMIN, AGENT})
 _INVENTORY_READERS = frozenset({COMPANY_ADMIN, AGENT, SALES_MANAGER})
 _OPENERS = frozenset({PLATFORM_ADMIN, COMPANY_ADMIN, AGENT, CLIENT, CHANNEL_PARTNER, SALES_MANAGER})
@@ -206,6 +207,23 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.matching.leads_for_listing": _INVENTORY_READERS,
 	"sellos.inventory.matching.get_match_settings": _ADMIN_ONLY,
 	"sellos.inventory.matching.save_match_settings": _ADMIN_ONLY,
+	# SOS-P7-09: shortlists. An Agent or a Company Admin builds and shares them, a Sales Manager reads its team's,
+	# and a Client reads only the ones shared with them.
+	"sellos.inventory.shortlists.list_shortlists": _INVENTORY_READERS,
+	"sellos.inventory.shortlists.get_shortlist": _INVENTORY_READERS,
+	"sellos.inventory.shortlists.shortlist_pdf": _INVENTORY_READERS,
+	"sellos.inventory.shortlists.create_shortlist": _INVENTORY_EDITORS,
+	"sellos.inventory.shortlists.update_shortlist": _INVENTORY_EDITORS,
+	"sellos.inventory.shortlists.add_to_shortlist": _INVENTORY_EDITORS,
+	"sellos.inventory.shortlists.save_item_note": _INVENTORY_EDITORS,
+	"sellos.inventory.shortlists.remove_shortlist_item": _INVENTORY_EDITORS,
+	"sellos.inventory.shortlists.reorder_shortlist": _INVENTORY_EDITORS,
+	"sellos.inventory.shortlists.archive_shortlist": _INVENTORY_EDITORS,
+	"sellos.inventory.shortlists.share_shortlist": _INVENTORY_EDITORS,
+	"sellos.inventory.shortlists.my_shortlists": _CLIENT_ONLY,
+	"sellos.inventory.shortlists.my_shortlist": _CLIENT_ONLY,
+	"sellos.inventory.shortlists.open_shortlist_item": _CLIENT_ONLY,
+	"sellos.inventory.shortlists.my_shortlist_pdf": _CLIENT_ONLY,
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.crm.enquiry.get_enquiry_settings": _ADMIN_ONLY,  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": _ADMIN_ONLY,  # SOS-P2-08

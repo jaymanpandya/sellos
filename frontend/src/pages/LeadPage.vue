@@ -227,7 +227,12 @@
 					</p>
 				</ListCard>
 
-				<LeadMatches v-if="canLog" :lead="route.params.name" />
+				<LeadMatches
+					v-if="canLog"
+					:lead="route.params.name"
+					@added="shortlists && shortlists.reload()"
+				/>
+				<LeadShortlists v-if="canLog" ref="shortlists" :lead="route.params.name" />
 
 				<section
 					data-testid="sellos-lead-follow-up"
@@ -867,6 +872,7 @@ import ClickToCall from "../components/ClickToCall.vue";
 import FormField from "../components/FormField.vue";
 import MoneyField from "../components/MoneyField.vue";
 import LeadMatches from "../inventory/LeadMatches.vue";
+import LeadShortlists from "../inventory/LeadShortlists.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import StatusBadge from "../components/StatusBadge.vue";
@@ -889,6 +895,7 @@ import {
 } from "../crm/crmApi";
 
 const route = useRoute();
+const shortlists = ref(null); // SOS-P7-09: the lead's shortlists card, reloaded when a match is added
 const router = useRouter();
 const partner = computed(() => route.meta.area === "partner");
 const canLog = computed(() => !partner.value); // a partner reads the timeline but does not log

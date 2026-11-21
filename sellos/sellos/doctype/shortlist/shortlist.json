@@ -1,0 +1,162 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:SL-{#####}",
+ "creation": "2026-11-22 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "client",
+  "lead",
+  "agent",
+  "note",
+  "items",
+  "section_share",
+  "shared_on",
+  "shared_by",
+  "shared_via",
+  "share_count",
+  "client_last_opened_on",
+  "section_archive",
+  "archived",
+  "archived_on",
+  "archived_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "client",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Client",
+   "options": "Client",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "label": "Lead",
+   "options": "Lead",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "agent",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Made by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note to the buyer"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Homes",
+   "options": "Shortlist Item"
+  },
+  {
+   "fieldname": "section_share",
+   "fieldtype": "Section Break",
+   "label": "Sharing"
+  },
+  {
+   "fieldname": "shared_on",
+   "fieldtype": "Datetime",
+   "label": "Shared on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shared_by",
+   "fieldtype": "Link",
+   "label": "Shared by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shared_via",
+   "fieldtype": "Select",
+   "label": "Shared as",
+   "options": "\nLink\nPDF",
+   "read_only": 1
+  },
+  {
+   "fieldname": "share_count",
+   "fieldtype": "Int",
+   "label": "Times shared",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_last_opened_on",
+   "fieldtype": "Datetime",
+   "label": "Client last opened",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_archive",
+   "fieldtype": "Section Break",
+   "label": "Archive"
+  },
+  {
+   "fieldname": "archived",
+   "fieldtype": "Check",
+   "label": "Archived",
+   "default": "0"
+  },
+  {
+   "fieldname": "archived_on",
+   "fieldtype": "Datetime",
+   "label": "Archived on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "archived_by",
+   "fieldtype": "Link",
+   "label": "Archived by",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Shortlist",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "SellOS Company Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "SellOS Agent",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "SellOS Sales Manager"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

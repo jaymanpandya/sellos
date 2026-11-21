@@ -173,6 +173,7 @@ permission_query_conditions = {
 	"Sales Team": f"{_LEAD_PERMS}.get_team_query_conditions",  # SOS-P1-18
 	"Channel Partner Firm": "sellos.access.partner_firms.get_permission_query_conditions",  # SOS-P7-01
 	"Partner Registration": "sellos.access.partner_registrations.get_permission_query_conditions",  # SOS-P7-02
+	"Shortlist": "sellos.inventory.shortlists.get_permission_query_conditions",  # SOS-P7-09
 }
 has_permission = {
 	"Lead": f"{_LEAD_PERMS}.has_permission",
@@ -185,6 +186,7 @@ has_permission = {
 	"Sales Team": f"{_LEAD_PERMS}.has_team_permission",  # SOS-P1-18
 	"Channel Partner Firm": "sellos.access.partner_firms.has_permission",  # SOS-P7-01
 	"Partner Registration": "sellos.access.partner_registrations.has_permission",  # SOS-P7-02
+	"Shortlist": "sellos.inventory.shortlists.has_permission",  # SOS-P7-09
 	"File": "sellos.access.partner_firms.has_file_permission",  # SOS-P7-01: the signed agreement
 }
 
