@@ -49,4 +49,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-20 12:05 | SOS-P2-06 | stopped | stopped by a signal (sellos stop --now, Ctrl-C or a shutdown) | 32 | 4.4 |
 | 2026-11-20 17:15 | SOS-P2-08 | needs-input | The enquiry page is a form a prospect submits with no SellOS login, so its submit method has to allow guests. CLAUDE.md says a provider webhook is the only method that may allow guests, and that `all… | 0 | 2.4 |
 | 2026-11-21 01:17 | SOS-FIX-1 | blocked | the gate still failed after 3 gate run(s): CHANGED SPEC FAILED: smoke/not_found.cy.js; the loop went on to the next task | 25 | 0.0 |
-| 2026-11-21 03:38 | - | paused | the regression pause file exists | 0 |  |
+| 2026-11-21 03:38 | - | paused | the regression pause file exists | 0 | 0.5 |
