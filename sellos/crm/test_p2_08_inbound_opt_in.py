@@ -372,11 +372,14 @@ class TestPublicIntakeChecks(EnquiryCase):
 		self.assertIn("reference", message)
 
 	def test_the_answer_sets_no_cookie_and_returns_no_record(self):
+		# The test session may already hold a cookie from its own login: the answer adds none.
+		manager = getattr(frappe.local, "cookie_manager", None)
+		before = dict(manager.cookies) if manager else {}
 		message, _ = submit(self.form())
 		self.assertEqual(set(message), {"thank_you", "reference"})
-		self.assertFalse(
-			frappe.local.cookie_manager.cookies if hasattr(frappe.local, "cookie_manager") else {}
-		)
+		manager = getattr(frappe.local, "cookie_manager", None)
+		after = dict(manager.cookies) if manager else {}
+		self.assertEqual(after, before)
 
 	def test_a_failure_inside_the_intake_is_refused_without_a_reason(self):
 		with patch("sellos.crm.enquiry.intake.take", side_effect=RuntimeError("secret detail")):
