@@ -51,3 +51,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-21 01:17 | SOS-FIX-1 | blocked | the gate still failed after 3 gate run(s): CHANGED SPEC FAILED: smoke/not_found.cy.js; the loop went on to the next task | 25 | 0.0 |
 | 2026-11-21 03:38 | - | paused | the regression pause file exists | 0 | 0.5 |
 | 2026-11-21 09:59 | - | paused | the regression pause file exists | 0 | 9.1 |
+| 2026-11-21 22:15 | - | paused | the regression pause file exists | 0 | 0.2 |
