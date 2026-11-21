@@ -972,7 +972,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 1
 - **Dependencies:** SOS-P0-10
-- **Status:** Not Started
+- **Status:** Blocked
 - **Browser spec:** required
 
 ### SOS-P1-09: Build the website lead endpoint
