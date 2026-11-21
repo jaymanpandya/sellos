@@ -413,7 +413,15 @@ def cost_sheet_pdf(name):
 	"""The cost sheet as a PDF with the company's branding, shown by the browser."""
 	from frappe.utils.pdf import get_pdf
 
+	from sellos.inventory.plain_pdf import build_pdf
+
 	doc = _sheet(name)
+	view = sheet_view(doc)
+	try:
+		content = get_pdf(sheet_html(view))
+	except OSError:
+		# The page layout program is not installed on this machine: write the figures plainly instead.
+		content = build_pdf(view, inr)
 	frappe.local.response.filename = f"{doc.name}.pdf"
-	frappe.local.response.filecontent = get_pdf(sheet_html(sheet_view(doc)))
+	frappe.local.response.filecontent = content
 	frappe.local.response.type = "pdf"
