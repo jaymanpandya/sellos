@@ -52,9 +52,11 @@ def declared_methods() -> dict[str, frozenset[str]]:
 
 def undeclared_whitelisted_methods() -> list[str]:
 	"""Whitelisted functions in the sellos package that have no declaration."""
+	from sellos.access.public_intake import declared_intakes
 	from sellos.access.webhooks import declared_webhooks
 
-	webhooks = declared_webhooks()  # SOS-P2-06: a registered provider webhook is declared there
+	# SOS-P2-06: a registered provider webhook is declared there. SOS-P2-08: so is a public intake method.
+	webhooks = {**declared_webhooks(), **declared_intakes()}
 	found = []
 	for fn in frappe.whitelisted:
 		path = f"{fn.__module__}.{fn.__name__}"
@@ -98,9 +100,10 @@ def is_refused(method: str | None) -> bool:
 		load_declared_modules()
 	if not method or not method.startswith(PREFIX) or method in _REGISTRY:
 		return False
+	from sellos.access.public_intake import is_public_intake
 	from sellos.access.webhooks import is_webhook
 
-	return not is_webhook(method)
+	return not (is_webhook(method) or is_public_intake(method))
 
 
 def guard_api():

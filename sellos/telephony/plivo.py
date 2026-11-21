@@ -153,6 +153,7 @@ class PlivoProvider(TelephonyProvider):
 				duration=_seconds(payload.get("Duration") or payload.get("RecordingDuration")),
 				recording_url=recording_url,
 				raw=dict(payload),
+				direction=str(payload.get("Direction") or "").lower(),
 			)
 		]
 

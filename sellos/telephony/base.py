@@ -35,6 +35,8 @@ class CallEvent:
 	duration: int = 0
 	recording_url: str = ""
 	raw: dict = field(default_factory=dict)
+	# "inbound" for a call made to our number (a missed call is one that ends unanswered), else "".
+	direction: str = ""
 
 
 @dataclass

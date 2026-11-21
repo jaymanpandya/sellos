@@ -15,7 +15,7 @@ from frappe import _
 from frappe.utils.file_manager import save_file
 
 from sellos.access.webhooks import WebhookRequest, provider_webhook
-from sellos.telephony import call_log, click_to_call, settings
+from sellos.telephony import call_log, click_to_call, inbound, settings
 from sellos.telephony.base import CallEvent, ProviderError
 from sellos.telephony.plivo import PlivoProvider, signature_v3
 from sellos.telephony.provider import get_provider
@@ -96,6 +96,9 @@ def apply_plivo_event(event: CallEvent) -> str | None:
 	lead's leg. When the agent answers a click to call, the lead is rung."""
 	name = frappe.db.get_value(call_log.DOCTYPE, {"call_id": event.call_id}, ["name", "state"], as_dict=True)
 	if not name:
+		if inbound.is_missed_call(event):  # SOS-P2-08: a call nobody answered is a way to opt in
+			inbound.handle_missed_call(event)
+			return None
 		return _apply_lead_leg_event(event)
 	what = plan(name.state, event)
 	if not what:

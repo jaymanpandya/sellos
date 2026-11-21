@@ -77,6 +77,7 @@ class FakeProvider(TelephonyProvider):
 				duration=int(payload.get("duration") or 0),
 				recording_url=payload.get("recording_url", ""),
 				raw=dict(payload),
+				direction=str(payload.get("direction") or "").lower(),
 			)
 		]
 

@@ -17,6 +17,7 @@
   "partner_lead_limit",
   "partner_protection_days",
   "consent_wording",
+  "enquiry_form_key",
   "setup_steps_done",
   "setup_complete"
  ],
@@ -110,7 +111,14 @@
    "fieldname": "consent_wording",
    "fieldtype": "Small Text",
    "label": "Consent wording",
-   "description": "The words shown to a channel partner when they confirm that the buyer agreed to be contacted (SOS-P7-02)."
+   "description": "The words shown to a channel partner when they confirm that the buyer agreed to be contacted (SOS-P7-02), and to a person on the enquiry page (SOS-P2-08)."
+  },
+  {
+   "fieldname": "enquiry_form_key",
+   "fieldtype": "Password",
+   "label": "Enquiry form key",
+   "hidden": 1,
+   "description": "The key in the enquiry page link (SOS-P2-08). A Company Admin rotates it from the enquiry page settings."
   }
  ],
  "index_web_pages_for_search": 0,

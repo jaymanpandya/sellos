@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="robots" content="noindex" />
+		<title>Enquiry · {{ company }}</title>
+		<style>
+			body { margin: 0; background: #fff2dc; color: #003c3c; font-family: system-ui, sans-serif; line-height: 1.5; }
+			main { max-width: 32rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+			h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
+			.card { background: #fff; border: 1px solid #003c3c40; border-radius: 0.5rem; padding: 1rem; margin-top: 1rem; }
+			label { display: block; font-weight: 600; color: #004848; margin-top: 0.75rem; }
+			input[type="text"], input[type="tel"], input[type="email"], textarea { box-sizing: border-box; width: 100%; padding: 0.5rem; border: 1px solid #003c3c80; border-radius: 0.375rem; font: inherit; color: #003c3c; background: #fff; }
+			.check { display: flex; gap: 0.5rem; align-items: center; font-weight: 400; }
+			.wording { font-size: 0.875rem; color: #3f6767; margin: 1rem 0 0; }
+			button { margin-top: 1rem; padding: 0.625rem 1rem; border: 0; border-radius: 0.375rem; background: #003c3c; color: #e4b33c; font: inherit; font-weight: 600; cursor: pointer; }
+			.notice { margin-top: 1rem; padding: 0.75rem; border-radius: 0.375rem; }
+			.ok { background: #ddefdf; color: #0b5d3b; border: 1px solid #8fc4a0; }
+			.bad { background: #fbe1dc; color: #a4281b; border: 1px solid #e0958b; }
+			.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+			img.logo { max-height: 3rem; margin-bottom: 0.5rem; }
+		</style>
+	</head>
+	<body>
+		<main data-testid="sellos-enquiry-page">
+			{% if logo %}<img class="logo" src="{{ logo | e }}" alt="" />{% endif %}
+			<h1>Enquire with {{ company | e }}</h1>
+			<p>Tell us how to reach you and we will call you back.</p>
+			{% if not key %}
+			<div class="notice bad" data-testid="sellos-enquiry-incomplete">
+				This link is not complete. Please open the link you were sent again.
+			</div>
+			{% else %}
+			<form id="enquiry-form" class="card" data-testid="sellos-enquiry-form" novalidate>
+				<label for="name">Your name</label>
+				<input id="name" name="name" type="text" maxlength="100" required autocomplete="name" data-testid="sellos-enquiry-name" />
+				<label for="phone">Phone number</label>
+				<input id="phone" name="phone" type="tel" maxlength="20" required autocomplete="tel" data-testid="sellos-enquiry-phone" />
+				<label for="email">Email (optional)</label>
+				<input id="email" name="email" type="email" maxlength="140" autocomplete="email" data-testid="sellos-enquiry-email" />
+				<label for="message">Message (optional)</label>
+				<textarea id="message" name="message" rows="3" maxlength="1000" data-testid="sellos-enquiry-message"></textarea>
+				<label class="check" for="stop">
+					<input id="stop" name="stop" type="checkbox" value="1" data-testid="sellos-enquiry-stop" />
+					Stop contacting me
+				</label>
+				<div class="hp" aria-hidden="true">
+					<label for="website">Leave this empty</label>
+					<input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+				</div>
+				<p class="wording" data-testid="sellos-enquiry-wording">{{ consent_wording | e }}</p>
+				<button type="submit" data-testid="sellos-enquiry-submit">Send</button>
+				<div id="enquiry-result" role="status" data-testid="sellos-enquiry-result"></div>
+			</form>
+			{% endif %}
+		</main>
+		<script>
+			(function () {
+				var form = document.getElementById("enquiry-form");
+				if (!form) return;
+				var result = document.getElementById("enquiry-result");
+				var key = {{ key | tojson }};
+				var url = "/api/method/{{ method }}";
+				form.addEventListener("submit", function (event) {
+					event.preventDefault();
+					var body = { key: key };
+					["name", "phone", "email", "message", "website"].forEach(function (field) {
+						body[field] = form.elements[field].value;
+					});
+					body.stop = form.elements.stop.checked ? "1" : "0";
+					fetch(url, {
+						method: "POST",
+						headers: { "Content-Type": "application/json", Accept: "application/json" },
+						body: JSON.stringify(body),
+						credentials: "omit",
+					})
+						.then(function (response) {
+							return response.json().then(function (data) {
+								return { ok: response.ok, data: data };
+							});
+						})
+						.then(function (answer) {
+							var message = answer.data && answer.data.message;
+							if (answer.ok && message && message.thank_you) {
+								form.reset();
+								result.className = "notice ok";
+								result.dataset.state = "thanks";
+								result.textContent = message.thank_you + " Your reference is " + message.reference + ".";
+							} else {
+								result.className = "notice bad";
+								result.dataset.state = "refused";
+								result.textContent = typeof message === "string" ? message : "We could not take this form. Please check it and try again.";
+							}
+						})
+						.catch(function () {
+							result.className = "notice bad";
+							result.dataset.state = "refused";
+							result.textContent = "We could not take this form. Please try again in a moment.";
+						});
+				});
+			})();
+		</script>
+	</body>
+</html>

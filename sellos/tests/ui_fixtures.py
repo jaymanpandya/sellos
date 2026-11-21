@@ -351,6 +351,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Assign %"],
 			["client_name", "like", "Gate Import %"],
 			["client_name", "like", "Gate Today %"],
+			["client_name", "like", "Gate Enquiry %"],
 		],
 		pluck="name",
 	)
@@ -759,6 +760,12 @@ def seed_regression_data():
 	  Available), 1202 (2 BHK, Available), 1301 (3 BHK, Held by the gate agent, with its reason in the status
 	  log) and 1302 (3 BHK, Sold). The agent also made a secondary property, Regression Resale Flat in Pune.
 
+	* The inbound opt in route (SOS-P2-08), made through sellos.crm.intake.take, the one intake function:
+	  Regression Enquiry One (the enquiry page, Consented with an inquiry record for 7 days),
+	  Regression Enquiry Stop (the enquiry page, "Stop contacting me": Opted out, red warning) and a lead
+	  from a missed call to the 022 number, a new lead on the New stage whose name is "Caller" and the last
+	  three digits of its number.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -785,6 +792,7 @@ def seed_regression_data():
 		_seed_partner_firms(admin)
 		_seed_partner_registrations(admin)
 		_seed_inventory(admin, agent_one)
+		_seed_inbound_opt_in()
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -919,6 +927,7 @@ def seed_regression_data():
 	_seed_partner_firms(admin)
 	_seed_partner_registrations(admin)
 	_seed_inventory(admin, agent_one)
+	_seed_inbound_opt_in()
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -2491,3 +2500,115 @@ def gate_project_state(project_name):
 			for u in units
 		},
 	}
+
+
+# --- The inbound opt in route (SOS-P2-08) ---------------------------------------------------------
+
+ENQUIRY_SEED = 3901
+ENQUIRY_WORDING = "Gate wording: I agree to be called back by the company about properties."
+INBOUND_SEEDS = {"one": 1401, "stop": 1402, "missed": 1403}
+
+
+def _seed_inbound_opt_in():
+	"""Two enquiry page leads and one missed call lead, through the production intake function. Safe to
+	run again: a number that already belongs to a client is left alone."""
+	from sellos.crm import intake
+	from sellos.crm.duplicates import normalise_phone
+	from sellos.telephony import inbound
+	from sellos.telephony.base import CallEvent
+
+	def new(key):
+		return not frappe.db.exists(
+			"Client", {"phone_key": normalise_phone(phones.in_mobile(INBOUND_SEEDS[key]))}
+		)
+
+	for key, name, stop in (
+		("one", f"{REGRESSION_PREFIX}Enquiry One", None),
+		("stop", f"{REGRESSION_PREFIX}Enquiry Stop", "Website"),
+	):
+		if new(key):
+			intake.take(
+				phone=phones.in_mobile(INBOUND_SEEDS[key]),
+				source="Website",
+				campaign="Enquiry page",
+				kind="enquiry",
+				reference=f"regression-{key}",
+				evidence={"page": "enquiry", "wording": ENQUIRY_WORDING, "regression": True},
+				name=name,
+				notes="Sent the enquiry page.",
+				stop_source=stop,
+			)
+	our_number = inbound.our_number()
+	if our_number and new("missed"):
+		inbound.handle_missed_call(
+			CallEvent(
+				call_id="regression-missed-call",
+				state="no-answer",
+				from_number=phones.in_mobile(INBOUND_SEEDS["missed"]),
+				to_number=our_number,
+				direction="inbound",
+			)
+		)
+
+
+def seed_enquiry_page():
+	"""What the enquiry page spec needs (SOS-P2-08): the company's consent wording, the form key of the
+	link, and the phone number the spec types, from sellos.tests.phones. Returns {"key", "phone",
+	"wording"}. remove_enquiry_page puts it all back."""
+	from sellos.access.public_intake import form_key
+
+	remove_enquiry_page()
+	frappe.db.set_single_value("SellOS Settings", "consent_wording", ENQUIRY_WORDING)
+	key = form_key()
+	frappe.db.commit()  # the browser is another process  # nosemgrep
+	return {"key": key, "phone": phones.in_mobile(ENQUIRY_SEED), "wording": ENQUIRY_WORDING}
+
+
+def enquiry_outcome(phone=None):
+	"""The lead state a spec checks after the enquiry page is submitted: whether there is a lead for the
+	number, its source, stage, consent status, records and whether the evidence is a private file."""
+	from sellos.crm.duplicates import normalise_phone
+
+	client = frappe.db.get_value(
+		"Client", {"phone_key": normalise_phone(phone or phones.in_mobile(ENQUIRY_SEED))}, "name"
+	)
+	lead = (
+		frappe.db.get_value(
+			"Lead", {"client": client}, ["name", "source", "stage", "consent_status"], as_dict=True
+		)
+		if client
+		else None
+	)
+	if not lead:
+		return {"lead": None}
+	records = frappe.get_all("Consent Record", {"lead": lead.name}, ["basis", "evidence_link", "expires_on"])
+	return {
+		"lead": lead.name,
+		"source": lead.source,
+		"stage": lead.stage,
+		"consent_status": lead.consent_status,
+		"records": [r.basis for r in records],
+		"evidence_private": all((r.evidence_link or "").startswith("/private/files/") for r in records),
+		"activities": frappe.db.count("Lead Activity", {"lead": lead.name}),
+		"first_stage": pipeline.first_stage(),
+	}
+
+
+def remove_enquiry_page():
+	"""Remove what the enquiry page spec made (tests only): its lead, files and the wording it set."""
+	from sellos.crm.duplicates import normalise_phone
+
+	client = frappe.db.get_value(
+		"Client", {"phone_key": normalise_phone(phones.in_mobile(ENQUIRY_SEED))}, "name"
+	)
+	if client:
+		leads = frappe.get_all("Lead", filters={"client": client}, pluck="name")
+		if leads:
+			frappe.db.delete("File", {"attached_to_doctype": "Lead", "attached_to_name": ["in", leads]})
+		frappe.db.set_value("Client", client, "client_name", f"Gate Enquiry {client}")
+	remove_seeded_leads()
+	frappe.db.set_single_value("SellOS Settings", "consent_wording", "")
+	frappe.cache.delete_keys("sellos_intake_rate")
+	frappe.cache.delete_keys("sellos_webhook_rate")
+	frappe.db.commit()  # nosemgrep
+	return {"removed": True}

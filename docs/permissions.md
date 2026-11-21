@@ -106,6 +106,7 @@ on a company site, because the data scope above is "none".
 | `sellos.crm.api.preview_lead_import`, `import_bought_list` (SOS-P1-12, a CSV of a bought lead list: the preview writes nothing, the import makes leads with the source Bought list and the consent status Unknown or Registered DND, merges duplicates, and sets nothing that stops contact) | Company Admin |
 | `sellos.crm.api.list_assignment_rules`, `save_assignment_rule`, `delete_assignment_rule`, `set_default_team` (SOS-P1-19, the rules that assign new leads by round robin, source or locality, and the default team) | Company Admin |
 | `sellos.reports.team.team_report` (SOS-P1-18, the leads the reader may see by agent and by stage) | Company Admin, Sales Manager |
+| `sellos.crm.enquiry.get_enquiry_settings`, `rotate_enquiry_key` (SOS-P2-08, the enquiry page link with its form key and the consent wording it shows; rotating the key stops every link shared before) | Company Admin |
 | `sellos.reports.calls.call_report`, `call_report_calls` (SOS-P2-11, the call reports for a range of dates: cost by agent and by purpose, connect rate, talk time and consent coverage, and the calls behind each figure) | Company Admin |
 
 Each story that adds a method adds a row here.
@@ -157,10 +158,13 @@ Decided by Jayman on 21 November 2026 (SOS-LOOP). The second kind of method that
 | Tenant | The site the request arrives on. Never the body, a header or the query |
 | Cookies and reads | No cookies; nothing readable back |
 
-Registered public intake methods (one row each as they are built; none yet):
+Registered public intake methods (one row each as they are built):
 
 | Method | Task | Writes |
 | --- | --- | --- |
+| `sellos.crm.enquiry.submit_enquiry` (the enquiry page's form: name, phone, optional email and message, a "Stop contacting me" box; body cap 8 KB, 10 requests a minute per address and 120 per tenant, honeypot field `website`, form key in the link, rotated by a Company Admin) | SOS-P2-08 | A client and a lead on the New stage (or the lead the number already belongs to, with no stage change) through `sellos.crm.intake.take`, an inquiry Consent Record (7 days) with a private evidence file (wording, its version, time, address, submission), a Lead Activity. A stop request records Opted out instead and no inquiry |
+
+A missed call to the 022 number (SOS-P2-08) is not a public method: it arrives as a Plivo event through the provider webhook (`plivo_call_event`, signature first) and goes to the same `sellos.crm.intake.take`.
 
 ## The permission test suite (P1.05)
 

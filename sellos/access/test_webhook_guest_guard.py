@@ -4,7 +4,7 @@
 # sellos.crm.intake). This test fails the build when a method in the sellos package allows guests and is
 # in neither registry, or when a registered method does not declare every check.
 # docs/permissions.md and CLAUDE.md ("Provider webhooks", "Public intake forms") hold the rules.
-# Until SOS-P2-08 builds the intake registry, no public intake method exists.
+# SOS-P2-08 built the intake registry and the first public intake method, the enquiry page's submit.
 import importlib
 
 import frappe
@@ -103,3 +103,19 @@ class TestGuestMethodsAreWebhooks(IntegrationTestCase):
 		guests = set(guest_methods_in_sellos())
 		for path in registered_webhooks():
 			self.assertIn(path, guests, f"{path} is registered as a webhook but does not allow guests")
+
+
+class TestRealIntakeMethodIsRegistered(IntegrationTestCase):
+	"""SOS-P2-08: the enquiry page's submit is a real registered public intake method with every check."""
+
+	METHOD = "sellos.crm.enquiry.submit_enquiry"
+
+	def test_the_enquiry_submit_is_registered_and_declares_every_check(self):
+		intakes = registered_intakes()
+		self.assertIn(self.METHOD, intakes)
+		for name in REQUIRED_INTAKE_CHECKS:
+			self.assertTrue(intakes[self.METHOD].get(name), f"{self.METHOD} does not declare {name}")
+
+	def test_it_is_the_only_guest_method_besides_webhooks(self):
+		extra = set(guest_methods_in_sellos()) - set(registered_webhooks())
+		self.assertEqual(sorted(extra), [self.METHOD])
