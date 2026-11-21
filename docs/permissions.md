@@ -116,10 +116,10 @@ Each story that adds a method adds a row here.
 
 ## Provider webhooks
 
-Decided by Jayman on 20 November 2026 (SOS-P2-06). A provider webhook is the one kind of method that may be called without a
-login: the provider (Plivo, a WhatsApp or email provider, a payment provider) has no SellOS user. It is not an `@sellos_api`
+Decided by Jayman on 20 November 2026 (SOS-P2-06). A provider webhook is one of two kinds of method that may be called without a
+login (the other is public intake, below): the provider (Plivo, a WhatsApp or email provider, a payment provider) has no SellOS user. It is not an `@sellos_api`
 method. It is registered in `sellos.access.webhooks` as a webhook and allows guests, and nothing else in the `sellos` package may allow
-guests. `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is not registered with these checks.
+guests except a public intake method (see "Public intake forms"). `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is not registered with these checks.
 
 Each webhook, whatever the provider, has all of these:
 
@@ -140,6 +140,27 @@ Registered webhooks (one heading each as they are built):
 
 Plivo call events (SOS-P2-06) is the first: body cap 64 KB, 600 requests a minute per tenant, replay key the signing nonce. A refused signature is always answered `refused` (HTTP 403), a body over the cap 413 and a rate limited request 429, and none writes anything. WhatsApp and email (P5) and payment (P6) webhooks are added the same way, each under its own row
 here, and each task adds its row.
+
+## Public intake forms
+
+Decided by Jayman on 21 November 2026 (SOS-LOOP). The second kind of method that may be called without a login: the submit method of a public form (the enquiry page, SOS-P2-08; the website form, SOS-P1-09). It only creates or merges a lead through `sellos.crm.intake`. It is registered in `sellos.access.public_intake`, built once in SOS-P2-08, and allows guests. `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is neither a registered provider webhook nor a registered public intake method with these checks.
+
+| Check | Rule |
+| --- | --- |
+| Write only | Answers a thank you and a reference code; nothing about whether the person existed |
+| Rate limit | Per address and per tenant, in the cache |
+| Honeypot | A filled honeypot gets the same thank you and writes nothing |
+| Body size | Capped; a larger body is refused before it is read in full |
+| Validation | Strict: known fields only, types and lengths checked |
+| Form key | Per tenant; a Company Admin can rotate it |
+| Consent evidence | The wording shown, its version, the time and the address, saved as a private file and linked as evidence |
+| Tenant | The site the request arrives on. Never the body, a header or the query |
+| Cookies and reads | No cookies; nothing readable back |
+
+Registered public intake methods (one row each as they are built; none yet):
+
+| Method | Task | Writes |
+| --- | --- | --- |
 
 ## The permission test suite (P1.05)
 

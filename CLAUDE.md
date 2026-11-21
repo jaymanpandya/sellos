@@ -76,7 +76,7 @@ Platform Admin, Company Admin, Sales Manager, Agent, Client and Channel Partner.
 
 ## Provider webhooks
 
-Decided by Jayman on 20 November 2026 (SOS-P2-06). Every API method needs a login, with one exception: a **provider webhook**, the call a provider such as Plivo (calls, P2), WhatsApp or email (P5) or a payment provider (P6) makes to SellOS with no SellOS user. A webhook is a declared kind of method: it is registered as a webhook (`sellos.access.webhooks`, not `@sellos_api`), it is the only method that allows guests, and it is listed under its own heading in `docs/permissions.md`. Every webhook, whatever the provider:
+Decided by Jayman on 20 November 2026 (SOS-P2-06). Every API method needs a login, with two exceptions (the second is "Public intake forms" below): a **provider webhook**, the call a provider such as Plivo (calls, P2), WhatsApp or email (P5) or a payment provider (P6) makes to SellOS with no SellOS user. A webhook is a declared kind of method: it is registered as a webhook (`sellos.access.webhooks`, not `@sellos_api`), it is the only method that allows guests, and it is listed under its own heading in `docs/permissions.md`. Every webhook, whatever the provider:
 
 * **Signature first.** It checks the provider's signature before any database work. An invalid or missing signature writes nothing and reveals nothing: the same short answer for every refusal, no reason, no tenant or record named.
 * **Replays and order.** A replayed event changes nothing, and an out of order event is ignored (a late "ringing" never undoes "hung up"). The event id, or the provider's timestamp and nonce, is remembered per tenant.
@@ -84,9 +84,23 @@ Decided by Jayman on 20 November 2026 (SOS-P2-06). Every API method needs a logi
 * **Rate limit.** Requests are limited per tenant.
 * **Tenant.** The tenant is the site the request arrives on (every company is its own site). The body, headers and query never choose the tenant.
 * **Secret.** The signing secret is stored per tenant in company settings (a password field), never in code, a log, an error or a test fixture; tests use a fake key. It never appears in a log line.
-* **Build check.** `sellos/access/test_webhook_guest_guard.py` fails the build if any method in the sellos package allows guests and is not a registered webhook, or a registered webhook does not declare its checks. Never add `allow_guest=True` to anything else.
+* **Build check.** `sellos/access/test_webhook_guest_guard.py` fails the build if any method in the sellos package allows guests and is neither a registered webhook nor a registered public intake method (below), or a registered one does not declare its checks. Never add `allow_guest=True` to anything else.
 
 A new provider adds a webhook under these rules in its own task, tests valid, invalid signature, replayed, out of order, oversized and rate limited requests, and adds its heading to `docs/permissions.md`.
+
+## Public intake forms
+
+Decided by Jayman on 21 November 2026 (SOS-LOOP). The second exception to "every API method needs a login", next to provider webhooks: a **public intake form**, the submit method of the enquiry page (SOS-P2-08) and the website form (SOS-P1-09), which a prospect uses with no SellOS user. It may only create or merge a lead through `sellos.crm.intake`. It is registered in `sellos.access.public_intake` (not `@sellos_api`), listed under its own heading in `docs/permissions.md`, and the registry and its shared checks are built once, in SOS-P2-08. Every public intake method:
+
+* **Write only.** It answers a thank you and a reference code, nothing about whether the person already existed, which lead was merged, or why a field failed beyond a generic message.
+* **Rate limited** per address and per tenant, in the cache, before any database work.
+* **Honeypot field.** A filled honeypot gets the same thank you and writes nothing.
+* **Body size cap**, refused before the body is read in full. **Strict field validation:** known fields only, types and lengths checked, anything else refused.
+* **Form key.** A per tenant form key, which a Company Admin can rotate. The tenant's key is checked before any write, and a bad key gets the same short answer as any refusal.
+* **Consent evidence.** The consent wording shown, its version, the time and the address are stored as a private file (`/private/files/...`) and linked as the Consent Record's evidence.
+* **Tenant.** The tenant is the site the request arrives on. The body, headers and query never choose it.
+* **No cookies, nothing readable back.** The method sets no cookie and returns no record data.
+* **Build check.** `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is neither a registered provider webhook nor a registered public intake method that declares every check. Never add `allow_guest=True` to anything else.
 
 ## Secrets
 
