@@ -3,6 +3,8 @@
 # in a browser. No gate touches them. Sign ins and URLs: docs/DEMO.md.
 #
 #   scripts/demo.sh seed     make what is missing (sites, users, data) and start the server. Safe to repeat
+#   scripts/demo.sh update   migrate every demo site, restart the server, then seed what is missing. Never drops a
+#                            site or wipes data. Safe to repeat. Use it after the loop merges new features
 #   scripts/demo.sh reset    drop the demo sites and their databases, then seed from nothing
 #   scripts/demo.sh status   which sites exist, whether the server answers for each, the LaunchAgent
 #   scripts/demo.sh start    install and start the LaunchAgent com.sellos.demo (seed does this)
@@ -25,7 +27,7 @@ PLIST="$AGENTS/$LABEL.plist"
 DOMAIN="gui/$(id -u)"
 WRITE_ONLY="${SELLOS_DEMO_WRITE_ONLY:-0}"
 
-usage() { echo "usage: scripts/demo.sh seed | reset | status | start | stop" >&2; exit 2; }
+usage() { echo "usage: scripts/demo.sh seed | update | reset | status | start | stop" >&2; exit 2; }
 [ "$#" -eq 1 ] || usage
 
 # Run sellos.testing.demo with the bench's Python, from the bench's sites folder.
@@ -100,6 +102,14 @@ restart_if_running() {
 
 case "$1" in
   seed)
+    demo seed
+    restart_if_running
+    start_server
+    echo "Sign ins: docs/DEMO.md"
+    ;;
+  update)
+    demo migrate
+    restart_if_running
     demo seed
     restart_if_running
     start_server

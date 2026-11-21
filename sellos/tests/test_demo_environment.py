@@ -102,6 +102,32 @@ class TestDemoData(unittest.TestCase):
 		for i in range(len(demo.COMPANIES)):
 			for email, _n, _r in demo.company_users(i):
 				self.assertIn(email, text)
+			self.assertIn(demo.sales_manager_email(demo.COMPANIES[i]["word"]), text)
+
+	def test_the_doc_names_update_next_to_seed_and_reset(self):
+		text = (REPO_ROOT / "docs" / "DEMO.md").read_text(encoding="utf-8")
+		for command in ("seed", "update", "reset"):
+			self.assertIn(f"scripts/demo.sh {command}", text)
+
+	def test_the_calls_cover_30_days_two_agents_and_two_purposes(self):
+		days = [row[5] for row in demo.DEMO_CALL_PLAN]
+		self.assertGreaterEqual(max(days), 25)
+		self.assertLessEqual(max(days), 30)
+		self.assertEqual({row[6] for row in demo.DEMO_CALL_PLAN}, {0, 1})
+		self.assertGreaterEqual(len({row[1] for row in demo.DEMO_CALL_PLAN}), 2)
+		self.assertTrue(demo.DEMO_TELEPHONY_ID.startswith("FAKEOK"))  # the fake provider accepts it
+		self.assertIn("NOT-A-REAL-KEY", demo.DEMO_TELEPHONY_ID)
+
+	def test_the_seed_calls_the_production_seed_functions(self):
+		source = (REPO_ROOT / "sellos" / "testing" / "demo.py").read_text(encoding="utf-8")
+		for name in (
+			"_seed_inventory",
+			"_seed_partner_firms",
+			"_seed_partner_registrations",
+			"_seed_partner_shares",
+			"_seed_inbound_opt_in",
+		):
+			self.assertIn(f"fx.{name}(", source, name)
 
 
 class TestDemoServer(unittest.TestCase):
@@ -299,6 +325,13 @@ class TestGateIgnoresTheDemo(unittest.TestCase):
 		self.assertIn("demo site", result.stdout + result.stderr)
 
 
+FEATURE_TABLES = (
+	"Developer", "Project", "Unit", "Property", "Listing", "Channel Partner Firm", "Partner Registration",
+	"Partner Share", "Sales Team", "Do Not Call Number", "Call Log", "Consent Check", "App Notification",
+	"Lead Task",
+)  # fmt: skip
+
+
 class TestDemoSeedAndReset(unittest.TestCase):
 	"""The real provisioning path: a control site and one company site, seeded, seeded again, reset, dropped."""
 
@@ -334,11 +367,12 @@ class TestDemoSeedAndReset(unittest.TestCase):
 		first = self.demo("seed")
 		self.assertEqual(first.returncode, 0, first.stdout[-1500:] + first.stderr[-1500:])
 		leads = self.query(site, "select count(*) from `tabLead`")[0][0]
-		self.assertEqual(leads, len(demo.COMPANIES[0]["leads"]))
+		self.assertGreaterEqual(leads, len(demo.COMPANIES[0]["leads"]))  # and the inbound leads
+		clients = self.query(site, "select count(*) from `tabClient`")[0][0]
 		stages = {r[0] for r in self.query(site, "select distinct stage from `tabLead`")}
 		self.assertEqual(stages, set(STAGES))
 		consent = {r[0] for r in self.query(site, "select distinct consent_status from `tabLead`")}
-		self.assertEqual(consent, {"Unknown", "Consented", "Opted out", "Registered DND"})
+		self.assertGreaterEqual(consent, {"Unknown", "Consented", "Opted out", "Registered DND"})
 		grants = {r[0] for r in self.query(site, "select status from `tabSupport Grant`")}
 		self.assertEqual(grants, {"Active", "Revoked"})
 		roles = self.query(
@@ -354,9 +388,17 @@ class TestDemoSeedAndReset(unittest.TestCase):
 		again = self.demo("seed")
 		self.assertEqual(again.returncode, 0, again.stdout[-1500:] + again.stderr[-1500:])
 		self.assertEqual(self.query(site, "select count(*) from `tabLead`")[0][0], leads)
-		self.assertEqual(
-			self.query(site, "select count(*) from `tabClient`")[0][0], len(demo.COMPANIES[0]["leads"])
-		)
+		self.assertEqual(self.query(site, "select count(*) from `tabClient`")[0][0], clients)
+		counts = {
+			table: self.query(site, f"select count(*) from `tab{table}`")[0][0] for table in FEATURE_TABLES
+		}
+		for table, count in counts.items():
+			self.assertGreater(count, 0, table)
+		self.assertEqual(self.query(site, "select count(*) from `tabSales Team Member`")[0][0], 2)
+		purposes = {r[0] for r in self.query(site, "select distinct purpose from `tabCall Log`")}
+		self.assertGreaterEqual(len(purposes), 2)
+		statuses = {r[0] for r in self.query(site, "select status from `tabChannel Partner Firm`")}
+		self.assertGreaterEqual(statuses, {"Invited", "Pending approval", "Approved"})
 
 		rebuilt = self.demo("reset")
 		self.assertEqual(rebuilt.returncode, 0, rebuilt.stdout[-1500:] + rebuilt.stderr[-1500:])

@@ -1,6 +1,6 @@
 """The SellOS demo environment (SOS-DEMO-1): a control site and two company sites to look at in a browser.
 
-    python -m sellos.testing.demo seed|reset|status|sites      (scripts/demo.sh runs it)
+    python -m sellos.testing.demo seed|migrate|reset|status|sites      (scripts/demo.sh runs it)
 
 No gate touches these sites. They are named sellos_tenant_demo<anything>.localhost, which the gate's
 site check, clean check and leak check ignore, and which tenant_sites.drop refuses unless this module
@@ -40,6 +40,7 @@ COMPANY_ADMIN = "SellOS Company Admin"
 AGENT = "SellOS Agent"
 CHANNEL_PARTNER = "SellOS Channel Partner"
 CLIENT = "SellOS Client"
+SALES_MANAGER = "SellOS Sales Manager"
 
 # One entry per company: its name, city, the short word in its sign in addresses and its leads.
 # Each lead: name, type, phone, email, city, source, stage, consent, agent (0, 1 or None for the
@@ -873,8 +874,224 @@ def seed_company(index=0):
 		_activities(lead, agent, stage_order.index(row[6]), row[10])
 		_tasks_and_visits(lead, agent, row[6], row[10])
 	_support_grants(users["admin"])
+	_seed_features(index, data, users)
 	frappe.db.commit()  # nosemgrep  bench execute commits too
 	return {"site": site, "leads_made": made, "leads": frappe.db.count("Lead")}
+
+
+# --- Every feature built so far (SOS-DEMO-2) ---------------------------------------------------------
+# Inventory, partner firms, registrations, shares, listings and the inbound leads come from the regression
+# seed's own functions (sellos.tests.ui_fixtures), which build them through the production APIs. Their
+# records are named "Regression ...", as on the regression site. Everything below is safe to run again.
+
+SALES_PASSWORD_WORD = "sales"
+DEMO_TELEPHONY_ID = "FAKEOK-DEMO-NOT-A-REAL-KEY"  # FAKEOK: the fake provider accepts it
+DEMO_TELEPHONY_TOKEN = "fake-demo-token-not-a-real-key"
+DEMO_CONSENT_WORDING = (
+	"I agree that {company} may call, WhatsApp and email me about properties that match my needs. "
+	"I can withdraw this at any time."
+)
+# Calls for the call reports: (client index into the company's leads, purpose, provider state, seconds,
+# cost in paise, days ago, agent index). Spread over 30 days, two agents, two purposes.
+DEMO_CALL_PLAN = (
+	(2, "Service", "completed", 185, 420, 1, 0),
+	(3, "Service", "completed", 96, 230, 2, 1),
+	(5, "Transactional", "completed", 310, 700, 3, 0),
+	(6, "Service", "no-answer", 0, 0, 4, 1),
+	(7, "Transactional", "completed", 142, 330, 6, 1),
+	(4, "Service", "busy", 0, 0, 8, 0),
+	(8, "Transactional", "completed", 410, 900, 11, 0),
+	(2, "Service", "completed", 75, 180, 14, 1),
+	(3, "Service", "failed", 0, 0, 17, 0),
+	(5, "Service", "completed", 260, 580, 21, 1),
+	(6, "Transactional", "completed", 55, 130, 24, 0),
+	(7, "Service", "no-answer", 0, 0, 27, 1),
+	(8, "Service", "completed", 330, 740, 29, 0),
+)
+
+
+def sales_manager_email(word):
+	return f"{SALES_PASSWORD_WORD}.{word}@{EMAIL_DOMAIN}"
+
+
+def _as(email):
+	"""Run as a user, then go back (the regression seed's own helper, so the demo holds no set_user)."""
+	from sellos.tests import ui_fixtures
+
+	return ui_fixtures._as_user(email)
+
+
+def _lead_of(data, row_index):
+	import frappe
+
+	row = data["leads"][row_index]
+	client = frappe.db.get_value("Client", {"client_name": row[0], "email": row[3]}, "name")
+	return frappe.db.get_value("Lead", {"client": client}, "name") if client else None
+
+
+def _seed_features(index, data, users):
+	import frappe
+
+	from sellos.tests import ui_fixtures as fx
+
+	admin, agents = users["admin"], users["agents"]
+	frappe.db.set_single_value(
+		"SellOS Settings", "consent_wording", DEMO_CONSENT_WORDING.format(company=data["name"])
+	)
+	_seed_telephony_demo(index, admin)
+	_seed_sales_team(data, admin, agents)
+	_seed_do_not_call(admin)
+	fx._seed_inventory(admin, agents[0])
+	fx._seed_partner_firms(admin)
+	fx._seed_partner_registrations(admin)
+	fx._seed_partner_shares(admin)
+	fx._seed_inbound_opt_in()
+	_seed_calls(data, agents)
+	_seed_agent_work(data, agents)
+
+
+def _seed_telephony_demo(index, admin):
+	"""Fake Telephony Settings: obviously fake keys, a 022 number, and the fake provider, so no call leaves."""
+	import frappe
+	from frappe.installer import update_site_config
+
+	from sellos.telephony import settings
+	from sellos.tests import phones
+
+	check_demo_site()
+	# The fake provider runs only on a site that allows tests (sellos.telephony.provider.get_provider). A demo
+	# site never holds a real key, so its calls are fake by design and none can leave the machine.
+	update_site_config("allow_tests", 1)
+	frappe.conf.allow_tests = 1
+	frappe.db.set_single_value("Telephony Settings", "provider", "fake")
+	with _as(admin):
+		# Saved every time, so a site that took earlier values gets these. Same values twice change nothing.
+		number = "022" + phones.in_mobile(3100 + int(index))[-8:]
+		settings.save_telephony_settings(
+			auth_id=DEMO_TELEPHONY_ID, auth_token=DEMO_TELEPHONY_TOKEN, phone_number=number
+		)
+
+
+def _seed_sales_team(data, admin, agents):
+	"""A Sales Manager and a team holding both agents, so Teams and the Team report show data."""
+	import frappe
+
+	from sellos.access import teams
+
+	manager = sales_manager_email(data["word"])
+	_ensure_user(manager, f"{data['name']} Sales Manager", [SALES_MANAGER])
+	name = f"{data['name']} Sales Team"
+	if frappe.db.exists("Sales Team", name):
+		return
+	with _as(admin):
+		teams.save_team(values={"team_name": name, "manager": manager, "members": list(agents)})
+
+
+def _seed_do_not_call(admin):
+	"""A few numbers on the do not call list. They belong to nobody on the demo, so no lead changes."""
+	import frappe
+
+	from sellos.telephony import dnd
+	from sellos.tests import phones
+
+	if frappe.db.count("Do Not Call Number"):
+		return
+	numbers = "\n".join(phones.in_mobile(seed) for seed in (3201, 3202, 3203, 3204))
+	with _as(admin):
+		dnd.import_do_not_call_list(numbers, "Demo: the national list")
+
+
+def _seed_calls(data, agents):
+	"""Calls through the fake provider and the production call functions, with the provider's last event
+	setting state, seconds and cost, spread over 30 days. A company that has any Call Log is left alone."""
+	import frappe
+	from frappe.utils import add_days, now_datetime
+
+	from sellos.telephony import call_log
+	from sellos.telephony.base import CallEvent, ProviderError
+
+	if frappe.db.count("Call Log"):
+		return
+	for row, purpose, state, seconds, paise, days_ago, who in DEMO_CALL_PLAN:
+		lead = _lead_of(data, row)
+		if not lead:
+			continue
+		try:
+			log = call_log.place_logged_call(lead, purpose)["log"]
+		except ProviderError:
+			continue  # an overseas number has no Indian route: that lead has no call
+		if not log:
+			continue
+		call_id = frappe.db.get_value("Call Log", log, "call_id")
+		call_log.apply_event(CallEvent(call_id, state, duration=seconds), cost=paise, cost_unit="paise")
+		frappe.db.set_value(
+			"Call Log", log, {"started_on": add_days(now_datetime(), -days_ago), "agent": agents[who]}
+		)
+
+
+def _seed_agent_work(data, agents):
+	"""What the bell and the Today screen read: open follow ups (one overdue, one soon, one later), a site
+	visit tomorrow for each agent, a lead assigned notification for each assigned lead, and one run of the
+	scheduler's notification functions. Safe to run again: a follow up or visit that exists is left alone."""
+	import frappe
+	from frappe.utils import add_days, add_to_date, get_datetime, now_datetime, today
+
+	from sellos.crm import api as crm
+	from sellos.crm import notifications
+
+	plan = (
+		(0, 2, "Call back about the revised price", add_to_date(now_datetime(), hours=-3)),
+		(0, 5, "Ring back about the booking amount", add_to_date(now_datetime(), minutes=15)),
+		(1, 3, "Send the payment plan", add_to_date(now_datetime(), hours=-1)),
+		(1, 6, "Confirm the site visit with the family", add_to_date(now_datetime(), hours=2)),
+		(1, 1, "Follow up on the brochure", add_to_date(now_datetime(), days=1)),
+	)
+	for agent_index, row, title, when in plan:
+		lead = _lead_of(data, row)
+		if not lead or frappe.db.exists("Lead Task", {"lead": lead, "title": title}):
+			continue
+		with _as(agents[agent_index]):
+			crm.save_task(
+				values={
+					"lead": lead,
+					"title": title,
+					"due_at": when,
+					"status": "Open",
+					"assigned_to": agents[agent_index],
+				}
+			)
+	visits = ((0, 5, "Tomorrow tour", 11), (1, 6, "Tomorrow walkthrough", 15))
+	for agent_index, row, project, hour in visits:
+		lead = _lead_of(data, row)
+		if not lead or frappe.db.exists("Site Visit", {"lead": lead, "project_name": project}):
+			continue
+		stage = frappe.db.get_value("Lead", lead, "stage")
+		with _as(agents[agent_index]):
+			crm.save_site_visit(
+				values={
+					"lead": lead,
+					"project_name": project,
+					"visit_datetime": add_to_date(get_datetime(add_days(today(), 1)), hours=hour),
+					"status": "Scheduled",
+				}
+			)
+			# Booking moves a lead to Site visit booked. The demo keeps the stage the lead was seeded in.
+			if frappe.db.get_value("Lead", lead, "stage") != stage:
+				crm.move_lead_stage(lead, stage)
+	for row in range(len(data["leads"])):
+		lead = _lead_of(data, row)
+		owner = frappe.db.get_value("Lead", lead, "assigned_to") if lead else None
+		if owner in agents and row < 6:
+			notifications.notify(
+				owner,
+				notifications.LEAD_ASSIGNED,
+				"Lead assigned to you",
+				f"{frappe.db.get_value('Lead', lead, 'lead_title')} was assigned to you.",
+				lead=lead,
+				dedupe_key=f"demo-assigned-{lead}",
+			)
+	notifications.notify_follow_ups()
+	notifications.notify_site_visits()
 
 
 # --- The orchestration (plain Python, run with the bench's own interpreter) -----------------------
@@ -980,6 +1197,19 @@ def seed(control_id=CONTROL_ID, company_ids=COMPANY_IDS):
 	print(urls(control_id, company_ids))
 
 
+def migrate_all(control_id=CONTROL_ID, company_ids=COMPANY_IDS):
+	"""Migrate every demo site that exists, so new doctypes and fields are there before the seed. Never
+	creates, drops or wipes anything, and migrating again changes nothing."""
+	for tenant_id in (control_id, *company_ids):
+		site = site_of(check_demo_id(tenant_id))
+		if _site_exists(site):
+			from sellos.provisioning import site_script
+
+			check_demo_site(site)
+			print(f"Migrating {site} ...")
+			site_script._site_command(site, "migrate")
+
+
 def drop_all(control_id=CONTROL_ID, company_ids=COMPANY_IDS):
 	"""Drop the demo sites and their databases. The only code that may: it sets the allow flag itself."""
 	from sellos.provisioning import tenant_sites
@@ -1033,10 +1263,10 @@ def status_report(control_id=CONTROL_ID, company_ids=COMPANY_IDS):
 def main(argv=None):
 	argv = list(sys.argv[1:] if argv is None else argv)
 	usage = (
-		"usage: python -m sellos.testing.demo seed | reset | drop | status | urls"
+		"usage: python -m sellos.testing.demo seed | migrate | reset | drop | status | urls"
 		" [--control demo<id>] [--company demo<id> ...]"
 	)
-	if not argv or argv[0] not in ("seed", "reset", "drop", "status", "urls"):
+	if not argv or argv[0] not in ("seed", "migrate", "reset", "drop", "status", "urls"):
 		print(usage, file=sys.stderr)
 		return 2
 	action, rest = argv[0], argv[1:]
@@ -1056,6 +1286,8 @@ def main(argv=None):
 			check_demo_id(tenant_id)
 		if action == "seed":
 			seed(control, companies)
+		elif action == "migrate":
+			migrate_all(control, companies)
 		elif action == "reset":
 			reset(control, companies)
 		elif action == "drop":

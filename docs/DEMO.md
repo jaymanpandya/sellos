@@ -9,11 +9,17 @@ provisioning worker's retry and `scripts/tenant-site.sh drop` cannot). Only `scr
 
 ```
 scripts/demo.sh seed     # make what is missing (sites, users, data), start the server. Safe to repeat
+scripts/demo.sh update   # migrate every demo site, restart the server, seed what is missing. Never drops or wipes
 scripts/demo.sh reset    # drop the demo sites and databases, then seed from nothing (about 3 minutes)
 scripts/demo.sh status   # which sites exist, whether the server answers for each
 scripts/demo.sh start    # install and start the LaunchAgent com.sellos.demo
 scripts/demo.sh stop     # stop the server. The sites and their data stay
 ```
+
+`update` is the one to run after the loop merges new features: it makes new doctypes and fields exist (migrate),
+restarts the demo server so it serves the new code, then seeds only what is missing (the seed looks up every
+record first, so repeating it adds nothing). It never drops a site and never wipes data. Use `reset` only to
+start from nothing.
 
 ## How it is built
 
@@ -49,6 +55,7 @@ Every password is **`Demo@2026`**. They are published here on purpose and exist 
 | Company Admin | `admin.skyline@demo.example.com` |
 | Agent | `agent1.skyline@demo.example.com` |
 | Agent | `agent2.skyline@demo.example.com` |
+| Sales Manager | `sales.skyline@demo.example.com` |
 | Channel Partner | `partner.skyline@demo.example.com` |
 | Client | `client.skyline@demo.example.com` |
 | Platform Admin (support user only) | `platform@demo.example.com` |
@@ -60,13 +67,14 @@ Every password is **`Demo@2026`**. They are published here on purpose and exist 
 | Company Admin | `admin.greenfield@demo.example.com` |
 | Agent | `agent1.greenfield@demo.example.com` |
 | Agent | `agent2.greenfield@demo.example.com` |
+| Sales Manager | `sales.greenfield@demo.example.com` |
 | Channel Partner | `partner.greenfield@demo.example.com` |
 | Client | `client.greenfield@demo.example.com` |
 | Platform Admin (support user only) | `platform@demo.example.com` |
 
 ## What is in each company
 
-* 13 leads over 11 pipeline stages (New, Consent pending, Contacted, Qualified, Site visit booked, Site visit done,
+* 13 leads (19 with the inbound ones) over 11 pipeline stages (New, Consent pending, Contacted, Qualified, Site visit booked, Site visit done,
   Negotiation, Booking, Closed won, Closed lost, Nurture): every stage has at least one lead.
 * All four consent states, each with its warning: Consented (a live Consent Record), Opted out, Registered DND,
   and Unknown (no record, or only an expired one). Leads moved to Contacted without a live record show the
@@ -81,10 +89,35 @@ Every password is **`Demo@2026`**. They are published here on purpose and exist 
   4 hours at most, so run `scripts/demo.sh seed` again to renew the active one.
 * The Channel Partner owns the leads from "Channel partner"; the Agents have the leads assigned to them.
 
-## Not yet in the demo
+## Every feature built so far (SOS-DEMO-2)
 
-* **Telephony settings** (SOS-P2-01): not merged when this was built. When it is, add its settings to
-  `seed_company` in `sellos/testing/demo.py` and run `scripts/demo.sh seed`.
+Both companies get the same set of features, so each screen has something to show. The inventory, partner,
+share and inbound records come from the regression seed's own functions (`sellos.tests.ui_fixtures`), built
+through the production APIs, so they are named "Regression ...", as on the regression site.
+
+* **Inventory**: developers, projects with towers, a unit grid, pricing and units (some Held, Sold or
+  blocked), and secondary properties (Regression Resale Flat).
+* **Listings**: three, one of them published (a Primary, a Direct resale, and a Partner draft), with photos.
+* **Channel partner firms**: four, one in each state: Invited, Pending approval, Approved and Suspended.
+* **Partner registrations**: three, Registered (waiting), Approved (protected) and Rejected.
+* **Partner shares**: a project shared with the approved firm, one shared with every approved firm, and a
+  withdrawn share.
+* **Inbound leads**: two enquiry page leads (one consented, one "Stop contacting me") and a missed call lead.
+* **Sales team**: the Sales Manager (`sales.skyline@...`, `sales.greenfield@...`) runs "<Company> Sales Team"
+  with both agents, so Teams and the Team report show data and the manager sees both agents' leads.
+* **Call reports**: up to 13 calls over the last 30 days, placed through the fake provider and the production
+  call functions, by both agents, with the purposes Service and Transactional, costs, outcomes (completed, no
+  answer, busy, failed) and the consent check and record each call refers to. Leads with only an overseas
+  number get no call.
+* **Telephony Settings**: fake. The auth ID is `FAKEOK-DEMO-NOT-A-REAL-KEY`, the token is a made up string
+  and the 022 number is fake. No real key is ever stored. The fake provider runs only where the site config
+  allows tests, so the seed sets `allow_tests` on the demo company sites (never on any other site). No call
+  leaves the machine.
+* **Do not call list**: four numbers that belong to nobody on the demo. Calling hours are off.
+* **Consent wording**: the default wording is set on both companies, with the company's name in it.
+* **Notifications**: each agent's bell holds Lead assigned, Follow up due or overdue and Site visit tomorrow.
+* **Home and Today**: each Agent has open follow ups (overdue, due soon, tomorrow) and a site visit tomorrow.
+  The Sales Manager's Today reads the same by agent, and the Company Admin's Home shows the counts.
 
 ## When something looks wrong
 
