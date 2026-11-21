@@ -744,7 +744,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Dec 20
 - **Story Points:** 8
 - **Dependencies:** SOS-P2-03, SOS-P2-04, SOS-P2-05
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-P0-04: Provision DigitalOcean
 - **Epic:** Platform foundations and DevOps
