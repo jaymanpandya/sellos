@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "creation": "2026-11-22 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "field_order": [
+  "changed_on",
+  "changed_by",
+  "action",
+  "detail"
+ ],
+ "fields": [
+  {
+   "fieldname": "changed_on",
+   "fieldtype": "Datetime",
+   "label": "Changed on",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "changed_by",
+   "fieldtype": "Link",
+   "label": "Changed by",
+   "read_only": 1,
+   "in_list_view": 1,
+   "options": "User"
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Data",
+   "label": "Action",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "detail",
+   "fieldtype": "Small Text",
+   "label": "Detail",
+   "read_only": 1,
+   "in_list_view": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Partner Share Change",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": []
+}

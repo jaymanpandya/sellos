@@ -221,6 +221,18 @@ SAMPLE_CALLS = {
 	},
 	"sellos.access.partner_registrations.get_partner_settings": {},
 	"sellos.access.partner_registrations.save_partner_settings": {},
+	# SOS-P7-03: sharing acts on the spare project and a spare share made for the test. A partner with no
+	# approved firm is refused.
+	"sellos.inventory.partner_shares.partner_share_options": {"project": "{spare_project}"},
+	"sellos.inventory.partner_shares.list_partner_shares": {},
+	"sellos.inventory.partner_shares.share_project": {"project": "{spare_project}", "firms": "all"},
+	"sellos.inventory.partner_shares.update_partner_share": {"name": "{spare_share}", "share_price_list": 1},
+	"sellos.inventory.partner_shares.withdraw_partner_share": {
+		"name": "{spare_share}",
+		"reason": "p703 suite",
+	},
+	"sellos.inventory.partner_shares.my_shared_projects": {},
+	"sellos.inventory.partner_shares.my_shared_project": {"project": "{spare_project}"},
 	# SOS-P4-01: inventory, on a spare project, unit and property made for the test.
 	"sellos.inventory.api.inventory_overview": {},
 	"sellos.inventory.api.get_project": {"name": "{spare_project}"},
@@ -511,6 +523,9 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"city": "Mumbai",
 			}
 		).insert()
+		spare_share = frappe.get_doc(
+			{"doctype": "Partner Share", "project": spare_project.name, "all_firms": 1, "all_units": 1}
+		).insert()
 		spare_unit = frappe.get_doc(
 			{"doctype": "Unit", "project": spare_project.name, "unit_number": "P401-101", "carpet_area": 600}
 		).insert()
@@ -699,6 +714,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_registration_two": spare_registrations[1],
 			"spare_rule": spare_rule.name,
 			"spare_project": spare_project.name,
+			"spare_share": spare_share.name,
 			"spare_unit": spare_unit.name,
 			"spare_unit_hold": spare_unit_hold.name,
 			"spare_unit_held": spare_unit_held.name,

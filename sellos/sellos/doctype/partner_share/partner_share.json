@@ -1,0 +1,142 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:SHR-{#####}",
+ "creation": "2026-11-22 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project",
+  "status",
+  "all_firms",
+  "partner_firm",
+  "all_units",
+  "units",
+  "share_price_list",
+  "brochures",
+  "section_withdrawn",
+  "withdrawn_on",
+  "withdrawn_by",
+  "withdrawn_reason",
+  "section_log",
+  "log"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Active\nWithdrawn",
+   "default": "Active",
+   "read_only": 1
+  },
+  {
+   "fieldname": "all_firms",
+   "fieldtype": "Check",
+   "label": "Every Approved firm",
+   "default": "0",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "partner_firm",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Partner firm",
+   "options": "Channel Partner Firm",
+   "depends_on": "eval:!doc.all_firms",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "all_units",
+   "fieldtype": "Check",
+   "label": "All units",
+   "default": "1"
+  },
+  {
+   "fieldname": "units",
+   "fieldtype": "Table",
+   "label": "Chosen units",
+   "options": "Partner Share Unit"
+  },
+  {
+   "fieldname": "share_price_list",
+   "fieldtype": "Check",
+   "label": "Share the price list in force",
+   "default": "0"
+  },
+  {
+   "fieldname": "brochures",
+   "fieldtype": "Table",
+   "label": "Brochures",
+   "options": "Partner Share Brochure"
+  },
+  {
+   "fieldname": "section_withdrawn",
+   "fieldtype": "Section Break",
+   "label": "Withdrawal"
+  },
+  {
+   "fieldname": "withdrawn_on",
+   "fieldtype": "Datetime",
+   "label": "Withdrawn on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "withdrawn_by",
+   "fieldtype": "Link",
+   "label": "Withdrawn by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "withdrawn_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_log",
+   "fieldtype": "Section Break",
+   "label": "Log"
+  },
+  {
+   "fieldname": "log",
+   "fieldtype": "Table",
+   "label": "Log",
+   "options": "Partner Share Change",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Partner Share",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "project",
+ "track_changes": 1
+}

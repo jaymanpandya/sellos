@@ -1174,7 +1174,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Story Points:** 3
 - **Dependencies:** SOS-P7-01, SOS-P4-01, SOS-P4-03, SOS-P7-07
 - **Browser spec:** required
-- **Status:** In Progress
+- **Status:** Complete
 
 ### SOS-P7-08: Match buyers to inventory
 - **Epic:** Inventory, mandates and deals

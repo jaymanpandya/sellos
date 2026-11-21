@@ -772,6 +772,11 @@ def seed_regression_data():
 	  (10 percent now, 90 percent after 30 days), and one cost sheet of unit 1501 made by the gate agent with the
 	  Construction plan and the Garden charge, total Rs 1,01,55,600. All made through the pricing and cost sheet APIs.
 
+	* Sharing with partners (SOS-P7-03): the Company Admin shares Regression Pricing (all units, its price list
+	  in force and the brochure Regression Floor Plan) with Regression Firm Approved, shares Regression Heights
+	  (units 1201 and 1202 only) with every Approved firm, and shares Regression Grid with Regression Firm
+	  Approved and then withdraws it with the reason "Regression: sold out". All through the sharing API.
+
 	* Listings (SOS-P4-02): the published Primary listing Regression Primary 2 BHK (unit 1501 of Regression
 	  Pricing, Rs 1,05,00,000), the published Direct listing Regression Direct Resale (the property Regression
 	  Resale Flat, Rs 82,00,000) and the Partner draft Regression Partner Draft with no price or description,
@@ -818,6 +823,7 @@ def seed_regression_data():
 		_seed_partner_firms(admin)
 		_seed_partner_registrations(admin)
 		_seed_inventory(admin, agent_one)
+		_seed_partner_shares(admin)
 		_seed_inbound_opt_in()
 		return _regression_summary()
 
@@ -953,6 +959,7 @@ def seed_regression_data():
 	_seed_partner_firms(admin)
 	_seed_partner_registrations(admin)
 	_seed_inventory(admin, agent_one)
+	_seed_partner_shares(admin)
 	_seed_inbound_opt_in()
 
 	# bench execute is not a request, and the regression site is read by another process.
@@ -3174,3 +3181,111 @@ def remove_enquiry_page():
 	frappe.cache.delete_keys("sellos_webhook_rate")
 	frappe.db.commit()  # nosemgrep
 	return {"removed": True}
+
+
+# --- Sharing with partners (SOS-P7-03) --------------------------------------------------------------
+
+
+def _seed_partner_shares(admin):
+	"""Three shares made by the Company Admin through the sharing API: Regression Pricing with Regression Firm
+	Approved (all units, the price list and the Regression Floor Plan brochure), Regression Heights (units 1201
+	and 1202) with every Approved firm, and Regression Grid with Regression Firm Approved, then withdrawn. Safe
+	to run again: it does nothing once any share exists."""
+	from sellos.inventory import partner_shares
+
+	if frappe.db.count("Partner Share"):
+		return
+	firm = frappe.db.get_value("Channel Partner Firm", {"firm_name": "Regression Firm Approved"})
+	pricing_project = frappe.db.get_value("Project", {"project_name": "Regression Pricing"})
+	heights = frappe.db.get_value("Project", {"project_name": "Regression Heights"})
+	grid = frappe.db.get_value("Project", {"project_name": "Regression Grid"})
+	if not (firm and pricing_project and heights and grid):
+		return
+	plan = frappe.db.get_value("Media Asset", {"title": "Regression Floor Plan"})
+	units = frappe.get_all(
+		"Unit", filters={"project": heights, "unit_number": ["in", ["1201", "1202"]]}, pluck="name"
+	)
+	with _as_user(admin):
+		partner_shares.share_project(
+			pricing_project, [firm], share_price_list=1, brochures=[plan] if plan else []
+		)
+		partner_shares.share_project(heights, "all", units=units)
+		shared = partner_shares.share_project(grid, [firm])["shares"][0]["name"]
+		partner_shares.withdraw_partner_share(shared, "Regression: sold out")
+
+
+GATE_SHARE_PREFIX = GATE_INVENTORY_PREFIX + "Share "
+
+
+def make_gate_partner_shares():
+	"""For the sharing spec (SOS-P7-03): the gate channel partner's firm Approved, two projects with two units
+	each and a price list, and one brochure, all through the production methods. Returns the names. Names start
+	with "Gate Inventory " so remove_gate_partner_shares takes them away."""
+	from sellos.inventory import api, pricing
+
+	_test_users()
+	firm = seed_gate_partner_firm("approved")
+	tag = frappe.generate_hash(length=6)
+	out = {"tag": tag, "firm": firm["name"], "projects": [], "units": {}}
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		developer = api.save_developer({"developer_name": f"{GATE_SHARE_PREFIX}Developer {tag}"})["name"]
+		for index in (1, 2):
+			project = api.save_project(
+				{
+					"project_name": f"{GATE_SHARE_PREFIX}Project {index} {tag}",
+					"developer": developer,
+					"rera_number": f"P5180{int(tag, 16) % 10**6:06d}{index}",
+					"city": "Pune",
+				}
+			)["name"]
+			out["projects"].append(project)
+			out["units"][project] = [
+				api.save_unit(
+					{
+						"project": project,
+						"unit_number": f"{index}0{n}",
+						"configuration": "2 BHK",
+						"floor": n,
+						"carpet_area": 600,
+					}
+				)["name"]
+				for n in (1, 2)
+			]
+			pricing.save_price_list(project, _gate_price_list(f"{GATE_SHARE_PREFIX}List {index} {tag}"))
+	asset = frappe.get_doc(
+		{
+			"doctype": "Media Asset",
+			"title": f"{GATE_SHARE_PREFIX}Brochure {tag}",
+			"media_type": "Photo",
+			"file": "/files/gate-share-brochure.jpg",
+		}
+	).insert(ignore_permissions=True)
+	out["brochure"] = asset.name
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return out
+
+
+def gate_partner_shares_state(project):
+	"""A project's shares, read back for the spec: (status, log actions) of each (tests only, SOS-P7-03)."""
+	return [
+		(doc.status, [row.action for row in doc.log])
+		for doc in (
+			frappe.get_doc("Partner Share", name)
+			for name in frappe.get_all("Partner Share", filters={"project": project}, pluck="name")
+		)
+	]
+
+
+def remove_gate_partner_shares():
+	"""Remove the shares, brochures, projects and firm the sharing spec made (tests only, SOS-P7-03). The app
+	never deletes them: this is the spec cleaning up after itself."""
+	like = ["like", f"{GATE_INVENTORY_PREFIX}%"]
+	for project in frappe.get_all("Project", filters={"project_name": like}, pluck="name"):
+		for name in frappe.get_all("Partner Share", filters={"project": project}, pluck="name"):
+			for child in ("Partner Share Unit", "Partner Share Brochure", "Partner Share Change"):
+				frappe.db.delete(child, {"parent": name})
+			frappe.db.delete("Version", {"ref_doctype": "Partner Share", "docname": name})
+			frappe.db.delete("Partner Share", {"name": name})
+	frappe.db.delete("Media Asset", {"title": ["like", f"{GATE_SHARE_PREFIX}%"]})
+	remove_gate_partner_firms()
+	return remove_gate_pricing()

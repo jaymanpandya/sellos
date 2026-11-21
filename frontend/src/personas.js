@@ -33,6 +33,12 @@ export const PERSONAS = [
 				area: "company",
 			},
 			{
+				key: "shares",
+				label: "Share with partners",
+				to: "/company/shares",
+				area: "company",
+			},
+			{
 				key: "registrations",
 				label: "Partner registrations",
 				to: "/company/registrations",
@@ -81,6 +87,7 @@ export const PERSONAS = [
 				to: "/partner/register",
 				area: "partner",
 			},
+			{ key: "shared", label: "Shared projects", to: "/partner/shared", area: "partner" },
 			{ key: "leads", label: "Leads", to: "/partner/leads", area: "partner" },
 		],
 	},

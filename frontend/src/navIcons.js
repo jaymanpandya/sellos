@@ -14,4 +14,6 @@ export const ICONS = {
 	"call-reports": "lucide-phone-call",
 	"team-report": "lucide-chart-column",
 	tenants: "lucide-building-2",
+	shares: "lucide-share-2",
+	shared: "lucide-building-2",
 };

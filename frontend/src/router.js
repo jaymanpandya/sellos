@@ -23,6 +23,8 @@ const PartnerFirmsPage = () => import("./pages/PartnerFirmsPage.vue");
 const PartnerRegistrationsPage = () => import("./pages/PartnerRegistrationsPage.vue");
 const PartnerRegisterPage = () => import("./pages/PartnerRegisterPage.vue");
 const PartnerFirmPage = () => import("./pages/PartnerFirmPage.vue");
+const PartnerSharesPage = () => import("./pages/PartnerSharesPage.vue");
+const PartnerSharedPage = () => import("./pages/PartnerSharedPage.vue");
 const InventoryPage = () => import("./pages/InventoryPage.vue");
 const ListingsPage = () => import("./pages/ListingsPage.vue");
 const ProjectPage = () => import("./pages/ProjectPage.vue");
@@ -151,6 +153,18 @@ export function createAppRouter() {
 				name: "partner-registrations",
 				component: PartnerRegistrationsPage,
 				meta: { area: "company", title: "Partner registrations" },
+			},
+			{
+				path: "/company/shares",
+				name: "partner-shares",
+				component: PartnerSharesPage,
+				meta: { area: "company", title: "Share with partners" },
+			},
+			{
+				path: "/partner/shared",
+				name: "partner-shared",
+				component: PartnerSharedPage,
+				meta: { area: "partner", title: "Shared projects" },
 			},
 			{
 				path: "/partner/register",
