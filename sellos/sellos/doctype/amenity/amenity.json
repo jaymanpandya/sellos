@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "owner": "Administrator",
+ "states": [],
+ "autoname": "field:amenity_name",
+ "name": "Amenity",
+ "naming_rule": "By fieldname",
+ "field_order": [
+  "amenity_name",
+  "section_archive",
+  "archived",
+  "archived_on",
+  "archived_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "amenity_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Amenity",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "section_archive",
+   "fieldtype": "Section Break",
+   "label": "Archive"
+  },
+  {
+   "default": "0",
+   "description": "Records are archived, never deleted.",
+   "fieldname": "archived",
+   "fieldtype": "Check",
+   "label": "Archived",
+   "read_only": 1
+  },
+  {
+   "fieldname": "archived_on",
+   "fieldtype": "Datetime",
+   "label": "Archived on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "archived_by",
+   "fieldtype": "Link",
+   "label": "Archived by",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "create": 1,
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Company Admin",
+   "write": 1
+  },
+  {
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Agent"
+  },
+  {
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Sales Manager"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "title_field": "amenity_name",
+ "track_changes": 1
+}

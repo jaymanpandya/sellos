@@ -755,6 +755,10 @@ def seed_regression_data():
 	  through register_buyer: Regression Partner Buyer One (Registered, waiting), Two (Approved by the Company
 	  Admin, so protected, with the buyer's agreement recorded) and Three (Rejected with a reason).
 
+	* Towers (SOS-P7-05): Regression Towers (RERA number P51800099002, Powai, Mumbai) with Tower A, floors 1 to 3,
+	  the Available 1 BHK units 101 to 103 on floor 1, the possession date 31 March 2028 and the amenities
+	  Swimming pool and Gym, made by the Company Admin through the structure API.
+
 	* Inventory (SOS-P4-01): Regression Developer and its project Regression Heights (RERA number
 	  P51800099001, Mumbai), made by the Company Admin through the inventory API, with four units: 1201 (2 BHK,
 	  Available), 1202 (2 BHK, Available), 1301 (3 BHK, Held by the gate agent, with its reason in the status
@@ -2407,6 +2411,7 @@ def _seed_inventory(admin, agent):
 	"""The regression developer, project, units and property, through the inventory API. Safe to run again."""
 	from sellos.inventory import api
 
+	_seed_towers(admin)
 	if frappe.db.exists("Project", {"project_name": "Regression Heights"}):
 		return
 	with _as_user(admin):
@@ -2459,11 +2464,62 @@ def _seed_inventory(admin, agent):
 		)
 
 
+def _seed_towers(admin):
+	"""Regression Towers, a project with Tower A (floors 1 to 3, the units 101 to 103 on floor 1), a possession
+	date and two amenities, through the structure API (SOS-P7-05). Safe to run again."""
+	from sellos.inventory import api, structure
+
+	if frappe.db.exists("Project", {"project_name": "Regression Towers"}):
+		return
+	with _as_user(admin):
+		if not frappe.db.exists("Developer", "Regression Developer"):
+			api.save_developer(
+				{"developer_name": "Regression Developer", "contact_person": "Regression Sales"}
+			)
+		project = api.save_project(
+			{
+				"project_name": "Regression Towers",
+				"developer": "Regression Developer",
+				"rera_number": "P51800099002",
+				"city": "Mumbai",
+				"locality": "Powai",
+			}
+		)["name"]
+		for amenity in ("Swimming pool", "Gym"):
+			structure.save_amenity(amenity)
+		structure.save_project_details(project, "2028-03-31", ["Swimming pool", "Gym"])
+		tower = structure.add_tower(project, "Tower A", "1 to 3")["name"]
+		structure.generate_floor_units(tower, 1, "101 to 103", 520, "1 BHK")
+
+
+def gate_tower_state(project_name):
+	"""Read back a project's towers, floors, units, possession date and amenities, for the spec (tests only,
+	SOS-P7-05)."""
+	project = frappe.get_doc("Project", {"project_name": project_name})
+	towers = {}
+	for tower in frappe.get_all("Project Tower", filters={"project": project.name}, pluck="name"):
+		doc = frappe.get_doc("Project Tower", tower)
+		towers[doc.tower_name] = {
+			"archived": doc.archived,
+			"floors": [row.floor_number for row in doc.floors],
+			"units": sorted(
+				frappe.get_all("Unit", filters={"tower": tower, "archived": 0}, pluck="unit_number")
+			),
+		}
+	return {
+		"towers": towers,
+		"possession_date": str(project.possession_date or ""),
+		"amenities": [row.amenity for row in project.amenities],
+	}
+
+
 def remove_gate_inventory():
 	"""Remove the records the inventory spec made (names start with "Gate Inventory ") and what hangs on
 	them (tests only, SOS-P4-01). The app never deletes inventory: this is the spec cleaning up after itself."""
 	like = ["like", f"{GATE_INVENTORY_PREFIX}%"]
 	projects = frappe.get_all("Project", filters={"project_name": like}, pluck="name")
+	for tower in frappe.get_all("Project Tower", filters={"project": ["in", projects or [""]]}, pluck="name"):
+		frappe.db.delete("Version", {"ref_doctype": "Project Tower", "docname": tower})
 	for unit in frappe.get_all("Unit", filters={"project": ["in", projects or [""]]}, pluck="name"):
 		frappe.db.delete("Inventory Status Change", {"parent": unit})
 		frappe.db.delete("Version", {"ref_doctype": "Unit", "docname": unit})
@@ -2474,7 +2530,11 @@ def remove_gate_inventory():
 		frappe.db.delete("Property", {"name": prop})
 	for name in projects:
 		frappe.db.delete("Version", {"ref_doctype": "Project", "docname": name})
+		frappe.db.delete("Project Tower", {"project": name})
 		frappe.db.delete("Project", {"name": name})
+	for name in frappe.get_all("Amenity", filters={"amenity_name": like}, pluck="name"):
+		frappe.db.delete("Version", {"ref_doctype": "Amenity", "docname": name})
+		frappe.db.delete("Amenity", {"name": name})
 	for name in frappe.get_all("Developer", filters={"developer_name": like}, pluck="name"):
 		frappe.db.delete("Version", {"ref_doctype": "Developer", "docname": name})
 		frappe.db.delete("Developer", {"name": name})

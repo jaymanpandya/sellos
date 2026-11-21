@@ -37,7 +37,26 @@
 				{{ project.units.total }} units: {{ project.units.Available }} available,
 				{{ project.units.Held }} held, {{ project.units.Sold }} sold.
 			</p>
+			<p class="text-sm text-ink-muted" data-testid="sellos-project-possession">
+				Possession: {{ project.possession_date || "not set" }}.
+			</p>
 		</div>
+
+		<ProjectStructure
+			v-if="project"
+			class="mb-ui-md"
+			:project="route.params.name"
+			:towers="structure.towers"
+			:can-edit="canEdit"
+			:can-manage-amenities="structure.can_manage_amenities"
+			:configurations="configurations"
+			:possession-date="structure.possession_date"
+			:amenities="structure.amenities"
+			:amenity-options="structure.amenity_options"
+			:brochures="structure.brochures"
+			@state="show"
+			@options="structure.amenity_options = $event"
+		/>
 
 		<ListCard title="Units">
 			<EmptyState
@@ -167,6 +186,7 @@ import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { inventoryApi, STATUS_TONE } from "../inventory/inventoryApi";
+import ProjectStructure from "../inventory/ProjectStructure.vue";
 
 // One project and its units (SOS-P4-01). Every change is made on the server and the project read back.
 const route = useRoute();
@@ -180,6 +200,15 @@ const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
 const reasons = reactive({});
+// SOS-P7-05: towers, floors, possession date, amenities and brochures.
+const structure = reactive({
+	towers: [],
+	possession_date: "",
+	amenities: [],
+	amenity_options: [],
+	brochures: [],
+	can_manage_amenities: false,
+});
 const blankUnit = () => ({
 	unit_number: "",
 	configuration: "",
@@ -197,6 +226,7 @@ function show(data) {
 	statuses.value = data.statuses;
 	configurations.value = data.configurations;
 	canEdit.value = data.can_edit;
+	for (const key of Object.keys(structure)) if (key in data) structure[key] = data[key];
 }
 
 async function load() {

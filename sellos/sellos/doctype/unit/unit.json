@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "project",
+  "tower",
   "unit_number",
   "configuration",
   "carpet_area",
@@ -109,6 +110,14 @@
    "label": "Archived by",
    "options": "User",
    "read_only": 1
+  },
+  {
+   "description": "The tower or wing, when the project has them. Unit numbers are unique within it.",
+   "fieldname": "tower",
+   "fieldtype": "Link",
+   "label": "Tower or wing",
+   "options": "Project Tower",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 0,

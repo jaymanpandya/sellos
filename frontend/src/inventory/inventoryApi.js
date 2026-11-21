@@ -22,5 +22,29 @@ export const inventoryApi = {
 		call("set_inventory_archived", { doctype, name, archived }),
 };
 
+// Towers, wings, floors, the units of a floor and a project's details (SOS-P7-05).
+const structure = (method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.inventory.structure.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const structureApi = {
+	addTower: (project, tower_name, floors) =>
+		structure("add_tower", { project, tower_name, floors }),
+	addFloors: (tower, floors) => structure("add_floors", { tower, floors }),
+	removeFloor: (tower, floor) => structure("remove_floor", { tower, floor }),
+	removeTower: (tower) => structure("remove_tower", { tower }),
+	generate: (values) => structure("generate_floor_units", values),
+	saveDetails: (project, possession_date, amenities) =>
+		structure("save_project_details", { project, possession_date, amenities }),
+	saveAmenity: (amenity_name, archived = 0) =>
+		structure("save_amenity", { amenity_name, archived }),
+	addBrochure: (project, title, filename, content_base64) =>
+		structure("add_project_brochure", { project, title, filename, content_base64 }),
+	removeBrochure: (project, file) => structure("remove_project_brochure", { project, file }),
+};
+
 // One tone per status, for the badge.
 export const STATUS_TONE = { Available: "success", Held: "warning", Sold: "neutral" };

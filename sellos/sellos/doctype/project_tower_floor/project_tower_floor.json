@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "owner": "Administrator",
+ "states": [],
+ "name": "Project Tower Floor",
+ "editable_grid": 1,
+ "istable": 1,
+ "field_order": [
+  "floor_number",
+  "floor_label"
+ ],
+ "fields": [
+  {
+   "fieldname": "floor_number",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Floor",
+   "reqd": 1
+  },
+  {
+   "description": "How the floor is called, for example Podium. Optional.",
+   "fieldname": "floor_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Floor name"
+  }
+ ],
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "ASC"
+}

@@ -14,6 +14,11 @@
   "city",
   "locality",
   "address",
+  "possession_date",
+  "section_amenities",
+  "amenities",
+  "section_brochures",
+  "brochures",
   "section_archive",
   "archived",
   "archived_on",
@@ -97,6 +102,34 @@
    "label": "Archived by",
    "options": "User",
    "read_only": 1
+  },
+  {
+   "fieldname": "possession_date",
+   "fieldtype": "Date",
+   "label": "Possession date"
+  },
+  {
+   "fieldname": "section_amenities",
+   "fieldtype": "Section Break",
+   "label": "Amenities"
+  },
+  {
+   "description": "Chosen from the list the Company Admin keeps.",
+   "fieldname": "amenities",
+   "fieldtype": "Table",
+   "label": "Amenities",
+   "options": "Project Amenity"
+  },
+  {
+   "fieldname": "section_brochures",
+   "fieldtype": "Section Break",
+   "label": "Brochures"
+  },
+  {
+   "fieldname": "brochures",
+   "fieldtype": "Table",
+   "label": "Brochures",
+   "options": "Project Brochure"
   }
  ],
  "index_web_pages_for_search": 0,

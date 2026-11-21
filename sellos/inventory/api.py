@@ -13,6 +13,7 @@ from frappe import _
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, COMPANY_ADMIN, SALES_MANAGER
 from sellos.inventory.base import STATUSES
+from sellos.inventory.structure import project_structure
 
 READERS = (COMPANY_ADMIN, AGENT, SALES_MANAGER)
 EDITORS = (COMPANY_ADMIN, AGENT)
@@ -21,7 +22,7 @@ EDITORS = (COMPANY_ADMIN, AGENT)
 FIELDS = {
 	"Developer": ("developer_name", "rera_registration", "contact_person", "email", "website", "notes"),
 	"Project": ("project_name", "developer", "rera_number", "project_status", "city", "locality", "address"),
-	"Unit": ("project", "unit_number", "configuration", "carpet_area", "floor", "parking"),
+	"Unit": ("project", "tower", "unit_number", "configuration", "carpet_area", "floor", "parking"),
 	"Property": (
 		"title",
 		"property_type",
@@ -37,7 +38,7 @@ FIELDS = {
 	),
 }
 # A field that is set when a record is made and never changed.
-FIXED_AFTER_CREATE = {"Developer": ("developer_name",), "Unit": ("project",)}
+FIXED_AFTER_CREATE = {"Developer": ("developer_name",), "Unit": ("project", "tower")}
 STATUS_KINDS = ("Unit", "Property")
 ARCHIVABLE = ("Developer", "Project", "Unit", "Property")
 
@@ -49,6 +50,7 @@ LIST_FIELDS = {
 		"developer",
 		"rera_number",
 		"project_status",
+		"possession_date",
 		"city",
 		"locality",
 		"address",
@@ -57,6 +59,7 @@ LIST_FIELDS = {
 	"Unit": [
 		"name",
 		"project",
+		"tower",
 		"unit_number",
 		"configuration",
 		"carpet_area",
@@ -163,7 +166,8 @@ def get_project(name):
 	project.check_permission("read")
 	row = {key: project.get(key) for key in LIST_FIELDS["Project"]}
 	return {
-		"project": {**row, "units": _unit_counts(name)},
+		**project_structure(name),  # SOS-P7-05
+		"project": {**row, "possession_date": str(row["possession_date"] or ""), "units": _unit_counts(name)},
 		"units": _with_log("Unit", _rows("Unit", filters={"project": name})),
 		"can_edit": any(role in frappe.get_roles() for role in EDITORS),
 		"statuses": list(STATUSES),

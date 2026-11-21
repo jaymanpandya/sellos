@@ -148,6 +148,16 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.api.save_property": _INVENTORY_EDITORS,
 	"sellos.inventory.api.set_inventory_status": _INVENTORY_EDITORS,
 	"sellos.inventory.api.set_inventory_archived": _ADMIN_ONLY,
+	# SOS-P7-05: towers, wings, floors, the units of a floor, and a project's details. Editors lay them out.
+	"sellos.inventory.structure.add_tower": _INVENTORY_EDITORS,
+	"sellos.inventory.structure.add_floors": _INVENTORY_EDITORS,
+	"sellos.inventory.structure.remove_floor": _INVENTORY_EDITORS,
+	"sellos.inventory.structure.remove_tower": _INVENTORY_EDITORS,
+	"sellos.inventory.structure.generate_floor_units": _INVENTORY_EDITORS,
+	"sellos.inventory.structure.save_project_details": _INVENTORY_EDITORS,
+	"sellos.inventory.structure.add_project_brochure": _INVENTORY_EDITORS,
+	"sellos.inventory.structure.remove_project_brochure": _INVENTORY_EDITORS,
+	"sellos.inventory.structure.save_amenity": _ADMIN_ONLY,
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.crm.enquiry.get_enquiry_settings": _ADMIN_ONLY,  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": _ADMIN_ONLY,  # SOS-P2-08

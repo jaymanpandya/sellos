@@ -234,6 +234,29 @@ SAMPLE_CALLS = {
 		"reason": "p401 check",
 	},
 	"sellos.inventory.api.set_inventory_archived": {"doctype": "Property", "name": "{spare_property}"},
+	# SOS-P7-05: towers on the spare project; two spare towers so a removal succeeds for the Company Admin.
+	"sellos.inventory.structure.add_tower": {"project": "{spare_project}", "tower_name": "P705 Suite New"},
+	"sellos.inventory.structure.add_floors": {"tower": "{spare_tower}", "floors": "5 to 6"},
+	"sellos.inventory.structure.remove_floor": {"tower": "{spare_tower_two}", "floor": 2},
+	"sellos.inventory.structure.remove_tower": {"tower": "{spare_tower_two}"},
+	"sellos.inventory.structure.generate_floor_units": {
+		"tower": "{spare_tower}",
+		"floor": 1,
+		"pattern": "101 to 102",
+		"carpet_area": 500,
+	},
+	"sellos.inventory.structure.save_project_details": {
+		"project": "{spare_project}",
+		"possession_date": "2028-03-31",
+	},
+	"sellos.inventory.structure.add_project_brochure": {
+		"project": "{spare_project}",
+		"title": "P705 Suite brochure",
+		"filename": "p705_suite_brochure.pdf",
+		"content_base64": AGREEMENT_B64,
+	},
+	"sellos.inventory.structure.remove_project_brochure": {"project": "{spare_project}", "file": "/none"},
+	"sellos.inventory.structure.save_amenity": {"amenity_name": "P705 Suite Amenity"},
 	"sellos.reports.team.team_report": {},
 	"sellos.crm.enquiry.get_enquiry_settings": {},  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": {},
@@ -426,6 +449,17 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		spare_unit = frappe.get_doc(
 			{"doctype": "Unit", "project": spare_project.name, "unit_number": "P401-101", "carpet_area": 600}
 		).insert()
+		spare_tower, spare_tower_two = (
+			frappe.get_doc(
+				{
+					"doctype": "Project Tower",
+					"project": spare_project.name,
+					"tower_name": name,
+					"floors": [{"floor_number": 1}, {"floor_number": 2}],
+				}
+			).insert()
+			for name in ("P705 Suite Tower", "P705 Suite Tower Two")
+		)
 		spare_property = frappe.get_doc(
 			{
 				"doctype": "Property",
@@ -519,6 +553,8 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_rule": spare_rule.name,
 			"spare_project": spare_project.name,
 			"spare_unit": spare_unit.name,
+			"spare_tower": spare_tower.name,
+			"spare_tower_two": spare_tower_two.name,
 			"spare_property": spare_property.name,
 			"rule_team": rule_team.name,
 			"agent": TEST_USERS["agent"]["email"],
@@ -534,8 +570,9 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 
 	@staticmethod
 	def _remove_agreement_files():
-		for path in Path(frappe.get_site_path("private", "files")).glob("p701_suite_agreement*"):
-			path.unlink()
+		for pattern in ("p701_suite_agreement*", "p705_suite_brochure*"):
+			for path in Path(frappe.get_site_path("private", "files")).glob(pattern):
+				path.unlink()
 
 	def args(self, method):
 		return fill(SAMPLE_CALLS[method], self.names)
