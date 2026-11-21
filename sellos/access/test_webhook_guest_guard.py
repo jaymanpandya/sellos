@@ -118,4 +118,5 @@ class TestRealIntakeMethodIsRegistered(IntegrationTestCase):
 
 	def test_it_is_the_only_guest_method_besides_webhooks(self):
 		extra = set(guest_methods_in_sellos()) - set(registered_webhooks())
-		self.assertEqual(sorted(extra), [self.METHOD])
+		# SOS-P1-09 added the website form's submit as the second one.
+		self.assertEqual(sorted(extra), [self.METHOD, "sellos.crm.website_form.submit_website_lead"])

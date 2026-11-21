@@ -237,6 +237,8 @@ SAMPLE_CALLS = {
 	"sellos.reports.team.team_report": {},
 	"sellos.crm.enquiry.get_enquiry_settings": {},  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": {},
+	"sellos.crm.website_form.get_website_settings": {},  # SOS-P1-09
+	"sellos.crm.website_form.rotate_website_key": {},
 	"sellos.reports.calls.call_report": {},
 	"sellos.reports.calls.call_report_calls": {},
 	# SOS-P2-01: blank values keep what is saved, so the Company Admin's call changes nothing.

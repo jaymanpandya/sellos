@@ -114,12 +114,16 @@ def take(
 	notes=None,
 	stop_source=None,
 	activity_type=NOTE,
+	has_consent=True,
 ) -> dict:
 	"""Make or merge the lead of one person who reached us, and record their consent or stop request.
 
 	phone: the person's number, in any form. source: a Lead Source name. kind and reference name the
 	evidence file (`<kind>-<reference>.json`). evidence: the raw event or submission, saved as a private
-	file. stop_source: set it (one of consent.STOP_SOURCES) when the person asked us to stop. Returns
+	file. has_consent: False when the submission carried no consent wording (SOS-P1-09): the lead is made
+	or merged and the raw submission saved, but no Consent Record is made and `notes` records the warning;
+	a new lead stays Unknown. stop_source: set it (one of consent.STOP_SOURCES) when the person asked
+	us to stop. Returns
 	{"lead", "client", "created", "merged", "stop", "consent_record"}."""
 	number = normalise_phone(phone)
 	if not number:
@@ -137,6 +141,8 @@ def take(
 		_log_activity(
 			lead, activity_type, notes or _("Asked to stop being contacted ({0}).").format(stop_source)
 		)
+	elif not has_consent:
+		_log_activity(lead, activity_type, notes)
 	else:
 		record = (
 			frappe.get_doc(

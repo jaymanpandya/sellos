@@ -151,6 +151,8 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.crm.enquiry.get_enquiry_settings": _ADMIN_ONLY,  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": _ADMIN_ONLY,  # SOS-P2-08
+	"sellos.crm.website_form.get_website_settings": _ADMIN_ONLY,  # SOS-P1-09
+	"sellos.crm.website_form.rotate_website_key": _ADMIN_ONLY,
 	"sellos.reports.calls.call_report": _ADMIN_ONLY,
 	"sellos.reports.calls.call_report_calls": _ADMIN_ONLY,
 	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,

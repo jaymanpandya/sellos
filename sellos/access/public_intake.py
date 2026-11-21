@@ -31,6 +31,7 @@ from dataclasses import dataclass
 import frappe
 from frappe import _
 
+from sellos.access import intake_keys
 from sellos.access.webhooks import RATE_WINDOW_SECONDS, TOO_LARGE_STATUS, over_rate_limit
 
 RATE_LIMITED_STATUS = 429
@@ -45,7 +46,7 @@ _INTAKES: dict[str, dict] = {}
 
 # Modules that register public intake methods (a fresh server process imports none of them when its first
 # request arrives, so the request guard imports them to know the method is registered).
-INTAKE_MODULES = ("sellos.crm.enquiry",)
+INTAKE_MODULES = ("sellos.crm.enquiry", "sellos.crm.website_form")
 
 
 @dataclass
@@ -177,6 +178,7 @@ def public_intake(
 	rate_limit_per_tenant,
 	consent_evidence,
 	calls_intake,
+	key_scope=None,
 ):
 	"""Register the decorated function as a public intake method and whitelist it for guests.
 
@@ -186,6 +188,8 @@ def public_intake(
 	  minute for one address and for the whole tenant.
 	consent_evidence: a sentence saying what is saved as the Consent Record's evidence file.
 	calls_intake: the dotted path of the `sellos.crm.intake` function the handler uses.
+	key_scope: set it (an `sellos.access.intake_keys` scope) when the form is opened by a per company key
+	  record of that scope (SOS-P1-09) instead of the tenant's form key setting.
 
 	The decorated function takes an IntakeRequest. It is called only for a request that passed every
 	check, and it makes or merges the lead through the intake function."""
@@ -207,7 +211,7 @@ def public_intake(
 			"honeypot_field": honeypot_field,
 			"max_body_bytes": max_body_bytes,
 			"field_validation": sorted(fields),
-			"form_key_setting": FORM_KEY_SETTING,
+			"form_key_setting": f"Intake Key ({key_scope})" if key_scope else FORM_KEY_SETTING,
 			"consent_evidence": consent_evidence,
 			"calls_intake": calls_intake,
 		}
@@ -234,7 +238,8 @@ def public_intake(
 			if raw.get(honeypot_field):
 				return thanks
 			# 4. The form key, before any write. Every failure is the same short answer.
-			if not key_matches(raw.get(FORM_KEY_FIELD)):
+			given = raw.get(FORM_KEY_FIELD)
+			if not (intake_keys.key_valid(given, key_scope) if key_scope else key_matches(given)):
 				return _answer(BAD_FORM_STATUS, _(BAD_FORM_ANSWER))
 			# 5. Strict validation.
 			clean = validate_fields(raw, fields, honeypot_field)
