@@ -102,6 +102,22 @@ export const costSheetApi = {
 export const rupees = (n) =>
 	`Rs ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Number(n || 0))}`;
 
+// Listings: Primary, Direct or Partner, published only when complete (SOS-P4-02).
+const listing = (method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.inventory.listings.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const listingApi = {
+	overview: (include_archived = 0) => listing("listing_overview", { include_archived }),
+	save: (values, name) => listing("save_listing", { values, name }),
+	publish: (name) => listing("publish_listing", { name }),
+	unpublish: (name) => listing("unpublish_listing", { name }),
+	setArchived: (name, archived) => listing("set_listing_archived", { name, archived }),
+};
+
 // One tone per status, for the badge.
 export const STATUS_TONE = {
 	Available: "success",

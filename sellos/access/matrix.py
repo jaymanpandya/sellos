@@ -178,6 +178,13 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.cost_sheet.unit_cost_sheets": _INVENTORY_EDITORS,
 	"sellos.inventory.cost_sheet.get_cost_sheet": _INVENTORY_EDITORS,
 	"sellos.inventory.cost_sheet.cost_sheet_pdf": _INVENTORY_EDITORS,
+	# SOS-P4-02: listings. An Agent or a Company Admin makes, publishes and withdraws them, a Sales Manager reads
+	# them, and only a Company Admin archives one.
+	"sellos.inventory.listings.listing_overview": _INVENTORY_READERS,
+	"sellos.inventory.listings.save_listing": _INVENTORY_EDITORS,
+	"sellos.inventory.listings.publish_listing": _INVENTORY_EDITORS,
+	"sellos.inventory.listings.unpublish_listing": _INVENTORY_EDITORS,
+	"sellos.inventory.listings.set_listing_archived": _ADMIN_ONLY,
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.crm.enquiry.get_enquiry_settings": _ADMIN_ONLY,  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": _ADMIN_ONLY,  # SOS-P2-08

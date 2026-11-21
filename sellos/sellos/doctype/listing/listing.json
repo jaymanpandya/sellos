@@ -1,0 +1,171 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:LST-{#####}",
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "listing_type",
+  "unit",
+  "property",
+  "column_break_1",
+  "asking_price",
+  "description",
+  "section_publish",
+  "published",
+  "published_on",
+  "published_by",
+  "section_changes",
+  "changes",
+  "section_archive",
+  "archived",
+  "archived_on",
+  "archived_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "description": "Primary is a unit of a developer's project. Direct is the company's own listing. Partner is a channel partner's.",
+   "fieldname": "listing_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "Primary\nDirect\nPartner",
+   "reqd": 1
+  },
+  {
+   "fieldname": "unit",
+   "fieldtype": "Link",
+   "label": "Unit",
+   "options": "Unit"
+  },
+  {
+   "fieldname": "property",
+   "fieldtype": "Link",
+   "label": "Property",
+   "options": "Property"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "asking_price",
+   "fieldtype": "Float",
+   "label": "Asking price (Rs)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "section_publish",
+   "fieldtype": "Section Break",
+   "label": "Publishing"
+  },
+  {
+   "default": "0",
+   "description": "Needs a title, a type, a unit or a property, an asking price and a description.",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Published"
+  },
+  {
+   "fieldname": "published_on",
+   "fieldtype": "Datetime",
+   "label": "Published on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "published_by",
+   "fieldtype": "Link",
+   "label": "Published by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_changes",
+   "fieldtype": "Section Break",
+   "label": "Change history"
+  },
+  {
+   "fieldname": "changes",
+   "fieldtype": "Table",
+   "label": "Changes",
+   "options": "Listing Change",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_archive",
+   "fieldtype": "Section Break",
+   "label": "Archive"
+  },
+  {
+   "default": "0",
+   "description": "Records are archived, never deleted.",
+   "fieldname": "archived",
+   "fieldtype": "Check",
+   "label": "Archived",
+   "read_only": 1
+  },
+  {
+   "fieldname": "archived_on",
+   "fieldtype": "Datetime",
+   "label": "Archived on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "archived_by",
+   "fieldtype": "Link",
+   "label": "Archived by",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Listing",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Company Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Agent",
+   "write": 1
+  },
+  {
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Sales Manager"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

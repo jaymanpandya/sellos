@@ -291,6 +291,15 @@ SAMPLE_CALLS = {
 	"sellos.inventory.cost_sheet.unit_cost_sheets": {"unit": "{spare_unit}"},
 	"sellos.inventory.cost_sheet.get_cost_sheet": {"name": "{spare_sheet}"},
 	"sellos.inventory.cost_sheet.cost_sheet_pdf": {"name": "{spare_sheet}"},
+	# SOS-P4-02: the spare listing is a complete draft of its own property.
+	"sellos.inventory.listings.listing_overview": {},
+	"sellos.inventory.listings.save_listing": {
+		"name": "{spare_listing}",
+		"values": {"description": "P402 Suite edit"},
+	},
+	"sellos.inventory.listings.publish_listing": {"name": "{spare_listing}"},
+	"sellos.inventory.listings.unpublish_listing": {"name": "{spare_listing}"},
+	"sellos.inventory.listings.set_listing_archived": {"name": "{spare_listing}"},
 	"sellos.reports.team.team_report": {},
 	"sellos.crm.enquiry.get_enquiry_settings": {},  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": {},
@@ -539,6 +548,26 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"carpet_area": 500,
 			}
 		).insert()
+		# SOS-P4-02: a complete draft listing of a property of its own.
+		listed_property = frappe.get_doc(
+			{
+				"doctype": "Property",
+				"title": "P402 Suite Property",
+				"property_type": "Apartment",
+				"city": "Pune",
+				"carpet_area": 500,
+			}
+		).insert()
+		spare_listing = frappe.get_doc(
+			{
+				"doctype": "Listing",
+				"title": "P402 Suite Listing",
+				"listing_type": "Direct",
+				"property": listed_property.name,
+				"asking_price": 5000000,
+				"description": "P402 suite description",
+			}
+		).insert()
 		self.addCleanup(self._remove_agreement_files)
 		rule_team = frappe.get_doc(
 			{
@@ -633,6 +662,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_tower": spare_tower.name,
 			"spare_tower_two": spare_tower_two.name,
 			"spare_property": spare_property.name,
+			"spare_listing": spare_listing.name,
 			"rule_team": rule_team.name,
 			"agent": TEST_USERS["agent"]["email"],
 			"support_user": support_user,

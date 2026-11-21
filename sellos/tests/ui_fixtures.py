@@ -772,6 +772,11 @@ def seed_regression_data():
 	  (10 percent now, 90 percent after 30 days), and one cost sheet of unit 1501 made by the gate agent with the
 	  Construction plan and the Garden charge, total Rs 1,01,55,600. All made through the pricing and cost sheet APIs.
 
+	* Listings (SOS-P4-02): the published Primary listing Regression Primary 2 BHK (unit 1501 of Regression
+	  Pricing, Rs 1,05,00,000), the published Direct listing Regression Direct Resale (the property Regression
+	  Resale Flat, Rs 82,00,000) and the Partner draft Regression Partner Draft with no price or description,
+	  all made by the gate agent through the listing API.
+
 	* Inventory (SOS-P4-01): Regression Developer and its project Regression Heights (RERA number
 	  P51800099001, Mumbai), made by the Company Admin through the inventory API, with four units: 1201 (2 BHK,
 	  Available), 1202 (2 BHK, Available), 1301 (3 BHK, Held by the gate agent, with its reason in the status
@@ -2427,6 +2432,7 @@ def _seed_inventory(admin, agent):
 	_seed_towers(admin)
 	_seed_unit_grid(admin, agent)
 	_seed_pricing(admin, agent)
+	_seed_listings(admin, agent)
 	if frappe.db.exists("Project", {"project_name": "Regression Heights"}):
 		return
 	with _as_user(admin):
@@ -2596,6 +2602,51 @@ def _seed_pricing(admin, agent):
 		)
 	with _as_user(agent):
 		cost_sheet.make_cost_sheet(unit, plan, ["Garden"])
+
+
+def _seed_listings(admin, agent):
+	"""Regression Listings: a published Primary listing of unit 1501 of Regression Pricing (Rs 1,05,00,000), a
+	published Direct listing of the property Regression Resale Flat, and a Partner draft with no price, through
+	the listing API as the gate agent (SOS-P4-02). Safe to run again."""
+	from sellos.inventory import api, listings
+
+	if frappe.db.exists("Listing", {"title": "Regression Primary 2 BHK"}):
+		return
+	pricing_project = frappe.db.get_value("Project", {"project_name": "Regression Pricing"}, "name")
+	unit = frappe.db.get_value("Unit", {"project": pricing_project, "unit_number": "1501"}, "name")
+	with _as_user(agent):
+		prop = frappe.db.get_value("Property", {"title": "Regression Resale Flat"}, "name")
+		if not prop:
+			prop = api.save_property(
+				{
+					"title": "Regression Resale Flat",
+					"property_type": "Apartment",
+					"city": "Pune",
+					"locality": "Baner",
+					"carpet_area": 700,
+				}
+			)["name"]
+		primary = listings.save_listing(
+			{
+				"title": "Regression Primary 2 BHK",
+				"listing_type": "Primary",
+				"unit": unit,
+				"asking_price": 10500000,
+				"description": "A two bedroom flat on the 12th floor with one parking slot.",
+			}
+		)["name"]
+		listings.publish_listing(primary)
+		direct = listings.save_listing(
+			{
+				"title": "Regression Direct Resale",
+				"listing_type": "Direct",
+				"property": prop,
+				"asking_price": 8200000,
+				"description": "A resale flat near the market, ready to move in.",
+			}
+		)["name"]
+		listings.publish_listing(direct)
+		listings.save_listing({"title": "Regression Partner Draft", "listing_type": "Partner"})
 
 
 def _gate_price_list(title, on="2026-01-01"):
@@ -2800,6 +2851,20 @@ def remove_gate_inventory():
 	them (tests only, SOS-P4-01). The app never deletes inventory: this is the spec cleaning up after itself."""
 	like = ["like", f"{GATE_INVENTORY_PREFIX}%"]
 	projects = frappe.get_all("Project", filters={"project_name": like}, pluck="name")
+	gate_units = frappe.get_all("Unit", filters={"project": ["in", projects or [""]]}, pluck="name")
+	gate_properties = frappe.get_all("Property", filters={"title": like}, pluck="name")
+	for listing in frappe.get_all(  # SOS-P4-02
+		"Listing",
+		or_filters={
+			"title": like,
+			"unit": ["in", gate_units or [""]],
+			"property": ["in", gate_properties or [""]],
+		},
+		pluck="name",
+	):
+		frappe.db.delete("Listing Change", {"parent": listing})
+		frappe.db.delete("Version", {"ref_doctype": "Listing", "docname": listing})
+		frappe.db.delete("Listing", {"name": listing})
 	for tower in frappe.get_all("Project Tower", filters={"project": ["in", projects or [""]]}, pluck="name"):
 		frappe.db.delete("Version", {"ref_doctype": "Project Tower", "docname": tower})
 	for unit in frappe.get_all("Unit", filters={"project": ["in", projects or [""]]}, pluck="name"):
@@ -2822,6 +2887,56 @@ def remove_gate_inventory():
 		frappe.db.delete("Developer", {"name": name})
 	frappe.db.commit()  # nosemgrep
 	return {"projects": len(projects)}
+
+
+def make_gate_listings():
+	"""A project with the Available unit 1201 and a secondary property, for the listing spec (tests only,
+	SOS-P4-02). Names start with "Gate Inventory " so remove_gate_inventory takes them away, listings too."""
+	from sellos.inventory import api
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		developer = api.save_developer({"developer_name": f"{GATE_INVENTORY_PREFIX}Listing Developer {tag}"})
+		project = api.save_project(
+			{
+				"project_name": f"{GATE_INVENTORY_PREFIX}Listing {tag}",
+				"developer": developer["name"],
+				"rera_number": f"P5180{int(tag, 16) % 10**7:07d}",
+				"city": "Mumbai",
+			}
+		)
+		api.save_unit(
+			{
+				"project": project["name"],
+				"unit_number": "1201",
+				"configuration": "2 BHK",
+				"floor": 12,
+				"carpet_area": 650,
+			}
+		)
+		api.save_property(
+			{
+				"title": f"{GATE_INVENTORY_PREFIX}Listing Flat {tag}",
+				"property_type": "Apartment",
+				"city": "Pune",
+				"carpet_area": 700,
+			}
+		)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"project_name": f"{GATE_INVENTORY_PREFIX}Listing {tag}", "tag": tag}
+
+
+def gate_listing_state(title):
+	"""Read back a listing by title, for the spec (tests only, SOS-P4-02)."""
+	doc = frappe.get_doc("Listing", {"title": title})
+	return {
+		"listing_type": doc.listing_type,
+		"published": doc.published,
+		"asking_price": doc.asking_price,
+		"target": doc.unit or doc.property,
+		"changes": [[c.field_label, c.old_value, c.new_value, c.changed_by] for c in doc.changes],
+	}
 
 
 def gate_project_state(project_name):

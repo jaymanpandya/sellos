@@ -295,3 +295,12 @@ FLOW SOS-P7-07-4 | company_admin | /sellos/inventory | Sign in as the Company Ad
 FLOW SOS-P7-07-5 | company_admin | /sellos/inventory | Open Regression Pricing. Under New price list type a title, a date in the future, a base rate of 13000 and click Save price list. Then open the cost sheet of unit 1501 and open the earlier sheet. | The new list shows Scheduled and Regression Price List stays In force. The earlier cost sheet still shows Rs 1,01,55,600 and the Regression Price List it was made with.
 FLOW SOS-P7-07-6 | company_admin | /sellos/inventory | Open Regression Pricing, change the three Cost sheet percentages and click Save percentages. Open the earlier cost sheet of unit 1501. | The percentages are saved. The earlier sheet keeps stamp duty 6%, registration 1% and GST 5% and its total.
 FLOW SOS-P7-07-7 | sales_manager | /sellos/inventory | Sign in as the sales manager and open Regression Pricing. | The price list, the plans and the percentages show, with no forms or Save buttons and no Cost sheet link on the units.
+
+## SOS-P4-02: listings
+
+FLOW SOS-P4-02-1 | agent | /sellos/inventory | Sign in as the agent and open Inventory, then Listings. | Regression Primary 2 BHK (Primary, Rs 1,05,00,000, unit 1501) and Regression Direct Resale (Direct, Rs 82,00,000) show as Published. Regression Partner Draft shows as Draft, Partner, with "Needs a unit or a property, an asking price, a description" under it.
+FLOW SOS-P4-02-2 | agent | /sellos/inventory/listings | On Regression Partner Draft click Publish. | A message says the listing needs a unit or a property, an asking price and a description. It stays a Draft.
+FLOW SOS-P4-02-3 | agent | /sellos/inventory/listings | Click Edit on Regression Partner Draft, choose the property Regression Resale Flat, type a price of 9000000 and a description, then click Save listing. Click Publish. | The listing is saved, then shows as Published with Rs 90,00,000. Under Change history, the last line says Published was set to Yes.
+FLOW SOS-P4-02-4 | agent | /sellos/inventory/listings | On Regression Direct Resale click Withdraw. | It shows as Draft and the history gains a line saying Published went from Yes to No.
+FLOW SOS-P4-02-5 | agent | /sellos/inventory/listings | Under Make a listing choose Type Primary and open What is offered. | Only units are listed, no properties.
+FLOW SOS-P4-02-6 | sales_manager | /sellos/inventory/listings | Sign in as the sales manager and open Listings. | The listings and their history show, with no form and no Publish, Edit or Archive buttons.

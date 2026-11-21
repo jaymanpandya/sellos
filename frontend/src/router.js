@@ -24,6 +24,7 @@ const PartnerRegistrationsPage = () => import("./pages/PartnerRegistrationsPage.
 const PartnerRegisterPage = () => import("./pages/PartnerRegisterPage.vue");
 const PartnerFirmPage = () => import("./pages/PartnerFirmPage.vue");
 const InventoryPage = () => import("./pages/InventoryPage.vue");
+const ListingsPage = () => import("./pages/ListingsPage.vue");
 const ProjectPage = () => import("./pages/ProjectPage.vue");
 const CostSheetPage = () => import("./pages/CostSheetPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
@@ -120,6 +121,12 @@ export function createAppRouter() {
 				name: "inventory",
 				component: InventoryPage,
 				meta: { area: "inventory", title: "Inventory" },
+			},
+			{
+				path: "/inventory/listings",
+				name: "listings",
+				component: ListingsPage,
+				meta: { area: "inventory", title: "Listings", crumb: "Inventory" },
 			},
 			{
 				path: "/inventory/projects/:name",

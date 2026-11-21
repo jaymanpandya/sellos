@@ -4,7 +4,15 @@
 			title="Inventory"
 			text="Developers, primary projects with their RERA numbers, and secondary properties. Open a project to add its units."
 			icon="lucide-building-2"
-		/>
+		>
+			<router-link
+				:to="{ name: 'listings' }"
+				class="ui-link font-medium"
+				data-testid="sellos-inventory-listings-link"
+			>
+				Listings
+			</router-link>
+		</PageHeader>
 		<p
 			v-if="error"
 			role="alert"
