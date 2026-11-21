@@ -990,7 +990,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-08, SOS-P2-08, SOS-P1-16, SOS-P1-19, SOS-P1-20
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-P1-10: Connect the Pandya website forms
 - **Epic:** Core CRM and consent
