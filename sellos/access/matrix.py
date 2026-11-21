@@ -27,6 +27,8 @@ _LOGGERS = frozenset({AGENT, COMPANY_ADMIN, SALES_MANAGER})
 _TEAM_USERS = frozenset({COMPANY_ADMIN, SALES_MANAGER})
 _ADMIN_ONLY = frozenset({COMPANY_ADMIN})
 _PARTNER_ONLY = frozenset({CHANNEL_PARTNER})
+_INVENTORY_EDITORS = frozenset({COMPANY_ADMIN, AGENT})
+_INVENTORY_READERS = frozenset({COMPANY_ADMIN, AGENT, SALES_MANAGER})
 _OPENERS = frozenset({PLATFORM_ADMIN, COMPANY_ADMIN, AGENT, CLIENT, CHANNEL_PARTNER, SALES_MANAGER})
 
 # dotted method path -> the roles that may call it.
@@ -137,6 +139,15 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.access.partner_registrations.change_lead_partner": _ADMIN_ONLY,
 	"sellos.access.partner_registrations.get_partner_settings": _ADMIN_ONLY,
 	"sellos.access.partner_registrations.save_partner_settings": _ADMIN_ONLY,
+	# SOS-P4-01: inventory. A Company Admin or an Agent records it, a Sales Manager reads it.
+	"sellos.inventory.api.inventory_overview": _INVENTORY_READERS,
+	"sellos.inventory.api.get_project": _INVENTORY_READERS,
+	"sellos.inventory.api.save_developer": _INVENTORY_EDITORS,
+	"sellos.inventory.api.save_project": _INVENTORY_EDITORS,
+	"sellos.inventory.api.save_unit": _INVENTORY_EDITORS,
+	"sellos.inventory.api.save_property": _INVENTORY_EDITORS,
+	"sellos.inventory.api.set_inventory_status": _INVENTORY_EDITORS,
+	"sellos.inventory.api.set_inventory_archived": _ADMIN_ONLY,
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.reports.calls.call_report": _ADMIN_ONLY,
 	"sellos.reports.calls.call_report_calls": _ADMIN_ONLY,

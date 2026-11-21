@@ -23,6 +23,8 @@ const PartnerFirmsPage = () => import("./pages/PartnerFirmsPage.vue");
 const PartnerRegistrationsPage = () => import("./pages/PartnerRegistrationsPage.vue");
 const PartnerRegisterPage = () => import("./pages/PartnerRegisterPage.vue");
 const PartnerFirmPage = () => import("./pages/PartnerFirmPage.vue");
+const InventoryPage = () => import("./pages/InventoryPage.vue");
+const ProjectPage = () => import("./pages/ProjectPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
@@ -111,6 +113,18 @@ export function createAppRouter() {
 				name: "teams",
 				component: TeamsPage,
 				meta: { area: "company", title: "Teams" },
+			},
+			{
+				path: "/inventory",
+				name: "inventory",
+				component: InventoryPage,
+				meta: { area: "inventory", title: "Inventory" },
+			},
+			{
+				path: "/inventory/projects/:name",
+				name: "project",
+				component: ProjectPage,
+				meta: { area: "inventory", title: "Project", crumb: "Inventory" },
 			},
 			{
 				path: "/company/partners",

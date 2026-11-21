@@ -220,6 +220,20 @@ SAMPLE_CALLS = {
 	},
 	"sellos.access.partner_registrations.get_partner_settings": {},
 	"sellos.access.partner_registrations.save_partner_settings": {},
+	# SOS-P4-01: inventory, on a spare project, unit and property made for the test.
+	"sellos.inventory.api.inventory_overview": {},
+	"sellos.inventory.api.get_project": {"name": "{spare_project}"},
+	"sellos.inventory.api.save_developer": {"values": {"developer_name": "P401 Suite Developer"}},
+	"sellos.inventory.api.save_project": {"name": "{spare_project}", "values": {"locality": "P401 Edit"}},
+	"sellos.inventory.api.save_unit": {"name": "{spare_unit}", "values": {"floor": 3}},
+	"sellos.inventory.api.save_property": {"name": "{spare_property}", "values": {"locality": "P401 Edit"}},
+	"sellos.inventory.api.set_inventory_status": {
+		"doctype": "Unit",
+		"name": "{spare_unit}",
+		"status": "Held",
+		"reason": "p401 check",
+	},
+	"sellos.inventory.api.set_inventory_archived": {"doctype": "Property", "name": "{spare_property}"},
 	"sellos.reports.team.team_report": {},
 	"sellos.reports.calls.call_report": {},
 	"sellos.reports.calls.call_report_calls": {},
@@ -393,6 +407,30 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				.insert()
 				.name
 			)
+		spare_developer = frappe.get_doc(
+			{"doctype": "Developer", "developer_name": "P401 Spare Developer"}
+		).insert()
+		spare_project = frappe.get_doc(
+			{
+				"doctype": "Project",
+				"project_name": "P401 Spare Project",
+				"developer": spare_developer.name,
+				"rera_number": "P51800040101",
+				"city": "Mumbai",
+			}
+		).insert()
+		spare_unit = frappe.get_doc(
+			{"doctype": "Unit", "project": spare_project.name, "unit_number": "P401-101", "carpet_area": 600}
+		).insert()
+		spare_property = frappe.get_doc(
+			{
+				"doctype": "Property",
+				"title": "P401 Spare Property",
+				"property_type": "Apartment",
+				"city": "Pune",
+				"carpet_area": 500,
+			}
+		).insert()
 		self.addCleanup(self._remove_agreement_files)
 		rule_team = frappe.get_doc(
 			{
@@ -475,6 +513,9 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_registration": spare_registrations[0],
 			"spare_registration_two": spare_registrations[1],
 			"spare_rule": spare_rule.name,
+			"spare_project": spare_project.name,
+			"spare_unit": spare_unit.name,
+			"spare_property": spare_property.name,
 			"rule_team": rule_team.name,
 			"agent": TEST_USERS["agent"]["email"],
 			"support_user": support_user,

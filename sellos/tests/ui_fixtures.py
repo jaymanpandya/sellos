@@ -754,6 +754,11 @@ def seed_regression_data():
 	  through register_buyer: Regression Partner Buyer One (Registered, waiting), Two (Approved by the Company
 	  Admin, so protected, with the buyer's agreement recorded) and Three (Rejected with a reason).
 
+	* Inventory (SOS-P4-01): Regression Developer and its project Regression Heights (RERA number
+	  P51800099001, Mumbai), made by the Company Admin through the inventory API, with four units: 1201 (2 BHK,
+	  Available), 1202 (2 BHK, Available), 1301 (3 BHK, Held by the gate agent, with its reason in the status
+	  log) and 1302 (3 BHK, Sold). The agent also made a secondary property, Regression Resale Flat in Pune.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -779,6 +784,7 @@ def seed_regression_data():
 		_seed_call_reports_regression()
 		_seed_partner_firms(admin)
 		_seed_partner_registrations(admin)
+		_seed_inventory(admin, agent_one)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -912,6 +918,7 @@ def seed_regression_data():
 	_seed_site_visits(agent_one, agent_two)
 	_seed_partner_firms(admin)
 	_seed_partner_registrations(admin)
+	_seed_inventory(admin, agent_one)
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -2380,3 +2387,107 @@ def remove_gate_partner_registrations():
 			frappe.db.delete(doctype, {"name": ["in", names]})
 	frappe.db.commit()  # nosemgrep
 	return {"registrations": len(registrations), "leads": len(leads), "clients": len(clients)}
+
+
+# --- Inventory (SOS-P4-01) ------------------------------------------------------------------------
+
+GATE_INVENTORY_PREFIX = "Gate Inventory "
+
+
+def _seed_inventory(admin, agent):
+	"""The regression developer, project, units and property, through the inventory API. Safe to run again."""
+	from sellos.inventory import api
+
+	if frappe.db.exists("Project", {"project_name": "Regression Heights"}):
+		return
+	with _as_user(admin):
+		if not frappe.db.exists("Developer", "Regression Developer"):
+			api.save_developer(
+				{"developer_name": "Regression Developer", "contact_person": "Regression Sales"}
+			)
+		project = api.save_project(
+			{
+				"project_name": "Regression Heights",
+				"developer": "Regression Developer",
+				"rera_number": "P51800099001",
+				"city": "Mumbai",
+				"locality": "Andheri West",
+				"project_status": "Under construction",
+			}
+		)["name"]
+		units = {}
+		for number, configuration, floor, area in (
+			("1201", "2 BHK", 12, 640),
+			("1202", "2 BHK", 12, 655),
+			("1301", "3 BHK", 13, 910),
+			("1302", "3 BHK", 13, 925),
+		):
+			units[number] = api.save_unit(
+				{
+					"project": project,
+					"unit_number": number,
+					"configuration": configuration,
+					"floor": floor,
+					"carpet_area": area,
+					"parking": 1 if configuration == "2 BHK" else 2,
+				}
+			)["name"]
+	with _as_user(agent):
+		api.set_inventory_status("Unit", units["1301"], "Held", "Regression: buyer asked for two days")
+		api.set_inventory_status("Unit", units["1302"], "Held")
+		api.set_inventory_status("Unit", units["1302"], "Sold", "Regression: booking amount received")
+		api.save_property(
+			{
+				"title": "Regression Resale Flat",
+				"property_type": "Apartment",
+				"city": "Pune",
+				"locality": "Kothrud",
+				"configuration": "2 BHK",
+				"carpet_area": 720,
+				"floor": 4,
+				"parking": 1,
+			}
+		)
+
+
+def remove_gate_inventory():
+	"""Remove the records the inventory spec made (names start with "Gate Inventory ") and what hangs on
+	them (tests only, SOS-P4-01). The app never deletes inventory: this is the spec cleaning up after itself."""
+	like = ["like", f"{GATE_INVENTORY_PREFIX}%"]
+	projects = frappe.get_all("Project", filters={"project_name": like}, pluck="name")
+	for unit in frappe.get_all("Unit", filters={"project": ["in", projects or [""]]}, pluck="name"):
+		frappe.db.delete("Inventory Status Change", {"parent": unit})
+		frappe.db.delete("Version", {"ref_doctype": "Unit", "docname": unit})
+		frappe.db.delete("Unit", {"name": unit})
+	for prop in frappe.get_all("Property", filters={"title": like}, pluck="name"):
+		frappe.db.delete("Inventory Status Change", {"parent": prop})
+		frappe.db.delete("Version", {"ref_doctype": "Property", "docname": prop})
+		frappe.db.delete("Property", {"name": prop})
+	for name in projects:
+		frappe.db.delete("Version", {"ref_doctype": "Project", "docname": name})
+		frappe.db.delete("Project", {"name": name})
+	for name in frappe.get_all("Developer", filters={"developer_name": like}, pluck="name"):
+		frappe.db.delete("Version", {"ref_doctype": "Developer", "docname": name})
+		frappe.db.delete("Developer", {"name": name})
+	frappe.db.commit()  # nosemgrep
+	return {"projects": len(projects)}
+
+
+def gate_project_state(project_name):
+	"""Read back a project, its RERA number and its units with each status log, for the spec (tests only,
+	SOS-P4-01)."""
+	project = frappe.get_doc("Project", {"project_name": project_name})
+	units = frappe.get_all(
+		"Unit", filters={"project": project.name}, fields=["name", "unit_number", "status", "carpet_area"]
+	)
+	return {
+		"rera_number": project.rera_number,
+		"units": {
+			u.unit_number: {
+				"status": u.status,
+				"carpet_area": u.carpet_area,
+				"log": [r.to_status for r in frappe.get_doc("Unit", u.name).status_log],
+			}
+			for u in units
+		},
+	}
