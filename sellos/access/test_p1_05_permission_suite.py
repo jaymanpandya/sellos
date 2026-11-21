@@ -257,6 +257,14 @@ SAMPLE_CALLS = {
 	},
 	"sellos.inventory.structure.remove_project_brochure": {"project": "{spare_project}", "file": "/none"},
 	"sellos.inventory.structure.save_amenity": {"amenity_name": "P705 Suite Amenity"},
+	# SOS-P7-06: each acts on its own spare unit, so the earlier status change on spare_unit does not matter.
+	"sellos.inventory.holds.unit_grid": {"project": "{spare_project}"},
+	"sellos.inventory.holds.hold_unit": {"unit": "{spare_unit_hold}", "lead": "{lead}"},
+	"sellos.inventory.holds.release_hold": {"unit": "{spare_unit_held}"},
+	"sellos.inventory.holds.block_unit": {"unit": "{spare_unit_block}", "reason": "p706 suite"},
+	"sellos.inventory.holds.unblock_unit": {"unit": "{spare_unit_blocked}", "reason": "p706 suite"},
+	"sellos.inventory.holds.get_hold_settings": {},
+	"sellos.inventory.holds.save_hold_settings": {"unit_hold_hours": 48},
 	"sellos.reports.team.team_report": {},
 	"sellos.crm.enquiry.get_enquiry_settings": {},  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": {},
@@ -449,6 +457,18 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		spare_unit = frappe.get_doc(
 			{"doctype": "Unit", "project": spare_project.name, "unit_number": "P401-101", "carpet_area": 600}
 		).insert()
+		spare_unit_hold, spare_unit_held, spare_unit_block, spare_unit_blocked = (
+			frappe.get_doc(
+				{
+					"doctype": "Unit",
+					"project": spare_project.name,
+					"unit_number": f"P706-{number}",
+					"carpet_area": 600,
+					"status": status,
+				}
+			).insert()
+			for number, status in (("1", "Available"), ("2", "Held"), ("3", "Available"), ("4", "Blocked"))
+		)
 		spare_tower, spare_tower_two = (
 			frappe.get_doc(
 				{
@@ -553,6 +573,10 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_rule": spare_rule.name,
 			"spare_project": spare_project.name,
 			"spare_unit": spare_unit.name,
+			"spare_unit_hold": spare_unit_hold.name,
+			"spare_unit_held": spare_unit_held.name,
+			"spare_unit_block": spare_unit_block.name,
+			"spare_unit_blocked": spare_unit_blocked.name,
 			"spare_tower": spare_tower.name,
 			"spare_tower_two": spare_tower_two.name,
 			"spare_property": spare_property.name,

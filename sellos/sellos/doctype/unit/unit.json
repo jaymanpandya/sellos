@@ -14,6 +14,9 @@
   "floor",
   "parking",
   "status",
+  "held_by",
+  "held_for_lead",
+  "held_until",
   "section_log",
   "status_log",
   "section_archive",
@@ -65,12 +68,12 @@
   },
   {
    "default": "Available",
-   "description": "Changes only by a status change, which is logged.",
+   "description": "Changes only by a status change, which is logged. Booked and Sold are set by a booking (SOS-P7-10).",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Available\nHeld\nSold",
+   "options": "Available\nHeld\nBooked\nSold\nBlocked",
    "read_only": 1
   },
   {
@@ -118,6 +121,27 @@
    "label": "Tower or wing",
    "options": "Project Tower",
    "set_only_once": 1
+  },
+  {
+   "description": "The agent who holds the unit (SOS-P7-06).",
+   "fieldname": "held_by",
+   "fieldtype": "Link",
+   "label": "Held by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "held_for_lead",
+   "fieldtype": "Link",
+   "label": "Held for lead",
+   "options": "Lead",
+   "read_only": 1
+  },
+  {
+   "fieldname": "held_until",
+   "fieldtype": "Datetime",
+   "label": "Held until",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,

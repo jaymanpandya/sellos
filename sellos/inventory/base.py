@@ -1,7 +1,7 @@
 """Shared rules for the inventory records: Developer, Project, Unit and Property (SOS-P4-01).
 
 * Nothing is deleted. A record is archived, and every delete is refused, for every role.
-* A unit or property is Available, Held or Sold. SOS-P7-06 adds Booked and Blocked. Every change of
+* A property is Available, Held or Sold. A unit is also Booked or Blocked (SOS-P7-06). Every change of
   status is logged with who made it and when, whichever way the record is saved.
 * A RERA number is kept in capitals with no spaces, so the same number is never stored two ways.
 """
@@ -15,8 +15,11 @@ from frappe.utils import cint, flt, now_datetime
 
 AVAILABLE = "Available"
 HELD = "Held"
+BOOKED = "Booked"
 SOLD = "Sold"
-STATUSES = (AVAILABLE, HELD, SOLD)
+BLOCKED = "Blocked"
+STATUSES = (AVAILABLE, HELD, SOLD)  # a property's
+UNIT_STATUSES = (AVAILABLE, HELD, BOOKED, SOLD, BLOCKED)  # SOS-P7-06
 
 # Printed RERA numbers differ by state (P51800012345, PRM/KA/RERA/1251/309/PR/190101/000123, UPRERAPRJ12345,
 # RC/REP/HARERA/GGM/123/456/2019/12), so the check only refuses what can not be one: it must start with a
@@ -58,7 +61,9 @@ class InventoryRecord(Document):
 
 
 class StatusLogged(InventoryRecord):
-	"""A unit or a property: a status that moves between Available, Held and Sold, and a log of the moves."""
+	"""A unit or a property: a status that moves between its statuses, and a log of the moves."""
+
+	statuses = STATUSES
 
 	def validate(self):
 		self.stamp_archive()
@@ -83,8 +88,8 @@ class StatusLogged(InventoryRecord):
 		"""Log a new record's first status, and every later change of status."""
 		if not self.status:
 			self.status = AVAILABLE
-		if self.status not in STATUSES:
-			frappe.throw(_("The status must be one of {0}.").format(", ".join(STATUSES)))
+		if self.status not in self.statuses:
+			frappe.throw(_("The status must be one of {0}.").format(", ".join(self.statuses)))
 		old = None if self.is_new() else self.get_doc_before_save().status
 		if old == self.status and not self.is_new():
 			return

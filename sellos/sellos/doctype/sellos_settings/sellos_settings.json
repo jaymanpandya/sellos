@@ -12,6 +12,7 @@
   "city",
   "address",
   "untouched_days",
+  "unit_hold_hours",
   "default_team",
   "consent_enforcement",
   "partner_lead_limit",
@@ -119,6 +120,13 @@
    "label": "Enquiry form key",
    "hidden": 1,
    "description": "The key in the enquiry page link (SOS-P2-08). A Company Admin rotates it from the enquiry page settings."
+  },
+  {
+   "fieldname": "unit_hold_hours",
+   "fieldtype": "Int",
+   "label": "Unit hold hours",
+   "default": "48",
+   "description": "How long a hold on a unit lasts before it is released by itself (SOS-P7-06)."
   }
  ],
  "index_web_pages_for_search": 0,

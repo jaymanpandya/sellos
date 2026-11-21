@@ -35,12 +35,15 @@
 			</p>
 			<p class="text-sm text-ink-muted" data-testid="sellos-project-counts">
 				{{ project.units.total }} units: {{ project.units.Available }} available,
-				{{ project.units.Held }} held, {{ project.units.Sold }} sold.
+				{{ project.units.Held }} held, {{ project.units.Booked }} booked,
+				{{ project.units.Sold }} sold, {{ project.units.Blocked }} blocked.
 			</p>
 			<p class="text-sm text-ink-muted" data-testid="sellos-project-possession">
 				Possession: {{ project.possession_date || "not set" }}.
 			</p>
 		</div>
+
+		<UnitGrid v-if="project" class="mb-ui-md" :project="route.params.name" :refresh="units" />
 
 		<ProjectStructure
 			v-if="project"
@@ -187,6 +190,7 @@ import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { inventoryApi, STATUS_TONE } from "../inventory/inventoryApi";
 import ProjectStructure from "../inventory/ProjectStructure.vue";
+import UnitGrid from "../inventory/UnitGrid.vue";
 
 // One project and its units (SOS-P4-01). Every change is made on the server and the project read back.
 const route = useRoute();

@@ -46,5 +46,29 @@ export const structureApi = {
 	removeBrochure: (project, file) => structure("remove_project_brochure", { project, file }),
 };
 
+// The availability grid, holds and blocks (SOS-P7-06).
+const holds = (method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.inventory.holds.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const gridApi = {
+	grid: (project, configuration = "", status = "") =>
+		holds("unit_grid", { project, configuration, status }),
+	hold: (unit, lead) => holds("hold_unit", { unit, lead }),
+	release: (unit) => holds("release_hold", { unit }),
+	block: (unit, reason) => holds("block_unit", { unit, reason }),
+	unblock: (unit, reason) => holds("unblock_unit", { unit, reason }),
+	saveHours: (unit_hold_hours) => holds("save_hold_settings", { unit_hold_hours }),
+};
+
 // One tone per status, for the badge.
-export const STATUS_TONE = { Available: "success", Held: "warning", Sold: "neutral" };
+export const STATUS_TONE = {
+	Available: "success",
+	Held: "warning",
+	Booked: "info",
+	Sold: "neutral",
+	Blocked: "danger",
+};

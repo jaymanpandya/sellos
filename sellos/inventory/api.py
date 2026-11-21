@@ -12,7 +12,7 @@ from frappe import _
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, COMPANY_ADMIN, SALES_MANAGER
-from sellos.inventory.base import STATUSES
+from sellos.inventory.base import BLOCKED, BOOKED, STATUSES, UNIT_STATUSES
 from sellos.inventory.structure import project_structure
 
 READERS = (COMPANY_ADMIN, AGENT, SALES_MANAGER)
@@ -126,7 +126,7 @@ def _with_log(doctype, rows) -> list[dict]:
 
 
 def _unit_counts(project) -> dict:
-	counts = {status: 0 for status in STATUSES}
+	counts = {status: 0 for status in UNIT_STATUSES}
 	for status in frappe.get_list("Unit", filters={"project": project, "archived": 0}, pluck="status"):
 		counts[status] += 1
 	counts["total"] = sum(counts.values())
@@ -224,7 +224,9 @@ def save_property(values, name=None):
 
 @sellos_api(*EDITORS)
 def set_inventory_status(doctype, name, status, reason=""):
-	"""Move a unit or property to Available, Held or Sold. The change is logged with who made it and when."""
+	"""Move a unit or property to Available, Held or Sold. The change is logged with who made it and when.
+	A unit is held, released, blocked and unblocked on the availability grid (SOS-P7-06); Booked is set only by
+	a booking (SOS-P7-10)."""
 	if doctype not in STATUS_KINDS:
 		frappe.throw(_("Only a unit or a property has a status."))
 	if status not in STATUSES:
@@ -233,6 +235,10 @@ def set_inventory_status(doctype, name, status, reason=""):
 	doc.check_permission("write")
 	if doc.archived:
 		frappe.throw(_("An archived record can not change status. Restore it first."))
+	if doctype == "Unit" and BOOKED in (status, doc.status):
+		frappe.throw(_("A unit becomes Booked, and stops being Booked, only through a booking."))
+	if doctype == "Unit" and BLOCKED in (status, doc.status):
+		frappe.throw(_("A unit is blocked and unblocked on the availability grid, by a Company Admin."))
 	if doc.status == status:
 		frappe.throw(_("It is already {0}.").format(status))
 	doc.status = status

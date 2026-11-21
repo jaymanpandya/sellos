@@ -759,6 +759,11 @@ def seed_regression_data():
 	  the Available 1 BHK units 101 to 103 on floor 1, the possession date 31 March 2028 and the amenities
 	  Swimming pool and Gym, made by the Company Admin through the structure API.
 
+	* Unit grid (SOS-P7-06): Regression Grid (RERA number P51800099003, Andheri, Mumbai) with Tower G, floors 1
+	  and 2, made through the structure API: G101 and G103 (2 BHK) and G201 (1 BHK) Available, G102 (3 BHK)
+	  held by the gate agent for Regression Buyer One through the hold API, and G104 (2 BHK) blocked by the
+	  Company Admin with the reason "Regression: legal hold".
+
 	* Inventory (SOS-P4-01): Regression Developer and its project Regression Heights (RERA number
 	  P51800099001, Mumbai), made by the Company Admin through the inventory API, with four units: 1201 (2 BHK,
 	  Available), 1202 (2 BHK, Available), 1301 (3 BHK, Held by the gate agent, with its reason in the status
@@ -2412,6 +2417,7 @@ def _seed_inventory(admin, agent):
 	from sellos.inventory import api
 
 	_seed_towers(admin)
+	_seed_unit_grid(admin, agent)
 	if frappe.db.exists("Project", {"project_name": "Regression Heights"}):
 		return
 	with _as_user(admin):
@@ -2490,6 +2496,87 @@ def _seed_towers(admin):
 		structure.save_project_details(project, "2028-03-31", ["Swimming pool", "Gym"])
 		tower = structure.add_tower(project, "Tower A", "1 to 3")["name"]
 		structure.generate_floor_units(tower, 1, "101 to 103", 520, "1 BHK")
+
+
+def _seed_unit_grid(admin, agent):
+	"""Regression Grid, a project with Tower G (floors 1 and 2) for the availability grid (SOS-P7-06), through
+	the inventory, structure and hold APIs: G101 (2 BHK) and G103 (2 BHK) Available, G102 (3 BHK) held by the
+	gate agent for Regression Buyer One, G104 (2 BHK) blocked by the Company Admin with the reason
+	"Regression: legal hold", and G201 (1 BHK) Available. Safe to run again."""
+	from sellos.inventory import api, holds, structure
+
+	if frappe.db.exists("Project", {"project_name": "Regression Grid"}):
+		return
+	with _as_user(admin):
+		project = api.save_project(
+			{
+				"project_name": "Regression Grid",
+				"developer": "Regression Developer",
+				"rera_number": "P51800099003",
+				"city": "Mumbai",
+				"locality": "Andheri",
+			}
+		)["name"]
+		tower = structure.add_tower(project, "Tower G", "1 to 2")["name"]
+		structure.generate_floor_units(tower, 1, "101 to 104", 640, "2 BHK", "G")
+		structure.generate_floor_units(tower, 2, "201 to 201", 480, "1 BHK", "G")
+		units = {u["unit_number"]: u["name"] for u in api.get_project(project)["units"]}
+		api.save_unit({"configuration": "3 BHK"}, name=units["G102"])
+		holds.block_unit(units["G104"], "Regression: legal hold")
+	lead = frappe.db.get_value("Lead", {"lead_title": ["like", f"{REGRESSION_PREFIX}Buyer One%"]}, "name")
+	if lead:
+		with _as_user(agent):
+			holds.hold_unit(units["G102"], lead)
+
+
+def make_gate_grid():
+	"""A project of Tower G with floors 1 and 2 and the Available units G101 and G102 (2 BHK) and G201 (1 BHK),
+	and one lead the test agent owns, for the unit grid spec (tests only, SOS-P7-06). Made through the
+	inventory and structure APIs as the Company Admin. Names start with "Gate Inventory " so
+	remove_gate_inventory takes them away; the lead comes from seed_agent_leads, so remove_seeded_leads does."""
+	from sellos.inventory import api, structure
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	leads = seed_agent_leads()
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		developer = api.save_developer({"developer_name": f"{GATE_INVENTORY_PREFIX}Grid Developer {tag}"})
+		project = api.save_project(
+			{
+				"project_name": f"{GATE_INVENTORY_PREFIX}Grid {tag}",
+				"developer": developer["name"],
+				"rera_number": f"P5180{int(tag, 16) % 10**7:07d}",
+				"city": "Mumbai",
+			}
+		)["name"]
+		tower = structure.add_tower(project, "Tower G", "1 to 2")["name"]
+		structure.generate_floor_units(tower, 1, "101 to 102", 640, "2 BHK", "G")
+		structure.generate_floor_units(tower, 2, "201 to 201", 480, "1 BHK", "G")
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	title = frappe.db.get_value("Lead", {"lead_title": ["like", f"%{leads['own']}%"]}, "lead_title")
+	return {"project": project, "lead": title or leads["own"]}
+
+
+def gate_unit_state(project, unit_number):
+	"""A unit's status, holder and the number of rows in its status log, for the spec (tests only, SOS-P7-06)."""
+	row = frappe.db.get_value(
+		"Unit",
+		{"project": project, "unit_number": unit_number},
+		["name", "status", "held_by", "held_until"],
+		as_dict=True,
+	)
+	log = frappe.get_all(
+		"Inventory Status Change",
+		filters={"parent": row.name},
+		fields=["to_status", "changed_by", "reason"],
+		order_by="idx asc",
+	)
+	return {
+		"status": row.status,
+		"held_by": row.held_by or "",
+		"has_end": bool(row.held_until),
+		"log": [[r.to_status, r.changed_by, r.reason or ""] for r in log],
+	}
 
 
 def gate_tower_state(project_name):

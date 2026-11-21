@@ -208,6 +208,7 @@ scheduler_events = {
 	"all": [
 		"sellos.access.support.expire_due_grants",
 		"sellos.crm.notifications.notify_follow_ups",  # SOS-P1-23
+		"sellos.inventory.holds.expire_holds",  # SOS-P7-06
 	],
 	"hourly": [
 		"sellos.crm.consent.expire_due_records",

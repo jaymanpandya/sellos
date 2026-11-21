@@ -10,3 +10,4 @@ sellos.patches.p1_16_client_phone_keys
 sellos.patches.p1_20_lead_sources
 sellos.patches.p1_07_buyer_pipeline
 sellos.patches.p1_25_site_visit_outcome_field
+sellos.patches.p7_06_unit_statuses

@@ -158,6 +158,14 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.structure.add_project_brochure": _INVENTORY_EDITORS,
 	"sellos.inventory.structure.remove_project_brochure": _INVENTORY_EDITORS,
 	"sellos.inventory.structure.save_amenity": _ADMIN_ONLY,
+	# SOS-P7-06: the availability grid, and holds, blocks and the hold hours on it.
+	"sellos.inventory.holds.unit_grid": _INVENTORY_READERS,
+	"sellos.inventory.holds.hold_unit": _INVENTORY_EDITORS,
+	"sellos.inventory.holds.release_hold": _INVENTORY_EDITORS,
+	"sellos.inventory.holds.block_unit": _ADMIN_ONLY,
+	"sellos.inventory.holds.unblock_unit": _ADMIN_ONLY,
+	"sellos.inventory.holds.get_hold_settings": _ADMIN_ONLY,
+	"sellos.inventory.holds.save_hold_settings": _ADMIN_ONLY,
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.crm.enquiry.get_enquiry_settings": _ADMIN_ONLY,  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": _ADMIN_ONLY,  # SOS-P2-08
