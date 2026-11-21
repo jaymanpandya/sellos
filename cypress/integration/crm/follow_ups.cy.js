@@ -116,7 +116,12 @@ context("SOS-P1-22: completing a follow up", () => {
 
 	it("lets the Company Admin set the days for the untouched flag", () => {
 		cy.signInFresh("company_admin");
+		cy.intercept("POST", "**/api/method/sellos.crm.api.get_follow_up_settings*").as(
+			"settings"
+		);
 		cy.visit("/sellos/company/call-lists");
+		// The page fills the field when the settings arrive: type only after that, or it overwrites the typing.
+		cy.wait("@settings").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("calllists-untouched-days").should("have.value", "3");
 		cy.intercept("POST", "**/api/method/sellos.crm.api.save_follow_up_settings*").as("save");
 		cy.getByTestId("calllists-untouched-days").clear().type("40");

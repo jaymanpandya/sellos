@@ -352,6 +352,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Import %"],
 			["client_name", "like", "Gate Today %"],
 			["client_name", "like", "Gate Enquiry %"],
+			["client_name", "like", "Gate Match %"],
 		],
 		pluck="name",
 	)
@@ -771,6 +772,11 @@ def seed_regression_data():
 	  2,50,000), the payment plans Regression Construction Plan (20, 30 and 50 percent) and Regression Time Plan
 	  (10 percent now, 90 percent after 30 days), and one cost sheet of unit 1501 made by the gate agent with the
 	  Construction plan and the Garden charge, total Rs 1,01,55,600. All made through the pricing and cost sheet APIs.
+
+	* Matching (SOS-P7-08) adds no record: it scores what is already here. Regression Buyer One (80 lakh to 1.2
+	  crore, 2 or 3 BHK apartment, Andheri West or Powai) matches unit 1501 of Regression Pricing (Powai, 2 BHK,
+	  Rs 83,20,000 before charges) and its published listing Regression Primary 2 BHK, each 100 out of 100, and
+	  the Held unit G102 of Regression Grid is never offered.
 
 	* Sharing with partners (SOS-P7-03): the Company Admin shares Regression Pricing (all units, its price list
 	  in force and the brochure Regression Floor Plan) with Regression Firm Approved, shares Regression Heights
@@ -2856,6 +2862,92 @@ def make_gate_grid():
 	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
 	title = frappe.db.get_value("Lead", {"lead_title": ["like", f"%{leads['own']}%"]}, "lead_title")
 	return {"project": project, "lead": title or leads["own"]}
+
+
+def make_gate_matches():
+	"""For the matches spec (tests only, SOS-P7-08): a project in Powai with a price list of 12,500 a square
+	foot, the Available units M101 (2 BHK, 640 sq ft, so 80,00,000) and M102 (3 BHK) and the Held M103 (2 BHK),
+	a published listing of a Powai flat, and two buyer leads who want a 2 BHK flat in Powai up to 76,19,000: one
+	the test agent owns and one the Company Admin keeps. Made through the inventory, pricing and CRM APIs as
+	the Company Admin. Names start with "Gate Inventory " and "Gate Match " so remove_gate_inventory and
+	remove_seeded_leads take them away. Returns the project, the unit names and the buyers' names."""
+	from sellos.crm import api as crm
+	from sellos.inventory import api, listings, pricing, structure
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	buyers, lead_names = {}, {}
+	with _as_user(admin):
+		developer = api.save_developer({"developer_name": f"{GATE_INVENTORY_PREFIX}Match Developer {tag}"})
+		project = api.save_project(
+			{
+				"project_name": f"{GATE_INVENTORY_PREFIX}Match {tag}",
+				"developer": developer["name"],
+				"rera_number": f"P5180{int(tag, 16) % 10**7:07d}",
+				"city": "Mumbai",
+				"locality": "Powai",
+			}
+		)["name"]
+		tower = structure.add_tower(project, "Tower M", "1 to 1")["name"]
+		structure.generate_floor_units(tower, 1, "101 to 103", 640, "2 BHK", "M")
+		units = {u["unit_number"]: u["name"] for u in api.get_project(project)["units"]}
+		api.save_unit({"configuration": "3 BHK"}, units["M102"])
+		api.set_inventory_status("Unit", units["M103"], "Held")
+		pricing.save_price_list(
+			project, {"title": "Gate match prices", "effective_from": "2020-01-01", "base_rate": 12500}
+		)
+		prop = api.save_property(
+			{
+				"title": f"{GATE_INVENTORY_PREFIX}Powai Flat {tag}",
+				"property_type": "Apartment",
+				"city": "Mumbai",
+				"locality": "Powai",
+				"configuration": "2 BHK",
+				"carpet_area": 700,
+			}
+		)["name"]
+		listing = listings.save_listing(
+			{
+				"title": f"{GATE_INVENTORY_PREFIX}Powai Flat Listing {tag}",
+				"listing_type": "Direct",
+				"property": prop,
+				"asking_price": 7500000,
+				"description": "A 2 BHK flat in Powai.",
+			}
+		)["name"]
+		listings.publish_listing(listing)
+		for key, owner, seed in (("agent", agent, 41), ("admin", admin, 42)):
+			name = f"Gate Match {key.title()} {tag}"
+			client = crm.save_client(
+				values={"client_name": name, "client_type": "Buyer", "phone": phones.in_mobile(seed)}
+			)
+			saved = crm.save_lead(
+				values={
+					"client": client["name"],
+					"source": "Website",
+					"assigned_to": owner,
+					"budget_from": 7000000,
+					"budget_to": 7619000,
+					"configuration": ["2 BHK"],
+					"property_type": "Apartment",
+					"preferred_localities": ["Powai"],
+				}
+			)
+			buyers[key] = name
+			lead_names[key] = saved["lead"]["name"]
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {
+		"agent_lead": lead_names["agent"],
+		"admin_lead": lead_names["admin"],
+		"project": project,
+		"units": units,
+		"listing": listing,
+		"agent_buyer": buyers["agent"],
+		"admin_buyer": buyers["admin"],
+		"phone_forms": phones.forms(phones.in_mobile(41)),
+	}
 
 
 def gate_unit_state(project, unit_number):

@@ -13,6 +13,10 @@
   "address",
   "untouched_days",
   "unit_hold_hours",
+  "match_weight_budget",
+  "match_weight_configuration",
+  "match_weight_locality",
+  "match_weight_property_type",
   "default_team",
   "consent_enforcement",
   "partner_lead_limit",
@@ -160,6 +164,34 @@
    "read_only": 1,
    "hidden": 1,
    "default": "0"
+  },
+  {
+   "fieldname": "match_weight_budget",
+   "fieldtype": "Int",
+   "label": "Match weight: budget",
+   "default": "25",
+   "description": "How much this part counts in the score of a buyer against a unit or listing, 0 to 100 (SOS-P7-08)."
+  },
+  {
+   "fieldname": "match_weight_configuration",
+   "fieldtype": "Int",
+   "label": "Match weight: configuration",
+   "default": "25",
+   "description": "How much this part counts in the score of a buyer against a unit or listing, 0 to 100 (SOS-P7-08)."
+  },
+  {
+   "fieldname": "match_weight_locality",
+   "fieldtype": "Int",
+   "label": "Match weight: locality",
+   "default": "25",
+   "description": "How much this part counts in the score of a buyer against a unit or listing, 0 to 100 (SOS-P7-08)."
+  },
+  {
+   "fieldname": "match_weight_property_type",
+   "fieldtype": "Int",
+   "label": "Match weight: property type",
+   "default": "25",
+   "description": "How much this part counts in the score of a buyer against a unit or listing, 0 to 100 (SOS-P7-08)."
   }
  ],
  "index_web_pages_for_search": 0,

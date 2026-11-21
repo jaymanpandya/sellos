@@ -143,3 +143,23 @@ export const STATUS_TONE = {
 	Sold: "neutral",
 	Blocked: "danger",
 };
+
+// Matching buyers to units and listings, and the weights of the score (SOS-P7-08).
+const matching = (method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.inventory.matching.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const matchApi = {
+	forLead: (lead) => matching("matches_for_lead", { lead }),
+	forUnit: (unit) => matching("leads_for_unit", { unit }),
+	forListing: (listing) => matching("leads_for_listing", { listing }),
+	settings: () => matching("get_match_settings"),
+	saveSettings: (weights) => matching("save_match_settings", weights),
+};
+
+// One tone per score: 70 and over is a good match, 40 and over a fair one.
+export const scoreTone = (score) =>
+	score >= 70 ? "success" : score >= 40 ? "warning" : "neutral";

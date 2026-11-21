@@ -200,6 +200,12 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.media.link_listing_media": _INVENTORY_EDITORS,
 	"sellos.inventory.media.unlink_listing_media": _INVENTORY_EDITORS,
 	"sellos.inventory.media.reorder_listing_media": _INVENTORY_EDITORS,
+	# SOS-P7-08: match buyers to inventory, and the weights of the score.
+	"sellos.inventory.matching.matches_for_lead": _INVENTORY_READERS,
+	"sellos.inventory.matching.leads_for_unit": _INVENTORY_READERS,
+	"sellos.inventory.matching.leads_for_listing": _INVENTORY_READERS,
+	"sellos.inventory.matching.get_match_settings": _ADMIN_ONLY,
+	"sellos.inventory.matching.save_match_settings": _ADMIN_ONLY,
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.crm.enquiry.get_enquiry_settings": _ADMIN_ONLY,  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": _ADMIN_ONLY,  # SOS-P2-08

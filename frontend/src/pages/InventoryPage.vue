@@ -161,6 +161,8 @@
 			</ul>
 		</ListCard>
 
+		<MatchWeights />
+
 		<template v-if="canEdit">
 			<form
 				class="ui-card mt-ui-md"
@@ -340,6 +342,7 @@ import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { inventoryApi, STATUS_TONE } from "../inventory/inventoryApi";
+import MatchWeights from "../inventory/MatchWeights.vue";
 
 // Developers, projects and secondary properties (SOS-P4-01). Every change is made on the server and the
 // overview read back, so what is shown is what is saved.

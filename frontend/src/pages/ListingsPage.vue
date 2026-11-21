@@ -78,6 +78,7 @@
 							Photos and videos ({{ l.media_count }})
 						</AppButton>
 					</div>
+					<SuitedLeads v-if="l.published" kind="listing" :name="l.name" />
 					<div v-if="canEdit" class="mt-ui-sm flex flex-wrap gap-ui-sm">
 						<AppButton
 							v-if="!l.published"
@@ -219,6 +220,7 @@ import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import ListingMedia from "../inventory/ListingMedia.vue";
+import SuitedLeads from "../inventory/SuitedLeads.vue";
 import { listingApi, rupees } from "../inventory/inventoryApi";
 
 // Listings (SOS-P4-02). Every change is made on the server and the list read back, so what is shown is what

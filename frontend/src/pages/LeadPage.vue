@@ -227,6 +227,8 @@
 					</p>
 				</ListCard>
 
+				<LeadMatches v-if="canLog" :lead="route.params.name" />
+
 				<section
 					data-testid="sellos-lead-follow-up"
 					:data-state="followUp.follow_up_state || 'none'"
@@ -864,6 +866,7 @@ import AppButton from "../components/AppButton.vue";
 import ClickToCall from "../components/ClickToCall.vue";
 import FormField from "../components/FormField.vue";
 import MoneyField from "../components/MoneyField.vue";
+import LeadMatches from "../inventory/LeadMatches.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import StatusBadge from "../components/StatusBadge.vue";

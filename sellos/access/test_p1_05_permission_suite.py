@@ -332,6 +332,17 @@ SAMPLE_CALLS = {
 		"listing": "{order_listing}",
 		"order": ["{media_asset_two}", "{media_asset}"],
 	},
+	# SOS-P7-08
+	"sellos.inventory.matching.matches_for_lead": {"lead": "{lead}"},
+	"sellos.inventory.matching.leads_for_unit": {"unit": "{spare_unit}"},
+	"sellos.inventory.matching.leads_for_listing": {"listing": "{spare_listing}"},
+	"sellos.inventory.matching.get_match_settings": {},
+	"sellos.inventory.matching.save_match_settings": {
+		"budget": 25,
+		"configuration": 25,
+		"locality": 25,
+		"property_type": 25,
+	},
 	"sellos.reports.team.team_report": {},
 	"sellos.crm.enquiry.get_enquiry_settings": {},  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": {},

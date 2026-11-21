@@ -109,6 +109,8 @@
 				Blocked: {{ picked.blocked_reason }}
 			</p>
 
+			<SuitedLeads v-if="picked.status === 'Available'" kind="unit" :name="picked.name" />
+
 			<div v-if="picked.can_hold && grid.can_hold" class="mt-ui-md">
 				<FormField
 					v-model="holdLead"
@@ -189,6 +191,7 @@ import FormField from "../components/FormField.vue";
 import ListCard from "../components/ListCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
+import SuitedLeads from "./SuitedLeads.vue";
 import { gridApi, STATUS_TONE } from "./inventoryApi";
 
 // The availability grid of one project (SOS-P7-06): each tower's floors and units by status, a legend,
