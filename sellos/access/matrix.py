@@ -166,6 +166,18 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.holds.unblock_unit": _ADMIN_ONLY,
 	"sellos.inventory.holds.get_hold_settings": _ADMIN_ONLY,
 	"sellos.inventory.holds.save_hold_settings": _ADMIN_ONLY,
+	# SOS-P7-07: price lists, payment plans and cost sheets. A Company Admin keeps the price lists, the payment
+	# plans and the percentages; an Agent reads them; an Agent or a Company Admin makes and reads cost sheets.
+	"sellos.inventory.pricing.project_pricing": _INVENTORY_READERS,
+	"sellos.inventory.pricing.save_price_list": _ADMIN_ONLY,
+	"sellos.inventory.pricing.save_payment_plan": _ADMIN_ONLY,
+	"sellos.inventory.pricing.archive_payment_plan": _ADMIN_ONLY,
+	"sellos.inventory.pricing.save_cost_settings": _ADMIN_ONLY,
+	"sellos.inventory.cost_sheet.cost_sheet_options": _INVENTORY_EDITORS,
+	"sellos.inventory.cost_sheet.make_cost_sheet": _INVENTORY_EDITORS,
+	"sellos.inventory.cost_sheet.unit_cost_sheets": _INVENTORY_EDITORS,
+	"sellos.inventory.cost_sheet.get_cost_sheet": _INVENTORY_EDITORS,
+	"sellos.inventory.cost_sheet.cost_sheet_pdf": _INVENTORY_EDITORS,
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.crm.enquiry.get_enquiry_settings": _ADMIN_ONLY,  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": _ADMIN_ONLY,  # SOS-P2-08

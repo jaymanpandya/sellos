@@ -1,0 +1,57 @@
+{
+ "actions": [],
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "owner": "Administrator",
+ "states": [],
+ "name": "Payment Plan Instalment",
+ "field_order": [
+  "label",
+  "due_on",
+  "days_after_booking",
+  "percent"
+ ],
+ "fields": [
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Instalment",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "due_on",
+   "fieldtype": "Data",
+   "label": "Due on",
+   "in_list_view": 1,
+   "description": "The milestone for a construction linked plan, for example On slab of the 5th floor."
+  },
+  {
+   "fieldname": "days_after_booking",
+   "fieldtype": "Int",
+   "label": "Days after booking",
+   "non_negative": 1,
+   "in_list_view": 1,
+   "description": "For a time linked plan."
+  },
+  {
+   "fieldname": "percent",
+   "fieldtype": "Percent",
+   "label": "Percent of the total",
+   "reqd": 1,
+   "in_list_view": 1,
+   "precision": "2"
+  }
+ ],
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "istable": 1,
+ "editable_grid": 1
+}

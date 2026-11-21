@@ -25,6 +25,7 @@ const PartnerRegisterPage = () => import("./pages/PartnerRegisterPage.vue");
 const PartnerFirmPage = () => import("./pages/PartnerFirmPage.vue");
 const InventoryPage = () => import("./pages/InventoryPage.vue");
 const ProjectPage = () => import("./pages/ProjectPage.vue");
+const CostSheetPage = () => import("./pages/CostSheetPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
@@ -125,6 +126,12 @@ export function createAppRouter() {
 				name: "project",
 				component: ProjectPage,
 				meta: { area: "inventory", title: "Project", crumb: "Inventory" },
+			},
+			{
+				path: "/inventory/units/:unit/cost-sheet",
+				name: "cost-sheet",
+				component: CostSheetPage,
+				meta: { area: "inventory", title: "Cost sheet", crumb: "Inventory" },
 			},
 			{
 				path: "/company/partners",

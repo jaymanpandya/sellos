@@ -1,0 +1,108 @@
+{
+ "actions": [],
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "owner": "Administrator",
+ "states": [],
+ "name": "Price List",
+ "field_order": [
+  "project",
+  "title",
+  "effective_from",
+  "base_rate",
+  "floor_rise_rate",
+  "floor_rise_from_floor",
+  "section_charges",
+  "charges"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1,
+   "set_only_once": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "In force from",
+   "reqd": 1,
+   "set_only_once": 1,
+   "in_list_view": 1,
+   "description": "The list in force is the latest one whose date has come. Earlier lists are kept."
+  },
+  {
+   "fieldname": "base_rate",
+   "fieldtype": "Float",
+   "label": "Base rate per sq ft of carpet area (Rs)",
+   "reqd": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "floor_rise_rate",
+   "fieldtype": "Float",
+   "label": "Floor rise per sq ft per floor (Rs)",
+   "non_negative": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "floor_rise_from_floor",
+   "fieldtype": "Int",
+   "label": "Floor rise applies above floor",
+   "non_negative": 1,
+   "default": "0",
+   "description": "Each floor above this one adds the floor rise rate."
+  },
+  {
+   "fieldname": "section_charges",
+   "fieldtype": "Section Break",
+   "label": "Charges"
+  },
+  {
+   "fieldname": "charges",
+   "fieldtype": "Table",
+   "label": "Charges",
+   "options": "Price List Charge"
+  }
+ ],
+ "permissions": [
+  {
+   "create": 1,
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Company Admin"
+  },
+  {
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Agent"
+  },
+  {
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Sales Manager"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "autoname": "format:PL-{#####}",
+ "naming_rule": "Expression",
+ "title_field": "title",
+ "track_changes": 1
+}

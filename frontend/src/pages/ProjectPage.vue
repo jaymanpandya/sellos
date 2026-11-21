@@ -61,6 +61,8 @@
 			@options="structure.amenity_options = $event"
 		/>
 
+		<ProjectPricing v-if="project" class="mb-ui-md" :project="route.params.name" />
+
 		<ListCard title="Units">
 			<EmptyState
 				v-if="loaded && !loadError && !units.length"
@@ -92,6 +94,15 @@
 							carpet, floor {{ u.floor ?? "-" }}, {{ u.parking }} parking
 						</span>
 					</div>
+					<p v-if="canEdit" class="mt-ui-sm">
+						<router-link
+							:to="{ name: 'cost-sheet', params: { unit: u.name } }"
+							class="ui-link text-sm font-medium"
+							data-testid="sellos-unit-cost-sheet"
+						>
+							Cost sheet
+						</router-link>
+					</p>
 					<div v-if="canEdit" class="mt-ui-sm flex flex-wrap items-end gap-ui-sm">
 						<FormField
 							v-model="reasons[u.name]"
@@ -189,6 +200,7 @@ import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { inventoryApi, STATUS_TONE } from "../inventory/inventoryApi";
+import ProjectPricing from "../inventory/ProjectPricing.vue";
 import ProjectStructure from "../inventory/ProjectStructure.vue";
 import UnitGrid from "../inventory/UnitGrid.vue";
 

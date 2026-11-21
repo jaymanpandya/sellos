@@ -20,7 +20,11 @@
   "consent_wording",
   "enquiry_form_key",
   "setup_steps_done",
-  "setup_complete"
+  "setup_complete",
+  "stamp_duty_percent",
+  "registration_percent",
+  "gst_percent",
+  "cost_rates_saved"
  ],
  "fields": [
   {
@@ -127,6 +131,35 @@
    "label": "Unit hold hours",
    "default": "48",
    "description": "How long a hold on a unit lasts before it is released by itself (SOS-P7-06)."
+  },
+  {
+   "fieldname": "stamp_duty_percent",
+   "fieldtype": "Percent",
+   "label": "Stamp duty (%)",
+   "precision": "2",
+   "description": "Charged on the agreement value of a cost sheet (SOS-P7-07). A Company Admin sets it in the web app."
+  },
+  {
+   "fieldname": "registration_percent",
+   "fieldtype": "Percent",
+   "label": "Registration (%)",
+   "precision": "2",
+   "description": "Charged on the agreement value of a cost sheet (SOS-P7-07)."
+  },
+  {
+   "fieldname": "gst_percent",
+   "fieldtype": "Percent",
+   "label": "GST (%)",
+   "precision": "2",
+   "description": "Charged on the agreement value of a cost sheet (SOS-P7-07)."
+  },
+  {
+   "fieldname": "cost_rates_saved",
+   "fieldtype": "Check",
+   "label": "Cost sheet percentages saved",
+   "read_only": 1,
+   "hidden": 1,
+   "default": "0"
   }
  ],
  "index_web_pages_for_search": 0,

@@ -26,6 +26,7 @@ from sellos.access.roles import ROLES, ensure_roles
 from sellos.access.test_permission_matrix import import_all_sellos_modules, matrix_problems
 from sellos.crm import notifications
 from sellos.crm.pipeline import DEFAULT_STAGES
+from sellos.inventory import cost_sheet
 from sellos.telephony.settings import save_telephony_settings
 from sellos.testing.users import TEST_USERS, create_test_users
 from sellos.tests import phones
@@ -265,6 +266,31 @@ SAMPLE_CALLS = {
 	"sellos.inventory.holds.unblock_unit": {"unit": "{spare_unit_blocked}", "reason": "p706 suite"},
 	"sellos.inventory.holds.get_hold_settings": {},
 	"sellos.inventory.holds.save_hold_settings": {"unit_hold_hours": 48},
+	# SOS-P7-07: the spare project has a price list in force, a plan and one cost sheet of the spare unit.
+	"sellos.inventory.pricing.project_pricing": {"project": "{spare_project}"},
+	"sellos.inventory.pricing.save_price_list": {
+		"project": "{spare_project}",
+		"values": {"title": "P707 Suite later list", "effective_from": "2031-01-01", "base_rate": 9000},
+	},
+	"sellos.inventory.pricing.save_payment_plan": {
+		"project": "{spare_project}",
+		"values": {
+			"plan_name": "P707 Suite new plan",
+			"plan_type": "Down payment",
+			"instalments": [{"label": "On booking", "percent": 100}],
+		},
+	},
+	"sellos.inventory.pricing.archive_payment_plan": {"name": "{spare_plan_two}"},
+	"sellos.inventory.pricing.save_cost_settings": {
+		"stamp_duty_percent": 6,
+		"registration_percent": 1,
+		"gst_percent": 5,
+	},
+	"sellos.inventory.cost_sheet.cost_sheet_options": {"unit": "{spare_unit}"},
+	"sellos.inventory.cost_sheet.make_cost_sheet": {"unit": "{spare_unit}", "payment_plan": "{spare_plan}"},
+	"sellos.inventory.cost_sheet.unit_cost_sheets": {"unit": "{spare_unit}"},
+	"sellos.inventory.cost_sheet.get_cost_sheet": {"name": "{spare_sheet}"},
+	"sellos.inventory.cost_sheet.cost_sheet_pdf": {"name": "{spare_sheet}"},
 	"sellos.reports.team.team_report": {},
 	"sellos.crm.enquiry.get_enquiry_settings": {},  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": {},
@@ -480,6 +506,30 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			).insert()
 			for name in ("P705 Suite Tower", "P705 Suite Tower Two")
 		)
+		# SOS-P7-07: a price list in force, two plans and a cost sheet for the spare unit.
+		frappe.db.set_single_value("SellOS Settings", "cost_rates_saved", 1)
+		frappe.get_doc(
+			{
+				"doctype": "Price List",
+				"project": spare_project.name,
+				"title": "P707 Suite list",
+				"effective_from": "2020-01-01",
+				"base_rate": 10000,
+			}
+		).insert()
+		spare_plan, spare_plan_two = (
+			frappe.get_doc(
+				{
+					"doctype": "Payment Plan",
+					"project": spare_project.name,
+					"plan_name": name,
+					"plan_type": "Down payment",
+					"instalments": [{"label": "On booking", "percent": 100}],
+				}
+			).insert()
+			for name in ("P707 Suite plan", "P707 Suite plan two")
+		)
+		spare_sheet = cost_sheet.make_cost_sheet(spare_unit.name, spare_plan.name)
 		spare_property = frappe.get_doc(
 			{
 				"doctype": "Property",
@@ -577,6 +627,9 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_unit_held": spare_unit_held.name,
 			"spare_unit_block": spare_unit_block.name,
 			"spare_unit_blocked": spare_unit_blocked.name,
+			"spare_plan": spare_plan.name,
+			"spare_plan_two": spare_plan_two.name,
+			"spare_sheet": spare_sheet["name"],
 			"spare_tower": spare_tower.name,
 			"spare_tower_two": spare_tower_two.name,
 			"spare_property": spare_property.name,

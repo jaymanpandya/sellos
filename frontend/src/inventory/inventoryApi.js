@@ -64,6 +64,44 @@ export const gridApi = {
 	saveHours: (unit_hold_hours) => holds("save_hold_settings", { unit_hold_hours }),
 };
 
+// Price lists, payment plans and the company's percentages (SOS-P7-07).
+const pricing = (method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.inventory.pricing.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const pricingApi = {
+	project: (project) => pricing("project_pricing", { project }),
+	savePriceList: (project, values) => pricing("save_price_list", { project, values }),
+	savePlan: (project, values, name) => pricing("save_payment_plan", { project, values, name }),
+	archivePlan: (name, archived = 1) => pricing("archive_payment_plan", { name, archived }),
+	saveRates: (stamp_duty_percent, registration_percent, gst_percent) =>
+		pricing("save_cost_settings", { stamp_duty_percent, registration_percent, gst_percent }),
+};
+
+// Cost sheets of a unit (SOS-P7-07).
+const sheets = (method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.inventory.cost_sheet.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const costSheetApi = {
+	options: (unit) => sheets("cost_sheet_options", { unit }),
+	make: (unit, payment_plan, optional_charges) =>
+		sheets("make_cost_sheet", { unit, payment_plan, optional_charges }),
+	get: (name) => sheets("get_cost_sheet", { name }),
+	pdfUrl: (name) =>
+		`/api/method/sellos.inventory.cost_sheet.cost_sheet_pdf?name=${encodeURIComponent(name)}`,
+};
+
+// Rupees with Indian grouping: 10155600 is Rs 1,01,55,600.
+export const rupees = (n) =>
+	`Rs ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Number(n || 0))}`;
+
 // One tone per status, for the badge.
 export const STATUS_TONE = {
 	Available: "success",

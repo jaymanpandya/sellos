@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "owner": "Administrator",
+ "states": [],
+ "name": "Cost Sheet Charge",
+ "field_order": [
+  "charge_type",
+  "charge_name",
+  "basis",
+  "value",
+  "amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "charge_type",
+   "fieldtype": "Select",
+   "label": "Kind",
+   "options": "Preferred location\nParking\nOther",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "charge_name",
+   "fieldtype": "Data",
+   "label": "Name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "basis",
+   "fieldtype": "Select",
+   "label": "Basis",
+   "options": "Amount\nRate per sq ft",
+   "read_only": 1
+  },
+  {
+   "fieldname": "value",
+   "fieldtype": "Float",
+   "label": "Amount or rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Long Int",
+   "label": "Amount (Rs)",
+   "read_only": 1,
+   "in_list_view": 1
+  }
+ ],
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "istable": 1,
+ "editable_grid": 1
+}

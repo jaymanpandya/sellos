@@ -764,6 +764,14 @@ def seed_regression_data():
 	  held by the gate agent for Regression Buyer One through the hold API, and G104 (2 BHK) blocked by the
 	  Company Admin with the reason "Regression: legal hold".
 
+	* Pricing (SOS-P7-07): Regression Pricing (RERA number P51800099004, Powai, Mumbai) with unit 1501 (2 BHK,
+	  650 sq ft carpet area, floor 12, 1 parking slot), the company percentages stamp duty 6, registration 1 and
+	  GST 5, the price list Regression Price List in force from 1 January 2026 (Rs 12,000 per sq ft, floor rise
+	  Rs 100 per sq ft above floor 4, Garden at Rs 150 per sq ft, Parking Rs 4,00,000 a slot, Development Rs
+	  2,50,000), the payment plans Regression Construction Plan (20, 30 and 50 percent) and Regression Time Plan
+	  (10 percent now, 90 percent after 30 days), and one cost sheet of unit 1501 made by the gate agent with the
+	  Construction plan and the Garden charge, total Rs 1,01,55,600. All made through the pricing and cost sheet APIs.
+
 	* Inventory (SOS-P4-01): Regression Developer and its project Regression Heights (RERA number
 	  P51800099001, Mumbai), made by the Company Admin through the inventory API, with four units: 1201 (2 BHK,
 	  Available), 1202 (2 BHK, Available), 1301 (3 BHK, Held by the gate agent, with its reason in the status
@@ -2418,6 +2426,7 @@ def _seed_inventory(admin, agent):
 
 	_seed_towers(admin)
 	_seed_unit_grid(admin, agent)
+	_seed_pricing(admin, agent)
 	if frappe.db.exists("Project", {"project_name": "Regression Heights"}):
 		return
 	with _as_user(admin):
@@ -2527,6 +2536,192 @@ def _seed_unit_grid(admin, agent):
 	if lead:
 		with _as_user(agent):
 			holds.hold_unit(units["G102"], lead)
+
+
+def _seed_pricing(admin, agent):
+	"""Regression Pricing, a project with one unit, the company percentages, a price list in force, two payment
+	plans and one cost sheet, through the pricing and cost sheet APIs (SOS-P7-07). Safe to run again."""
+	from sellos.inventory import api, cost_sheet, pricing
+
+	if frappe.db.exists("Project", {"project_name": "Regression Pricing"}):
+		return
+	with _as_user(admin):
+		if not frappe.db.exists("Developer", "Regression Developer"):
+			api.save_developer(
+				{"developer_name": "Regression Developer", "contact_person": "Regression Sales"}
+			)
+		project = api.save_project(
+			{
+				"project_name": "Regression Pricing",
+				"developer": "Regression Developer",
+				"rera_number": "P51800099004",
+				"city": "Mumbai",
+				"locality": "Powai",
+			}
+		)["name"]
+		unit = api.save_unit(
+			{
+				"project": project,
+				"unit_number": "1501",
+				"configuration": "2 BHK",
+				"floor": 12,
+				"carpet_area": 650,
+				"parking": 1,
+			}
+		)["name"]
+		pricing.save_cost_settings(6, 1, 5)
+		pricing.save_price_list(project, _gate_price_list("Regression Price List"))
+		plan = pricing.save_payment_plan(
+			project,
+			{
+				"plan_name": "Regression Construction Plan",
+				"plan_type": "Construction linked",
+				"instalments": [
+					{"label": "On booking", "due_on": "On booking", "percent": 20},
+					{"label": "On slab", "due_on": "On the 5th floor slab", "percent": 30},
+					{"label": "On possession", "due_on": "On possession", "percent": 50},
+				],
+			},
+		)["name"]
+		pricing.save_payment_plan(
+			project,
+			{
+				"plan_name": "Regression Time Plan",
+				"plan_type": "Time linked",
+				"instalments": [
+					{"label": "Now", "days_after_booking": 0, "percent": 10},
+					{"label": "After 30 days", "days_after_booking": 30, "percent": 90},
+				],
+			},
+		)
+	with _as_user(agent):
+		cost_sheet.make_cost_sheet(unit, plan, ["Garden"])
+
+
+def _gate_price_list(title, on="2026-01-01"):
+	"""The price list the pricing seed and spec share: Rs 12,000 per sq ft, floor rise Rs 100 above floor 4."""
+	return {
+		"title": title,
+		"effective_from": on,
+		"base_rate": 12000,
+		"floor_rise_rate": 100,
+		"floor_rise_from_floor": 4,
+		"charges": [
+			{
+				"charge_type": "Preferred location",
+				"charge_name": "Garden",
+				"basis": "Rate per sq ft",
+				"value": 150,
+			},
+			{"charge_type": "Parking", "charge_name": "Parking", "basis": "Amount", "value": 400000},
+			{
+				"charge_type": "Other",
+				"charge_name": "Development",
+				"basis": "Amount",
+				"value": 250000,
+				"always_apply": 1,
+			},
+		],
+	}
+
+
+def make_gate_pricing(prepared=1):
+	"""A project with one unit (1201, 2 BHK, 650 sq ft, floor 12, 1 parking slot) for the cost sheet spec (tests
+	only, SOS-P7-07). With `prepared`, the company percentages (6, 1 and 5), a price list in force, and the plans
+	Gate Inventory Construction Plan (20, 30, 50) are made through the pricing API; without it, the project has
+	none and the percentages are unset, so the spec makes them in the web app. remove_gate_pricing takes it all away."""
+	from sellos.inventory import api, pricing
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		developer = api.save_developer({"developer_name": f"{GATE_INVENTORY_PREFIX}Pricing Developer {tag}"})
+		project = api.save_project(
+			{
+				"project_name": f"{GATE_INVENTORY_PREFIX}Pricing {tag}",
+				"developer": developer["name"],
+				"rera_number": f"P5180{int(tag, 16) % 10**7:07d}",
+				"city": "Mumbai",
+			}
+		)
+		unit = api.save_unit(
+			{
+				"project": project["name"],
+				"unit_number": "1201",
+				"configuration": "2 BHK",
+				"floor": 12,
+				"carpet_area": 650,
+				"parking": 1,
+			}
+		)["name"]
+		if int(prepared):
+			pricing.save_cost_settings(6, 1, 5)
+			pricing.save_price_list(project["name"], _gate_price_list(f"{GATE_INVENTORY_PREFIX}List {tag}"))
+			pricing.save_payment_plan(
+				project["name"],
+				{
+					"plan_name": f"{GATE_INVENTORY_PREFIX}Construction Plan {tag}",
+					"plan_type": "Construction linked",
+					"instalments": [
+						{"label": "On booking", "due_on": "On booking", "percent": 20},
+						{"label": "On slab", "due_on": "On the 5th floor slab", "percent": 30},
+						{"label": "On possession", "due_on": "On possession", "percent": 50},
+					],
+				},
+			)
+		else:
+			frappe.db.set_single_value("SellOS Settings", "cost_rates_saved", 0)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"project": project["name"], "unit": unit, "tag": tag}
+
+
+def gate_pricing_state(project):
+	"""A project's price lists, plans, the company percentages and its cost sheets, read back for the spec (tests
+	only, SOS-P7-07)."""
+	return {
+		"price_lists": frappe.get_all("Price List", filters={"project": project}, pluck="title"),
+		"plans": {
+			row.plan_name: [i.percent for i in frappe.get_doc("Payment Plan", row.name).instalments]
+			for row in frappe.get_all(
+				"Payment Plan", filters={"project": project}, fields=["name", "plan_name"]
+			)
+		},
+		"rates": [
+			frappe.db.get_single_value("SellOS Settings", f)
+			for f in ("stamp_duty_percent", "registration_percent", "gst_percent")
+		],
+		"sheets": [
+			{"name": r.name, "total": r.total, "owner": r.owner, "stamp_duty_percent": r.stamp_duty_percent}
+			for r in frappe.get_all(
+				"Cost Sheet",
+				filters={"project": project},
+				fields=["name", "total", "owner", "stamp_duty_percent"],
+				order_by="creation asc",
+			)
+		],
+	}
+
+
+def remove_gate_pricing():
+	"""Remove the price lists, plans and cost sheets of the projects the pricing spec made, put the company
+	percentages back to unset, and remove the projects (tests only, SOS-P7-07). The app never deletes them: this is
+	the spec cleaning up after itself."""
+	like = ["like", f"{GATE_INVENTORY_PREFIX}%"]
+	for project in frappe.get_all("Project", filters={"project_name": like}, pluck="name"):
+		for doctype, children in (
+			("Cost Sheet", ("Cost Sheet Charge", "Cost Sheet Instalment")),
+			("Price List", ("Price List Charge",)),
+			("Payment Plan", ("Payment Plan Instalment",)),
+		):
+			for name in frappe.get_all(doctype, filters={"project": project}, pluck="name"):
+				for child in children:
+					frappe.db.delete(child, {"parent": name})
+				frappe.db.delete("Version", {"ref_doctype": doctype, "docname": name})
+				frappe.db.delete(doctype, {"name": name})
+	frappe.db.set_single_value("SellOS Settings", "cost_rates_saved", 0)
+	for field in ("stamp_duty_percent", "registration_percent", "gst_percent"):
+		frappe.db.set_single_value("SellOS Settings", field, 0)
+	return remove_gate_inventory()
 
 
 def make_gate_grid():
