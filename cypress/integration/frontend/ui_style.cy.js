@@ -53,12 +53,17 @@ context("SOS-UI-2B: Pandya palette on the app shell", () => {
 context("SOS-UI-3A: Home, Call queue and Site visits follow the style", () => {
 	const pages = [
 		{ name: "Home", path: "/sellos", title: "home-welcome", ready: "today-counts" },
-		{ name: "Call queue", path: "/sellos/crm/queue", title: "page-title", ready: "queue" },
+		{
+			name: "Call queue",
+			path: "/sellos/crm/queue",
+			title: "page-title",
+			ready: "queue-stats",
+		},
 		{
 			name: "Site visits",
 			path: "/sellos/crm/visits",
 			title: "page-title",
-			ready: "visits-page",
+			ready: "visits-day",
 		},
 	];
 
@@ -103,6 +108,7 @@ context("SOS-UI-3A: Home, Call queue and Site visits follow the style", () => {
 		cy.bench("sellos.tests.ui_fixtures.seed_caller_queue");
 		cy.signInFresh("agent");
 		cy.visit("/sellos/crm/queue");
+		cy.getByTestId("queue-stats", { timeout: 15000 }).should("be.visible");
 		cy.getByTestId("queue-call")
 			.first()
 			.should("have.css", "background-color", "rgb(0, 60, 60)")

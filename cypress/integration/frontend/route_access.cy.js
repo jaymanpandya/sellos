@@ -41,6 +41,9 @@ context("SOS-P0-10: route access", () => {
 			cy.visit("/sellos");
 			cy.getByTestId("home").should("be.visible");
 			cy.getByTestId("no-access").should("not.exist");
+			// An agent lands on Today: let its lists load, so the next test cuts no request off.
+			if (role === "agent")
+				cy.getByTestId("today-counts", { timeout: 15000 }).should("be.visible");
 		});
 	});
 
