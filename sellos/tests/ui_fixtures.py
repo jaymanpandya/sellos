@@ -777,6 +777,10 @@ def seed_regression_data():
 	  Resale Flat, Rs 82,00,000) and the Partner draft Regression Partner Draft with no price or description,
 	  all made by the gate agent through the listing API.
 
+	* Listing media (SOS-P4-03): on Regression Primary 2 BHK, the photos Regression Front View then Regression
+	  Living Room, and in the library the photo Regression Floor Plan, on no listing (it was linked to
+	  Regression Direct Resale and taken off). Uploaded by the gate agent through the media API.
+
 	* Inventory (SOS-P4-01): Regression Developer and its project Regression Heights (RERA number
 	  P51800099001, Mumbai), made by the Company Admin through the inventory API, with four units: 1201 (2 BHK,
 	  Available), 1202 (2 BHK, Available), 1301 (3 BHK, Held by the gate agent, with its reason in the status
@@ -2433,6 +2437,7 @@ def _seed_inventory(admin, agent):
 	_seed_unit_grid(admin, agent)
 	_seed_pricing(admin, agent)
 	_seed_listings(admin, agent)
+	_seed_listing_media(agent)
 	if frappe.db.exists("Project", {"project_name": "Regression Heights"}):
 		return
 	with _as_user(admin):
@@ -2649,6 +2654,49 @@ def _seed_listings(admin, agent):
 		listings.save_listing({"title": "Regression Partner Draft", "listing_type": "Partner"})
 
 
+def _picture(kind, colour, size=(32, 24)):
+	"""A small real picture, for the media seed and the media spec."""
+	import io
+
+	from PIL import Image
+
+	out = io.BytesIO()
+	Image.new("RGB", size, colour).save(out, kind)
+	return out.getvalue()
+
+
+def _seed_listing_media(agent):
+	"""Regression media (SOS-P4-03): two photos on Regression Primary 2 BHK, in the order Front view then Living
+	room, uploaded by the gate agent through the media API, and one library photo, Regression Floor Plan, on no
+	listing. Safe to run again."""
+	import base64
+
+	from sellos.inventory import media
+
+	listing = frappe.db.get_value("Listing", {"title": "Regression Primary 2 BHK"}, "name")
+	if not listing or frappe.db.exists("Listing Media", {"parent": listing}):
+		return
+	with _as_user(agent):
+		for title, colour in (
+			("Regression Front View", (200, 40, 40)),
+			("Regression Living Room", (40, 40, 200)),
+		):
+			media.upload_listing_media(
+				listing,
+				title,
+				f"{title.lower().replace(' ', '-')}.png",
+				base64.b64encode(_picture("PNG", colour)).decode(),
+			)
+		other = frappe.db.get_value("Listing", {"title": "Regression Direct Resale"}, "name")
+		plan = media.upload_listing_media(
+			other,
+			"Regression Floor Plan",
+			"regression-floor-plan.png",
+			base64.b64encode(_picture("PNG", (40, 160, 40))).decode(),
+		)
+		media.unlink_listing_media(other, plan["media"][0]["name"])
+
+
 def _gate_price_list(title, on="2026-01-01"):
 	"""The price list the pricing seed and spec share: Rs 12,000 per sq ft, floor rise Rs 100 above floor 4."""
 	return {
@@ -2862,9 +2910,18 @@ def remove_gate_inventory():
 		},
 		pluck="name",
 	):
+		frappe.db.delete("Listing Media", {"parent": listing})
 		frappe.db.delete("Listing Change", {"parent": listing})
 		frappe.db.delete("Version", {"ref_doctype": "Listing", "docname": listing})
 		frappe.db.delete("Listing", {"name": listing})
+	for asset in frappe.get_all("Media Asset", filters={"title": like}, pluck="name"):  # SOS-P4-03
+		for file in frappe.get_all(
+			"File", filters={"attached_to_doctype": "Media Asset", "attached_to_name": asset}, pluck="name"
+		):
+			frappe.delete_doc("File", file, force=True, ignore_permissions=True)
+		frappe.db.delete("Listing Media", {"media_asset": asset})
+		frappe.db.delete("Version", {"ref_doctype": "Media Asset", "docname": asset})
+		frappe.db.delete("Media Asset", {"name": asset})
 	for tower in frappe.get_all("Project Tower", filters={"project": ["in", projects or [""]]}, pluck="name"):
 		frappe.db.delete("Version", {"ref_doctype": "Project Tower", "docname": tower})
 	for unit in frappe.get_all("Unit", filters={"project": ["in", projects or [""]]}, pluck="name"):
@@ -2936,6 +2993,54 @@ def gate_listing_state(title):
 		"asking_price": doc.asking_price,
 		"target": doc.unit or doc.property,
 		"changes": [[c.field_label, c.old_value, c.new_value, c.changed_by] for c in doc.changes],
+	}
+
+
+def make_gate_media_listing():
+	"""A draft Direct listing and a library photo that is on no listing, for the media spec (tests only,
+	SOS-P4-03). Names start with "Gate Inventory " so remove_gate_inventory takes them away."""
+	import base64
+
+	from sellos.inventory import listings, media
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		listing = listings.save_listing(
+			{"title": f"{GATE_INVENTORY_PREFIX}Media Listing {tag}", "listing_type": "Direct"}
+		)["name"]
+		spare = listings.save_listing(
+			{"title": f"{GATE_INVENTORY_PREFIX}Media Spare {tag}", "listing_type": "Direct"}
+		)["name"]
+		media.upload_listing_media(
+			spare,
+			f"{GATE_INVENTORY_PREFIX}Library Photo {tag}",
+			"library-photo.png",
+			base64.b64encode(_picture("PNG", (90, 90, 90))).decode(),
+		)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"listing": f"{GATE_INVENTORY_PREFIX}Media Listing {tag}", "tag": tag, "name": listing}
+
+
+def gate_media_state(title):
+	"""Read back a listing's media in order, with each file's stored size, for the spec (tests only,
+	SOS-P4-03)."""
+	doc = frappe.get_doc("Listing", {"title": title})
+	rows = []
+	for row in doc.media:
+		asset = frappe.get_doc("Media Asset", row.media_asset)
+		rows.append(
+			[
+				asset.title,
+				asset.media_type,
+				asset.size_bytes,
+				bool(frappe.db.exists("File", {"file_url": asset.file})),
+			]
+		)
+	return {
+		"media": rows,
+		"assets": frappe.db.count("Media Asset", {"title": ["like", f"{GATE_INVENTORY_PREFIX}%"]}),
+		"changes": [[c.field_label, c.new_value] for c in doc.changes if c.field_label == "Media"],
 	}
 
 

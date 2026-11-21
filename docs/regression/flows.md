@@ -304,3 +304,12 @@ FLOW SOS-P4-02-3 | agent | /sellos/inventory/listings | Click Edit on Regression
 FLOW SOS-P4-02-4 | agent | /sellos/inventory/listings | On Regression Direct Resale click Withdraw. | It shows as Draft and the history gains a line saying Published went from Yes to No.
 FLOW SOS-P4-02-5 | agent | /sellos/inventory/listings | Under Make a listing choose Type Primary and open What is offered. | Only units are listed, no properties.
 FLOW SOS-P4-02-6 | sales_manager | /sellos/inventory/listings | Sign in as the sales manager and open Listings. | The listings and their history show, with no form and no Publish, Edit or Archive buttons.
+
+## SOS-P4-03: photos and videos of a listing
+
+FLOW SOS-P4-03-1 | agent | /sellos/inventory/listings | Sign in as the agent. On Regression Primary 2 BHK click Photos and videos (2). | Two photos show with a small picture each: 1. Regression Front View then 2. Regression Living Room, each marked Photo with its size.
+FLOW SOS-P4-03-2 | agent | /sellos/inventory/listings | Under Regression Primary 2 BHK's photos click Move down on Regression Front View. | A message says the order was saved. Regression Living Room is now 1 and Regression Front View is 2, and it stays so after the page is reloaded.
+FLOW SOS-P4-03-3 | agent | /sellos/inventory/listings | On Regression Direct Resale open Photos and videos, choose Regression Floor Plan under Or link a file from the library and click Link this file. | The photo is added as 1. Regression Floor Plan. Click Remove and it goes, and it is offered in the library list again.
+FLOW SOS-P4-03-4 | agent | /sellos/inventory/listings | On Regression Direct Resale open Photos and videos, type a title and choose a PDF file under Photo or video. | A message says a file must be a JPG, PNG, WEBP, MP4, MOV or WEBM file. Nothing is added.
+FLOW SOS-P4-03-5 | agent | /sellos/inventory/listings | On Regression Direct Resale choose a text file renamed to end in .png under Photo or video. | A message says the file is not a real PNG file. Nothing is added.
+FLOW SOS-P4-03-6 | sales_manager | /sellos/inventory/listings | Sign in as the sales manager, open Photos and videos on Regression Primary 2 BHK. | The two photos show in order, with no upload, library or Move up, Move down or Remove controls.

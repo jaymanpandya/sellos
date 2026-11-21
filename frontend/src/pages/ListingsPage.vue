@@ -68,6 +68,16 @@
 					>
 						Needs {{ l.missing.join(", ") }} before it can be published.
 					</p>
+					<div class="mt-ui-sm flex flex-wrap gap-ui-sm">
+						<AppButton
+							type="button"
+							:active="shownMedia.has(l.name)"
+							data-testid="sellos-listing-media-toggle"
+							@click="toggleMedia(l.name)"
+						>
+							Photos and videos ({{ l.media_count }})
+						</AppButton>
+					</div>
 					<div v-if="canEdit" class="mt-ui-sm flex flex-wrap gap-ui-sm">
 						<AppButton
 							v-if="!l.published"
@@ -111,6 +121,11 @@
 							Archive
 						</AppButton>
 					</div>
+					<ListingMedia
+						v-if="shownMedia.has(l.name)"
+						:listing="l.name"
+						@changed="load"
+					/>
 					<details class="mt-ui-sm" data-testid="sellos-listing-history">
 						<summary class="cursor-pointer text-sm text-ink-muted">
 							Change history
@@ -203,6 +218,7 @@ import MoneyField from "../components/MoneyField.vue";
 import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
+import ListingMedia from "../inventory/ListingMedia.vue";
 import { listingApi, rupees } from "../inventory/inventoryApi";
 
 // Listings (SOS-P4-02). Every change is made on the server and the list read back, so what is shown is what
@@ -218,6 +234,13 @@ const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
 const editing = ref("");
+// The listings whose photos and videos are open (SOS-P4-03).
+const shownMedia = ref(new Set());
+function toggleMedia(name) {
+	const next = new Set(shownMedia.value);
+	if (!next.delete(name)) next.add(name);
+	shownMedia.value = next;
+}
 
 const NONE = "";
 const blank = () => ({

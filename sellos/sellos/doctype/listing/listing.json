@@ -13,6 +13,8 @@
   "column_break_1",
   "asking_price",
   "description",
+  "section_media",
+  "media",
   "section_publish",
   "published",
   "published_on",
@@ -68,6 +70,17 @@
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"
+  },
+  {
+   "fieldname": "section_media",
+   "fieldtype": "Section Break",
+   "label": "Photos and videos"
+  },
+  {
+   "fieldname": "media",
+   "fieldtype": "Table",
+   "label": "Media",
+   "options": "Listing Media"
   },
   {
    "fieldname": "section_publish",

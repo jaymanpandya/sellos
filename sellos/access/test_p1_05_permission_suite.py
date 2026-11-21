@@ -300,6 +300,26 @@ SAMPLE_CALLS = {
 	"sellos.inventory.listings.publish_listing": {"name": "{spare_listing}"},
 	"sellos.inventory.listings.unpublish_listing": {"name": "{spare_listing}"},
 	"sellos.inventory.listings.set_listing_archived": {"name": "{spare_listing}"},
+	# SOS-P4-03: the media listings are drafts of their own, so the archive call above never reaches them.
+	"sellos.inventory.media.listing_media": {"listing": "{media_listing}"},
+	"sellos.inventory.media.upload_listing_media": {
+		"listing": "{media_listing}",
+		"title": "P403 Suite Photo",
+		"filename": "p403-suite.png",
+		"content_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+	},
+	"sellos.inventory.media.link_listing_media": {
+		"listing": "{media_listing}",
+		"media_asset": "{media_asset}",
+	},
+	"sellos.inventory.media.unlink_listing_media": {
+		"listing": "{media_listing}",
+		"media_asset": "{media_asset}",
+	},
+	"sellos.inventory.media.reorder_listing_media": {
+		"listing": "{order_listing}",
+		"order": ["{media_asset_two}", "{media_asset}"],
+	},
 	"sellos.reports.team.team_report": {},
 	"sellos.crm.enquiry.get_enquiry_settings": {},  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": {},
@@ -338,6 +358,8 @@ REFUSALS = (frappe.PermissionError, frappe.DoesNotExistError)
 def fill(args, names):
 	if isinstance(args, dict):
 		return {key: fill(value, names) for key, value in args.items()}
+	if isinstance(args, list):
+		return [fill(value, names) for value in args]  # SOS-P4-03: an order is a list of names
 	if isinstance(args, str) and args.startswith("{") and args.endswith("}"):
 		return names[args[1:-1]]
 	return args
@@ -568,6 +590,32 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"description": "P402 suite description",
 			}
 		).insert()
+		# SOS-P4-03: two draft listings and two library files, the second listing holding both files.
+		media_assets = [
+			frappe.get_doc(
+				{
+					"doctype": "Media Asset",
+					"title": f"P403 Suite Asset {n}",
+					"media_type": "Photo",
+					"file": f"/files/p403-suite-{n}.png",
+					"size_bytes": 100,
+				}
+			).insert()
+			for n in (1, 2)
+		]
+		media_listing = frappe.get_doc(
+			{"doctype": "Listing", "title": "P403 Suite Media Listing", "listing_type": "Direct"}
+		).insert()
+		order_listing = frappe.get_doc(
+			{
+				"doctype": "Listing",
+				"title": "P403 Suite Order Listing",
+				"listing_type": "Direct",
+				"media": [{"media_asset": media_assets[1].name}, {"media_asset": media_assets[0].name}],
+			}
+		).insert()
+		before = set(Path(frappe.get_site_path("public", "files")).glob("media-*"))
+		self.addCleanup(self._remove_media_files, before)
 		self.addCleanup(self._remove_agreement_files)
 		rule_team = frappe.get_doc(
 			{
@@ -663,6 +711,10 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_tower_two": spare_tower_two.name,
 			"spare_property": spare_property.name,
 			"spare_listing": spare_listing.name,
+			"media_listing": media_listing.name,
+			"order_listing": order_listing.name,
+			"media_asset": media_assets[0].name,
+			"media_asset_two": media_assets[1].name,
 			"rule_team": rule_team.name,
 			"agent": TEST_USERS["agent"]["email"],
 			"support_user": support_user,
@@ -680,6 +732,12 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		for pattern in ("p701_suite_agreement*", "p705_suite_brochure*"):
 			for path in Path(frappe.get_site_path("private", "files")).glob(pattern):
 				path.unlink()
+
+	@staticmethod
+	def _remove_media_files(before):
+		"""SOS-P4-03: the files the suite's upload call wrote."""
+		for path in set(Path(frappe.get_site_path("public", "files")).glob("media-*")) - before:
+			path.unlink()
 
 	def args(self, method):
 		return fill(SAMPLE_CALLS[method], self.names)

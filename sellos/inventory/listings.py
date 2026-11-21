@@ -56,6 +56,7 @@ def _row(doc, people) -> dict:
 		"published_on": str(doc.published_on or ""),
 		"published_by_name": people.get(doc.published_by, doc.published_by or ""),
 		"archived": int(doc.archived or 0),
+		"media_count": len(doc.media),
 		"missing": doc.missing_for_publish(),
 		"changes": [
 			{

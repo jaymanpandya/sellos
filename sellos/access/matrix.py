@@ -185,6 +185,13 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.listings.publish_listing": _INVENTORY_EDITORS,
 	"sellos.inventory.listings.unpublish_listing": _INVENTORY_EDITORS,
 	"sellos.inventory.listings.set_listing_archived": _ADMIN_ONLY,
+	# SOS-P4-03: photos and videos of a listing. An Agent or a Company Admin uploads, links, unlinks and orders
+	# them, a Sales Manager reads them.
+	"sellos.inventory.media.listing_media": _INVENTORY_READERS,
+	"sellos.inventory.media.upload_listing_media": _INVENTORY_EDITORS,
+	"sellos.inventory.media.link_listing_media": _INVENTORY_EDITORS,
+	"sellos.inventory.media.unlink_listing_media": _INVENTORY_EDITORS,
+	"sellos.inventory.media.reorder_listing_media": _INVENTORY_EDITORS,
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.crm.enquiry.get_enquiry_settings": _ADMIN_ONLY,  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": _ADMIN_ONLY,  # SOS-P2-08

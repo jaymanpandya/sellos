@@ -118,6 +118,23 @@ export const listingApi = {
 	setArchived: (name, archived) => listing("set_listing_archived", { name, archived }),
 };
 
+// Photos and videos of a listing, from the company's asset library (SOS-P4-03).
+const media = (method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.inventory.media.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const mediaApi = {
+	get: (listing) => media("listing_media", { listing }),
+	upload: (listing, title, filename, content_base64) =>
+		media("upload_listing_media", { listing, title, filename, content_base64 }),
+	link: (listing, media_asset) => media("link_listing_media", { listing, media_asset }),
+	unlink: (listing, media_asset) => media("unlink_listing_media", { listing, media_asset }),
+	reorder: (listing, order) => media("reorder_listing_media", { listing, order }),
+};
+
 // One tone per status, for the badge.
 export const STATUS_TONE = {
 	Available: "success",
