@@ -745,6 +745,12 @@ def seed_regression_data():
 	  Company Admin's call reports show cost by agent and by purpose, a connect rate, talk time and consent
 	  coverage for the last 30 days, and each figure lists its calls.
 
+	* Channel partner firms (SOS-P7-01): four firms invited by the Company Admin through the invite method
+	  (mail off) and completed by each contact person through the partner methods: Regression Firm Invited
+	  (waiting for its details), Regression Firm Pending (details and agreement in, waiting for approval),
+	  Regression Firm Approved and Regression Firm Suspended (reason "Regression: left the business").
+	  Each has a partner code, a status log, a PAN and a private signed agreement the Company Admin sees.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -768,6 +774,7 @@ def seed_regression_data():
 		_seed_notifications(agent_one)
 		_seed_site_visits(agent_one, agent_two)
 		_seed_call_reports_regression()
+		_seed_partner_firms(admin)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -899,6 +906,7 @@ def seed_regression_data():
 	_seed_follow_ups(agent_one)
 	_seed_notifications(agent_one)
 	_seed_site_visits(agent_one, agent_two)
+	_seed_partner_firms(admin)
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -2125,3 +2133,120 @@ def site_date(days=0, at=None):
 	is given, the way a "datetime-local" box wants it. Returns {"date": ...} (bench execute prints JSON)."""
 	day = add_days(today(), int(days))
 	return {"date": f"{day}T{at}" if at else str(day)}
+
+
+# --- Channel partner firms (SOS-P7-01) ------------------------------------------------------------
+
+GATE_FIRM_PREFIX = "Gate Firm "
+PARTNER_FIRM_SEEDS = (
+	# firm name, contact email, how far it goes: invited, pending, approved or suspended
+	("Regression Firm Invited", "regression_partner_invited@example.com", "invited"),
+	("Regression Firm Pending", "regression_partner_pending@example.com", "pending"),
+	("Regression Firm Approved", "regression_partner_approved@example.com", "approved"),
+	("Regression Firm Suspended", "regression_partner_suspended@example.com", "suspended"),
+)
+PARTNER_PAN = "ABCPD1234E"
+PARTNER_RERA = "A51800012345"
+
+
+def _make_partner_firm(admin, firm_name, email, stage, phone_seed):
+	"""Invite a firm as the Company Admin, let its contact person complete it, and take it as far as `stage`
+	(invited, pending, approved or suspended), all through the production methods with mail switched off."""
+	from unittest.mock import patch
+
+	from sellos.access import partner_firms, users
+	from sellos.tests.files import tiny_pdf_base64
+
+	with _as_user(admin), patch.object(users, "mail_ready", return_value=False):
+		code = partner_firms.invite_partner_firm(firm_name, f"{firm_name} Contact", email)["name"]
+	if stage != "invited":
+		with _as_user(email):
+			partner_firms.submit_partner_details(
+				{"phone": phones.in_mobile(phone_seed), "rera_number": PARTNER_RERA, "pan": PARTNER_PAN}
+			)
+			partner_firms.upload_my_agreement("signed_agreement.pdf", tiny_pdf_base64())
+	with _as_user(admin):
+		if stage in ("approved", "suspended"):
+			partner_firms.approve_partner_firm(code)
+		if stage == "suspended":
+			partner_firms.suspend_partner_firm(code, "Regression: left the business")
+	return code
+
+
+def _seed_partner_firms(admin):
+	"""The regression channel partner firms. Safe to run again: a firm that exists is left alone."""
+	for seed, (firm_name, email, stage) in enumerate(PARTNER_FIRM_SEEDS, start=7010):
+		if not frappe.db.exists("Channel Partner Firm", {"firm_name": firm_name}):
+			_make_partner_firm(admin, firm_name, email, stage, seed)
+
+
+def seed_gate_partner_firm(stage="pending"):
+	"""For the partner firm spec (SOS-P7-01): make a firm whose contact person is the gate channel partner,
+	through the production methods, and return {"name", "status"}. The firm is in the stage asked for:
+	"pending" (details and agreement in), or "invited"."""
+	from sellos.access import partner_firms
+	from sellos.tests.files import tiny_pdf_base64
+
+	admin = TEST_USERS["company_admin"]["email"]
+	partner = TEST_USERS["channel_partner"]["email"]
+	_test_users()
+	existing = frappe.db.get_value("Channel Partner Firm", {"contact_user": partner}, ["name", "status"])
+	if existing:
+		return {"name": existing[0], "status": existing[1]}
+	with _as_user(admin):
+		doc = frappe.get_doc(
+			{
+				"doctype": "Channel Partner Firm",
+				"firm_name": f"{GATE_FIRM_PREFIX}Seeded",
+				"contact_user": partner,
+				"contact_person": "Gate Channel Partner",
+				"email": partner,
+			}
+		).insert()
+	if stage == "pending":
+		with _as_user(partner):
+			partner_firms.submit_partner_details(
+				{"phone": phones.in_mobile(7001), "rera_number": PARTNER_RERA, "pan": PARTNER_PAN}
+			)
+			partner_firms.upload_my_agreement("gate_agreement.pdf", tiny_pdf_base64())
+	frappe.db.commit()  # nosemgrep
+	return {"name": doc.name, "status": frappe.db.get_value("Channel Partner Firm", doc.name, "status")}
+
+
+def gate_partner_firm_state(name):
+	"""Read back a firm for the spec: its status, reason and status log (tests only, SOS-P7-01)."""
+	doc = frappe.get_doc("Channel Partner Firm", name)
+	return {
+		"status": doc.status,
+		"reason": doc.status_reason,
+		"log": [(row.from_status, row.to_status, row.changed_by, row.reason) for row in doc.status_log],
+		"pan": doc.pan,
+		"agreement": doc.agreement,
+	}
+
+
+def remove_gate_partner_firms():
+	"""Remove the firms and the logins the partner firm spec made, and the private agreement files (tests
+	only, SOS-P7-01). The app never deletes a firm: this is the spec cleaning up after itself."""
+	rows = frappe.get_all(
+		"Channel Partner Firm",
+		filters={"firm_name": ["like", f"{GATE_FIRM_PREFIX}%"]},
+		fields=["name", "contact_user"],
+	)
+	for row in rows:
+		for file in frappe.get_all(
+			"File",
+			filters={"attached_to_doctype": "Channel Partner Firm", "attached_to_name": row.name},
+			pluck="name",
+		):
+			frappe.delete_doc("File", file, force=True, ignore_permissions=True)
+		frappe.db.delete("Partner Firm Status Change", {"parent": row.name})
+		frappe.db.delete("Version", {"ref_doctype": "Channel Partner Firm", "docname": row.name})
+		frappe.db.delete("Channel Partner Firm", {"name": row.name})
+		if row.contact_user.startswith(GATE_USER_PREFIX):
+			frappe.db.delete("Sessions", {"user": row.contact_user})
+			for contact in frappe.get_all("Contact", filters={"email_id": row.contact_user}, pluck="name"):
+				frappe.delete_doc("Contact", contact, force=True, ignore_permissions=True)
+			frappe.delete_doc("User", row.contact_user, force=True, ignore_permissions=True)
+	frappe.db.commit()  # nosemgrep
+	return {"firms": len(rows)}

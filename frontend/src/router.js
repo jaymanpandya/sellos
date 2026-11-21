@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import { base, session } from "./session";
 import { inAreas, personaFor, routeArea } from "./personas";
+import { loadPartnerState, partnerMayWork } from "./partnerState";
 import { setPageTitle } from "./shell";
 
 const HomePage = () => import("./pages/HomePage.vue");
@@ -18,6 +19,8 @@ const AssignmentRulesPage = () => import("./pages/AssignmentRulesPage.vue");
 const TeamReportPage = () => import("./pages/TeamReportPage.vue");
 const CallReportsPage = () => import("./pages/CallReportsPage.vue");
 const CallListsPage = () => import("./pages/CallListsPage.vue");
+const PartnerFirmsPage = () => import("./pages/PartnerFirmsPage.vue");
+const PartnerFirmPage = () => import("./pages/PartnerFirmPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
@@ -108,6 +111,18 @@ export function createAppRouter() {
 				meta: { area: "company", title: "Teams" },
 			},
 			{
+				path: "/company/partners",
+				name: "partner-firms",
+				component: PartnerFirmsPage,
+				meta: { area: "company", title: "Channel partners" },
+			},
+			{
+				path: "/partner/firm",
+				name: "partner-firm",
+				component: PartnerFirmPage,
+				meta: { area: "partner", title: "Your firm" },
+			},
+			{
 				path: "/company/assignment",
 				name: "assignment-rules",
 				component: AssignmentRulesPage,
@@ -147,10 +162,19 @@ export function createAppRouter() {
 	});
 
 	// Every route belongs to an area. A signed in user may only open the areas of their persona.
-	router.beforeEach((to) => {
+	router.beforeEach(async (to) => {
 		if (to.name === "no-access") return true;
 		const persona = personaFor(session.roles);
 		if (!persona || !inAreas(persona, routeArea(to))) return { name: "no-access" };
+		// SOS-P7-01: a partner whose firm is not Approved works nowhere but the page that says why.
+		if (
+			persona.key === "channel_partner" &&
+			to.name !== "partner-firm" &&
+			to.name !== "home"
+		) {
+			await loadPartnerState(true);
+			if (!partnerMayWork()) return { name: "partner-firm" };
+		}
 		return true;
 	});
 

@@ -26,6 +26,7 @@ _READERS = frozenset({AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER})
 _LOGGERS = frozenset({AGENT, COMPANY_ADMIN, SALES_MANAGER})
 _TEAM_USERS = frozenset({COMPANY_ADMIN, SALES_MANAGER})
 _ADMIN_ONLY = frozenset({COMPANY_ADMIN})
+_PARTNER_ONLY = frozenset({CHANNEL_PARTNER})
 _OPENERS = frozenset({PLATFORM_ADMIN, COMPANY_ADMIN, AGENT, CLIENT, CHANNEL_PARTNER, SALES_MANAGER})
 
 # dotted method path -> the roles that may call it.
@@ -114,6 +115,18 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.access.teams.list_teams": _TEAM_USERS,
 	"sellos.access.teams.save_team": _ADMIN_ONLY,
 	"sellos.access.teams.delete_team": _ADMIN_ONLY,
+	# SOS-P7-01: channel partner firms. The Company Admin invites, approves and suspends; the partner
+	# completes its own firm's details.
+	"sellos.access.partner_firms.list_partner_firms": _ADMIN_ONLY,
+	"sellos.access.partner_firms.invite_partner_firm": _ADMIN_ONLY,
+	"sellos.access.partner_firms.update_partner_firm": _ADMIN_ONLY,
+	"sellos.access.partner_firms.approve_partner_firm": _ADMIN_ONLY,
+	"sellos.access.partner_firms.suspend_partner_firm": _ADMIN_ONLY,
+	"sellos.access.partner_firms.reinstate_partner_firm": _ADMIN_ONLY,
+	"sellos.access.partner_firms.upload_agreement_for_firm": _ADMIN_ONLY,
+	"sellos.access.partner_firms.my_partner_firm": _PARTNER_ONLY,
+	"sellos.access.partner_firms.submit_partner_details": _PARTNER_ONLY,
+	"sellos.access.partner_firms.upload_my_agreement": _PARTNER_ONLY,
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.reports.calls.call_report": _ADMIN_ONLY,
 	"sellos.reports.calls.call_report_calls": _ADMIN_ONLY,

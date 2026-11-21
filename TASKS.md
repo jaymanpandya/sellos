@@ -1027,7 +1027,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-04, SOS-P1-17
 - **Browser spec:** required
-- **Status:** In Progress
+- **Status:** Complete
 
 ### SOS-P7-02: Register a lead as a channel partner, with a protection window
 - **Epic:** Channel partners

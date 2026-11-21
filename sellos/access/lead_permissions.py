@@ -10,6 +10,8 @@
   it, and a record the user created.
 * A Sales Manager sees the leads of the agents in the teams they manage, and the leads they own or are
   assigned themselves, with the records that follow those leads (SOS-P1-18).
+* A Channel Partner whose firm is Invited, Pending approval or Suspended sees nothing and registers
+  nothing, like a Client (SOS-P7-01).
 * A Client (the role) sees nothing.
 """
 
@@ -160,6 +162,12 @@ def _user_scope(user) -> str:
 	"""'all', 'own', 'none', or 'support' for a Platform Admin with an active grant (P1.13)."""
 	roles = frappe.get_roles(user)
 	scope = scope_for(roles)
+	if scope == "own":
+		from sellos.access.partner_firms import blocks_partner
+
+		# SOS-P7-01: a partner whose firm is not Approved registers and sees no lead.
+		if blocks_partner(user, roles):
+			return "none"
 	if scope == "none" and PLATFORM_ADMIN in roles and has_support_access(user, roles):
 		return "support"
 	return scope

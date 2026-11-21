@@ -25,6 +25,12 @@ export const PERSONAS = [
 			{ key: "telephony", label: "Telephony", to: "/company/telephony", area: "company" },
 			{ key: "call-lists", label: "Call lists", to: "/company/call-lists", area: "company" },
 			{ key: "teams", label: "Teams", to: "/company/teams", area: "company" },
+			{
+				key: "partners",
+				label: "Channel partners",
+				to: "/company/partners",
+				area: "company",
+			},
 			{ key: "assignment", label: "Assignment", to: "/company/assignment", area: "company" },
 			{ key: "call-reports", label: "Call reports", to: "/reports/calls", area: "reports" },
 		],
@@ -59,6 +65,7 @@ export const PERSONAS = [
 		areas: ["partner", "home", "profile"],
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
+			{ key: "firm", label: "Your firm", to: "/partner/firm", area: "partner" },
 			{ key: "leads", label: "Leads", to: "/partner/leads", area: "partner" },
 		],
 	},

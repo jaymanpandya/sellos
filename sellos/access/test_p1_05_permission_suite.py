@@ -8,6 +8,7 @@
 # A method that is added with no matrix entry, or with no entry in SAMPLE_CALLS below, fails the build,
 # and so does a sellos method that is whitelisted with no declaration (a deliberately open method).
 import json
+from pathlib import Path
 
 import frappe
 from frappe.tests import IntegrationTestCase
@@ -28,6 +29,7 @@ from sellos.crm.pipeline import DEFAULT_STAGES
 from sellos.telephony.settings import save_telephony_settings
 from sellos.testing.users import TEST_USERS, create_test_users
 from sellos.tests import phones
+from sellos.tests.files import tiny_pdf_base64
 
 SECRET_NAME = "P105 Secret Buyer"
 SECRET_PHONE = phones.in_mobile(105)
@@ -35,6 +37,8 @@ SECRET_PHONE = phones.in_mobile(105)
 LANDLINE_022 = f"{phones.in_mobile(2007)[:3]}22{phones.in_mobile(2007)[-8:]}"
 DND_SAMPLE = phones.in_mobile(2010)  # SOS-P2-10
 ACTIVITY_NOTE = "p105-secret-activity-note"
+# SOS-P7-01: a tiny PDF for the agreement upload calls. The file lands on disk, so the test removes it.
+AGREEMENT_B64 = tiny_pdf_base64()
 ADMIN = "company_admin"
 
 # who -> the key of the test user. "outsider" is a signed-in user from another company. "guest" is signed out.
@@ -170,6 +174,32 @@ SAMPLE_CALLS = {
 	"sellos.access.teams.list_teams": {},
 	"sellos.access.teams.save_team": {"name": "{spare_team}", "values": {"members": []}},
 	"sellos.access.teams.delete_team": {"name": "{spare_team}"},
+	# SOS-P7-01: the calls act on a spare firm that is Pending approval. The Company Admin's calls run in the
+	# order of the matrix: approve, suspend, reinstate.
+	"sellos.access.partner_firms.list_partner_firms": {},
+	"sellos.access.partner_firms.invite_partner_firm": {
+		"firm_name": "P701 Invited Firm",
+		"contact_person": "P701 Invited",
+		"email": "p701_invited@example.com",
+	},
+	"sellos.access.partner_firms.update_partner_firm": {
+		"name": "{spare_firm}",
+		"values": {"contact_person": "P701 Edit"},
+	},
+	"sellos.access.partner_firms.approve_partner_firm": {"name": "{spare_firm}"},
+	"sellos.access.partner_firms.suspend_partner_firm": {"name": "{spare_firm}", "reason": "p701 left"},
+	"sellos.access.partner_firms.reinstate_partner_firm": {"name": "{spare_firm}"},
+	"sellos.access.partner_firms.upload_agreement_for_firm": {
+		"name": "{spare_firm}",
+		"filename": "p701_suite_agreement.pdf",
+		"content_base64": AGREEMENT_B64,
+	},
+	"sellos.access.partner_firms.my_partner_firm": {},
+	"sellos.access.partner_firms.submit_partner_details": {"values": {"contact_person": "P701 Self"}},
+	"sellos.access.partner_firms.upload_my_agreement": {
+		"filename": "p701_suite_agreement.pdf",
+		"content_base64": AGREEMENT_B64,
+	},
 	"sellos.reports.team.team_report": {},
 	"sellos.reports.calls.call_report": {},
 	"sellos.reports.calls.call_report_calls": {},
@@ -300,6 +330,28 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"manager": TEST_USERS["sales_manager"]["email"],
 			}
 		).insert()
+		firm_user = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": "p701_spare_partner@example.com",
+				"first_name": "P701 Spare",
+				"send_welcome_email": 0,
+				"roles": [{"role": "SellOS Channel Partner"}],
+			}
+		)
+		firm_user.flags.ignore_permissions = True
+		firm_user.insert()
+		spare_firm = frappe.get_doc(
+			{
+				"doctype": "Channel Partner Firm",
+				"firm_name": "P701 Spare Firm",
+				"contact_user": firm_user.name,
+				"contact_person": "P701 Spare",
+				"email": firm_user.name,
+			}
+		).insert()
+		spare_firm.db_set("status", "Pending approval")
+		self.addCleanup(self._remove_agreement_files)
 		rule_team = frappe.get_doc(
 			{
 				"doctype": "Sales Team",
@@ -377,6 +429,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_reason": spare_reason.name,
 			"spare_user": spare_user.name,
 			"spare_team": spare_team.name,
+			"spare_firm": spare_firm.name,
 			"spare_rule": spare_rule.name,
 			"rule_team": rule_team.name,
 			"agent": TEST_USERS["agent"]["email"],
@@ -389,6 +442,11 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 		frappe.set_user("Administrator")
 		frappe.local.response = frappe._dict()
 		frappe.db.rollback()
+
+	@staticmethod
+	def _remove_agreement_files():
+		for path in Path(frappe.get_site_path("private", "files")).glob("p701_suite_agreement*"):
+			path.unlink()
 
 	def args(self, method):
 		return fill(SAMPLE_CALLS[method], self.names)
@@ -428,7 +486,9 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 					self.assertEqual(leaks(text), [])
 
 	def test_the_company_admin_may_call_every_method(self):
-		for method in MATRIX:
+		for method, allowed in MATRIX.items():
+			if "SellOS Company Admin" not in allowed:
+				continue  # SOS-P7-01: a partner's own firm methods are the partner's, and refuse the admin
 			as_who("company_admin")
 			with self.subTest(method=method):
 				call(method, self.args(method))  # raises if refused

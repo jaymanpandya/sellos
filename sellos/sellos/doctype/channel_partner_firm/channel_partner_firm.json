@@ -1,0 +1,175 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:CP-{#####}",
+ "creation": "2026-11-21 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "firm_name",
+  "partner_code",
+  "status",
+  "status_reason",
+  "column_break_1",
+  "contact_user",
+  "contact_person",
+  "email",
+  "phone_masked",
+  "rera_number",
+  "section_private",
+  "phone",
+  "pan",
+  "agreement",
+  "section_log",
+  "status_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "firm_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Firm name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "partner_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Partner code",
+   "read_only": 1,
+   "unique": 1,
+   "no_copy": 1,
+   "description": "Never reused. SOS-P5-06 builds the partner's link and QR code from it."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Invited\nPending approval\nApproved\nSuspended",
+   "default": "Invited",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "status_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason for the suspension",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contact_user",
+   "fieldtype": "Link",
+   "label": "Contact login",
+   "options": "User",
+   "reqd": 1,
+   "unique": 1,
+   "set_only_once": 1,
+   "description": "The user with the Channel Partner role who works for this firm."
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Data",
+   "label": "Contact person",
+   "reqd": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "options": "Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "phone_masked",
+   "fieldtype": "Data",
+   "label": "Phone (masked)",
+   "read_only": 1,
+   "description": "What every role but the Company Admin sees."
+  },
+  {
+   "fieldname": "rera_number",
+   "fieldtype": "Data",
+   "label": "RERA agent registration number"
+  },
+  {
+   "fieldname": "section_private",
+   "fieldtype": "Section Break",
+   "label": "Company Admin only",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "options": "Phone",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "pan",
+   "fieldtype": "Data",
+   "label": "PAN",
+   "permlevel": 1,
+   "description": "Personal data. Only a Company Admin sees it."
+  },
+  {
+   "fieldname": "agreement",
+   "fieldtype": "Attach",
+   "label": "Signed agreement",
+   "permlevel": 1,
+   "description": "A private file. Only a Company Admin opens it."
+  },
+  {
+   "fieldname": "section_log",
+   "fieldtype": "Section Break",
+   "label": "Status log"
+  },
+  {
+   "fieldname": "status_log",
+   "fieldtype": "Table",
+   "label": "Status log",
+   "options": "Partner Firm Status Change",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Channel Partner Firm",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1
+  },
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1
+  },
+  {
+   "role": "SellOS Channel Partner",
+   "permlevel": 0,
+   "read": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "firm_name",
+ "track_changes": 1
+}
