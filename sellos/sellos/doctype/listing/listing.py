@@ -57,6 +57,12 @@ class Listing(InventoryRecord):
 			self.published_by = None
 		self.log_changes(before)
 
+	def on_update(self):
+		# SOS-P4-08: tell the website when a published listing changes.
+		from sellos.inventory.listing_webhook import announce
+
+		announce(self, self.get_doc_before_save())
+
 	def check_target(self):
 		"""The unit or property it offers: one of them, matching the type, offered once."""
 		if self.unit and self.property:

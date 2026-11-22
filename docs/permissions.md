@@ -128,6 +128,7 @@ on a company site, because the data scope above is "none".
 | `sellos.reports.team.team_report` (SOS-P1-18, the leads the reader may see by agent and by stage) | Company Admin, Sales Manager |
 | `sellos.crm.enquiry.get_enquiry_settings`, `rotate_enquiry_key` (SOS-P2-08, the enquiry page link with its form key and the consent wording it shows; rotating the key stops every link shared before) | Company Admin |
 | `sellos.crm.website_form.get_website_settings`, `rotate_website_key` (SOS-P1-09, the website form's endpoint address and the Lead intake keys made so far, never a key; rotating makes a new key, shown once, and stops the old ones) | Company Admin |
+| `sellos.inventory.listings_feed.get_listings_feed_settings`, `rotate_listings_key`, `save_listings_webhook` (SOS-P4-08, the listings feed address, the Listings read keys made so far, never a key, and the change webhook address; rotating makes a new key, shown once, and stops the old ones; saving an https address makes the webhook secret, shown once) | Company Admin |
 | `sellos.reports.calls.call_report`, `call_report_calls` (SOS-P2-11, the call reports for a range of dates: cost by agent and by purpose, connect rate, talk time and consent coverage, and the calls behind each figure) | Company Admin |
 
 Each story that adds a method adds a row here.
@@ -210,7 +211,9 @@ Registered public listings feeds (one row each as they are built):
 
 | Method | Task | Reads |
 | --- | --- | --- |
-| (none yet) | SOS-P4-08 | Published listings, allowlisted fields only |
+| `sellos.inventory.listings_feed.published_listings` (GET; the Listings read key in the `X-Listings-Key` header; `start` and `page_size` in the query, page size capped at 50; 120 requests a minute per key and 600 per tenant; ETag and `If-None-Match`) | SOS-P4-08 | Published, unarchived listings: id, title, type, asking price, description, published and modified times, project, property type, city, locality, configuration, carpet area, floor, parking and the photos and videos (title, type, url) |
+
+The change webhook (`sellos.inventory.listing_webhook`) is set by a Company Admin (`save_listings_webhook`), is called when a listing is published, changed while published or unpublished, and carries `{"event", "kind", "listing"}` only. It is signed `X-SellOS-Signature: sha256=<HMAC-SHA256 of "<timestamp>.<body>">` with `X-SellOS-Timestamp`, tried up to 3 times, https only and never to a private address.
 
 ## The permission test suite (P1.05)
 

@@ -285,7 +285,7 @@ before_request = [
 	"sellos.access.registry.guard_api",
 	"sellos.access.support.log_support_request",
 ]
-# after_request = ["sellos.utils.after_request"]
+after_request = ["sellos.access.public_listings.add_etag_header"]  # SOS-P4-08
 
 # Job Events
 # ----------

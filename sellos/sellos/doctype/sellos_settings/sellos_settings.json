@@ -23,6 +23,8 @@
   "partner_protection_days",
   "consent_wording",
   "enquiry_form_key",
+  "listings_webhook_url",
+  "listings_webhook_secret",
   "setup_steps_done",
   "setup_complete",
   "stamp_duty_percent",
@@ -128,6 +130,20 @@
    "label": "Enquiry form key",
    "hidden": 1,
    "description": "The key in the enquiry page link (SOS-P2-08). A Company Admin rotates it from the enquiry page settings."
+  },
+  {
+   "fieldname": "listings_webhook_url",
+   "fieldtype": "Data",
+   "label": "Listings change webhook address",
+   "hidden": 1,
+   "description": "The HTTPS address of the company's website that is told when a published listing changes (SOS-P4-08)."
+  },
+  {
+   "fieldname": "listings_webhook_secret",
+   "fieldtype": "Password",
+   "label": "Listings change webhook secret",
+   "hidden": 1,
+   "description": "Signs the change webhook (SOS-P4-08). Shown once, when a Company Admin makes or rotates it."
   },
   {
    "fieldname": "unit_hold_hours",

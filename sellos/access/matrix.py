@@ -229,6 +229,9 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.enquiry.rotate_enquiry_key": _ADMIN_ONLY,  # SOS-P2-08
 	"sellos.crm.website_form.get_website_settings": _ADMIN_ONLY,  # SOS-P1-09
 	"sellos.crm.website_form.rotate_website_key": _ADMIN_ONLY,
+	"sellos.inventory.listings_feed.get_listings_feed_settings": _ADMIN_ONLY,  # SOS-P4-08
+	"sellos.inventory.listings_feed.rotate_listings_key": _ADMIN_ONLY,
+	"sellos.inventory.listings_feed.save_listings_webhook": _ADMIN_ONLY,
 	"sellos.reports.calls.call_report": _ADMIN_ONLY,
 	"sellos.reports.calls.call_report_calls": _ADMIN_ONLY,
 	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,

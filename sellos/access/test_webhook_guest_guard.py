@@ -159,5 +159,31 @@ class TestRealIntakeMethodIsRegistered(IntegrationTestCase):
 
 	def test_it_is_the_only_guest_method_besides_webhooks(self):
 		extra = set(guest_methods_in_sellos()) - set(registered_webhooks())
-		# SOS-P1-09 added the website form's submit as the second one.
-		self.assertEqual(sorted(extra), [self.METHOD, "sellos.crm.website_form.submit_website_lead"])
+		# SOS-P1-09 added the website form's submit as the second one. SOS-P4-08 added the listings feed.
+		self.assertEqual(
+			sorted(extra),
+			[
+				self.METHOD,
+				"sellos.crm.website_form.submit_website_lead",
+				"sellos.inventory.listings_feed.published_listings",
+			],
+		)
+
+
+class TestRealListingsFeedIsRegistered(IntegrationTestCase):
+	"""SOS-P4-08: the website's listings read is a real registered public listings feed with every check."""
+
+	METHOD = "sellos.inventory.listings_feed.published_listings"
+
+	def test_the_feed_is_registered_declares_every_check_and_is_a_guest_method(self):
+		feeds = registered_listings_feeds()
+		self.assertIn(self.METHOD, feeds)
+		for name in REQUIRED_LISTINGS_CHECKS:
+			self.assertTrue(feeds[self.METHOD].get(name), f"{self.METHOD} does not declare {name}")
+		self.assertIn(self.METHOD, guest_methods_in_sellos())
+
+	def test_a_guest_method_that_is_not_registered_would_be_found(self):
+		"""The check names a stray guest method: a feed registered nowhere is reported."""
+		registered = {**registered_webhooks(), **registered_intakes(), **registered_listings_feeds()}
+		self.assertNotIn("sellos.inventory.listings_feed.stray", registered)
+		self.assertIn(self.METHOD, registered)
