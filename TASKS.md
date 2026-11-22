@@ -1227,7 +1227,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 5
 - **Dependencies:** SOS-P4-02, SOS-P1-09
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-P4-09: Switch the website to read listings from SellOS
 - **Epic:** Inventory, mandates and deals
