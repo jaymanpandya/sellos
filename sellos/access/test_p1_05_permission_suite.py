@@ -409,6 +409,19 @@ SAMPLE_CALLS = {
 	"sellos.telephony.dnd.do_not_call_summary": {},
 	"sellos.access.field_history.getdoc": {"doctype": "Client", "name": "{client}"},
 	"sellos.access.field_history.get_docinfo": {"doctype": "Client", "name": "{client}"},
+	# SOS-P6-11: the fake WhatsApp provider is on and connected, the lead's conversation has a customer
+	# message from just now, and an approved template exists, so every call of the Company Admin works.
+	"sellos.whatsapp.settings.get_whatsapp_settings": {},
+	"sellos.whatsapp.settings.save_whatsapp_settings": {"display_number": "P611 Matrix"},
+	"sellos.whatsapp.settings.check_whatsapp_connection": {},
+	"sellos.whatsapp.settings.list_whatsapp_templates": {},
+	"sellos.whatsapp.settings.save_whatsapp_template": {"name": "p611_matrix", "body": "Hello {{1}}"},
+	"sellos.whatsapp.conversations.list_whatsapp_conversations": {},
+	"sellos.whatsapp.conversations.get_whatsapp_conversation": {"conversation": "{wa_conversation}"},
+	"sellos.whatsapp.conversations.send_whatsapp_message": {"lead": "{lead}", "text": "p611 hello"},
+	"sellos.whatsapp.conversations.hand_off_whatsapp_conversation": {"conversation": "{wa_conversation}"},
+	"sellos.whatsapp.conversations.close_whatsapp_conversation": {"conversation": "{wa_conversation}"},
+	"sellos.whatsapp.conversations.whatsapp_conversation_for_lead": {"lead": "{lead}"},
 }
 
 # What a refused call may raise. A role check raises PermissionError. A record the user can't see
@@ -763,7 +776,24 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"agent": TEST_USERS[ADMIN]["email"],
 			}
 		).insert(ignore_permissions=True)
+		# SOS-P6-11: a connected fake WhatsApp number and a conversation that is open for free text.
+		frappe.db.set_single_value("WhatsApp Settings", "provider", "fake")
+		wa_settings = frappe.get_doc("WhatsApp Settings")
+		wa_settings.access_token = "FAKEOK-P611"
+		wa_settings.app_secret = "fake-secret-p611"
+		wa_settings.phone_number_id = "611000611"
+		wa_settings.flags.ignore_permissions = True
+		wa_settings.save()
+		wa_conversation = frappe.get_doc(
+			{
+				"doctype": "WhatsApp Conversation",
+				"lead": lead.name,
+				"state": "Open",
+				"last_inbound_on": now_datetime(),
+			}
+		).insert(ignore_permissions=True)
 		self.names = {
+			"wa_conversation": wa_conversation.name,
 			"call_log": call_row.name,
 			"notification": notification,
 			"task": task.name,
