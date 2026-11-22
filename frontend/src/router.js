@@ -34,6 +34,8 @@ const ListingsPage = () => import("./pages/ListingsPage.vue");
 const ProjectPage = () => import("./pages/ProjectPage.vue");
 const CostSheetPage = () => import("./pages/CostSheetPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
+const PartnerReportsPage = () => import("./pages/PartnerReportsPage.vue");
+const PlatformReportsPage = () => import("./pages/PlatformReportsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
 const ClientShortlistsPage = () => import("./pages/ClientShortlistsPage.vue");
 const ClientShortlistPage = () => import("./pages/ClientShortlistPage.vue");
@@ -238,6 +240,20 @@ export function createAppRouter() {
 				name: "tenants",
 				component: TenantsPage,
 				meta: { area: "platform", title: "Companies" },
+			},
+			{
+				// SOS-P5-03: the Platform Admin's totals per company, on the control site.
+				path: "/control/reports",
+				name: "platform-reports",
+				component: PlatformReportsPage,
+				meta: { area: "platform", title: "Platform reports" },
+			},
+			{
+				// SOS-P5-03: a partner's own leads, deals and commission statements.
+				path: "/partner/reports",
+				name: "partner-reports",
+				component: PartnerReportsPage,
+				meta: { area: "partner", title: "Your results" },
 			},
 			{
 				path: "/client/shortlists",

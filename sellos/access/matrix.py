@@ -246,6 +246,10 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.reports.engine.report_records": _LOGGERS,
 	"sellos.reports.engine.refresh_report": _ADMIN_ONLY,
 	"sellos.reports.engine.save_report_definition": _ADMIN_ONLY,
+	# SOS-P5-03: a partner reads their own report, and the Platform Admin the totals per company.
+	"sellos.reports.partner.partner_report": _PARTNER_ONLY,
+	"sellos.reports.platform.list_platform_reports": frozenset({PLATFORM_ADMIN}),
+	"sellos.reports.platform.run_platform_report": frozenset({PLATFORM_ADMIN}),
 	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.save_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.check_connection": _ADMIN_ONLY,

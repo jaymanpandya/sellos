@@ -153,6 +153,8 @@ pieces on frappe-ui components. The decision for each, with the file in `fronten
 | Dialog | **not in PAMAA** | frappe-ui `Dialog` | Used directly (search) |
 | Toast (`ToastHost.vue`) | adapt | `ToastHost.vue`, `shell.js` | Same host and `showToast`; tones success, warning, danger, info |
 | Empty state (`EmptyState.vue`) | copy | `EmptyState.vue` | |
+| Report table (`ReportTable.vue`) | new | `ReportTable.vue` | SOS-P5-03: one row per thing and one column per figure, each column with a unit (number, rupees, seconds or text). Totals per company use it |
+| Report panels (`ReportPanels.vue`) | new | `ReportPanels.vue` | SOS-P5-03: the panels that wait for data another task builds. A waiting panel shows an `EmptyState` with its message; a live one shows its stat cards and a `ReportTable` |
 | Load error, loading skeleton | copy | `LoadError.vue`, `LoadingSkeleton.vue` | Rows only |
 
 ## Patterns

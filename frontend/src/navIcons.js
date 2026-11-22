@@ -18,6 +18,8 @@ export const ICONS = {
 	reports: "lucide-chart-column",
 	"team-report": "lucide-chart-column",
 	tenants: "lucide-building-2",
+	"platform-reports": "lucide-chart-column",
+	results: "lucide-chart-column",
 	shares: "lucide-share-2",
 	shared: "lucide-building-2",
 };

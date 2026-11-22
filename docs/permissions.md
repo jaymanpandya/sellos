@@ -137,6 +137,8 @@ on a company site, because the data scope above is "none".
 | `sellos.reports.ai_comparison.ai_comparison`, `ai_comparison_calls` (SOS-P5-09, AI calling against human calling and the four week human baseline for a range of dates: connect rate, qualified lead rate, site visits booked, cost per qualified lead, handover rate and complaints, and the calls behind each figure) | Company Admin |
 | `sellos.reports.engine.list_reports`, `run_report`, `report_records` (SOS-P5-01, the report engine: the reports made visible to the reader's role, a report's figures for a range of dates and the records behind a figure; a Company Admin reads all records, a Sales Manager its own team's and an Agent its own, and no figure or record holds a phone number) | Company Admin, Sales Manager, Agent |
 | `sellos.reports.engine.refresh_report`, `save_report_definition` (SOS-P5-01, rebuild a report's summary table now, and make or change a report definition) | Company Admin |
+| `sellos.reports.partner.partner_report` (SOS-P5-03, a channel partner's own leads by stage for a range of dates, with their deal and commission panels that switch on when SOS-P4-06 and SOS-P7-04 are done; only a pure partner login, and only their own records) | Channel Partner |
+| `sellos.reports.platform.list_platform_reports`, `run_platform_report` (SOS-P5-03, companies, usage and calling spend as totals per company, with revenue, churn and failed payment panels that switch on when billing is live; totals only, no lead, client or call record and no phone number) | Platform Admin |
 
 Each story that adds a method adds a row here.
 
@@ -266,3 +268,7 @@ is final. The DocType controllers enforce it on every save, whoever saves.
 * A site with `sellos_control_site` set to 1 in its `site_config.json` is a control site. There the
   `guard_control_site` request hook (`sellos/provisioning/control.py`) refuses every signed in user who is
   not a Platform Admin, apart from sign out. Company sites never have the setting.
+* Company Usage (SOS-P5-03) is a fourth DocType there: one row per company and month with four counts and
+  the calling spend in rupees, read by the Platform Admin's reports (`/sellos/control/reports`). It holds no
+  lead, client or call record and no phone number, `record_usage` refuses any other key, and it is never
+  deleted. Only the Platform Admin (and System Manager, read only) holds permission on it.

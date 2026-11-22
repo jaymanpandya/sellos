@@ -365,6 +365,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Match %"],
 			["client_name", "like", "Gate WhatsApp %"],
 			["client_name", "like", "Gate Report Engine %"],  # SOS-P5-01
+			["client_name", "like", "Gate Portal Report %"],  # SOS-P5-03
 		],
 		pluck="name",
 	)
@@ -614,7 +615,7 @@ def remove_control_records():
 	The app never deletes them, so this goes to the tables. A spec that creates tenants runs it in its
 	before and after hooks, so no tenant stays behind for the backend tests that run next.
 	"""
-	for doctype in ("Provisioning Job", "Tenant", "Plan"):
+	for doctype in ("Company Usage", "Provisioning Job", "Tenant", "Plan"):
 		frappe.db.delete("Version", {"ref_doctype": doctype})
 		frappe.db.delete(doctype)
 	frappe.db.commit()  # nosemgrep
@@ -845,6 +846,13 @@ def seed_regression_data():
 	  calls above, so every figure opens its records. Nothing else is added: the summary table is built by the
 	  nightly job, or by Refresh summary table on the Reports screen.
 
+	* Channel Partner and Platform reports (SOS-P5-03): the gate channel partner's own leads (Partner Lead One
+	  and Two above) are what Your results lists, so no data is added for them, and their deal and commission
+	  panels wait for SOS-P4-06 and SOS-P7-04. Each of the four tenants above has one Company Usage row for
+	  this month, made by sellos.reports.platform.record_usage (users, new leads, calls, talk time and calling
+	  spend), so Platform reports shows totals per company. Its revenue, churn and failed payment panels wait
+	  for billing.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -1000,6 +1008,7 @@ def seed_regression_data():
 	_seed_calling_rules(admin, agent_one)
 	_seed_call_reports_regression()
 	_seed_control_site()
+	_seed_company_usage()
 	_seed_setup_wizard(admin)
 	_seed_sales_teams(admin, agent_one, agent_two, agent_three)
 	_seed_follow_ups(agent_one)
@@ -1804,6 +1813,102 @@ def remove_report_engine():
 	return remove_seeded_leads()
 
 
+PORTAL_LEADS = (
+	# stage the lead is on, who holds it (the gate partner, or the gate agent, whom the partner must not see)
+	("New", "partner"),
+	("New", "partner"),
+	("Contacted", "partner"),
+	("New", "agent"),
+)
+PORTAL_USAGE = {
+	"portalone": (4, 10, 6, 300, "12.50"),
+	"portaltwo": (2, 5, 2, 100, "0.75"),
+	"portalthree": (0, 0, 0, 0, "0"),
+}
+
+
+def portal_figures(start, end):
+	"""What the Lead table itself holds for the gate partner for the two days (SOS-P5-03), by stage, read with
+	SQL that shares no code with the report, so a spec can check Your results against it."""
+	partner = TEST_USERS["channel_partner"]["email"]
+	rows = frappe.db.sql(
+		"""select stage, count(*) from `tabLead` where archived = 0 and date(creation) between %s and %s
+		and (owner = %s or assigned_to = %s) group by stage""",
+		(start, end, partner, partner),
+	)
+	return {stage: int(count) for stage, count in rows}
+
+
+def seed_portal_reports():
+	"""What the Channel Partner and Platform reports spec needs (SOS-P5-03): four leads made through
+	sellos.crm.api (three of the gate partner, one of the gate agent), three tenants made as the Platform Admin
+	with this month's usage recorded through record_usage, and what the tables hold for them, read with SQL.
+	remove_portal_reports undoes it."""
+	from sellos.crm import api as crm
+	from sellos.reports.platform import record_usage
+
+	_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	owners = {"partner": TEST_USERS["channel_partner"]["email"], "agent": TEST_USERS["agent"]["email"]}
+	tag = frappe.generate_hash(length=6)
+	for seed, (stage, who) in enumerate(PORTAL_LEADS, start=5301):
+		with _as_user(admin):
+			client = crm.save_client(
+				values={
+					"client_name": f"Gate Portal Report {tag} {seed}",
+					"client_type": "Buyer",
+					"phone": phones.in_mobile(seed),
+				}
+			)
+			lead = crm.save_lead(
+				values={"client": client["name"], "source": "Website", "assigned_to": owners[who]}
+			)
+		if stage != "New":
+			with _as_user(admin):
+				crm.move_lead_stage(lead["lead"]["name"], stage)
+	platform_admin = TEST_USERS["platform_admin"]["email"]
+	with _as_user(platform_admin):
+		for tenant_id, (users, leads, calls, seconds, rupees) in PORTAL_USAGE.items():
+			if not frappe.db.exists("Tenant", tenant_id):
+				frappe.get_doc(
+					{
+						"doctype": "Tenant",
+						"tenant_id": tenant_id,
+						"company_name": f"Gate Portal {tenant_id[6:].title()} Realty",
+						"admin_email": f"{tenant_id}@example.com",
+					}
+				).insert()
+			record_usage(
+				tenant_id,
+				{
+					"users": users,
+					"leads": leads,
+					"calls": calls,
+					"call_seconds": seconds,
+					"call_cost": rupees,
+				},
+			)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	start, end = str(add_days(today(), -29)), str(today())
+	return {
+		"from_date": start,
+		"to_date": end,
+		"partner": portal_figures(start, end),
+		"tenants": {t: f"Gate Portal {t[6:].title()} Realty" for t in PORTAL_USAGE},
+		"usage": {t: [*v[:4], float(v[4])] for t, v in PORTAL_USAGE.items()},
+	}
+
+
+def remove_portal_reports():
+	"""Undo seed_portal_reports (tests only): the four leads, and the three tenants with their jobs and usage.
+	The app deletes none of them, so this goes to the tables."""
+	for doctype in ("Company Usage", "Provisioning Job"):
+		frappe.db.delete(doctype, {"tenant": ["in", list(PORTAL_USAGE)]})
+	frappe.db.delete("Version", {"ref_doctype": "Tenant", "docname": ["in", list(PORTAL_USAGE)]})
+	frappe.db.delete("Tenant", {"name": ["in", list(PORTAL_USAGE)]})
+	return remove_seeded_leads()
+
+
 def seed_call_reports():
 	"""What the call reports spec needs (SOS-P2-11): the caller queue's six leads (one for each consent
 	case), seven calls on them placed through the fake provider (REPORT_CALL_PLAN), and the date range that
@@ -1882,6 +1987,34 @@ def _seed_control_site():
 				tenant.status = step
 				tenant.save()
 	_settle_seed_jobs(platform_admin)
+
+
+# SOS-P5-03: one month of totals for each regression tenant: users, new leads, calls, seconds, rupees.
+REGRESSION_USAGE = {
+	"regressionone": (3, 12, 20, 2400, "41.50"),
+	"regressiontwo": (5, 30, 55, 6000, "118.25"),
+	"regressionthree": (8, 61, 140, 15000, "302.00"),
+	"regressionfour": (0, 0, 0, 0, "0"),
+}
+
+
+def _seed_company_usage():
+	"""This month's Company Usage of each regression tenant (SOS-P5-03), through the production function.
+	Safe to run again: a month's row is replaced."""
+	from sellos.reports.platform import record_usage
+
+	for tenant, (users, leads, calls, seconds, rupees) in REGRESSION_USAGE.items():
+		if frappe.db.exists("Tenant", tenant):
+			record_usage(
+				tenant,
+				{
+					"users": users,
+					"leads": leads,
+					"calls": calls,
+					"call_seconds": seconds,
+					"call_cost": rupees,
+				},
+			)
 
 
 def _settle_seed_jobs(platform_admin):

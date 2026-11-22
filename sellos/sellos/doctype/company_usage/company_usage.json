@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-11-22 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "tenant",
+  "period_start",
+  "users",
+  "leads",
+  "calls",
+  "call_seconds",
+  "call_cost",
+  "recorded_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "tenant",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Tenant",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "label": "Month",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "users",
+   "fieldtype": "Int",
+   "label": "Users"
+  },
+  {
+   "default": "0",
+   "fieldname": "leads",
+   "fieldtype": "Int",
+   "label": "New leads"
+  },
+  {
+   "default": "0",
+   "fieldname": "calls",
+   "fieldtype": "Int",
+   "label": "Calls"
+  },
+  {
+   "default": "0",
+   "fieldname": "call_seconds",
+   "fieldtype": "Int",
+   "label": "Talk time in seconds"
+  },
+  {
+   "default": "0",
+   "fieldname": "call_cost",
+   "fieldtype": "Float",
+   "label": "Calling spend in rupees",
+   "precision": "2"
+  },
+  {
+   "fieldname": "recorded_on",
+   "fieldtype": "Datetime",
+   "label": "Recorded on",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Company Usage",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "SellOS Platform Admin", "read": 1},
+  {"role": "System Manager", "read": 1}
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

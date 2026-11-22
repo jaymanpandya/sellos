@@ -8,6 +8,13 @@ export const PERSONAS = [
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
 			{ key: "tenants", label: "Companies", to: "/control/tenants", area: "platform" },
+			// SOS-P5-03: companies, usage and calling spend as totals per company.
+			{
+				key: "platform-reports",
+				label: "Reports",
+				to: "/control/reports",
+				area: "platform",
+			},
 		],
 	},
 	{
@@ -108,6 +115,8 @@ export const PERSONAS = [
 			},
 			{ key: "shared", label: "Shared projects", to: "/partner/shared", area: "partner" },
 			{ key: "leads", label: "Leads", to: "/partner/leads", area: "partner" },
+			// SOS-P5-03: the partner's own leads, deals and commission statements.
+			{ key: "results", label: "Your results", to: "/partner/reports", area: "partner" },
 		],
 	},
 	{
