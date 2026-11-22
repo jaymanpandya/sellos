@@ -1493,7 +1493,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 3
 - **Dependencies:** SOS-P5-07, SOS-P2-11
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-P5-08: Run the AI pilot
 - **Epic:** Voice AI pilot
