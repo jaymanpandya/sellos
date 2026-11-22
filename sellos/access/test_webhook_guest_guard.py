@@ -3,7 +3,9 @@
 # `sellos.access.public_intake`, built once by SOS-P2-08; it only creates or merges a lead through
 # sellos.crm.intake). This test fails the build when a method in the sellos package allows guests and is
 # in neither registry, or when a registered method does not declare every check.
-# docs/permissions.md and CLAUDE.md ("Provider webhooks", "Public intake forms") hold the rules.
+# A third kind (SOS-LOOP, 22 November 2026): a public listings feed (registry `sellos.access.public_listings`,
+# built once by SOS-P4-08), the website reading published listings with the Listings read key.
+# docs/permissions.md and CLAUDE.md ("Provider webhooks", "Public intake forms", "Public listings feed") hold the rules.
 # SOS-P2-08 built the intake registry and the first public intake method, the enquiry page's submit.
 import importlib
 
@@ -54,6 +56,30 @@ def registered_intakes():
 	return module.declared_intakes()
 
 
+# What every registered public listings feed declares (docs/permissions.md, "Public listings feed").
+# A value of None or False, or a missing key, fails.
+REQUIRED_LISTINGS_CHECKS = (
+	"read_only",  # never writes
+	"published_only",  # only published listings
+	"field_allowlist",  # the explicit list of returned fields (no owner, phone, mandate, notes, unpublished media)
+	"key_in_header",  # the Listings read key is read from a header, never the URL
+	"scope_listings_read",  # only a Listings read key; a Lead intake key is refused
+	"uniform_refusal",  # a bad key gets one short answer that reveals nothing
+	"rate_limit_per_key",  # requests per minute per key
+	"rate_limit_per_tenant",  # requests per minute per tenant
+	"max_page_size",  # the page size cap
+	"etag",  # caching with ETag
+)
+
+
+def registered_listings_feeds():
+	try:
+		module = importlib.import_module("sellos.access.public_listings")
+	except ModuleNotFoundError:
+		return {}
+	return module.declared_listings_feeds()
+
+
 def guest_methods_in_sellos():
 	import_all_sellos_modules()
 	return sorted(
@@ -64,17 +90,19 @@ def guest_methods_in_sellos():
 
 
 class TestGuestMethodsAreWebhooks(IntegrationTestCase):
-	def test_every_guest_method_is_a_registered_webhook_or_public_intake(self):
-		registered = {**registered_webhooks(), **registered_intakes()}
+	def test_every_guest_method_is_a_registered_webhook_intake_or_listings_feed(self):
+		registered = {**registered_webhooks(), **registered_intakes(), **registered_listings_feeds()}
 		unregistered = [path for path in guest_methods_in_sellos() if path not in registered]
 		self.assertEqual(
 			unregistered,
 			[],
-			"These methods allow guests but are neither registered provider webhooks nor registered public "
-			"intake methods. A method without a login must be a webhook (signature check, replay "
-			"protection, body cap, rate limit per tenant, per tenant secret) or a public intake method "
-			"(write only, rate limits, honeypot, body cap, validation, form key, consent evidence). "
-			"See docs/permissions.md, Provider webhooks and Public intake forms.",
+			"These methods allow guests but are not registered provider webhooks, registered public "
+			"intake methods or registered public listings feeds. A method without a login must be a "
+			"webhook (signature check, replay protection, body cap, rate limit per tenant, per tenant "
+			"secret), a public intake method (write only, rate limits, honeypot, body cap, validation, "
+			"form key, consent evidence) or a public listings feed (read only, published only, field "
+			"allowlist, key in a header, uniform refusal, rate limits, page cap, ETag). See "
+			"docs/permissions.md, Provider webhooks, Public intake forms and Public listings feed.",
 		)
 
 	def test_every_registered_webhook_declares_every_check(self):
@@ -87,9 +115,22 @@ class TestGuestMethodsAreWebhooks(IntegrationTestCase):
 			for name in REQUIRED_INTAKE_CHECKS:
 				self.assertTrue(checks.get(name), f"{path} does not declare {name}")
 
-	def test_a_method_is_not_both_a_webhook_and_a_public_intake(self):
-		both = set(registered_webhooks()) & set(registered_intakes())
-		self.assertEqual(sorted(both), [], "a guest method is one kind, not both")
+	def test_every_registered_listings_feed_declares_every_check(self):
+		for path, checks in registered_listings_feeds().items():
+			for name in REQUIRED_LISTINGS_CHECKS:
+				self.assertTrue(checks.get(name), f"{path} does not declare {name}")
+
+	def test_a_method_is_only_one_kind(self):
+		kinds = (set(registered_webhooks()), set(registered_intakes()), set(registered_listings_feeds()))
+		for i, a in enumerate(kinds):
+			for b in kinds[i + 1 :]:
+				self.assertEqual(sorted(a & b), [], "a guest method is one kind, not two")
+
+	def test_a_registered_listings_feed_is_also_a_guest_method(self):
+		import_all_sellos_modules()
+		guests = set(guest_methods_in_sellos())
+		for path in registered_listings_feeds():
+			self.assertIn(path, guests, f"{path} is registered as a listings feed but does not allow guests")
 
 	def test_a_registered_intake_is_also_a_guest_method(self):
 		import_all_sellos_modules()

@@ -76,7 +76,7 @@ Platform Admin, Company Admin, Sales Manager, Agent, Client and Channel Partner.
 
 ## Provider webhooks
 
-Decided by Jayman on 20 November 2026 (SOS-P2-06). Every API method needs a login, with two exceptions (the second is "Public intake forms" below): a **provider webhook**, the call a provider such as Plivo (calls, P2), WhatsApp or email (P5) or a payment provider (P6) makes to SellOS with no SellOS user. A webhook is a declared kind of method: it is registered as a webhook (`sellos.access.webhooks`, not `@sellos_api`), it is the only method that allows guests, and it is listed under its own heading in `docs/permissions.md`. Every webhook, whatever the provider:
+Decided by Jayman on 20 November 2026 (SOS-P2-06). Every API method needs a login, with three exceptions (the second is "Public intake forms" below, the third "Public listings feed"): a **provider webhook**, the call a provider such as Plivo (calls, P2), WhatsApp or email (P5) or a payment provider (P6) makes to SellOS with no SellOS user. A webhook is a declared kind of method: it is registered as a webhook (`sellos.access.webhooks`, not `@sellos_api`), it is the only method that allows guests, and it is listed under its own heading in `docs/permissions.md`. Every webhook, whatever the provider:
 
 * **Signature first.** It checks the provider's signature before any database work. An invalid or missing signature writes nothing and reveals nothing: the same short answer for every refusal, no reason, no tenant or record named.
 * **Replays and order.** A replayed event changes nothing, and an out of order event is ignored (a late "ringing" never undoes "hung up"). The event id, or the provider's timestamp and nonce, is remembered per tenant.
@@ -90,7 +90,7 @@ A new provider adds a webhook under these rules in its own task, tests valid, in
 
 ## Public intake forms
 
-Decided by Jayman on 21 November 2026 (SOS-LOOP). The second exception to "every API method needs a login", next to provider webhooks: a **public intake form**, the submit method of the enquiry page (SOS-P2-08) and the website form (SOS-P1-09), which a prospect uses with no SellOS user. It may only create or merge a lead through `sellos.crm.intake`. It is registered in `sellos.access.public_intake` (not `@sellos_api`), listed under its own heading in `docs/permissions.md`, and the registry and its shared checks are built once, in SOS-P2-08. Every public intake method:
+Decided by Jayman on 21 November 2026 (SOS-LOOP). The second exception to "every API method needs a login", next to provider webhooks (the third is "Public listings feed" below): a **public intake form**, the submit method of the enquiry page (SOS-P2-08) and the website form (SOS-P1-09), which a prospect uses with no SellOS user. It may only create or merge a lead through `sellos.crm.intake`. It is registered in `sellos.access.public_intake` (not `@sellos_api`), listed under its own heading in `docs/permissions.md`, and the registry and its shared checks are built once, in SOS-P2-08. Every public intake method:
 
 * **Write only.** It answers a thank you and a reference code, nothing about whether the person already existed, which lead was merged, or why a field failed beyond a generic message.
 * **Rate limited** per address and per tenant, in the cache, before any database work.
@@ -100,7 +100,22 @@ Decided by Jayman on 21 November 2026 (SOS-LOOP). The second exception to "every
 * **Consent evidence.** The consent wording shown, its version, the time and the address are stored as a private file (`/private/files/...`) and linked as the Consent Record's evidence.
 * **Tenant.** The tenant is the site the request arrives on. The body, headers and query never choose it.
 * **No cookies, nothing readable back.** The method sets no cookie and returns no record data.
-* **Build check.** `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is neither a registered provider webhook nor a registered public intake method that declares every check. Never add `allow_guest=True` to anything else.
+* **Build check.** `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is not a registered provider webhook, a registered public intake method or a registered public listings feed, each declaring every check. Never add `allow_guest=True` to anything else.
+
+## Public listings feed
+
+Decided by Jayman on 22 November 2026 (SOS-LOOP). The third exception to "every API method needs a login": a **public listings feed**, the read method the company's website calls to show published listings (SOS-P4-08), with no SellOS user, using only the Listings read key from the per company key record of SOS-P1-09. It is registered in `sellos.access.public_listings` (not `@sellos_api`), built once in SOS-P4-08 with its shared checks, and listed under its own heading in `docs/permissions.md`. Every public listings method:
+
+* **Read only, published only.** It never writes, and it returns only listings that are published.
+* **Explicit allowlist of fields.** Only fields named in an allowlist are returned. Never owner or seller data, phone numbers, mandate or dossier files, internal notes, or unpublished media. A new field is added to the allowlist on purpose, never by default.
+* **Key in a header.** The Listings read key is sent in a header and never in the URL. A Lead intake key never reads listings, and a Listings read key never creates leads.
+* **One short refusal.** A bad, missing or wrong scope key gets the same short answer, revealing nothing (no reason, no tenant or record named).
+* **Rate limited** per key and per tenant, in the cache, before any database work. **Page size cap:** a larger page is clamped or refused.
+* **Caching with ETag.** Answers carry an ETag and an unchanged request gets a not modified answer.
+* **Tenant.** The tenant is the site the request arrives on. The body, headers and query never choose it.
+* **No cookies.** The method sets no cookie.
+* **Outbound change webhook.** The webhook that announces listing changes is signed with a per tenant secret that never appears in a log, is retried, uses HTTPS only, refuses private addresses, and carries no personal data (ids and change kind only).
+* **Build check.** `sellos/access/test_webhook_guest_guard.py` covers it. Never add `allow_guest=True` to anything else.
 
 ## Secrets
 

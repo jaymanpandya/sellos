@@ -165,7 +165,7 @@ here, and each task adds its row.
 
 ## Public intake forms
 
-Decided by Jayman on 21 November 2026 (SOS-LOOP). The second kind of method that may be called without a login: the submit method of a public form (the enquiry page, SOS-P2-08; the website form, SOS-P1-09). It only creates or merges a lead through `sellos.crm.intake`. It is registered in `sellos.access.public_intake`, built once in SOS-P2-08, and allows guests. `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is neither a registered provider webhook nor a registered public intake method with these checks.
+Decided by Jayman on 21 November 2026 (SOS-LOOP). The second kind of method that may be called without a login: the submit method of a public form (the enquiry page, SOS-P2-08; the website form, SOS-P1-09). It only creates or merges a lead through `sellos.crm.intake`. It is registered in `sellos.access.public_intake`, built once in SOS-P2-08, and allows guests. `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is not a registered provider webhook, a registered public intake method with these checks, or a registered public listings feed.
 
 | Check | Rule |
 | --- | --- |
@@ -187,6 +187,30 @@ Registered public intake methods (one row each as they are built):
 | `sellos.crm.website_form.submit_website_lead` (the website's form: name, phone, optional email, message, form name and the consent wording shown; body cap 16 KB, 60 requests a minute per address and 300 per tenant, honeypot field `company_url`, the company's "Lead intake" key in the `key` field, made and rotated by a Company Admin, only its hash kept and shown once) | SOS-P1-09 | A client and a lead (or the lead the number belongs to) through `sellos.crm.intake.take`. With wording: an inquiry Consent Record (7 days) with a private evidence file and the lead Consented. Without wording: accepted, the lead stays Unknown, a Lead Activity records the warning and no Consent Record is made |
 
 A missed call to the 022 number (SOS-P2-08) is not a public method: it arrives as a Plivo event through the provider webhook (`plivo_call_event`, signature first) and goes to the same `sellos.crm.intake.take`.
+
+## Public listings feed
+
+Decided by Jayman on 22 November 2026 (SOS-LOOP). The third kind of method that may be called without a login: the read method the company's website uses to show published listings (SOS-P4-08), using only the Listings read key from the per company key record of SOS-P1-09. It is registered in `sellos.access.public_listings`, built once in SOS-P4-08, and allows guests. `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is not a registered provider webhook, a registered public intake method or a registered public listings feed with these checks.
+
+| Check | Rule |
+| --- | --- |
+| Access | Read only; published listings only |
+| Fields | An explicit allowlist. No owner or seller data, no phone numbers, no mandate or dossier files, no internal notes, no unpublished media |
+| Key | The Listings read key, in a header, never in the URL. A Lead intake key is refused here and a Listings read key never creates leads |
+| Refusal | A bad key gets one short answer that reveals nothing |
+| Rate limit | Per key and per tenant, in the cache |
+| Page size | Capped |
+| Caching | ETag; an unchanged request gets a not modified answer |
+| Tenant | The site the request arrives on. Never the body, a header or the query |
+| Cookies | None |
+
+Outbound change webhook (not a guest method, SellOS calls the website): signed with a per tenant secret that never appears in a log, retried, HTTPS only, refuses private addresses, carries no personal data (ids and change kind only).
+
+Registered public listings feeds (one row each as they are built):
+
+| Method | Task | Reads |
+| --- | --- | --- |
+| (none yet) | SOS-P4-08 | Published listings, allowlisted fields only |
 
 ## The permission test suite (P1.05)
 

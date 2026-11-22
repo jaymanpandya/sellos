@@ -52,3 +52,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-21 03:38 | - | paused | the regression pause file exists | 0 | 0.5 |
 | 2026-11-21 09:59 | - | paused | the regression pause file exists | 0 | 9.1 |
 | 2026-11-21 22:15 | - | paused | the regression pause file exists | 0 | 0.2 |
+| 2026-11-21 23:33 | SOS-P4-08 | needs-input | SOS-P4-08 needs a method that a site's website can call with no SellOS login, using only a Listings read key. CLAUDE.md allows only two kinds of guest method: provider webhooks, and public intake for… | 0 |  |
