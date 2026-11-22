@@ -1,0 +1,151 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:report_key",
+ "creation": "2026-11-22 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "report_key",
+  "title",
+  "enabled",
+  "description",
+  "section_data",
+  "source_doctype",
+  "group_by",
+  "measure",
+  "measure_field",
+  "filters",
+  "section_roles",
+  "visible_to_sales_manager",
+  "visible_to_agent",
+  "section_summary",
+  "summarised_to",
+  "last_refreshed"
+ ],
+ "fields": [
+  {
+   "fieldname": "report_key",
+   "fieldtype": "Data",
+   "label": "Key",
+   "reqd": 1,
+   "unique": 1,
+   "set_only_once": 1,
+   "description": "Lower case letters, digits and hyphens, for example lead-by-stage."
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "What it shows"
+  },
+  {
+   "fieldname": "section_data",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Select",
+   "label": "Records",
+   "options": "Lead\nCall Log\nSite Visit\nLead Task",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "group_by",
+   "fieldtype": "Data",
+   "label": "Group by",
+   "description": "A field the records can be grouped by (see sellos.reports.sources). Empty for one total."
+  },
+  {
+   "default": "Count",
+   "fieldname": "measure",
+   "fieldtype": "Select",
+   "label": "Figure",
+   "options": "Count\nSum",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.measure=='Sum'",
+   "fieldname": "measure_field",
+   "fieldtype": "Data",
+   "label": "Field to add up"
+  },
+  {
+   "fieldname": "filters",
+   "fieldtype": "Small Text",
+   "label": "Fixed filters",
+   "description": "A JSON object of field and value pairs, for example {\"purpose\": \"Service\"}."
+  },
+  {
+   "fieldname": "section_roles",
+   "fieldtype": "Section Break",
+   "label": "Who reads it"
+  },
+  {
+   "default": "1",
+   "fieldname": "visible_to_sales_manager",
+   "fieldtype": "Check",
+   "label": "Sales Manager (own team's records)"
+  },
+  {
+   "default": "0",
+   "fieldname": "visible_to_agent",
+   "fieldtype": "Check",
+   "label": "Agent (own records)"
+  },
+  {
+   "fieldname": "section_summary",
+   "fieldtype": "Section Break",
+   "label": "Summary table"
+  },
+  {
+   "fieldname": "summarised_to",
+   "fieldtype": "Date",
+   "label": "Summarised to",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_refreshed",
+   "fieldtype": "Datetime",
+   "label": "Last refreshed",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Report Definition",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

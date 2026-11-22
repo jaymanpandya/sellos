@@ -239,6 +239,13 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.reports.calls.call_report_calls": _ADMIN_ONLY,
 	"sellos.reports.ai_comparison.ai_comparison": _ADMIN_ONLY,  # SOS-P5-09
 	"sellos.reports.ai_comparison.ai_comparison_calls": _ADMIN_ONLY,
+	# SOS-P5-01: the report engine. Everyone who works leads reads the reports made visible to their role,
+	# on the records they may see. Only a Company Admin refreshes and defines reports.
+	"sellos.reports.engine.list_reports": _LOGGERS,
+	"sellos.reports.engine.run_report": _LOGGERS,
+	"sellos.reports.engine.report_records": _LOGGERS,
+	"sellos.reports.engine.refresh_report": _ADMIN_ONLY,
+	"sellos.reports.engine.save_report_definition": _ADMIN_ONLY,
 	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.save_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.check_connection": _ADMIN_ONLY,

@@ -135,6 +135,8 @@ on a company site, because the data scope above is "none".
 | `sellos.inventory.listings_feed.get_listings_feed_settings`, `rotate_listings_key`, `save_listings_webhook` (SOS-P4-08, the listings feed address, the Listings read keys made so far, never a key, and the change webhook address; rotating makes a new key, shown once, and stops the old ones; saving an https address makes the webhook secret, shown once) | Company Admin |
 | `sellos.reports.calls.call_report`, `call_report_calls` (SOS-P2-11, the call reports for a range of dates: cost by agent and by purpose, connect rate, talk time and consent coverage, and the calls behind each figure) | Company Admin |
 | `sellos.reports.ai_comparison.ai_comparison`, `ai_comparison_calls` (SOS-P5-09, AI calling against human calling and the four week human baseline for a range of dates: connect rate, qualified lead rate, site visits booked, cost per qualified lead, handover rate and complaints, and the calls behind each figure) | Company Admin |
+| `sellos.reports.engine.list_reports`, `run_report`, `report_records` (SOS-P5-01, the report engine: the reports made visible to the reader's role, a report's figures for a range of dates and the records behind a figure; a Company Admin reads all records, a Sales Manager its own team's and an Agent its own, and no figure or record holds a phone number) | Company Admin, Sales Manager, Agent |
+| `sellos.reports.engine.refresh_report`, `save_report_definition` (SOS-P5-01, rebuild a report's summary table now, and make or change a report definition) | Company Admin |
 
 Each story that adds a method adds a row here.
 

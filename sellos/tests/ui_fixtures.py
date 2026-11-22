@@ -364,6 +364,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Enquiry %"],
 			["client_name", "like", "Gate Match %"],
 			["client_name", "like", "Gate WhatsApp %"],
+			["client_name", "like", "Gate Report Engine %"],  # SOS-P5-01
 		],
 		pluck="name",
 	)
@@ -838,6 +839,12 @@ def seed_regression_data():
 	  from a missed call to the 022 number, a new lead on the New stage whose name is "Caller" and the last
 	  three digits of its number.
 
+	* Reports (SOS-P5-01): the five standard reports (Leads by stage, Leads by source, Site visits by status,
+	  Follow ups by status and Call cost by purpose) are Report Definitions made by the site's migration, and
+	  are made here too if they are missing. Their figures read the regression leads, visits, follow ups and
+	  calls above, so every figure opens its records. Nothing else is added: the summary table is built by the
+	  nightly job, or by Refresh summary table on the Reports screen.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -1005,10 +1012,18 @@ def seed_regression_data():
 	_seed_partner_shares(admin)
 	_seed_inbound_opt_in()
 	_seed_whatsapp(admin, agent_one)
+	_seed_report_definitions()
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
 	return _regression_summary()
+
+
+def _seed_report_definitions():
+	"""The standard report definitions (SOS-P5-01), made by the production function. Safe to run again."""
+	from sellos.reports.engine import ensure_default_definitions
+
+	ensure_default_definitions()
 
 
 def _seed_call_reports_regression():
@@ -1716,6 +1731,77 @@ def call_log_totals(from_date, to_date):
 		(from_date, to_date),
 	)[0]
 	return {"calls": int(row[0]), "connected": int(row[1]), "seconds": int(row[2]), "rupees": float(row[3])}
+
+
+REPORT_ENGINE_LEADS = (
+	# source, stage the agent moves it to (None: it stays on New)
+	("Website", None),
+	("Website", "Contacted"),
+	("Referral", None),
+	("Referral", "Qualified"),
+)
+
+
+def report_engine_figures(start, end):
+	"""What the Lead table itself holds for the two days (SOS-P5-01): the leads by stage, for the company and
+	for the gate agent (the ones they own or are assigned), read with SQL that shares no code with the report
+	engine, so a spec can check the Reports screen against it."""
+	agent = TEST_USERS["agent"]["email"]
+	everyone = frappe.db.sql(
+		"""select stage, count(*) from `tabLead` where archived = 0 and date(creation) between %s and %s
+		group by stage""",
+		(start, end),
+	)
+	own = frappe.db.sql(
+		"""select stage, count(*) from `tabLead` where archived = 0 and date(creation) between %s and %s
+		and (owner = %s or assigned_to = %s) group by stage""",
+		(start, end, agent, agent),
+	)
+	return {"all": {k: int(v) for k, v in everyone}, "agent": {k: int(v) for k, v in own}}
+
+
+def seed_report_engine():
+	"""What the Reports spec needs (SOS-P5-01): the standard report definitions and four leads of the gate agent
+	made through sellos.crm.api (two Website, two Referral, moved by the agent to Contacted and Qualified), and
+	the last 30 days with what the Lead table holds for them. remove_report_engine undoes it."""
+	from sellos.crm import api as crm
+	from sellos.reports.engine import ensure_default_definitions
+
+	_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	ensure_default_definitions()
+	tag = frappe.generate_hash(length=6)
+	leads = []
+	for seed, (source, stage) in enumerate(REPORT_ENGINE_LEADS, start=5101):
+		with _as_user(admin):
+			client = crm.save_client(
+				values={
+					"client_name": f"Gate Report Engine {tag} {seed}",
+					"client_type": "Buyer",
+					"phone": phones.in_mobile(seed),
+				}
+			)
+			lead = crm.save_lead(values={"client": client["name"], "source": source, "assigned_to": agent})
+		name = lead["lead"]["name"]
+		if stage:
+			with _as_user(agent):
+				crm.move_lead_stage(name, stage)
+		leads.append(name)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	start, end = str(add_days(today(), -29)), str(today())
+	return {"leads": leads, "from_date": start, "to_date": end, "figures": report_engine_figures(start, end)}
+
+
+def remove_report_engine():
+	"""Undo seed_report_engine (tests only): the four leads, and the summary tables a spec refreshed. The app
+	deletes no lead, so this goes to the tables."""
+	frappe.db.delete("Report Summary")
+	for name in frappe.get_all("Report Definition", pluck="name"):
+		frappe.db.set_value(
+			"Report Definition", name, {"summarised_to": None, "last_refreshed": None}, update_modified=False
+		)
+	return remove_seeded_leads()
 
 
 def seed_call_reports():

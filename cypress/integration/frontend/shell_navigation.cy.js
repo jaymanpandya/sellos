@@ -50,7 +50,7 @@ context("SOS-P0-10: app shell", () => {
 		cy.getByTestId("page-body").find('[data-testid="sellos-no-access"]').should("exist");
 	});
 
-	it("shows the company name and the Home, Leads, Call queue, WhatsApp, Site visits and Inventory links for an agent", () => {
+	it("shows the company name and the Home, Leads, Call queue, WhatsApp, Site visits, Inventory and Reports links for an agent", () => {
 		cy.signInFresh("agent");
 		cy.bootOverride((boot) => {
 			boot.company.name = "Pandya Realtors";
@@ -67,6 +67,7 @@ context("SOS-P0-10: app shell", () => {
 					"Home",
 					"Inventory", // SOS-P4-01
 					"Leads",
+					"Reports", // SOS-P5-01
 					"Site visits",
 					"WhatsApp", // SOS-P6-11
 				]);

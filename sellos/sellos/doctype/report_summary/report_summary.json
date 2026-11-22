@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-11-22 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["report", "summary_date", "group_value", "record_count", "total"],
+ "fields": [
+  {
+   "fieldname": "report",
+   "fieldtype": "Link",
+   "label": "Report",
+   "options": "Report Definition",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "summary_date",
+   "fieldtype": "Date",
+   "label": "Day",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "group_value",
+   "fieldtype": "Data",
+   "label": "Group"
+  },
+  {
+   "default": "0",
+   "fieldname": "record_count",
+   "fieldtype": "Int",
+   "label": "Records"
+  },
+  {
+   "default": "0",
+   "fieldname": "total",
+   "fieldtype": "Float",
+   "label": "Total",
+   "precision": "2"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Report Summary",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": []
+}

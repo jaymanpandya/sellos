@@ -109,6 +109,7 @@ after_migrate = [
 	"sellos.crm.lead_sources.ensure_default_sources",
 	"sellos.crm.pipeline.ensure_default_stages",
 	"sellos.crm.call_outcomes.ensure_defaults",  # SOS-P1-21, after the stages it suggests
+	"sellos.reports.engine.ensure_default_definitions",  # SOS-P5-01
 ]
 
 # Uninstallation
@@ -221,6 +222,9 @@ scheduler_events = {
 			"sellos.crm.response_times.check_response_times",  # SOS-P7-13
 		],
 	},
+	"daily": [
+		"sellos.reports.engine.refresh_all_summaries",  # SOS-P5-01
+	],
 	"hourly": [
 		"sellos.crm.consent.expire_due_records",
 		"sellos.crm.notifications.notify_site_visits",  # SOS-P1-23

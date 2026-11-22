@@ -15,6 +15,7 @@ export const ICONS = {
 	teams: "lucide-users-round",
 	assignment: "lucide-shuffle",
 	"call-reports": "lucide-phone-call",
+	reports: "lucide-chart-column",
 	"team-report": "lucide-chart-column",
 	tenants: "lucide-building-2",
 	shares: "lucide-share-2",

@@ -27,6 +27,7 @@ from sellos.access.test_permission_matrix import import_all_sellos_modules, matr
 from sellos.crm import notifications
 from sellos.crm.pipeline import DEFAULT_STAGES
 from sellos.inventory import cost_sheet
+from sellos.reports.engine import ensure_default_definitions
 from sellos.telephony.settings import save_telephony_settings
 from sellos.testing.users import TEST_USERS, create_test_users
 from sellos.tests import phones
@@ -388,6 +389,14 @@ SAMPLE_CALLS = {
 	"sellos.reports.calls.call_report_calls": {},
 	"sellos.reports.ai_comparison.ai_comparison": {},  # SOS-P5-09
 	"sellos.reports.ai_comparison.ai_comparison_calls": {"group": "ai"},
+	# SOS-P5-01: the default reports are made in setUp.
+	"sellos.reports.engine.list_reports": {},
+	"sellos.reports.engine.run_report": {"report": "leads-by-stage"},
+	"sellos.reports.engine.report_records": {"report": "leads-by-stage", "group": ""},
+	"sellos.reports.engine.refresh_report": {"report": "leads-by-stage"},
+	"sellos.reports.engine.save_report_definition": {
+		"values": {"report_key": "p501-matrix", "title": "P501 Matrix", "source_doctype": "Lead"}
+	},
 	# SOS-P2-01: blank values keep what is saved, so the Company Admin's call changes nothing.
 	"sellos.telephony.settings.get_telephony_settings": {},
 	"sellos.telephony.settings.save_telephony_settings": {},
@@ -792,6 +801,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"last_inbound_on": now_datetime(),
 			}
 		).insert(ignore_permissions=True)
+		ensure_default_definitions()  # SOS-P5-01
 		self.names = {
 			"wa_conversation": wa_conversation.name,
 			"call_log": call_row.name,

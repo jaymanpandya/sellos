@@ -21,6 +21,7 @@ const TeamsPage = () => import("./pages/TeamsPage.vue");
 const AssignmentRulesPage = () => import("./pages/AssignmentRulesPage.vue");
 const TeamReportPage = () => import("./pages/TeamReportPage.vue");
 const CallReportsPage = () => import("./pages/CallReportsPage.vue");
+const ReportsPage = () => import("./pages/ReportsPage.vue");
 const CallListsPage = () => import("./pages/CallListsPage.vue");
 const PartnerFirmsPage = () => import("./pages/PartnerFirmsPage.vue");
 const PartnerRegistrationsPage = () => import("./pages/PartnerRegistrationsPage.vue");
@@ -212,6 +213,13 @@ export function createAppRouter() {
 				name: "team-report",
 				component: TeamReportPage,
 				meta: { area: "reports", title: "Team report" },
+			},
+			{
+				// SOS-P5-01: the report engine. Its own area, so the Agent reads it and not the call reports.
+				path: "/reports",
+				name: "reports",
+				component: ReportsPage,
+				meta: { area: "insights", title: "Reports" },
 			},
 			{
 				path: "/reports/calls",

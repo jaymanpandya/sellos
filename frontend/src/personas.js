@@ -13,7 +13,7 @@ export const PERSONAS = [
 	{
 		key: "company_admin",
 		role: "SellOS Company Admin",
-		areas: ["company", "crm", "inventory", "reports", "home", "profile"],
+		areas: ["company", "crm", "inventory", "reports", "insights", "home", "profile"],
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
 			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
@@ -59,13 +59,15 @@ export const PERSONAS = [
 			},
 			{ key: "assignment", label: "Assignment", to: "/company/assignment", area: "company" },
 			{ key: "call-reports", label: "Call reports", to: "/reports/calls", area: "reports" },
+			// SOS-P5-01: the report engine, for every role that works leads.
+			{ key: "reports", label: "Reports", to: "/reports", area: "insights" },
 		],
 	},
 	{
 		// SOS-P1-18: a manager works on the leads of its own team and reads the team's report.
 		key: "sales_manager",
 		role: "SellOS Sales Manager",
-		areas: ["crm", "inventory", "reports", "home", "profile"],
+		areas: ["crm", "inventory", "reports", "insights", "home", "profile"],
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
 			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
@@ -74,12 +76,13 @@ export const PERSONAS = [
 			{ key: "visits", label: "Site visits", to: "/crm/visits", area: "crm" },
 			{ key: "inventory", label: "Inventory", to: "/inventory", area: "inventory" },
 			{ key: "team-report", label: "Team report", to: "/reports/team", area: "reports" },
+			{ key: "reports", label: "Reports", to: "/reports", area: "insights" },
 		],
 	},
 	{
 		key: "agent",
 		role: "SellOS Agent",
-		areas: ["crm", "inventory", "home", "profile"],
+		areas: ["crm", "inventory", "insights", "home", "profile"],
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
 			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
@@ -87,6 +90,7 @@ export const PERSONAS = [
 			{ key: "whatsapp", label: "WhatsApp", to: "/crm/whatsapp", area: "crm" },
 			{ key: "visits", label: "Site visits", to: "/crm/visits", area: "crm" },
 			{ key: "inventory", label: "Inventory", to: "/inventory", area: "inventory" },
+			{ key: "reports", label: "Reports", to: "/reports", area: "insights" },
 		],
 	},
 	{
