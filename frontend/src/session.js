@@ -1,5 +1,5 @@
 import { reactive } from "vue";
-import { markSigningOut, settleBackground } from "./api";
+import { markSigningOut, settleBackground } from "./signout";
 
 export const base = "/sellos";
 
