@@ -31,6 +31,7 @@ LEAD_REASSIGNED_AWAY = "Lead reassigned away"
 FOLLOW_UP_DUE = "Follow up due"
 FOLLOW_UP_OVERDUE = "Follow up overdue"
 SITE_VISIT_TOMORROW = "Site visit tomorrow"
+RESPONSE_MISSED = "Response time missed"  # SOS-P7-13
 # A follow up is "due" from this many minutes before its time.
 DUE_WINDOW_MINUTES = follow_ups.DUE_WINDOW_MINUTES
 # The bell lists this many, newest first. The unread count is of all of them.

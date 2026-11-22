@@ -14,6 +14,7 @@ const SiteVisitsPage = () => import("./pages/SiteVisitsPage.vue");
 const SupportPage = () => import("./pages/SupportPage.vue");
 const UsersPage = () => import("./pages/UsersPage.vue");
 const TelephonyPage = () => import("./pages/TelephonyPage.vue");
+const ResponseAlertsPage = () => import("./pages/ResponseAlertsPage.vue");
 const TeamsPage = () => import("./pages/TeamsPage.vue");
 const AssignmentRulesPage = () => import("./pages/AssignmentRulesPage.vue");
 const TeamReportPage = () => import("./pages/TeamReportPage.vue");
@@ -107,6 +108,12 @@ export function createAppRouter() {
 				name: "telephony",
 				component: TelephonyPage,
 				meta: { area: "company", title: "Telephony" },
+			},
+			{
+				path: "/company/response-alerts",
+				name: "response-alerts",
+				component: ResponseAlertsPage,
+				meta: { area: "company", title: "Response time alerts" },
 			},
 			{
 				path: "/company/call-lists",

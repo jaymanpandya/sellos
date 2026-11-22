@@ -3470,3 +3470,12 @@ def remove_gate_partner_shares():
 	frappe.db.delete("Media Asset", {"title": ["like", f"{GATE_SHARE_PREFIX}%"]})
 	remove_gate_partner_firms()
 	return remove_gate_pricing()
+
+
+def reset_response_limits():
+	"""Put the two response time limits back to their defaults (SOS-P7-13, tests only). The browser spec saves
+	them from the screen, which commits, so the spec calls this before and after."""
+	frappe.db.set_single_value("SellOS Settings", "response_unassigned_minutes", 10)
+	frappe.db.set_single_value("SellOS Settings", "response_contact_minutes", 120)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"unassigned_minutes": 10, "contact_minutes": 120}

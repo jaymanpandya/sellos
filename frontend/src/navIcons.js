@@ -8,6 +8,7 @@ export const ICONS = {
 	users: "lucide-user-cog",
 	support: "lucide-life-buoy",
 	telephony: "lucide-phone",
+	"response-alerts": "lucide-timer",
 	"call-lists": "lucide-list-checks",
 	teams: "lucide-users-round",
 	assignment: "lucide-shuffle",

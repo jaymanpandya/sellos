@@ -12,6 +12,8 @@
   "city",
   "address",
   "untouched_days",
+  "response_unassigned_minutes",
+  "response_contact_minutes",
   "unit_hold_hours",
   "match_weight_budget",
   "match_weight_configuration",
@@ -74,6 +76,20 @@
    "label": "Days before a lead with no follow up is untouched",
    "default": "3",
    "description": "A lead in an Open stage with no open follow up is flagged untouched after this many days (SOS-P1-22)."
+  },
+  {
+   "fieldname": "response_unassigned_minutes",
+   "fieldtype": "Int",
+   "label": "Minutes before an unassigned lead is a missed response",
+   "default": "10",
+   "description": "A new lead still with no agent after this many minutes alerts the Company Admin (SOS-P7-13)."
+  },
+  {
+   "fieldname": "response_contact_minutes",
+   "fieldtype": "Int",
+   "label": "Minutes before an assigned lead with no contact is a missed response",
+   "default": "120",
+   "description": "An assigned lead with no call or activity logged this many minutes after its assignment alerts its agent (SOS-P7-13)."
   },
   {
    "fieldname": "setup_steps_done",

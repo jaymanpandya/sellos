@@ -212,6 +212,11 @@ scheduler_events = {
 		"sellos.crm.notifications.notify_follow_ups",  # SOS-P1-23
 		"sellos.inventory.holds.expire_holds",  # SOS-P7-06
 	],
+	"cron": {
+		"*/5 * * * *": [
+			"sellos.crm.response_times.check_response_times",  # SOS-P7-13
+		],
+	},
 	"hourly": [
 		"sellos.crm.consent.expire_due_records",
 		"sellos.crm.notifications.notify_site_visits",  # SOS-P1-23

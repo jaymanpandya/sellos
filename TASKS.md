@@ -1426,7 +1426,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-19, SOS-P1-22, SOS-P1-23
 - **Browser spec:** required
-- **Status:** In Progress
+- **Status:** Complete
 
 ### SOS-P7-11: Mandate renewal and expiry tracking
 - **Epic:** Inventory, mandates and deals

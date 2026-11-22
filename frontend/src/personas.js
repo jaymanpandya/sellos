@@ -24,6 +24,12 @@ export const PERSONAS = [
 			{ key: "users", label: "Users", to: "/company/users", area: "company" },
 			{ key: "support", label: "Support access", to: "/company/support", area: "company" },
 			{ key: "telephony", label: "Telephony", to: "/company/telephony", area: "company" },
+			{
+				key: "response-alerts",
+				label: "Response alerts",
+				to: "/company/response-alerts",
+				area: "company",
+			},
 			{ key: "call-lists", label: "Call lists", to: "/company/call-lists", area: "company" },
 			{ key: "teams", label: "Teams", to: "/company/teams", area: "company" },
 			{

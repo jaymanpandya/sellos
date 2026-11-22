@@ -1,0 +1,45 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-11-22 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "lead",
+  "limit_type",
+  "agent",
+  "counted_from",
+  "missed_on",
+  "escalation_level",
+  "escalated_on",
+  "escalated_to",
+  "resolved_on",
+  "resolution"
+ ],
+ "fields": [
+  {"fieldname": "lead", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "Lead", "options": "Lead", "reqd": 1, "read_only": 1, "search_index": 1},
+  {"fieldname": "limit_type", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "Limit", "options": "Unassigned\nNo contact", "reqd": 1, "read_only": 1},
+  {"fieldname": "agent", "fieldtype": "Link", "in_list_view": 1, "label": "Agent", "options": "User", "read_only": 1, "description": "The agent the lead was assigned to. Empty for a lead that was never assigned."},
+  {"fieldname": "counted_from", "fieldtype": "Datetime", "label": "Counted from", "read_only": 1, "description": "When the lead was made (Unassigned) or assigned to the agent (No contact)."},
+  {"fieldname": "missed_on", "fieldtype": "Datetime", "in_list_view": 1, "label": "Missed on", "reqd": 1, "read_only": 1},
+  {"fieldname": "escalation_level", "fieldtype": "Int", "label": "Alert level", "default": "1", "read_only": 1, "description": "1 when the first alert was sent, 2 when it was escalated."},
+  {"fieldname": "escalated_on", "fieldtype": "Datetime", "label": "Escalated on", "read_only": 1},
+  {"fieldname": "escalated_to", "fieldtype": "Small Text", "label": "Escalated to", "read_only": 1},
+  {"fieldname": "resolved_on", "fieldtype": "Datetime", "in_list_view": 1, "label": "Resolved on", "read_only": 1},
+  {"fieldname": "resolution", "fieldtype": "Select", "label": "How it was resolved", "options": "\nAssigned\nContacted\nReassigned\nArchived\nClosed", "read_only": 1}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Response Alert",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "SellOS Company Admin", "permlevel": 0, "read": 1}
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

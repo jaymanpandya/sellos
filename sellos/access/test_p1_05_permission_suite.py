@@ -278,6 +278,8 @@ SAMPLE_CALLS = {
 	"sellos.inventory.holds.unblock_unit": {"unit": "{spare_unit_blocked}", "reason": "p706 suite"},
 	"sellos.inventory.holds.get_hold_settings": {},
 	"sellos.inventory.holds.save_hold_settings": {"unit_hold_hours": 48},
+	"sellos.crm.response_times.get_response_limits": {},
+	"sellos.crm.response_times.save_response_limits": {"unassigned_minutes": 10, "contact_minutes": 120},
 	# SOS-P7-07: the spare project has a price list in force, a plan and one cost sheet of the spare unit.
 	"sellos.inventory.pricing.project_pricing": {"project": "{spare_project}"},
 	"sellos.inventory.pricing.save_price_list": {

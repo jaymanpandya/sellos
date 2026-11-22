@@ -175,6 +175,9 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.holds.unblock_unit": _ADMIN_ONLY,
 	"sellos.inventory.holds.get_hold_settings": _ADMIN_ONLY,
 	"sellos.inventory.holds.save_hold_settings": _ADMIN_ONLY,
+	# SOS-P7-13: the two response time limits.
+	"sellos.crm.response_times.get_response_limits": _ADMIN_ONLY,
+	"sellos.crm.response_times.save_response_limits": _ADMIN_ONLY,
 	# SOS-P7-07: price lists, payment plans and cost sheets. A Company Admin keeps the price lists, the payment
 	# plans and the percentages; an Agent reads them; an Agent or a Company Admin makes and reads cost sheets.
 	"sellos.inventory.pricing.project_pricing": _INVENTORY_READERS,
