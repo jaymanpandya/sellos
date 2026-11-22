@@ -24,6 +24,7 @@ export const PERSONAS = [
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
 			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
+			{ key: "sellers", label: "Sellers", to: "/crm/sellers", area: "crm" },
 			{ key: "queue", label: "Call queue", to: "/crm/queue", area: "crm" },
 			{ key: "whatsapp", label: "WhatsApp", to: "/crm/whatsapp", area: "crm" },
 			{ key: "visits", label: "Site visits", to: "/crm/visits", area: "crm" },
@@ -78,6 +79,7 @@ export const PERSONAS = [
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
 			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
+			{ key: "sellers", label: "Sellers", to: "/crm/sellers", area: "crm" },
 			{ key: "queue", label: "Call queue", to: "/crm/queue", area: "crm" },
 			{ key: "whatsapp", label: "WhatsApp", to: "/crm/whatsapp", area: "crm" },
 			{ key: "visits", label: "Site visits", to: "/crm/visits", area: "crm" },
@@ -93,6 +95,7 @@ export const PERSONAS = [
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
 			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
+			{ key: "sellers", label: "Sellers", to: "/crm/sellers", area: "crm" },
 			{ key: "queue", label: "Call queue", to: "/crm/queue", area: "crm" },
 			{ key: "whatsapp", label: "WhatsApp", to: "/crm/whatsapp", area: "crm" },
 			{ key: "visits", label: "Site visits", to: "/crm/visits", area: "crm" },

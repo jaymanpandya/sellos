@@ -7,6 +7,7 @@ import { setPageTitle } from "./shell";
 
 const HomePage = () => import("./pages/HomePage.vue");
 const LeadsPage = () => import("./pages/LeadsPage.vue");
+const SellersPage = () => import("./pages/SellersPage.vue");
 const LeadPage = () => import("./pages/LeadPage.vue");
 const ImportLeadsPage = () => import("./pages/ImportLeadsPage.vue");
 const CallQueuePage = () => import("./pages/CallQueuePage.vue");
@@ -59,6 +60,12 @@ export function createAppRouter() {
 				name: "leads",
 				component: LeadsPage,
 				meta: { area: "crm", title: "Leads" },
+			},
+			{
+				path: "/crm/sellers",
+				name: "sellers",
+				component: SellersPage,
+				meta: { area: "crm", title: "Sellers" },
 			},
 			{
 				path: "/crm/leads/:name",

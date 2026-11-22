@@ -1,10 +1,10 @@
 {
  "actions": [],
- "autoname": "field:stage_name",
  "creation": "2026-11-11 00:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "pipeline",
   "stage_name",
   "position",
   "stage_type",
@@ -12,12 +12,23 @@
  ],
  "fields": [
   {
+   "default": "Buyer",
+   "fieldname": "pipeline",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Pipeline",
+   "options": "Buyer\nSeller",
+   "reqd": 1,
+   "set_only_once": 1,
+   "description": "The buyer pipeline (SOS-P1-07) or the seller pipeline (SOS-P4-04). Each has its own stages and limits."
+  },
+  {
    "fieldname": "stage_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Stage",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "position",
@@ -46,11 +57,10 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-11 00:00:00.000000",
+ "modified": "2026-11-22 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "SellOS",
  "name": "Pipeline Stage",
- "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

@@ -74,7 +74,10 @@ def is_setup_complete() -> bool:
 
 def _stages() -> list[dict]:
 	return frappe.get_all(
-		STAGE, fields=["stage_name", "stage_type", "position"], order_by="position asc, stage_name asc"
+		STAGE,
+		filters={"pipeline": pipeline.BUYER},
+		fields=["stage_name", "stage_type", "position"],
+		order_by="position asc, stage_name asc",
 	)
 
 
@@ -290,6 +293,8 @@ def save_stages(stages):
 			rebuild_search=False,
 			show_alert=False,
 		)
+		# The record name no longer follows the stage_name field by itself (SOS-P4-04), so it is set here.
+		frappe.db.set_value(STAGE, new, "stage_name", new, update_modified=False)
 	for position, (old, stage) in enumerate(zip(matched, clean, strict=True), start=1):
 		doc = frappe.get_doc(STAGE, stage["stage_name"]) if old else frappe.new_doc(STAGE)
 		doc.update(

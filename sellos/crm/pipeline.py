@@ -1,4 +1,9 @@
-"""The buyer pipeline (SOS-P1-07): eleven stages, a stage on every lead and a log of every move.
+"""The buyer (SOS-P1-07) and seller (SOS-P4-04) pipelines: a stage on every lead and a log of every move.
+
+A stage belongs to the Buyer or the Seller pipeline, and a lead to one of them. A seller is a Lead on the
+Seller pipeline, linked to a Client (Jayman, SOS-SETUP-34). The limits (MAX_STAGES, one Won and one Lost
+stage, no delete with leads) apply to each pipeline on its own. The rule that a seller cannot reach Listed
+without a signed mandate is SOS-P4-05's: it needs Mandate, and hooks in through check_stage_rules.
 
 Consent never blocks (Jayman, 10 November 2026). A lead in any consent status moves to any stage.
 Moving a lead to the first contact stage (Contacted) without a live Consent Record adds a warning: it
@@ -17,6 +22,10 @@ from frappe.utils import now_datetime
 from sellos.crm import consent
 
 STAGE = "Pipeline Stage"
+
+BUYER = "Buyer"
+SELLER = "Seller"
+PIPELINES = (BUYER, SELLER)
 
 NEW = "New"
 CONSENT_PENDING = "Consent pending"
@@ -44,6 +53,30 @@ DEFAULT_STAGES = [
 	{"stage_name": NURTURE, "stage_type": "Open"},
 ]
 
+SELLER_NEW_ENQUIRY = "New owner enquiry"
+SELLER_QUALIFIED = "Qualified"
+VALUATION_SHARED = "Valuation shared"
+MANDATE_PROPOSED = "Mandate proposed"
+MANDATE_SIGNED = "Mandate signed"
+LISTED = "Listed"
+OFFERS_RECEIVED = "Offers received"
+SOLD = "Sold"
+SELLER_CLOSED_LOST = "Closed lost"
+SELLER_NURTURE = "Nurture"
+
+SELLER_STAGES = [
+	{"stage_name": SELLER_NEW_ENQUIRY, "stage_type": "Open"},
+	{"stage_name": SELLER_QUALIFIED, "stage_type": "Open"},
+	{"stage_name": VALUATION_SHARED, "stage_type": "Open"},
+	{"stage_name": MANDATE_PROPOSED, "stage_type": "Open"},
+	{"stage_name": MANDATE_SIGNED, "stage_type": "Open"},
+	{"stage_name": LISTED, "stage_type": "Open"},
+	{"stage_name": OFFERS_RECEIVED, "stage_type": "Open"},
+	{"stage_name": SOLD, "stage_type": "Won"},
+	{"stage_name": SELLER_CLOSED_LOST, "stage_type": "Lost"},
+	{"stage_name": SELLER_NURTURE, "stage_type": "Open"},
+]
+
 # The stages of the seven stage list SOS-P1-03 seeded, and where their leads go. New, Contacted, Site
 # visit done and Negotiation keep their names.
 OLD_TO_NEW = {
@@ -53,10 +86,28 @@ OLD_TO_NEW = {
 }
 
 
-def _make_stage(name, stage_type, position):
+def stage_doc_name(pipeline, stage_name) -> str:
+	"""The record name of a stage: the stage's own name on the buyer pipeline, "Seller <name>" on the seller
+	pipeline (SOS-P4-04), so a name may be used on both."""
+	return f"Seller {stage_name}" if pipeline == SELLER else stage_name
+
+
+def stages_of(pipeline) -> list[str]:
+	"""The record names of the stages of one pipeline, in order."""
+	return frappe.get_all(
+		STAGE, filters={"pipeline": pipeline}, pluck="name", order_by="position asc, stage_name asc"
+	)
+
+
+def pipeline_of_stage(stage) -> str | None:
+	return frappe.db.get_value(STAGE, stage, "pipeline") if stage else None
+
+
+def _make_stage(name, stage_type, position, pipeline=BUYER):
 	frappe.get_doc(
 		{
 			"doctype": STAGE,
+			"pipeline": pipeline,
 			"stage_name": name,
 			"stage_type": stage_type,
 			"position": position,
@@ -65,28 +116,35 @@ def _make_stage(name, stage_type, position):
 	).insert(ignore_permissions=True)
 
 
-def ensure_default_stages() -> list[str]:
-	"""Make the eleven stages on a site that has none. A site that has stages keeps them: a Company
+def ensure_default_stages(pipeline=BUYER) -> list[str]:
+	"""Make the stages of a pipeline (eleven buyer stages, ten seller stages) on a site whose pipeline has
+	none. A site that has stages keeps them: a Company
 	Admin may have renamed or removed some, and a stage is never made again behind their back. The
 	patch p1_07_buyer_pipeline carries an older list over. Safe to run again."""
-	if frappe.db.count(STAGE):
+	if pipeline not in PIPELINES:
+		frappe.throw(_("The pipeline is Buyer or Seller."))
+	if frappe.db.count(STAGE, {"pipeline": pipeline}):
 		return []
-	for position, stage in enumerate(DEFAULT_STAGES, start=1):
-		_make_stage(stage["stage_name"], stage["stage_type"], position)
-	return [s["stage_name"] for s in DEFAULT_STAGES]
+	defaults = SELLER_STAGES if pipeline == SELLER else DEFAULT_STAGES
+	for position, stage in enumerate(defaults, start=1):
+		_make_stage(stage["stage_name"], stage["stage_type"], position, pipeline)
+	return [s["stage_name"] for s in defaults]
 
 
-def first_stage() -> str:
-	"""The stage a new lead starts on: the first one in the list."""
-	ensure_default_stages()
-	return frappe.get_all(STAGE, pluck="name", order_by="position asc, stage_name asc", limit=1)[0]
+def first_stage(pipeline=BUYER) -> str:
+	"""The stage a new lead of the pipeline starts on: the first one in its list."""
+	ensure_default_stages(pipeline)
+	return stages_of(pipeline)[0]
 
 
-def list_stages() -> list[dict]:
-	"""The stages in order, with how many leads each holds."""
+def list_stages(pipeline=BUYER) -> list[dict]:
+	"""The stages of one pipeline in order, with how many leads each holds. `label` is the stage's own name."""
+	if pipeline not in PIPELINES:
+		frappe.throw(_("The pipeline is Buyer or Seller."))
 	rows = frappe.get_all(
 		STAGE,
-		fields=["name", "stage_type", "position", "is_contact_stage"],
+		filters={"pipeline": pipeline},
+		fields=["name", "stage_name", "stage_type", "position", "is_contact_stage"],
 		order_by="position asc, stage_name asc",
 	)
 	counts = dict(
@@ -95,6 +153,8 @@ def list_stages() -> list[dict]:
 	return [
 		{
 			"name": row.name,
+			"label": row.stage_name,
+			"pipeline": pipeline,
 			"stage_type": row.stage_type,
 			"position": row.position,
 			"is_contact_stage": int(row.is_contact_stage or 0),
@@ -142,6 +202,19 @@ def contact_warning(lead, stage, moved=True) -> dict | None:
 	return {"level": level, "status": status, "message": f"{lead_part.format(stage)} {message}"}
 
 
+def check_stage_pipeline(doc, stage) -> None:
+	"""A lead moves only along its own pipeline: a seller never lands on a buyer stage, nor a buyer on a
+	seller stage (SOS-P4-04)."""
+	lead_pipeline = doc.get("pipeline") or BUYER
+	if pipeline_of_stage(stage) != lead_pipeline:
+		frappe.throw(_("{0} is not a stage of the {1} pipeline.").format(stage, lead_pipeline))
+
+
+def check_stage_rules(doc, stage, previous) -> None:
+	"""The rules of a move into `stage`, besides the Lost reason. Seller stages have none yet. SOS-P4-05
+	adds here that a seller cannot reach Listed without a signed Mandate."""
+
+
 def check_lost_reason(stage, lost_reason) -> str | None:
 	"""A move to a Lost stage asks for a reason from the Lost Reason list (SOS-P1-21), and a new choice
 	must be an enabled one. Returns the reason to record, or None for a stage that is not a Lost stage.
@@ -165,9 +238,11 @@ def move_lead(lead, stage, lost_reason=None) -> dict:
 	if not frappe.db.exists(STAGE, stage):
 		frappe.throw(_("{0} is not a stage of the pipeline.").format(stage))
 	stage = frappe.db.get_value(STAGE, stage, "name")
+	check_stage_pipeline(doc, stage)
 	previous = doc.stage
 	if previous == stage:
 		return {"lead": lead, "previous": previous, "stage": stage, "moved": False, "warning": None}
+	check_stage_rules(doc, stage, previous)
 	reason = check_lost_reason(stage, lost_reason)
 	warning = contact_warning(lead, stage, moved=True)
 	doc.stage = stage
@@ -206,7 +281,8 @@ def stage_view(doc) -> dict:
 		"lost_reason": doc.lost_reason or "",
 		"warning": contact_warning(doc.name, doc.stage, moved=False) if doc.stage else None,
 		"log": log,
-		"stages": list_stages(),
+		"pipeline": doc.get("pipeline") or BUYER,
+		"stages": list_stages(doc.get("pipeline") or BUYER),
 	}
 
 
@@ -216,7 +292,9 @@ def stage_view(doc) -> dict:
 def _set_positions():
 	"""The eleven standard stages in order first, any stage a company added after them."""
 	standard = [s["stage_name"].lower() for s in DEFAULT_STAGES]
-	rows = frappe.get_all(STAGE, fields=["name", "position"], order_by="position asc, name asc")
+	rows = frappe.get_all(
+		STAGE, filters={"pipeline": BUYER}, fields=["name", "position"], order_by="position asc, name asc"
+	)
 	ordered = sorted(
 		rows,
 		key=lambda r: (0, standard.index(r.name.lower())) if r.name.lower() in standard else (1, r.position),
@@ -238,7 +316,7 @@ def carry_over_stages() -> dict:
 	Returns {"seeded", "renamed", "added", "leads_moved", "leads_placed"}.
 	"""
 	result = {"seeded": ensure_default_stages(), "renamed": [], "added": [], "leads_moved": 0}
-	names = {name.lower(): name for name in frappe.get_all(STAGE, pluck="name")}
+	names = {name.lower(): name for name in stages_of(BUYER)}
 	for old, new in OLD_TO_NEW.items():
 		leads = frappe.db.count("Lead", {"stage": old})
 		old_name = names.get(old.lower())
@@ -252,6 +330,7 @@ def carry_over_stages() -> dict:
 				rebuild_search=False,
 				show_alert=False,
 			)
+			frappe.db.set_value(STAGE, new, "stage_name", new, update_modified=False)
 			names.pop(old.lower())
 			names[new.lower()] = new
 			result["renamed"].append(f"{old} -> {new}")

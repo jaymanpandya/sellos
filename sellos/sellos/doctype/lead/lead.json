@@ -11,6 +11,7 @@
   "campaign",
   "partner",
   "assigned_to",
+  "pipeline",
   "stage",
   "lost_reason",
   "notes",
@@ -83,6 +84,16 @@
    "options": "User",
    "in_list_view": 1,
    "in_standard_filter": 1
+  },
+  {
+   "default": "Buyer",
+   "fieldname": "pipeline",
+   "fieldtype": "Select",
+   "label": "Pipeline",
+   "options": "Buyer\nSeller",
+   "in_standard_filter": 1,
+   "set_only_once": 1,
+   "description": "Buyer, or Seller for an owner who wants to sell (SOS-P4-04). Set when the lead is made."
   },
   {
    "fieldname": "stage",

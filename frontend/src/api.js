@@ -62,4 +62,26 @@ export function logBackgroundError(label, error) {
 }
 
 // True once the page is being left. A poller checks it so it does not start a request that will be cut.
-export const isLeavingPage = () => leavingPage;
+// SOS-P4-04: signing out counts as leaving too, so no poll starts between the click and the redirect.
+let signingOut = false;
+export const markSigningOut = () => {
+	signingOut = true;
+};
+export const isLeavingPage = () => leavingPage || signingOut;
+
+// SOS-P4-04: a poll that was already on its way when the user clicked Sign out would be answered 401 by the
+// logged out session. Background reads are tracked here, and signOut waits for them (at most two seconds)
+// before it logs out, so nothing is in flight to be refused.
+const inflight = new Set();
+export function trackBackground(promise) {
+	inflight.add(promise);
+	const done = () => inflight.delete(promise);
+	promise.then(done, done);
+	return promise;
+}
+export function settleBackground(limitMs = 2000) {
+	return Promise.race([
+		Promise.allSettled([...inflight]),
+		new Promise((resolve) => setTimeout(resolve, limitMs)),
+	]);
+}

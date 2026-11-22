@@ -1,4 +1,5 @@
 import { reactive } from "vue";
+import { markSigningOut, settleBackground } from "./api";
 
 export const base = "/sellos";
 
@@ -103,6 +104,8 @@ export function watchSession({
 }
 
 export async function signOut({ fetchFn = fetch, redirect = goToLogin } = {}) {
+	markSigningOut();
+	await settleBackground();
 	const token = window.csrf_token || window.boot?.csrf_token || "";
 	try {
 		await fetchFn("/api/method/logout", {

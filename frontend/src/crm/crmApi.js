@@ -32,7 +32,7 @@ export const crmApi = {
 	listLeadSources: (includeDisabled = 0) =>
 		call("list_lead_sources", { include_disabled: includeDisabled }),
 	saveLeadSource: (values, name = null) => call("save_lead_source", { name, values }),
-	listStages: () => call("list_stages"),
+	listStages: (pipeline = "Buyer") => call("list_stages", { pipeline_name: pipeline }),
 	moveLeadStage: (lead, stage, lostReason = null) =>
 		call("move_lead_stage", { lead, stage, lost_reason: lostReason }),
 	// The call outcome and lost reason lists a Company Admin edits (SOS-P1-21).

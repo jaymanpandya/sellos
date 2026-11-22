@@ -13,9 +13,11 @@ stage whatever it is (SOS-P1-07, `pipeline.move_lead`).
 """
 
 import frappe
+from frappe import _
 from frappe.utils import add_days, cint, flt, get_datetime, getdate, now_datetime, today
 
-from sellos.crm import consent, follow_ups, pipeline
+from sellos.crm import consent, follow_ups
+from sellos.crm import pipeline as pipelines
 from sellos.crm.requirements import REQUIREMENT_FIELDS, has_filters, matches, requirements_view
 
 # A lead with no activity for this many days is marked untouched on the list and the board.
@@ -72,6 +74,13 @@ def _team_agents(team):
 	return frappe.get_all("Sales Team Member", filters={"parent": team}, pluck="agent")
 
 
+def pipeline_name(pipeline=None) -> str:
+	pipeline = pipeline or pipelines.BUYER
+	if pipeline not in pipelines.PIPELINES:
+		frappe.throw(_("The pipeline is Buyer or Seller."))
+	return pipeline
+
+
 def visible_leads(
 	search=None,
 	stage=None,
@@ -91,6 +100,7 @@ def visible_leads(
 	follow_up=None,
 	sort=None,
 	now=None,
+	pipeline=None,
 ) -> list[dict]:
 	"""The leads the user may see that satisfy every filter given, newest change first, each with its
 	client name, consent status, requirements, last contact and untouched mark.
@@ -101,6 +111,8 @@ def visible_leads(
 	overdue ones leading, and the leads with none last. `now` fixes the clock for a test."""
 	follow_ups.check_filter(follow_up, sort)
 	filters = {} if cint(include_archived) else {"archived": 0}
+	# SOS-P4-04: the buyer screens show the Buyer pipeline unless a pipeline is asked for.
+	filters["pipeline"] = pipeline_name(pipeline)
 	for field, value in (("stage", stage), ("assigned_to", assigned_to), ("source", source)):
 		if value:
 			filters[field] = value
@@ -186,19 +198,21 @@ def visible_leads(
 	return follow_ups.sort_by_next_follow_up(result) if sort == "next_follow_up" else result
 
 
-def board(**filters) -> dict:
+def board(pipeline=None, **filters) -> dict:
 	"""One column per stage of the pipeline, in order, with the leads in it, the count and the total
 	budget. A lead on a stage the pipeline no longer has is not shown."""
-	leads = visible_leads(**filters)
+	pipeline = pipeline_name(pipeline)
+	leads = visible_leads(pipeline=pipeline, **filters)
 	by_stage = {}
 	for lead in leads:
 		by_stage.setdefault(lead.stage, []).append(lead)
 	columns = []
-	for stage in pipeline.list_stages():
+	for stage in pipelines.list_stages(pipeline):
 		cards = by_stage.get(stage["name"], [])
 		columns.append(
 			{
 				"stage": stage["name"],
+				"label": stage["label"],
 				"stage_type": stage["stage_type"],
 				"count": len(cards),
 				"total_budget": sum(card["budget"] for card in cards),

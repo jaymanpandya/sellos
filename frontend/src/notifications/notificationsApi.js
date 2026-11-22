@@ -1,6 +1,12 @@
 import { reactive } from "vue";
 
-import { apiRequest, isLeavingPage, logBackgroundError, logRequestError } from "../api";
+import {
+	apiRequest,
+	isLeavingPage,
+	logBackgroundError,
+	logRequestError,
+	trackBackground,
+} from "../api";
 import { personaFor } from "../personas";
 
 // The bell (SOS-P1-23). Each call is one whitelisted method of sellos.crm.api that returns the signed in
@@ -38,7 +44,7 @@ function apply(result) {
 export async function refreshNotifications() {
 	if (isLeavingPage()) return;
 	try {
-		const result = await call("list_notifications");
+		const result = await trackBackground(call("list_notifications"));
 		if (isLeavingPage()) return;
 		apply(result);
 	} catch (error) {

@@ -9,7 +9,7 @@ from sellos.crm import assignment
 from sellos.crm.base import ArchiveOnly, stamp_archive
 from sellos.crm.lead_sources import check_usable
 from sellos.crm.notifications import notify_lead_assignment
-from sellos.crm.pipeline import first_stage
+from sellos.crm.pipeline import BUYER, PIPELINES, check_stage_pipeline, first_stage
 from sellos.crm.requirements import validate_requirements
 
 CAN_BE_ASSIGNED = frozenset({AGENT, CHANNEL_PARTNER, COMPANY_ADMIN})
@@ -26,7 +26,11 @@ class Lead(ArchiveOnly):
 			check_assignee_in_team(self)  # SOS-P1-18
 		check_partner_change(self)  # SOS-P7-02: only the registration and a Company Admin set the partner
 		check_usable(self)
-		self.stage = self.stage or first_stage()  # SOS-P1-07
+		self.pipeline = self.pipeline or BUYER
+		if self.pipeline not in PIPELINES:
+			frappe.throw(_("A lead is on the Buyer or the Seller pipeline."))
+		self.stage = self.stage or first_stage(self.pipeline)  # SOS-P1-07, SOS-P4-04
+		check_stage_pipeline(self, self.stage)
 		validate_requirements(self)
 		stamp_archive(self)
 

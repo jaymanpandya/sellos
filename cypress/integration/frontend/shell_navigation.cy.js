@@ -68,6 +68,7 @@ context("SOS-P0-10: app shell", () => {
 					"Inventory", // SOS-P4-01
 					"Leads",
 					"Reports", // SOS-P5-01
+					"Sellers", // SOS-P4-04
 					"Site visits",
 					"WhatsApp", // SOS-P6-11
 				]);

@@ -46,7 +46,7 @@ CLIENT_FIELDS = (
 	"phone",
 	"overseas_phone",
 )
-LEAD_FIELDS = ("client", "source", "campaign", "assigned_to", "notes", *REQUIREMENT_FIELDS)
+LEAD_FIELDS = ("client", "pipeline", "source", "campaign", "assigned_to", "notes", *REQUIREMENT_FIELDS)
 ACTIVITY_FIELDS = ("lead", "activity_type", "activity_date", "notes")
 TASK_FIELDS = ("lead", "title", "due_date", "due_at", "status", "assigned_to", "notes")
 VISIT_FIELDS = ("lead", "project_name", "visit_datetime", "agent", "status", "notes")
@@ -231,6 +231,7 @@ def list_leads(
 	untouched=0,
 	follow_up=None,
 	sort=None,
+	pipeline=None,
 ):
 	"""The leads the user may see, up to 100, narrowed by every filter given (SOS-P1-24 and SOS-P1-15):
 	stage, agent, team, source, consent status, budget range, configuration, locality, timeline, last
@@ -255,6 +256,7 @@ def list_leads(
 		untouched=untouched,
 		follow_up=follow_up,
 		sort=sort,
+		pipeline=pipeline,
 	)[:100]
 	for lead in leads:
 		tasks = frappe.get_all(
@@ -287,10 +289,12 @@ def get_board(
 	untouched=0,
 	follow_up=None,
 	sort=None,
+	pipeline=None,
 ):
 	"""The pipeline board (SOS-P1-24): one column per stage with the leads the user may see, the count
 	and the total budget, under the same filters as the list. A card moves with move_lead_stage."""
 	return board.board(
+		pipeline=pipeline,
 		search=search,
 		budget_min=budget_min,
 		budget_max=budget_max,
@@ -352,9 +356,10 @@ def delete_lead_source(name):
 
 
 @sellos_api(*READERS)
-def list_stages():
-	"""The buyer pipeline's stages in order, each with its kind and how many leads it holds (SOS-P1-07)."""
-	return pipeline.list_stages()
+def list_stages(pipeline_name="Buyer"):
+	"""The stages of a pipeline (Buyer unless Seller is asked for) in order, each with its kind and how many
+	leads it holds (SOS-P1-07, SOS-P4-04)."""
+	return pipeline.list_stages(pipeline_name)
 
 
 @sellos_api(*LOGGERS)

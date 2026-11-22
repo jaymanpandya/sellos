@@ -38,7 +38,10 @@ def stages_now():
 	return [
 		(row.name, row.stage_type)
 		for row in frappe.get_all(
-			pipeline.STAGE, fields=["name", "stage_type"], order_by="position asc, name asc"
+			pipeline.STAGE,
+			filters={"pipeline": pipeline.BUYER},
+			fields=["name", "stage_type"],
+			order_by="position asc, name asc",
 		)
 	]
 
@@ -46,7 +49,7 @@ def stages_now():
 def clear_stages():
 	"""A site with no stages. The leads come off theirs first (tests only, the test rolls back)."""
 	frappe.db.set_value("Lead", {"stage": ["is", "set"]}, "stage", None, update_modified=False)
-	for name in frappe.get_all(pipeline.STAGE, pluck="name"):
+	for name in frappe.get_all(pipeline.STAGE, filters={"pipeline": pipeline.BUYER}, pluck="name"):
 		frappe.delete_doc(pipeline.STAGE, name, ignore_permissions=True)
 
 

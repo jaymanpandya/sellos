@@ -366,6 +366,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate WhatsApp %"],
 			["client_name", "like", "Gate Report Engine %"],  # SOS-P5-01
 			["client_name", "like", "Gate Portal Report %"],  # SOS-P5-03
+			["client_name", "like", "Gate Seller %"],
 		],
 		pluck="name",
 	)
@@ -499,11 +500,15 @@ def reset_setup_wizard(company_name="Pandya Realtors"):
 	settings.save(ignore_permissions=True)
 	# SOS-P1-07: every lead has a stage, so the stages go back to the eleven and a lead whose stage was
 	# renamed or removed goes back to New.
-	frappe.db.delete("Pipeline Stage")
+	# SOS-P4-04: only the Buyer stages. Deleting the Seller stages too left the seller pipeline empty for every
+	# spec that ran after this one (the gate runs the affected specs before the changed ones).
+	frappe.db.delete("Pipeline Stage", {"pipeline": pipeline.BUYER})
 	pipeline.ensure_default_stages()
+	pipeline.ensure_default_stages(pipeline.SELLER)
 	frappe.db.sql(
-		"update `tabLead` set stage = %s where stage is null or stage not in (select name from `tabPipeline Stage`)",
-		(pipeline.first_stage(),),
+		"update `tabLead` set stage = %s where pipeline = %s"
+		" and (stage is null or stage not in (select name from `tabPipeline Stage`))",
+		(pipeline.first_stage(), pipeline.BUYER),
 	)
 	frappe.db.delete("File", {"attached_to_doctype": "SellOS Settings"})
 	for email in frappe.get_all("User", filters={"name": ["like", f"{WIZARD_USER_PREFIX}%"]}, pluck="name"):
@@ -523,7 +528,9 @@ def setup_wizard_result():
 		"brand_color": settings.brand_color,
 		"logo": settings.logo or "",
 		"complete": bool(settings.setup_complete),
-		"stages": frappe.get_all("Pipeline Stage", pluck="name", order_by="position asc"),
+		"stages": frappe.get_all(
+			"Pipeline Stage", filters={"pipeline": pipeline.BUYER}, pluck="name", order_by="position asc"
+		),
 		"users": {e: sorted(frappe.get_roles(e)) for e in email},
 	}
 
@@ -820,6 +827,9 @@ def seed_regression_data():
 	  (units 1201 and 1202 only) with every Approved firm, and shares Regression Grid with Regression Firm
 	  Approved and then withdraws it with the reason "Regression: sold out". All through the sharing API.
 
+	* Sellers (SOS-P4-04): Regression Seller One (on Valuation shared) and Regression Seller Two (on New owner
+	  enquiry), each a Lead on the Seller pipeline linked to a Client, assigned to the first regression agent.
+
 	* Listings (SOS-P4-02): the published Primary listing Regression Primary 2 BHK (unit 1501 of Regression
 	  Pricing, Rs 1,05,00,000), the published Direct listing Regression Direct Resale (the property Regression
 	  Resale Flat, Rs 82,00,000) and the Partner draft Regression Partner Draft with no price or description,
@@ -872,6 +882,7 @@ def seed_regression_data():
 		_seed_call_outcomes(admin, agent_one)
 		_seed_users(admin)
 		_seed_dormant_lead(admin, agent_one)
+		_seed_sellers(admin, agent_one)
 		_seed_follow_ups(agent_one)
 		_seed_notifications(agent_one)
 		_seed_site_visits(agent_one, agent_two)
@@ -1328,6 +1339,51 @@ def _seed_queue_lead(admin, agent_one):
 		)["lead"]["name"]
 	with _as_user(agent_one):
 		crm.record_consent(lead, "Application", "https://example.com/regression/application-queue")
+
+
+def _seed_sellers(admin, agent_one):
+	"""Regression Seller One and Seller Two (SOS-P4-04): owners who want to sell, each a Lead on the Seller
+	pipeline linked to a Client, made through the CRM API. Seller One is moved to Valuation shared by its own
+	agent. Safe to run again."""
+	from sellos.crm import api as crm
+
+	if frappe.db.exists("Client", {"client_name": f"{REGRESSION_PREFIX}Seller One"}):
+		return
+	made = {}
+	for title, seed in (("Seller One", 141), ("Seller Two", 142)):
+		with _as_user(admin):
+			client = crm.save_client(
+				values={
+					"client_name": f"{REGRESSION_PREFIX}{title}",
+					"client_type": "Seller",
+					"phone": phones.in_mobile(seed),
+				}
+			)
+			made[title] = crm.save_lead(
+				values={
+					"client": client["name"],
+					"pipeline": "Seller",
+					"source": "Referral",
+					"assigned_to": agent_one,
+				}
+			)["lead"]["name"]
+	with _as_user(agent_one):
+		crm.move_lead_stage(made["Seller One"], "Seller Qualified")
+		crm.move_lead_stage(made["Seller One"], "Seller Valuation shared")
+
+
+def make_gate_seller():
+	"""A client for the seller spec to make a seller from (tests only, SOS-P4-04). remove_seeded_leads takes
+	it, and the seller the spec makes, away."""
+	from sellos.crm import api as crm
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	name = f"Gate Seller {tag}"
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		crm.save_client(values={"client_name": name, "client_type": "Seller", "phone": phones.in_mobile(143)})
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"client_name": name}
 
 
 def _seed_pipeline_stages():
