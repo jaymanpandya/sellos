@@ -378,6 +378,9 @@ SAMPLE_CALLS = {
 	"sellos.inventory.shortlists.open_shortlist_item": {"name": "{shortlist}", "item": "{shortlist_item}"},
 	"sellos.inventory.shortlists.my_shortlist_pdf": {"name": "{shortlist}"},
 	"sellos.reports.team.team_report": {},
+	"sellos.reports.partner.partner_report": {},  # SOS-P5-03
+	"sellos.reports.platform.list_platform_reports": {},
+	"sellos.reports.platform.run_platform_report": {"report": "companies"},
 	"sellos.crm.enquiry.get_enquiry_settings": {},  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": {},
 	"sellos.crm.website_form.get_website_settings": {},  # SOS-P1-09
