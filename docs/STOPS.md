@@ -54,3 +54,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-21 22:15 | - | paused | the regression pause file exists | 0 | 0.2 |
 | 2026-11-21 23:33 | SOS-P4-08 | needs-input | SOS-P4-08 needs a method that a site's website can call with no SellOS login, using only a Listings read key. CLAUDE.md allows only two kinds of guest method: provider webhooks, and public intake for… | 0 | 6.6 |
 | 2026-11-22 08:44 | SOS-P4-04 | blocked | the gate still failed after 3 gate run(s): CHANGED SPEC FAILED: crm/seller_pipeline.cy.js; the loop went on to the next task | 112 | 0.0 |
+| 2026-11-22 15:20 | - | paused | the regression pause file exists | 0 |  |
