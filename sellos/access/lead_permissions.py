@@ -28,7 +28,15 @@ SEES_TEAM = frozenset({SALES_MANAGER})
 TEAM_DOCTYPE = "Sales Team"
 DOCTYPE = "Lead"
 CLIENT_DOCTYPE = "Client"
-LEAD_CHILDREN = ("Lead Activity", "Lead Task", "Site Visit", "Consent Record", "Call Log")
+LEAD_CHILDREN = (
+	"Lead Activity",
+	"Lead Task",
+	"Site Visit",
+	"Consent Record",
+	"Call Log",
+	"WhatsApp Conversation",
+	"WhatsApp Message",
+)
 # What a support grant allows (P1.13). A missing permission type means read.
 SUPPORT_PTYPES = frozenset({"read", "select", "print", "report"})
 # SOS-P7-02: a Channel Partner reads their own leads and logs nothing. The registration method makes the lead.

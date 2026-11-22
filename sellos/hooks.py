@@ -170,6 +170,8 @@ permission_query_conditions = {
 	"Site Visit": f"{_LEAD_PERMS}.get_child_query_conditions",
 	"Consent Record": f"{_LEAD_PERMS}.get_child_query_conditions",
 	"Call Log": f"{_LEAD_PERMS}.get_child_query_conditions",  # SOS-P2-05
+	"WhatsApp Conversation": f"{_LEAD_PERMS}.get_child_query_conditions",  # SOS-P6-11
+	"WhatsApp Message": f"{_LEAD_PERMS}.get_child_query_conditions",  # SOS-P6-11
 	"Sales Team": f"{_LEAD_PERMS}.get_team_query_conditions",  # SOS-P1-18
 	"Channel Partner Firm": "sellos.access.partner_firms.get_permission_query_conditions",  # SOS-P7-01
 	"Partner Registration": "sellos.access.partner_registrations.get_permission_query_conditions",  # SOS-P7-02
@@ -183,6 +185,8 @@ has_permission = {
 	"Site Visit": f"{_LEAD_PERMS}.has_child_permission",
 	"Consent Record": f"{_LEAD_PERMS}.has_child_permission",
 	"Call Log": f"{_LEAD_PERMS}.has_child_permission",  # SOS-P2-05
+	"WhatsApp Conversation": f"{_LEAD_PERMS}.has_child_permission",  # SOS-P6-11
+	"WhatsApp Message": f"{_LEAD_PERMS}.has_child_permission",  # SOS-P6-11
 	"Sales Team": f"{_LEAD_PERMS}.has_team_permission",  # SOS-P1-18
 	"Channel Partner Firm": "sellos.access.partner_firms.has_permission",  # SOS-P7-01
 	"Partner Registration": "sellos.access.partner_registrations.has_permission",  # SOS-P7-02

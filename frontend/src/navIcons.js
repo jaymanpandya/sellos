@@ -8,6 +8,8 @@ export const ICONS = {
 	users: "lucide-user-cog",
 	support: "lucide-life-buoy",
 	telephony: "lucide-phone",
+	whatsapp: "lucide-message-circle",
+	"whatsapp-setup": "lucide-message-circle-more",
 	"response-alerts": "lucide-timer",
 	"call-lists": "lucide-list-checks",
 	teams: "lucide-users-round",

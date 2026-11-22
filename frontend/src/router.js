@@ -14,6 +14,8 @@ const SiteVisitsPage = () => import("./pages/SiteVisitsPage.vue");
 const SupportPage = () => import("./pages/SupportPage.vue");
 const UsersPage = () => import("./pages/UsersPage.vue");
 const TelephonyPage = () => import("./pages/TelephonyPage.vue");
+const WhatsAppPage = () => import("./pages/WhatsAppPage.vue");
+const WhatsAppSetupPage = () => import("./pages/WhatsAppSetupPage.vue");
 const ResponseAlertsPage = () => import("./pages/ResponseAlertsPage.vue");
 const TeamsPage = () => import("./pages/TeamsPage.vue");
 const AssignmentRulesPage = () => import("./pages/AssignmentRulesPage.vue");
@@ -108,6 +110,18 @@ export function createAppRouter() {
 				name: "telephony",
 				component: TelephonyPage,
 				meta: { area: "company", title: "Telephony" },
+			},
+			{
+				path: "/company/whatsapp",
+				name: "whatsapp-setup",
+				component: WhatsAppSetupPage,
+				meta: { area: "company", title: "WhatsApp setup" },
+			},
+			{
+				path: "/crm/whatsapp",
+				name: "whatsapp",
+				component: WhatsAppPage,
+				meta: { area: "crm", title: "WhatsApp" },
 			},
 			{
 				path: "/company/response-alerts",

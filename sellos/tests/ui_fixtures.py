@@ -5,6 +5,7 @@ returns from the last line of output. A helper that is not finished raises NotIm
 purpose: the spec that needs it then fails loudly instead of passing on nothing.
 """
 
+import json
 from contextlib import contextmanager
 
 import frappe
@@ -362,6 +363,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Today %"],
 			["client_name", "like", "Gate Enquiry %"],
 			["client_name", "like", "Gate Match %"],
+			["client_name", "like", "Gate WhatsApp %"],
 		],
 		pluck="name",
 	)
@@ -373,7 +375,15 @@ def remove_seeded_leads():
 		frappe.db.delete("Lead Stage Change", {"parent": ["in", leads]})
 		frappe.db.delete("App Notification", {"lead": ["in", leads]})  # SOS-P1-23
 		frappe.db.delete("Lead Assignment", {"lead": ["in", leads]})  # SOS-P1-19
-	for doctype in ("Lead Activity", "Lead Task", "Site Visit", "Consent Record"):
+	for doctype in (
+		"Lead Activity",
+		"Lead Task",
+		"Site Visit",
+		"Consent Record",
+		"WhatsApp Message",
+		"WhatsApp Conversation",
+		"Consent Check",
+	):
 		if leads and frappe.get_meta(doctype).has_field("lead"):
 			frappe.db.delete(doctype, {"lead": ["in", leads]})
 	for doctype, names in (("Lead", leads), ("Client", clients)):
@@ -757,6 +767,14 @@ def seed_regression_data():
 	  Company Admin's call reports show cost by agent and by purpose, a connect rate, talk time and consent
 	  coverage for the last 30 days, and each figure lists its calls.
 
+	* WhatsApp (SOS-P6-11): the company's WhatsApp number saved with fake keys and the fake provider (so
+	  Test connection works), the approved template regression_visit_reminder, and three leads of the gate
+	  agent with a conversation each, made through the production receive and send functions: Regression
+	  WhatsApp Nine (a customer question, the agent's reply, delivered, Unknown with an amber warning),
+	  Regression WhatsApp Ten (an opt in, so Consented with a Consent record whose evidence is the message,
+	  handed to the gate agent as a human) and Regression WhatsApp Eleven (a stop request, so Opted out with
+	  a red warning, and a template sent afterwards because nothing blocks it).
+
 	* Channel partner firms (SOS-P7-01): four firms invited by the Company Admin through the invite method
 	  (mail off) and completed by each contact person through the partner methods: Regression Firm Invited
 	  (waiting for its details), Regression Firm Pending (details and agreement in, waiting for approval),
@@ -986,6 +1004,7 @@ def seed_regression_data():
 	_seed_shortlists(agent_one)
 	_seed_partner_shares(admin)
 	_seed_inbound_opt_in()
+	_seed_whatsapp(admin, agent_one)
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -3479,3 +3498,180 @@ def reset_response_limits():
 	frappe.db.set_single_value("SellOS Settings", "response_contact_minutes", 120)
 	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
 	return {"unassigned_minutes": 10, "contact_minutes": 120}
+
+
+# --- WhatsApp (SOS-P6-11) -------------------------------------------------------------------------
+
+WHATSAPP_TOKEN = "FAKEOK-REGRESSION-WHATSAPP"
+WHATSAPP_SECRET = "regression-whatsapp-signing-secret"
+WHATSAPP_NUMBER_ID = "104829371650999"
+WHATSAPP_SEED = 6201
+WHATSAPP_REGRESSION_SEEDS = {"nine": 6211, "ten": 6212, "eleven": 6213}
+WHATSAPP_TEMPLATE = "regression_visit_reminder"
+WHATSAPP_GATE_TEMPLATE = "gate_whatsapp_visit"
+
+
+def use_fake_whatsapp_provider(on=True):
+	"""Make WhatsApp Settings talk to the fake provider, or stop (SOS-P6-11). The provider is a hidden field
+	read from the database, so the web server sees the change at once; the real one is never called from a
+	test site."""
+	frappe.db.set_single_value("WhatsApp Settings", "provider", "fake" if on else "")
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"fake_provider": bool(on)}
+
+
+def _save_whatsapp_account(admin, template, token=WHATSAPP_TOKEN, secret=WHATSAPP_SECRET):
+	from sellos.whatsapp import settings
+
+	use_fake_whatsapp_provider()
+	with _as_user(admin):
+		settings.save_whatsapp_settings(
+			access_token=token,
+			app_secret=secret,
+			phone_number_id=WHATSAPP_NUMBER_ID,
+			display_number=phones.in_mobile(WHATSAPP_SEED),
+		)
+		settings.save_whatsapp_template(
+			template, "Hello {{1}}, your site visit is at {{2}}.", status="Approved"
+		)
+
+
+def _whatsapp_customer(admin, agent, name, seed):
+	"""A client and a lead of the agent, made through the CRM API as the Company Admin. Returns the lead."""
+	from sellos.crm import api as crm
+
+	with _as_user(admin):
+		client = crm.save_client(
+			values={"client_name": name, "client_type": "Buyer", "phone": phones.in_mobile(seed)}
+		)
+		lead = crm.save_lead(values={"client": client["name"], "source": "Website", "assigned_to": agent})
+	return lead["lead"]["name"]
+
+
+def _whatsapp_say(seed, text, message_id):
+	"""A customer's message as the provider's webhook handler takes it."""
+	from sellos.whatsapp import conversations
+	from sellos.whatsapp.base import InboundMessage
+
+	return conversations.receive(InboundMessage(message_id, phones.in_mobile(seed), text))
+
+
+def _seed_whatsapp(admin, agent_one):
+	"""The WhatsApp number, one template and three conversations (SOS-P6-11), through the production
+	functions. Safe to run again: a lead that exists is left alone."""
+	from sellos.whatsapp import conversations
+
+	_save_whatsapp_account(admin, WHATSAPP_TEMPLATE)
+	names = {
+		"nine": f"{REGRESSION_PREFIX}WhatsApp Nine",
+		"ten": f"{REGRESSION_PREFIX}WhatsApp Ten",
+		"eleven": f"{REGRESSION_PREFIX}WhatsApp Eleven",
+	}
+	if frappe.db.exists("Client", {"client_name": names["nine"]}):
+		return
+	leads = {
+		key: _whatsapp_customer(admin, agent_one, name, WHATSAPP_REGRESSION_SEEDS[key])
+		for key, name in names.items()
+	}
+	seeds = WHATSAPP_REGRESSION_SEEDS
+	_whatsapp_say(seeds["nine"], "Hi, is the 2 BHK in Powai still available?", "wamid-regression-nine")
+	_whatsapp_say(seeds["ten"], "START", "wamid-regression-ten")
+	_whatsapp_say(seeds["eleven"], "STOP", "wamid-regression-eleven")
+	with _as_user(agent_one):
+		reply = conversations.send(leads["nine"], text="Yes, it is. Shall I send the brochure?")
+		conversations.hand_off(frappe.db.get_value("WhatsApp Conversation", {"lead": leads["ten"]}))
+		conversations.send(leads["eleven"], template=WHATSAPP_TEMPLATE, parameters=["Eleven", "11 am"])
+	from sellos.whatsapp.base import StatusEvent
+
+	conversations.apply_status(
+		StatusEvent(
+			frappe.db.get_value("WhatsApp Message", reply["message"], "provider_message_id"), "delivered"
+		)
+	)
+
+
+def seed_whatsapp():
+	"""What the WhatsApp spec needs (SOS-P6-11): the fake provider on, the company's number saved with fake
+	keys and one approved template, and one lead of the test agent whose customer has just written (so the
+	24 hour window is open). Returns {"title", "lead", "template"}. remove_whatsapp undoes it."""
+	_test_users()
+	admin = TEST_USERS["company_admin"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	_save_whatsapp_account(admin, WHATSAPP_GATE_TEMPLATE)
+	title = f"Gate WhatsApp {frappe.generate_hash(length=6)}"
+	lead = _whatsapp_customer(admin, agent, title, WHATSAPP_SEED)
+	_whatsapp_say(WHATSAPP_SEED, "Hello, I saw your hoarding. Is a 3 BHK available?", "wamid-gate-first")
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"title": title, "lead": lead, "template": WHATSAPP_GATE_TEMPLATE}
+
+
+def whatsapp_signed_body(text, message_id):
+	"""A webhook body from the fake provider for the gate customer, signed the way the provider signs it with
+	the company's secret. The spec posts it, exactly as returned, to the webhook (SOS-P6-11)."""
+	from sellos.whatsapp.provider import sign
+
+	body = json.dumps(
+		{
+			"messages": [
+				{
+					"id": message_id,
+					"from": phones.in_mobile(WHATSAPP_SEED),
+					"text": text,
+					"name": "Gate Customer",
+				}
+			]
+		},
+		separators=(",", ":"),
+	)
+	return {"body": body, "signature": sign(body.encode(), WHATSAPP_SECRET)}
+
+
+def whatsapp_outcome(lead):
+	"""What the database holds for the gate lead, for the spec to read back (SOS-P6-11): the lead's consent
+	status, the basis of each Consent Record and whether its evidence is a private file, the messages with
+	each one's Consent Check, and the conversation's state."""
+	from sellos.crm import consent
+
+	records = frappe.get_all("Consent Record", filters={"lead": lead}, fields=["basis", "evidence_link"])
+	messages = frappe.get_all(
+		"WhatsApp Message",
+		filters={"lead": lead},
+		fields=["direction", "intent", "status", "consent_check"],
+		order_by="creation asc, name asc",
+	)
+	for message in messages:
+		check = message.pop("consent_check")
+		message["check"] = (
+			frappe.db.get_value(
+				"Consent Check", check, ["channel", "consent_status", "refused", "enforcement"], as_dict=True
+			)
+			if check
+			else None
+		)
+	conversation = frappe.db.get_value(
+		"WhatsApp Conversation", {"lead": lead}, ["state", "handed_to"], as_dict=True
+	)
+	return {
+		"consent_status": consent.compute_status(lead),
+		"records": [
+			{"basis": r.basis, "private": r.evidence_link.startswith("/private/files/")} for r in records
+		],
+		"messages": messages,
+		"conversation": conversation,
+	}
+
+
+def remove_whatsapp():
+	"""Undo seed_whatsapp (tests only, SOS-P6-11): the gate lead with its conversation and messages, and the
+	account's keys. The app deletes none of them, so this goes to the tables."""
+	remove_seeded_leads()
+	for table in ("Webhook Event",):
+		frappe.db.delete(table, {"provider": "whatsapp"})
+	frappe.db.delete("__Auth", {"doctype": "WhatsApp Settings"})
+	frappe.db.delete("Singles", {"doctype": "WhatsApp Settings"})
+	frappe.db.delete("Version", {"ref_doctype": "WhatsApp Settings"})
+	frappe.db.delete("WhatsApp Template", {"name": ["in", [WHATSAPP_GATE_TEMPLATE, "gate_spec_template"]]})
+	frappe.db.commit()  # nosemgrep
+	frappe.clear_document_cache("WhatsApp Settings", "WhatsApp Settings")
+	frappe.clear_cache(doctype="WhatsApp Settings")
+	return {"removed": True}

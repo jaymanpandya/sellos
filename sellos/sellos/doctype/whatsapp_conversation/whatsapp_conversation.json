@@ -1,0 +1,37 @@
+{
+ "actions": [],
+ "autoname": "format:WAC-{#########}",
+ "creation": "2026-11-22 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["lead", "state", "handed_to", "handed_on", "handoff_note", "last_message_on", "last_inbound_on", "last_direction"],
+ "fields": [
+  {"fieldname": "lead", "fieldtype": "Link", "label": "Lead", "options": "Lead", "reqd": 1, "unique": 1, "read_only": 1, "set_only_once": 1, "in_list_view": 1, "in_standard_filter": 1, "description": "One conversation per lead. The number is the client's and is not copied here."},
+  {"fieldname": "state", "fieldtype": "Select", "label": "State", "options": "Open\nWith a human\nClosed", "default": "Open", "read_only": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "handed_to", "fieldtype": "Link", "label": "Handed to", "options": "User", "read_only": 1},
+  {"fieldname": "handed_on", "fieldtype": "Datetime", "label": "Handed over on", "read_only": 1},
+  {"fieldname": "handoff_note", "fieldtype": "Small Text", "label": "Handoff note", "read_only": 1},
+  {"fieldname": "last_message_on", "fieldtype": "Datetime", "label": "Last message", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "last_inbound_on", "fieldtype": "Datetime", "label": "Last message from the customer", "read_only": 1, "description": "The 24 hour window for free text replies starts here."},
+  {"fieldname": "last_direction", "fieldtype": "Select", "label": "Last direction", "options": "\nInbound\nOutbound", "read_only": 1}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "WhatsApp Conversation",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "SellOS Company Admin", "permlevel": 0, "read": 1},
+  {"role": "SellOS Sales Manager", "permlevel": 0, "read": 1},
+  {"role": "SellOS Agent", "permlevel": 0, "read": 1}
+ ],
+ "search_fields": "lead,state",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "lead",
+ "track_changes": 1
+}

@@ -115,6 +115,7 @@ def take(
 	stop_source=None,
 	activity_type=NOTE,
 	has_consent=True,
+	basis="Inquiry",
 ) -> dict:
 	"""Make or merge the lead of one person who reached us, and record their consent or stop request.
 
@@ -122,9 +123,10 @@ def take(
 	evidence file (`<kind>-<reference>.json`). evidence: the raw event or submission, saved as a private
 	file. has_consent: False when the submission carried no consent wording (SOS-P1-09): the lead is made
 	or merged and the raw submission saved, but no Consent Record is made and `notes` records the warning;
-	a new lead stays Unknown. stop_source: set it (one of consent.STOP_SOURCES) when the person asked
+	a new lead stays Unknown. basis: the basis of the Consent Record (Inquiry, 7 days, by default; SOS-P6-11
+	passes Consent for an explicit opt in on WhatsApp). stop_source: set it (one of consent.STOP_SOURCES) when the person asked
 	us to stop. Returns
-	{"lead", "client", "created", "merged", "stop", "consent_record"}."""
+	{"lead", "client", "created", "merged", "stop", "consent_record", "evidence_link"}."""
 	number = normalise_phone(phone)
 	if not number:
 		frappe.throw(_("A phone number is needed."), frappe.ValidationError)
@@ -149,7 +151,7 @@ def take(
 				{
 					"doctype": "Consent Record",
 					"lead": lead,
-					"basis": "Inquiry",
+					"basis": basis,
 					"recorded_on": now_datetime(),
 					"evidence_link": file_url,
 				}
@@ -166,4 +168,5 @@ def take(
 		"merged": not created,
 		"stop": bool(stop_source),
 		"consent_record": record,
+		"evidence_link": file_url,
 	}

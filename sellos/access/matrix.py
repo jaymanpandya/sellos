@@ -258,4 +258,16 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.telephony.dnd.do_not_call_summary": _ADMIN_ONLY,
 	"sellos.access.field_history.getdoc": _OPENERS,
 	"sellos.access.field_history.get_docinfo": _OPENERS,
+	# SOS-P6-11: the company's WhatsApp number, its templates, and its conversations.
+	"sellos.whatsapp.settings.get_whatsapp_settings": _ADMIN_ONLY,
+	"sellos.whatsapp.settings.save_whatsapp_settings": _ADMIN_ONLY,
+	"sellos.whatsapp.settings.check_whatsapp_connection": _ADMIN_ONLY,
+	"sellos.whatsapp.settings.list_whatsapp_templates": _LOGGERS,
+	"sellos.whatsapp.settings.save_whatsapp_template": _ADMIN_ONLY,
+	"sellos.whatsapp.conversations.list_whatsapp_conversations": _LOGGERS,
+	"sellos.whatsapp.conversations.get_whatsapp_conversation": _LOGGERS,
+	"sellos.whatsapp.conversations.send_whatsapp_message": _LOGGERS,
+	"sellos.whatsapp.conversations.hand_off_whatsapp_conversation": _LOGGERS,
+	"sellos.whatsapp.conversations.close_whatsapp_conversation": _LOGGERS,
+	"sellos.whatsapp.conversations.whatsapp_conversation_for_lead": _LOGGERS,
 }

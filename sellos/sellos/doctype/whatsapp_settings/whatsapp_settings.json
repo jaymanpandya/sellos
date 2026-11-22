@@ -1,0 +1,28 @@
+{
+ "actions": [],
+ "creation": "2026-11-22 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["access_token", "app_secret", "phone_number_id", "display_number", "provider"],
+ "fields": [
+  {"fieldname": "access_token", "fieldtype": "Password", "label": "Access token", "description": "The company's WhatsApp access token. Stored encrypted and never shown again."},
+  {"fieldname": "app_secret", "fieldtype": "Password", "label": "Webhook signing secret", "description": "The secret the provider signs its events with. Stored encrypted and never shown again."},
+  {"fieldname": "phone_number_id", "fieldtype": "Data", "label": "Number ID", "description": "The provider's id for the company's WhatsApp number."},
+  {"fieldname": "display_number", "fieldtype": "Data", "label": "WhatsApp number", "description": "The number customers write to, with the country code."},
+  {"fieldname": "provider", "fieldtype": "Data", "label": "Provider", "hidden": 1, "read_only": 1, "description": "Empty means Meta's Cloud API. The fake provider is for tests and works only on a site that allows tests."}
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-22 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "WhatsApp Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "read": 1, "role": "System Manager", "write": 1}
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
