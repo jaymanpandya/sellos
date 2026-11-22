@@ -1544,7 +1544,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 8
 - **Dependencies:** SOS-P1-08, SOS-P2-04
-- **Status:** Not Started
+- **Status:** In Progress
 - **Browser spec:** required
 
 ### SOS-N23: Put the WhatsApp flow designs and the ten flows in docs/whatsapp
