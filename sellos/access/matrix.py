@@ -237,6 +237,8 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.listings_feed.save_listings_webhook": _ADMIN_ONLY,
 	"sellos.reports.calls.call_report": _ADMIN_ONLY,
 	"sellos.reports.calls.call_report_calls": _ADMIN_ONLY,
+	"sellos.reports.ai_comparison.ai_comparison": _ADMIN_ONLY,  # SOS-P5-09
+	"sellos.reports.ai_comparison.ai_comparison_calls": _ADMIN_ONLY,
 	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.save_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.check_connection": _ADMIN_ONLY,

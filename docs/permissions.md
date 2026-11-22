@@ -131,6 +131,7 @@ on a company site, because the data scope above is "none".
 | `sellos.crm.website_form.get_website_settings`, `rotate_website_key` (SOS-P1-09, the website form's endpoint address and the Lead intake keys made so far, never a key; rotating makes a new key, shown once, and stops the old ones) | Company Admin |
 | `sellos.inventory.listings_feed.get_listings_feed_settings`, `rotate_listings_key`, `save_listings_webhook` (SOS-P4-08, the listings feed address, the Listings read keys made so far, never a key, and the change webhook address; rotating makes a new key, shown once, and stops the old ones; saving an https address makes the webhook secret, shown once) | Company Admin |
 | `sellos.reports.calls.call_report`, `call_report_calls` (SOS-P2-11, the call reports for a range of dates: cost by agent and by purpose, connect rate, talk time and consent coverage, and the calls behind each figure) | Company Admin |
+| `sellos.reports.ai_comparison.ai_comparison`, `ai_comparison_calls` (SOS-P5-09, AI calling against human calling and the four week human baseline for a range of dates: connect rate, qualified lead rate, site visits booked, cost per qualified lead, handover rate and complaints, and the calls behind each figure) | Company Admin |
 
 Each story that adds a method adds a row here.
 

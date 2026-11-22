@@ -386,6 +386,8 @@ SAMPLE_CALLS = {
 	"sellos.inventory.listings_feed.save_listings_webhook": {},
 	"sellos.reports.calls.call_report": {},
 	"sellos.reports.calls.call_report_calls": {},
+	"sellos.reports.ai_comparison.ai_comparison": {},  # SOS-P5-09
+	"sellos.reports.ai_comparison.ai_comparison_calls": {"group": "ai"},
 	# SOS-P2-01: blank values keep what is saved, so the Company Admin's call changes nothing.
 	"sellos.telephony.settings.get_telephony_settings": {},
 	"sellos.telephony.settings.save_telephony_settings": {},
