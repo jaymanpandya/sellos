@@ -47,7 +47,9 @@
  "module": "SellOS",
  "name": "Report Summary",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {"role": "System Manager", "read": 1}
+ ],
  "sort_field": "creation",
  "sort_order": "ASC",
  "states": []

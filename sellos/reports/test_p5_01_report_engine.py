@@ -234,7 +234,11 @@ class TestReportsAreConfiguration(ReportCase):
 		meta = frappe.get_meta("Report Definition")
 		self.assertEqual({p.role for p in meta.permissions}, {"SellOS Company Admin"})
 		self.assertFalse(any(p.delete or p.export for p in meta.permissions))
-		self.assertEqual(frappe.get_meta("Report Summary").permissions, [])
+		# No SellOS role holds a permission on the summary table. The one System Manager row is explicit and
+		# read only: without it a newer Frappe adds a System Manager row with write, delete and export.
+		summary = frappe.get_meta("Report Summary").permissions
+		self.assertLessEqual({p.role for p in summary}, {"System Manager"})
+		self.assertFalse(any(p.write or p.create or p.delete or p.export or p.share for p in summary))
 
 
 class TestFiguresMatchAHandCalculation(ReportCase):
