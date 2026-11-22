@@ -173,6 +173,7 @@ permission_query_conditions = {
 	"Call Log": f"{_LEAD_PERMS}.get_child_query_conditions",  # SOS-P2-05
 	"WhatsApp Conversation": f"{_LEAD_PERMS}.get_child_query_conditions",  # SOS-P6-11
 	"WhatsApp Message": f"{_LEAD_PERMS}.get_child_query_conditions",  # SOS-P6-11
+	"Mandate": f"{_LEAD_PERMS}.get_child_query_conditions",  # SOS-P4-05
 	"Sales Team": f"{_LEAD_PERMS}.get_team_query_conditions",  # SOS-P1-18
 	"Channel Partner Firm": "sellos.access.partner_firms.get_permission_query_conditions",  # SOS-P7-01
 	"Partner Registration": "sellos.access.partner_registrations.get_permission_query_conditions",  # SOS-P7-02
@@ -188,11 +189,13 @@ has_permission = {
 	"Call Log": f"{_LEAD_PERMS}.has_child_permission",  # SOS-P2-05
 	"WhatsApp Conversation": f"{_LEAD_PERMS}.has_child_permission",  # SOS-P6-11
 	"WhatsApp Message": f"{_LEAD_PERMS}.has_child_permission",  # SOS-P6-11
+	"Mandate": f"{_LEAD_PERMS}.has_child_permission",  # SOS-P4-05
 	"Sales Team": f"{_LEAD_PERMS}.has_team_permission",  # SOS-P1-18
 	"Channel Partner Firm": "sellos.access.partner_firms.has_permission",  # SOS-P7-01
 	"Partner Registration": "sellos.access.partner_registrations.has_permission",  # SOS-P7-02
 	"Shortlist": "sellos.inventory.shortlists.has_permission",  # SOS-P7-09
-	"File": "sellos.access.partner_firms.has_file_permission",  # SOS-P7-01: the signed agreement
+	# SOS-P7-01: the signed agreement. SOS-P4-05: a mandate's signed document and dossier files.
+	"File": "sellos.access.file_permissions.has_file_permission",
 }
 
 # Document Events

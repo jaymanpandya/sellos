@@ -374,6 +374,7 @@ def remove_seeded_leads():
 		return {"clients": 0, "leads": 0}
 	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name")
 	_remove_shortlists(clients)  # SOS-P7-09
+	_remove_mandates(leads)  # SOS-P4-05
 	if leads:
 		frappe.db.delete("Lead Stage Change", {"parent": ["in", leads]})
 		frappe.db.delete("App Notification", {"lead": ["in", leads]})  # SOS-P1-23
@@ -395,6 +396,19 @@ def remove_seeded_leads():
 			frappe.db.delete(doctype, {"name": ["in", names]})
 	frappe.db.commit()  # nosemgrep
 	return {"clients": len(clients), "leads": len(leads)}
+
+
+def _remove_mandates(leads):
+	"""The mandates of the gate sellers, their dossier rows and private files (tests only, SOS-P4-05). The app
+	refuses a delete, so this goes to the tables."""
+	names = frappe.get_all("Mandate", filters={"lead": ["in", leads or [""]]}, pluck="name")
+	if not names:
+		return
+	frappe.db.delete("File", {"attached_to_doctype": "Mandate", "attached_to_name": ["in", names]})
+	for doctype in ("Mandate Dossier Item", "Mandate Dossier View"):
+		frappe.db.delete(doctype, {"parent": ["in", names]})
+	frappe.db.delete("Version", {"ref_doctype": "Mandate", "docname": ["in", names]})
+	frappe.db.delete("Mandate", {"name": ["in", names]})
 
 
 def _remove_notifications_of_test_users():
@@ -830,6 +844,11 @@ def seed_regression_data():
 	* Sellers (SOS-P4-04): Regression Seller One (on Valuation shared) and Regression Seller Two (on New owner
 	  enquiry), each a Lead on the Seller pipeline linked to a Client, assigned to the first regression agent.
 
+	* Mandates (SOS-P4-05): a Draft Exclusive mandate (6 months, 1.5%) for Regression Seller One with a dossier
+	  note, which stays hidden, and a Signed Open mandate (12 months, 2%) for Regression Seller Two with its
+	  signed document, a dossier note and a dossier file, so Seller Two can be moved to Listed and Seller One
+	  can not. Made by the first regression agent through the mandate API.
+
 	* Listings (SOS-P4-02): the published Primary listing Regression Primary 2 BHK (unit 1501 of Regression
 	  Pricing, Rs 1,05,00,000), the published Direct listing Regression Direct Resale (the property Regression
 	  Resale Flat, Rs 82,00,000) and the Partner draft Regression Partner Draft with no price or description,
@@ -883,6 +902,7 @@ def seed_regression_data():
 		_seed_users(admin)
 		_seed_dormant_lead(admin, agent_one)
 		_seed_sellers(admin, agent_one)
+		_seed_mandates(agent_one)
 		_seed_follow_ups(agent_one)
 		_seed_notifications(agent_one)
 		_seed_site_visits(agent_one, agent_two)
@@ -1372,6 +1392,41 @@ def _seed_sellers(admin, agent_one):
 		crm.move_lead_stage(made["Seller One"], "Seller Valuation shared")
 
 
+def _seed_mandates(agent_one):
+	"""A Draft mandate for Regression Seller One and a Signed one, with a dossier, for Seller Two (SOS-P4-05),
+	made by the sellers' agent through the mandate API. A seller that has a mandate is left alone, so it is safe
+	to run again."""
+	import base64
+
+	from sellos.inventory import mandates
+	from sellos.tests.files import tiny_pdf
+
+	pdf = base64.b64encode(tiny_pdf()).decode()
+	leads = {
+		title: frappe.db.get_value("Lead", {"lead_title": ["like", f"{REGRESSION_PREFIX}Seller {title}%"]})
+		for title in ("One", "Two")
+	}
+	if not all(leads.values()):
+		return
+	with _as_user(agent_one):
+		if not frappe.db.exists("Mandate", {"lead": leads["One"]}):
+			draft = mandates.save_mandate(
+				{"lead": leads["One"], "mandate_type": "Exclusive", "term_months": 6, "fee_percent": 1.5}
+			)["name"]
+			mandates.add_dossier_note(
+				draft, "Owner's reserve price", "Regression: the owner will not go below it."
+			)
+		if not frappe.db.exists("Mandate", {"lead": leads["Two"]}):
+			signed = mandates.save_mandate(
+				{"lead": leads["Two"], "mandate_type": "Open", "term_months": 12, "fee_percent": 2}
+			)["name"]
+			mandates.sign_mandate(signed, "regression_mandate_signed.pdf", pdf)
+			mandates.add_dossier_note(
+				signed, "Access to the flat", "Regression: the caretaker holds the keys."
+			)
+			mandates.add_dossier_file(signed, "Title deed", "regression_mandate_deed.pdf", pdf)
+
+
 def make_gate_seller():
 	"""A client for the seller spec to make a seller from (tests only, SOS-P4-04). remove_seeded_leads takes
 	it, and the seller the spec makes, away."""
@@ -1384,6 +1439,41 @@ def make_gate_seller():
 		crm.save_client(values={"client_name": name, "client_type": "Seller", "phone": phones.in_mobile(143)})
 	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
 	return {"client_name": name}
+
+
+def make_gate_mandate_seller():
+	"""A seller lead the test agent owns, for the mandate spec (tests only, SOS-P4-05), and a valid PDF to sign
+	with. The client is named "Gate Seller Mandate <tag>", so remove_seeded_leads takes it, its lead and the
+	mandate the spec records, away. Returns the lead's name and title and the PDF as base64."""
+	import base64
+
+	from sellos.crm import api as crm
+	from sellos.tests.files import tiny_pdf
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		client = crm.save_client(
+			values={
+				"client_name": f"Gate Seller Mandate {tag}",
+				"client_type": "Seller",
+				"phone": phones.in_mobile(144),
+			}
+		)
+		lead = crm.save_lead(
+			values={
+				"client": client["name"],
+				"source": "Referral",
+				"pipeline": "Seller",
+				"assigned_to": TEST_USERS["agent"]["email"],
+			}
+		)["lead"]
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {
+		"lead": lead["name"],
+		"title": lead["lead_title"],
+		"pdf": base64.b64encode(tiny_pdf()).decode(),
+	}
 
 
 def _seed_pipeline_stages():

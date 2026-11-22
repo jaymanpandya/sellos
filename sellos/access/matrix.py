@@ -204,6 +204,14 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.media.link_listing_media": _INVENTORY_EDITORS,
 	"sellos.inventory.media.unlink_listing_media": _INVENTORY_EDITORS,
 	"sellos.inventory.media.reorder_listing_media": _INVENTORY_EDITORS,
+	# SOS-P4-05: mandates and the Private Sale Dossier. A Company Admin or an Agent; the archive is the admin's.
+	"sellos.inventory.mandates.mandate_overview": _INVENTORY_EDITORS,
+	"sellos.inventory.mandates.save_mandate": _INVENTORY_EDITORS,
+	"sellos.inventory.mandates.sign_mandate": _INVENTORY_EDITORS,
+	"sellos.inventory.mandates.add_dossier_note": _INVENTORY_EDITORS,
+	"sellos.inventory.mandates.add_dossier_file": _INVENTORY_EDITORS,
+	"sellos.inventory.mandates.open_dossier": _INVENTORY_EDITORS,
+	"sellos.inventory.mandates.set_mandate_archived": _ADMIN_ONLY,
 	# SOS-P7-08: match buyers to inventory, and the weights of the score.
 	"sellos.inventory.matching.matches_for_lead": _INVENTORY_READERS,
 	"sellos.inventory.matching.leads_for_unit": _INVENTORY_READERS,

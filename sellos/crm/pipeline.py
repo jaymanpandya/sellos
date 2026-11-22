@@ -3,7 +3,7 @@
 A stage belongs to the Buyer or the Seller pipeline, and a lead to one of them. A seller is a Lead on the
 Seller pipeline, linked to a Client (Jayman, SOS-SETUP-34). The limits (MAX_STAGES, one Won and one Lost
 stage, no delete with leads) apply to each pipeline on its own. The rule that a seller cannot reach Listed
-without a signed mandate is SOS-P4-05's: it needs Mandate, and hooks in through check_stage_rules.
+without a signed mandate is SOS-P4-05's, and sits in check_stage_rules.
 
 Consent never blocks (Jayman, 10 November 2026). A lead in any consent status moves to any stage.
 Moving a lead to the first contact stage (Contacted) without a live Consent Record adds a warning: it
@@ -210,9 +210,29 @@ def check_stage_pipeline(doc, stage) -> None:
 		frappe.throw(_("{0} is not a stage of the {1} pipeline.").format(stage, lead_pipeline))
 
 
+# SOS-P4-05: the seller stages that need a signed Mandate: Listed, and the two after it, so a seller can not
+# skip Listed to Offers received or Sold.
+NEEDS_SIGNED_MANDATE = (LISTED, OFFERS_RECEIVED, SOLD)
+
+
+def has_signed_mandate(lead) -> bool:
+	"""True when the lead has a signed Mandate that is not archived (SOS-P4-05)."""
+	return bool(frappe.db.exists("Mandate", {"lead": lead, "status": "Signed", "archived": 0}))
+
+
 def check_stage_rules(doc, stage, previous) -> None:
-	"""The rules of a move into `stage`, besides the Lost reason. Seller stages have none yet. SOS-P4-05
-	adds here that a seller cannot reach Listed without a signed Mandate."""
+	"""The rules of a move into `stage`, besides the Lost reason. A seller cannot reach Listed (or Offers
+	received or Sold) without a signed Mandate (SOS-P4-05). Consent is never a rule here."""
+	if (doc.get("pipeline") or BUYER) != SELLER:
+		return
+	if frappe.db.get_value(STAGE, stage, "stage_name") in NEEDS_SIGNED_MANDATE and not has_signed_mandate(
+		doc.name
+	):
+		frappe.throw(
+			_("{0} needs a signed mandate. Record the mandate and upload its signed document first.").format(
+				frappe.db.get_value(STAGE, stage, "stage_name")
+			)
+		)
 
 
 def check_lost_reason(stage, lost_reason) -> str | None:

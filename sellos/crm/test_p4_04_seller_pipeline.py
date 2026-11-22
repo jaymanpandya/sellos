@@ -112,7 +112,7 @@ class TestTheSellerStages(SellerCase):
 
 class TestTheSellerStageRules(SellerCase):
 	"""SOS-P4-04: stage rules. A seller is a Lead on the Seller pipeline, linked to a Client, and moves only
-	along its own stages. The Listed rule is SOS-P4-05's."""
+	along its own stages. The Listed rule (a signed mandate) is SOS-P4-05's."""
 
 	def test_a_seller_is_a_lead_linked_to_a_client_that_starts_on_the_first_seller_stage(self):
 		lead = self.seller()
@@ -164,9 +164,11 @@ class TestTheSellerStageRules(SellerCase):
 	def test_sold_is_a_won_stage_and_listed_is_open(self):
 		self.assertEqual(frappe.db.get_value(pipeline.STAGE, "Seller Sold", "stage_type"), "Won")
 		self.assertEqual(frappe.db.get_value(pipeline.STAGE, "Seller Listed", "stage_type"), "Open")
-		# The signed mandate rule needs Mandate and is SOS-P4-05's: until then Listed is reachable.
+		# SOS-P4-05: Listed needs a signed mandate, so a seller with none stays where it is.
 		lead = self.seller()
-		self.assertTrue(api.move_lead_stage(lead, "Seller Listed")["moved"])
+		with self.assertRaises(frappe.ValidationError):
+			api.move_lead_stage(lead, "Seller Listed")
+		self.assertEqual(frappe.db.get_value("Lead", lead, "stage"), "Seller New owner enquiry")
 
 	def test_a_stage_with_seller_leads_cannot_be_deleted_and_the_message_says_how_many(self):
 		for label in ("One", "Two"):

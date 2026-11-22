@@ -1,0 +1,179 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:MND-{#####}",
+ "creation": "2026-11-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "lead",
+  "mandate_type",
+  "column_break_1",
+  "start_date",
+  "term_months",
+  "fee_percent",
+  "section_signature",
+  "status",
+  "signed_document",
+  "signed_on",
+  "signed_by",
+  "section_dossier",
+  "dossier",
+  "views",
+  "section_archive",
+  "archived",
+  "archived_on",
+  "archived_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Seller lead",
+   "options": "Lead",
+   "reqd": 1
+  },
+  {
+   "description": "Exclusive: only this company sells the property. Open: the owner may use others too.",
+   "fieldname": "mandate_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "Exclusive\nOpen",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Starts on"
+  },
+  {
+   "fieldname": "term_months",
+   "fieldtype": "Int",
+   "label": "Term (months)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fee_percent",
+   "fieldtype": "Float",
+   "label": "Fee (% of the sale price)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_signature",
+   "fieldtype": "Section Break",
+   "label": "Signature"
+  },
+  {
+   "default": "Draft",
+   "description": "A mandate is signed only with the signed document uploaded.",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nSigned",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signed_document",
+   "fieldtype": "Data",
+   "label": "Signed document",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signed_on",
+   "fieldtype": "Datetime",
+   "label": "Signed on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signed_by",
+   "fieldtype": "Link",
+   "label": "Recorded by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_dossier",
+   "fieldtype": "Section Break",
+   "label": "Private Sale Dossier",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "dossier",
+   "fieldtype": "Table",
+   "label": "Dossier",
+   "options": "Mandate Dossier Item",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "views",
+   "fieldtype": "Table",
+   "label": "Dossier views",
+   "options": "Mandate Dossier View",
+   "permlevel": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_archive",
+   "fieldtype": "Section Break",
+   "label": "Archive"
+  },
+  {
+   "default": "0",
+   "description": "Records are archived, never deleted.",
+   "fieldname": "archived",
+   "fieldtype": "Check",
+   "label": "Archived",
+   "read_only": 1
+  },
+  {
+   "fieldname": "archived_on",
+   "fieldtype": "Datetime",
+   "label": "Archived on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "archived_by",
+   "fieldtype": "Link",
+   "label": "Archived by",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Mandate",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Company Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "permlevel": 0,
+   "read": 1,
+   "role": "SellOS Agent",
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "lead",
+ "track_changes": 1
+}

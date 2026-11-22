@@ -17,6 +17,10 @@ context("SOS-P0-10: app shell", () => {
 		const persona = PERSONAS.find((p) => p.key === key);
 
 		it(`${persona.role} sees only navigation inside its own areas`, () => {
+			// Leave the previous role's page first: its late polling answers would set the old session
+			// cookie again after this sign in, and the Today calls of this role would answer 400.
+			cy.clearAllCookies();
+			cy.visit("/login");
 			cy.signInFresh(key);
 			cy.bootOverride((boot) => {
 				boot.company.name = "Pandya Realtors";
@@ -67,6 +71,7 @@ context("SOS-P0-10: app shell", () => {
 					"Home",
 					"Inventory", // SOS-P4-01
 					"Leads",
+					"Mandates", // SOS-P4-05
 					"Reports", // SOS-P5-01
 					"Sellers", // SOS-P4-04
 					"Site visits",
