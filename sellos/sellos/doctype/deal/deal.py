@@ -129,6 +129,14 @@ class Deal(InventoryRecord):
 		for row, amount in zip(self.splits, amounts, strict=True):
 			row.amount = float(amount)
 
+	def on_update(self):
+		# SOS-P7-04: an approved split makes the channel partner's payout (Due), from the rate in force on the
+		# deal date. It is safe to run on every save: a payout is made once, and only a Due one is worked out again.
+		if self.approval_status == APPROVED:
+			from sellos.inventory.commissions import make_payouts
+
+			make_payouts(self)
+
 	def approve(self):
 		self.flags.approving = True
 		self.approval_status = APPROVED

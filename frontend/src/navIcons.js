@@ -20,6 +20,7 @@ export const ICONS = {
 	tenants: "lucide-building-2",
 	"platform-reports": "lucide-chart-column",
 	results: "lucide-chart-column",
+	commission: "lucide-badge-indian-rupee",
 	shares: "lucide-share-2",
 	shared: "lucide-building-2",
 };

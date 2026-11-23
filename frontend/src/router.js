@@ -39,6 +39,8 @@ const ProjectPage = () => import("./pages/ProjectPage.vue");
 const CostSheetPage = () => import("./pages/CostSheetPage.vue");
 const TenantsPage = () => import("./pages/TenantsPage.vue");
 const PartnerReportsPage = () => import("./pages/PartnerReportsPage.vue");
+const CommissionPage = () => import("./pages/CommissionPage.vue");
+const PartnerCommissionPage = () => import("./pages/PartnerCommissionPage.vue");
 const PlatformReportsPage = () => import("./pages/PlatformReportsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
 const ClientShortlistsPage = () => import("./pages/ClientShortlistsPage.vue");
@@ -81,6 +83,13 @@ export function createAppRouter() {
 				name: "deals",
 				component: DealsPage,
 				meta: { area: "crm", title: "Deals" },
+			},
+			{
+				// SOS-P7-04: commission rates and payouts.
+				path: "/crm/commission",
+				name: "commission",
+				component: CommissionPage,
+				meta: { area: "crm", title: "Commission" },
 			},
 			{
 				path: "/crm/leads/:name",
@@ -282,6 +291,13 @@ export function createAppRouter() {
 				name: "partner-reports",
 				component: PartnerReportsPage,
 				meta: { area: "partner", title: "Your results" },
+			},
+			{
+				// SOS-P7-04: a partner's own commission statement.
+				path: "/partner/commission",
+				name: "partner-commission",
+				component: PartnerCommissionPage,
+				meta: { area: "partner", title: "Your commission" },
 			},
 			{
 				path: "/client/shortlists",

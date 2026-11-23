@@ -418,6 +418,12 @@ def _remove_deals(clients):
 	a delete, so this goes to the tables."""
 	names = frappe.get_all("Deal", filters={"client": ["in", clients or [""]]}, pluck="name")
 	if names:
+		payouts = frappe.get_all(
+			"Commission Payout", filters={"deal": ["in", names]}, pluck="name"
+		)  # SOS-P7-04
+		if payouts:
+			frappe.db.delete("Version", {"ref_doctype": "Commission Payout", "docname": ["in", payouts]})
+			frappe.db.delete("Commission Payout", {"name": ["in", payouts]})
 		frappe.db.delete("Commission Split", {"parent": ["in", names]})
 		frappe.db.delete("Version", {"ref_doctype": "Deal", "docname": ["in", names]})
 		frappe.db.delete("Deal", {"name": ["in", names]})
@@ -871,6 +877,11 @@ def seed_regression_data():
 	  Rs 2,00,000 split 50 to the first regression agent, 20 to Regression Firm Approved and 30 to the company,
 	  and its split is approved. The second is for the property Regression Resale Flat at Rs 82,00,000 with a
 	  commission of Rs 1,23,000 split 40 to the agent and 60 to the company, and waits for approval.
+
+	* Commission (SOS-P7-04): the project Regression Heights has a commission rate of 2 percent of the agreement
+	  value from 1 January 2020, added by the Company Admin through the commission API. Approving the first deal
+	  above makes its channel partner payout for Regression Firm Approved, in status Due: 2 percent of
+	  Rs 1,00,00,000 is Rs 2,00,000, and the firm's 20 percent share of it is Rs 40,000.00.
 
 	* Listings (SOS-P4-02): the published Primary listing Regression Primary 2 BHK (unit 1501 of Regression
 	  Pricing, Rs 1,05,00,000), the published Direct listing Regression Direct Resale (the property Regression
@@ -1462,7 +1473,7 @@ def _seed_deals(admin, agent_one):
 	"""An approved deal on a unit and a pending deal on a property (SOS-P4-06), made by the Company Admin through
 	the deal API. A client that has a deal is left alone, so it is safe to run again."""
 	from sellos.crm import api as crm
-	from sellos.inventory import deals
+	from sellos.inventory import commissions, deals
 
 	project = frappe.db.get_value("Project", {"project_name": "Regression Heights"}, "name")
 	unit = frappe.db.get_value("Unit", {"project": project, "unit_number": "1201"}, "name")
@@ -1471,6 +1482,12 @@ def _seed_deals(admin, agent_one):
 	if not (project and unit and prop and firm):
 		return
 	with _as_user(admin):
+		# SOS-P7-04: Regression Heights pays 2 percent of the agreement value from 1 January 2020, so the approved
+		# deal below gets a Due payout. A project that has a rate is left alone, so this is safe to run again.
+		if not frappe.db.exists("Commission Rate", {"project": project}):
+			commissions.save_commission_rate(
+				{"project": project, "rate_type": "Percentage", "value": 2, "start_date": "2020-01-01"}
+			)
 		for title, target, price, commission, splits in (
 			(
 				"One",
@@ -1543,6 +1560,80 @@ def make_gate_deal():
 		"agent": frappe.db.get_value("User", TEST_USERS["agent"]["email"], "full_name"),
 		"firm": frappe.db.get_value("Channel Partner Firm", firm, "firm_name"),
 	}
+
+
+def make_gate_commission(stage="due"):
+	"""For the commission spec (tests only, SOS-P7-04): the gate channel partner's firm Approved, a project with
+	the unit C101, and an approved deal of the client "Gate Deal Commission ..." on it: Rs 80,00,000, booked today, the partner holding 20 percent of the split. All through the production methods. The stage is
+	"waiting" (no commission rate yet, so no payout), "due" (a rate of 2 percent from 1 January 2026, so a Due
+	payout of Rs 32,000.00) or "paid" (that payout approved and paid, reference UTR-GATE-704, today).
+	remove_gate_commission takes it all away."""
+	from sellos.crm import api as crm
+	from sellos.inventory import api, commissions, deals
+
+	_test_users()
+	firm = seed_gate_partner_firm("approved")["name"]
+	tag = frappe.generate_hash(length=6)
+	agent = TEST_USERS["agent"]["email"]
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		developer = api.save_developer(
+			{"developer_name": f"{GATE_INVENTORY_PREFIX}Commission Developer {tag}"}
+		)
+		project = api.save_project(
+			{
+				"project_name": f"{GATE_INVENTORY_PREFIX}Commission {tag}",
+				"developer": developer["name"],
+				"rera_number": f"P5180{int(tag, 16) % 10**7:07d}",
+				"city": "Pune",
+			}
+		)["name"]
+		unit = api.save_unit({"project": project, "unit_number": "C101", "carpet_area": 640})["name"]
+		client = crm.save_client(
+			values={
+				"client_name": f"Gate Deal Commission {tag}",
+				"client_type": "Buyer",
+				"phone": phones.in_mobile(146),
+			}
+		)
+		deal = deals.save_deal(
+			{
+				"client": client["name"],
+				"unit": unit,
+				"price": 8000000,
+				"deal_date": str(today()),
+				"commission_amount": 160000,
+				"splits": [
+					{"party_type": "Agent", "agent": agent, "percent": 50},
+					{"party_type": "Channel Partner", "partner_firm": firm, "percent": 20},
+					{"party_type": "Company", "percent": 30},
+				],
+			}
+		)["name"]
+		deals.approve_splits(deal)
+		if stage in ("due", "paid"):
+			commissions.save_commission_rate(
+				{"project": project, "rate_type": "Percentage", "value": 2, "start_date": "2026-01-01"}
+			)
+		if stage == "paid":
+			payout = frappe.db.get_value("Commission Payout", {"deal": deal, "partner_firm": firm})
+			commissions.move_payout(payout, "Approved")
+			commissions.move_payout(payout, "Paid", payment_reference="UTR-GATE-704", paid_on=str(today()))
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {
+		"client": client["client_name"],
+		"project": frappe.db.get_value("Project", project, "project_name"),
+		"firm": frappe.db.get_value("Channel Partner Firm", firm, "firm_name"),
+		"deal": deal,
+		"today": str(today()),
+	}
+
+
+def remove_gate_commission():
+	"""Remove what make_gate_commission made (tests only, SOS-P7-04): the deal, its payouts, the rates, the
+	client, the project and the firm. The app never deletes them: this is the spec cleaning up after itself."""
+	remove_seeded_leads()
+	remove_gate_inventory()
+	return remove_gate_partner_firms()
 
 
 def make_gate_seller():
@@ -2826,6 +2917,7 @@ def remove_gate_partner_firms():
 			pluck="name",
 		):
 			frappe.delete_doc("File", file, force=True, ignore_permissions=True)
+		frappe.db.delete("Commission Statement Export", {"partner_firm": row.name})  # SOS-P7-04
 		frappe.db.delete("Partner Firm Status Change", {"parent": row.name})
 		frappe.db.delete("Version", {"ref_doctype": "Channel Partner Firm", "docname": row.name})
 		frappe.db.delete("Channel Partner Firm", {"name": row.name})
@@ -3642,6 +3734,11 @@ def remove_gate_inventory():
 		frappe.db.delete("Inventory Status Change", {"parent": prop})
 		frappe.db.delete("Version", {"ref_doctype": "Property", "docname": prop})
 		frappe.db.delete("Property", {"name": prop})
+	for rate in frappe.get_all(
+		"Commission Rate", filters={"project": ["in", projects or [""]]}, pluck="name"
+	):
+		frappe.db.delete("Version", {"ref_doctype": "Commission Rate", "docname": rate})  # SOS-P7-04
+		frappe.db.delete("Commission Rate", {"name": rate})
 	for name in projects:
 		frappe.db.delete("Version", {"ref_doctype": "Project", "docname": name})
 		frappe.db.delete("Project Tower", {"project": name})

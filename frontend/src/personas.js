@@ -27,6 +27,8 @@ export const PERSONAS = [
 			{ key: "sellers", label: "Sellers", to: "/crm/sellers", area: "crm" },
 			{ key: "mandates", label: "Mandates", to: "/crm/mandates", area: "crm" },
 			{ key: "deals", label: "Deals", to: "/crm/deals", area: "crm" },
+			// SOS-P7-04: commission rates and payouts.
+			{ key: "commission", label: "Commission", to: "/crm/commission", area: "crm" },
 			{ key: "queue", label: "Call queue", to: "/crm/queue", area: "crm" },
 			{ key: "whatsapp", label: "WhatsApp", to: "/crm/whatsapp", area: "crm" },
 			{ key: "visits", label: "Site visits", to: "/crm/visits", area: "crm" },
@@ -129,6 +131,13 @@ export const PERSONAS = [
 			{ key: "leads", label: "Leads", to: "/partner/leads", area: "partner" },
 			// SOS-P5-03: the partner's own leads, deals and commission statements.
 			{ key: "results", label: "Your results", to: "/partner/reports", area: "partner" },
+			// SOS-P7-04: the partner's own payouts and statement.
+			{
+				key: "commission",
+				label: "Your commission",
+				to: "/partner/commission",
+				area: "partner",
+			},
 		],
 	},
 	{

@@ -374,6 +374,21 @@ SAMPLE_CALLS = {
 	"sellos.inventory.deals.approve_splits": {"name": "{spare_deal}"},
 	"sellos.inventory.deals.reopen_splits": {"name": "{spare_deal}"},
 	"sellos.inventory.deals.set_deal_archived": {"name": "{spare_deal}"},
+	# SOS-P7-04: one rate on the spare project and one Due payout of the spare firm on the spare deal.
+	"sellos.inventory.commissions.commission_overview": {},
+	"sellos.inventory.commissions.save_commission_rate": {
+		"values": {
+			"project": "{spare_project}",
+			"rate_type": "Percentage",
+			"value": 2,
+			"start_date": "2030-01-01",
+		}
+	},
+	"sellos.inventory.commissions.set_commission_rate_archived": {"name": "{spare_rate}"},
+	"sellos.inventory.commissions.create_missing_payouts": {},
+	"sellos.inventory.commissions.move_payout": {"name": "{spare_payout}", "to": "Approved"},
+	"sellos.inventory.commissions.export_partner_statement": {"firm": "{spare_firm}"},
+	"sellos.inventory.commissions.partner_commission": {},
 	# SOS-P7-08
 	"sellos.inventory.matching.matches_for_lead": {"lead": "{lead}"},
 	"sellos.inventory.matching.leads_for_unit": {"unit": "{spare_unit}"},
@@ -788,6 +803,25 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"splits": [{"party_type": "Company", "percent": 100}],
 			}
 		).insert()
+		# SOS-P7-04: a rate on the spare project and a Due payout of the spare firm on the spare deal.
+		spare_rate = frappe.get_doc(
+			{
+				"doctype": "Commission Rate",
+				"project": spare_project.name,
+				"rate_type": "Percentage",
+				"value": 1,
+				"start_date": "2020-01-01",
+			}
+		).insert()
+		spare_payout = frappe.get_doc(
+			{
+				"doctype": "Commission Payout",
+				"deal": spare_deal.name,
+				"partner_firm": spare_firm.name,
+				"booking_date": "2026-01-01",
+				"commission_due": 1000,
+			}
+		).insert(ignore_permissions=True)
 		before = set(Path(frappe.get_site_path("public", "files")).glob("media-*"))
 		self.addCleanup(self._remove_media_files, before)
 		self.addCleanup(self._remove_agreement_files)
@@ -914,6 +948,8 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_listing": spare_listing.name,
 			"spare_mandate": spare_mandate.name,
 			"spare_deal": spare_deal.name,
+			"spare_rate": spare_rate.name,
+			"spare_payout": spare_payout.name,
 			"media_listing": media_listing.name,
 			"order_listing": order_listing.name,
 			"media_asset": media_assets[0].name,

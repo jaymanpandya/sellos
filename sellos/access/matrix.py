@@ -223,6 +223,15 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.deals.approve_splits": _ADMIN_ONLY,
 	"sellos.inventory.deals.reopen_splits": _ADMIN_ONLY,
 	"sellos.inventory.deals.set_deal_archived": _ADMIN_ONLY,
+	# SOS-P7-04: commission rates, payouts and the partner's statement. A Company Admin sets rates, moves payouts
+	# and exports a statement; a partner reads only their own.
+	"sellos.inventory.commissions.commission_overview": _ADMIN_ONLY,
+	"sellos.inventory.commissions.save_commission_rate": _ADMIN_ONLY,
+	"sellos.inventory.commissions.set_commission_rate_archived": _ADMIN_ONLY,
+	"sellos.inventory.commissions.create_missing_payouts": _ADMIN_ONLY,
+	"sellos.inventory.commissions.move_payout": _ADMIN_ONLY,
+	"sellos.inventory.commissions.export_partner_statement": _ADMIN_ONLY,
+	"sellos.inventory.commissions.partner_commission": _PARTNER_ONLY,
 	# SOS-P7-08: match buyers to inventory, and the weights of the score.
 	"sellos.inventory.matching.matches_for_lead": _INVENTORY_READERS,
 	"sellos.inventory.matching.leads_for_unit": _INVENTORY_READERS,
