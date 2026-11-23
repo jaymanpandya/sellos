@@ -1369,7 +1369,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 8
 - **Dependencies:** SOS-P4-06, SOS-P2-08, SOS-P7-01, SOS-P7-02, SOS-P7-03, SOS-P7-04
-- **Status:** Not Started
+- **Status:** In Progress
 - **Browser spec:** required
 
 ### SOS-P7-10: Book a unit from the pipeline
