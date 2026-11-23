@@ -1,0 +1,96 @@
+{
+ "actions": [],
+ "autoname": "field:raw_transaction",
+ "creation": "2026-11-24 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "raw_transaction",
+  "source",
+  "source_record_id",
+  "status",
+  "problems",
+  "rules_version",
+  "checked_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "raw_transaction",
+   "fieldtype": "Link",
+   "label": "Raw transaction",
+   "read_only": 1,
+   "options": "Raw Transaction",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "label": "Source",
+   "read_only": 1,
+   "options": "Market Source",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "source_record_id",
+   "fieldtype": "Data",
+   "label": "Source record ID",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "read_only": 1,
+   "options": "Open\nResolved",
+   "default": "Open",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "problems",
+   "fieldtype": "Small Text",
+   "label": "Fields that could not be read",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "rules_version",
+   "fieldtype": "Data",
+   "label": "Rules version",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "checked_at",
+   "fieldtype": "Datetime",
+   "label": "Checked at",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-24 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Normaliser Review",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Platform Admin",
+   "permlevel": 0,
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,176 @@
+{
+ "actions": [],
+ "autoname": "field:raw_transaction",
+ "creation": "2026-11-24 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "raw_transaction",
+  "source",
+  "source_record_id",
+  "registration_date",
+  "document_type_en",
+  "sro_office_en",
+  "district_en",
+  "locality_en",
+  "property_description_en",
+  "survey_number",
+  "carpet_area_sqft",
+  "area_rule",
+  "consideration_amount",
+  "market_value",
+  "stamp_duty",
+  "rules_version",
+  "normalised_at",
+  "original_fields"
+ ],
+ "fields": [
+  {
+   "fieldname": "raw_transaction",
+   "fieldtype": "Link",
+   "label": "Raw transaction",
+   "read_only": 1,
+   "options": "Raw Transaction",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "label": "Source",
+   "read_only": 1,
+   "options": "Market Source",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "source_record_id",
+   "fieldtype": "Data",
+   "label": "Source record ID",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "registration_date",
+   "fieldtype": "Date",
+   "label": "Registration date",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "document_type_en",
+   "fieldtype": "Data",
+   "label": "Document type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sro_office_en",
+   "fieldtype": "Data",
+   "label": "SRO office",
+   "read_only": 1
+  },
+  {
+   "fieldname": "district_en",
+   "fieldtype": "Data",
+   "label": "District",
+   "read_only": 1
+  },
+  {
+   "fieldname": "locality_en",
+   "fieldtype": "Data",
+   "label": "Locality",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "property_description_en",
+   "fieldtype": "Small Text",
+   "label": "Property description",
+   "read_only": 1
+  },
+  {
+   "fieldname": "survey_number",
+   "fieldtype": "Data",
+   "label": "Survey number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "carpet_area_sqft",
+   "fieldtype": "Float",
+   "label": "Carpet area (sq ft)",
+   "read_only": 1,
+   "precision": "2",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "area_rule",
+   "fieldtype": "Data",
+   "label": "Area rule used",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consideration_amount",
+   "fieldtype": "Float",
+   "label": "Consideration (Rs)",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "market_value",
+   "fieldtype": "Float",
+   "label": "Market value (Rs)",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "stamp_duty",
+   "fieldtype": "Float",
+   "label": "Stamp duty (Rs)",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "rules_version",
+   "fieldtype": "Data",
+   "label": "Rules version",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "normalised_at",
+   "fieldtype": "Datetime",
+   "label": "Normalised at",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "original_fields",
+   "fieldtype": "Code",
+   "label": "Original text and area",
+   "read_only": 1,
+   "options": "JSON",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-24 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Normalised Transaction",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Platform Admin",
+   "permlevel": 0,
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

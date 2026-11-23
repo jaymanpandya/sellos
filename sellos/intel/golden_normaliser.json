@@ -1,0 +1,2825 @@
+{
+ "about": "SOS-P3-03 synthetic golden file: 100 records written from known truth (the expected values were chosen first, then rendered into the messy forms a registration export uses). 92 are readable, 8 are not and must go to the review list.",
+ "records": [
+  {
+   "raw": {
+    "source_record_id": "G000",
+    "registration_date": "2018-01-01",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "कोथरूड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१०/१",
+    "area_sqft": "850",
+    "consideration_amount": "20,00,000",
+    "market_value": "२०,००,०००",
+    "stamp_duty": "Rs. 120000/-"
+   },
+   "expect": {
+    "registration_date": "2018-01-01",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Kothrud",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "10/1",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 2000000.0,
+    "market_value": 2000000.0,
+    "stamp_duty": 120000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G001",
+    "registration_date": "08-06-2019",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "औंध",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "11",
+    "area_sqft": "2 guntha",
+    "consideration_amount": "₹ 0.265 Cr",
+    "market_value": "27 lakh",
+    "stamp_duty": "१,५९,०००"
+   },
+   "expect": {
+    "registration_date": "2019-06-08",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Aundh",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "11",
+    "carpet_area_sqft": 2178.0,
+    "consideration_amount": 2650000.0,
+    "market_value": 2700000.0,
+    "stamp_duty": 159000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G002",
+    "registration_date": "15/11/2020",
+    "document_type": "बक्षीसपत्र",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "अंधेरी",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "12",
+    "area_sqft": "80 sqm carpet",
+    "consideration_amount": "Rs. 3300000/-",
+    "market_value": "0.34 कोटी",
+    "stamp_duty": "1.98 lakh"
+   },
+   "expect": {
+    "registration_date": "2020-11-15",
+    "document_type_en": "Gift Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Andheri",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "12",
+    "carpet_area_sqft": 861.11,
+    "consideration_amount": 3300000.0,
+    "market_value": 3400000.0,
+    "stamp_duty": 198000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G003",
+    "registration_date": "22.04.2021",
+    "document_type": "गहाणखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "आनंद नगर",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "13/4",
+    "area_sqft": "1200 sqft built up",
+    "consideration_amount": "३९,५०,०००",
+    "market_value": "4100000",
+    "stamp_duty": "0.0237 कोटी"
+   },
+   "expect": {
+    "registration_date": "2021-04-22",
+    "document_type_en": "Mortgage Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Anand Nagar",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "13/4",
+    "carpet_area_sqft": 1000.0,
+    "consideration_amount": 3950000.0,
+    "market_value": 4100000.0,
+    "stamp_duty": 237000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G004",
+    "registration_date": "1 Sep 2022",
+    "document_type": "भाडेपट्टा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "Baner",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "14",
+    "area_sqft": "1,050 sq ft",
+    "consideration_amount": "46 lakh",
+    "market_value": "46,00,000",
+    "stamp_duty": "276000"
+   },
+   "expect": {
+    "registration_date": "2022-09-01",
+    "document_type_en": "Lease Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Baner",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "14",
+    "carpet_area_sqft": 1050.0,
+    "consideration_amount": 4600000.0,
+    "market_value": 4600000.0,
+    "stamp_duty": 276000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G005",
+    "registration_date": "February 8, 2023",
+    "document_type": "विकसन करारनामा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "बाणेर",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१५",
+    "area_sqft": "60 sqm",
+    "consideration_amount": "0.525 कोटी",
+    "market_value": "₹ 0.53 Cr",
+    "stamp_duty": "3,15,000"
+   },
+   "expect": {
+    "registration_date": "2023-02-08",
+    "document_type_en": "Development Agreement",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Baner",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "15",
+    "carpet_area_sqft": 645.83,
+    "consideration_amount": 5250000.0,
+    "market_value": 5300000.0,
+    "stamp_duty": 315000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G006",
+    "registration_date": "१५ जुलै २०२४",
+    "document_type": "मुखत्यारपत्र",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "खराडी",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "16/2",
+    "area_sqft": "carpet 620 sqft",
+    "consideration_amount": "5900000",
+    "market_value": "Rs. 6000000/-",
+    "stamp_duty": "₹ 0.0354 Cr"
+   },
+   "expect": {
+    "registration_date": "2024-07-15",
+    "document_type_en": "Power of Attorney",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Kharadi",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "16/2",
+    "carpet_area_sqft": 620.0,
+    "consideration_amount": 5900000.0,
+    "market_value": 6000000.0,
+    "stamp_duty": 354000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G007",
+    "registration_date": "२२/१२/२०२५",
+    "document_type": "Sale Deed",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "शिवाजीनगर",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "17",
+    "area_sqft": "850 sq.ft",
+    "consideration_amount": "65,50,000",
+    "market_value": "६७,००,०००",
+    "stamp_duty": "Rs. 393000/-"
+   },
+   "expect": {
+    "registration_date": "2025-12-22",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Shivajinagar",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "17",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 6550000.0,
+    "market_value": 6700000.0,
+    "stamp_duty": 393000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G008",
+    "registration_date": "01/05/18",
+    "document_type": "Agreement for Sale",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "संकेत नगर",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "18",
+    "area_sqft": "0.5 acre",
+    "consideration_amount": "₹ 0.72 Cr",
+    "market_value": "72 lakh",
+    "stamp_duty": "४,३२,०००"
+   },
+   "expect": {
+    "registration_date": "2018-05-01",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Sanket Nagar",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "18",
+    "carpet_area_sqft": 21780.0,
+    "consideration_amount": 7200000.0,
+    "market_value": 7200000.0,
+    "stamp_duty": 432000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G009",
+    "registration_date": "2019-10-08",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "हडपसर",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "19/5",
+    "area_sqft": "1000 sq.ft. built-up",
+    "consideration_amount": "Rs. 7850000/-",
+    "market_value": "0.79 कोटी",
+    "stamp_duty": "4.71 lakh"
+   },
+   "expect": {
+    "registration_date": "2019-10-08",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Hadapsar",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "19/5",
+    "carpet_area_sqft": 833.33,
+    "consideration_amount": 7850000.0,
+    "market_value": 7900000.0,
+    "stamp_duty": 471000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G010",
+    "registration_date": "15-03-2020",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "वाकड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "२०",
+    "area_sqft": "1500 sq ft super built up",
+    "consideration_amount": "८५,००,०००",
+    "market_value": "8600000",
+    "stamp_duty": "0.051 कोटी"
+   },
+   "expect": {
+    "registration_date": "2020-03-15",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Wakad",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "20",
+    "carpet_area_sqft": 1071.43,
+    "consideration_amount": 8500000.0,
+    "market_value": 8600000.0,
+    "stamp_duty": 510000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G011",
+    "registration_date": "22/08/2021",
+    "document_type": "बक्षीसपत्र",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "गणेश नगर",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "21",
+    "area_sqft": "45.5 sq m",
+    "consideration_amount": "91.5 lakh",
+    "market_value": "93,00,000",
+    "stamp_duty": "549000"
+   },
+   "expect": {
+    "registration_date": "2021-08-22",
+    "document_type_en": "Gift Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Ganesh Nagar",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "21",
+    "carpet_area_sqft": 489.76,
+    "consideration_amount": 9150000.0,
+    "market_value": 9300000.0,
+    "stamp_duty": 549000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G012",
+    "registration_date": "01.01.2022",
+    "document_type": "गहाणखत",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "लक्ष्मी नगर",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "22/3",
+    "area_sqft": "५० चौ.मी.",
+    "consideration_amount": "0.98 कोटी",
+    "market_value": "₹ 0.98 Cr",
+    "stamp_duty": "5,88,000"
+   },
+   "expect": {
+    "registration_date": "2022-01-01",
+    "document_type_en": "Mortgage Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Lakshmi Nagar",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "22/3",
+    "carpet_area_sqft": 538.2,
+    "consideration_amount": 9800000.0,
+    "market_value": 9800000.0,
+    "stamp_duty": 588000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G013",
+    "registration_date": "8 Jun 2023",
+    "document_type": "भाडेपट्टा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "कोथरूड",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "23",
+    "area_sqft": "९०० चौ. फूट",
+    "consideration_amount": "2450000",
+    "market_value": "Rs. 2500000/-",
+    "stamp_duty": "₹ 0.0147 Cr"
+   },
+   "expect": {
+    "registration_date": "2023-06-08",
+    "document_type_en": "Lease Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Kothrud",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "23",
+    "carpet_area_sqft": 900.0,
+    "consideration_amount": 2450000.0,
+    "market_value": 2500000.0,
+    "stamp_duty": 147000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G014",
+    "registration_date": "November 15, 2024",
+    "document_type": "विकसन करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "औंध",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "24",
+    "area_sqft": "75 sq.m",
+    "consideration_amount": "31,00,000",
+    "market_value": "३२,००,०००",
+    "stamp_duty": "Rs. 186000/-"
+   },
+   "expect": {
+    "registration_date": "2024-11-15",
+    "document_type_en": "Development Agreement",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Aundh",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "24",
+    "carpet_area_sqft": 807.29,
+    "consideration_amount": 3100000.0,
+    "market_value": 3200000.0,
+    "stamp_duty": 186000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G015",
+    "registration_date": "२२ एप्रिल २०२५",
+    "document_type": "मुखत्यारपत्र",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "अंधेरी",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "२५/१",
+    "area_sqft": "1 hectare",
+    "consideration_amount": "₹ 0.375 Cr",
+    "market_value": "39 lakh",
+    "stamp_duty": "२,२५,०००"
+   },
+   "expect": {
+    "registration_date": "2025-04-22",
+    "document_type_en": "Power of Attorney",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Andheri",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "25/1",
+    "carpet_area_sqft": 107639.0,
+    "consideration_amount": 3750000.0,
+    "market_value": 3900000.0,
+    "stamp_duty": 225000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G016",
+    "registration_date": "०१/०९/२०१८",
+    "document_type": "Sale Deed",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "आनंद नगर",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "26",
+    "area_sqft": "850",
+    "consideration_amount": "Rs. 4400000/-",
+    "market_value": "0.44 कोटी",
+    "stamp_duty": "2.64 lakh"
+   },
+   "expect": {
+    "registration_date": "2018-09-01",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Anand Nagar",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "26",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 4400000.0,
+    "market_value": 4400000.0,
+    "stamp_duty": 264000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G017",
+    "registration_date": "08/02/19",
+    "document_type": "Agreement for Sale",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "Baner",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "27",
+    "area_sqft": "2 guntha",
+    "consideration_amount": "५०,५०,०००",
+    "market_value": "5100000",
+    "stamp_duty": "0.0303 कोटी"
+   },
+   "expect": {
+    "registration_date": "2019-02-08",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Baner",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "27",
+    "carpet_area_sqft": 2178.0,
+    "consideration_amount": 5050000.0,
+    "market_value": 5100000.0,
+    "stamp_duty": 303000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G018",
+    "registration_date": "2020-07-15",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "बाणेर",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "28/4",
+    "area_sqft": "80 sqm carpet",
+    "consideration_amount": "57 lakh",
+    "market_value": "58,00,000",
+    "stamp_duty": "342000"
+   },
+   "expect": {
+    "registration_date": "2020-07-15",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Baner",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "28/4",
+    "carpet_area_sqft": 861.11,
+    "consideration_amount": 5700000.0,
+    "market_value": 5800000.0,
+    "stamp_duty": 342000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G019",
+    "registration_date": "22-12-2021",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "खराडी",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "29",
+    "area_sqft": "1200 sqft built up",
+    "consideration_amount": "0.635 कोटी",
+    "market_value": "₹ 0.65 Cr",
+    "stamp_duty": "3,81,000"
+   },
+   "expect": {
+    "registration_date": "2021-12-22",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Kharadi",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "29",
+    "carpet_area_sqft": 1000.0,
+    "consideration_amount": 6350000.0,
+    "market_value": 6500000.0,
+    "stamp_duty": 381000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G020",
+    "registration_date": "01/05/2022",
+    "document_type": "बक्षीसपत्र",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "शिवाजीनगर",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "३०",
+    "area_sqft": "1,050 sq ft",
+    "consideration_amount": "7000000",
+    "market_value": "Rs. 7000000/-",
+    "stamp_duty": "₹ 0.042 Cr"
+   },
+   "expect": {
+    "registration_date": "2022-05-01",
+    "document_type_en": "Gift Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Shivajinagar",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "30",
+    "carpet_area_sqft": 1050.0,
+    "consideration_amount": 7000000.0,
+    "market_value": 7000000.0,
+    "stamp_duty": 420000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G021",
+    "registration_date": "08.10.2023",
+    "document_type": "गहाणखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "संकेत नगर",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "31/2",
+    "area_sqft": "60 sqm",
+    "consideration_amount": "76,50,000",
+    "market_value": "७७,००,०००",
+    "stamp_duty": "Rs. 459000/-"
+   },
+   "expect": {
+    "registration_date": "2023-10-08",
+    "document_type_en": "Mortgage Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Sanket Nagar",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "31/2",
+    "carpet_area_sqft": 645.83,
+    "consideration_amount": 7650000.0,
+    "market_value": 7700000.0,
+    "stamp_duty": 459000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G022",
+    "registration_date": "15 Mar 2024",
+    "document_type": "भाडेपट्टा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "हडपसर",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "32",
+    "area_sqft": "carpet 620 sqft",
+    "consideration_amount": "₹ 0.83 Cr",
+    "market_value": "84 lakh",
+    "stamp_duty": "४,९८,०००"
+   },
+   "expect": {
+    "registration_date": "2024-03-15",
+    "document_type_en": "Lease Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Hadapsar",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "32",
+    "carpet_area_sqft": 620.0,
+    "consideration_amount": 8300000.0,
+    "market_value": 8400000.0,
+    "stamp_duty": 498000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G023",
+    "registration_date": "August 22, 2025",
+    "document_type": "विकसन करारनामा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "वाकड",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "33",
+    "area_sqft": "850 sq.ft",
+    "consideration_amount": "Rs. 8950000/-",
+    "market_value": "0.91 कोटी",
+    "stamp_duty": "5.37 lakh"
+   },
+   "expect": {
+    "registration_date": "2025-08-22",
+    "document_type_en": "Development Agreement",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Wakad",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "33",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 8950000.0,
+    "market_value": 9100000.0,
+    "stamp_duty": 537000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G024",
+    "registration_date": "१ जानेवारी २०१८",
+    "document_type": "मुखत्यारपत्र",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "गणेश नगर",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "34/5",
+    "area_sqft": "0.5 acre",
+    "consideration_amount": "९६,००,०००",
+    "market_value": "9600000",
+    "stamp_duty": "0.0576 कोटी"
+   },
+   "expect": {
+    "registration_date": "2018-01-01",
+    "document_type_en": "Power of Attorney",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Ganesh Nagar",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "34/5",
+    "carpet_area_sqft": 21780.0,
+    "consideration_amount": 9600000.0,
+    "market_value": 9600000.0,
+    "stamp_duty": 576000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G025",
+    "registration_date": "०८/०६/२०१९",
+    "document_type": "Sale Deed",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "लक्ष्मी नगर",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "३५",
+    "area_sqft": "1000 sq.ft. built-up",
+    "consideration_amount": "22.5 lakh",
+    "market_value": "23,00,000",
+    "stamp_duty": "135000"
+   },
+   "expect": {
+    "registration_date": "2019-06-08",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Lakshmi Nagar",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "35",
+    "carpet_area_sqft": 833.33,
+    "consideration_amount": 2250000.0,
+    "market_value": 2300000.0,
+    "stamp_duty": 135000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G026",
+    "registration_date": "15/11/20",
+    "document_type": "Agreement for Sale",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "कोथरूड",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "36",
+    "area_sqft": "1500 sq ft super built up",
+    "consideration_amount": "0.29 कोटी",
+    "market_value": "₹ 0.3 Cr",
+    "stamp_duty": "1,74,000"
+   },
+   "expect": {
+    "registration_date": "2020-11-15",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Kothrud",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "36",
+    "carpet_area_sqft": 1071.43,
+    "consideration_amount": 2900000.0,
+    "market_value": 3000000.0,
+    "stamp_duty": 174000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G027",
+    "registration_date": "2021-04-22",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "औंध",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "37/3",
+    "area_sqft": "45.5 sq m",
+    "consideration_amount": "3550000",
+    "market_value": "Rs. 3700000/-",
+    "stamp_duty": "₹ 0.0213 Cr"
+   },
+   "expect": {
+    "registration_date": "2021-04-22",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Aundh",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "37/3",
+    "carpet_area_sqft": 489.76,
+    "consideration_amount": 3550000.0,
+    "market_value": 3700000.0,
+    "stamp_duty": 213000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G028",
+    "registration_date": "01-09-2022",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "अंधेरी",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "38",
+    "area_sqft": "५० चौ.मी.",
+    "consideration_amount": "42,00,000",
+    "market_value": "४२,००,०००",
+    "stamp_duty": "Rs. 252000/-"
+   },
+   "expect": {
+    "registration_date": "2022-09-01",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Andheri",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "38",
+    "carpet_area_sqft": 538.2,
+    "consideration_amount": 4200000.0,
+    "market_value": 4200000.0,
+    "stamp_duty": 252000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G029",
+    "registration_date": "08/02/2023",
+    "document_type": "बक्षीसपत्र",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "आनंद नगर",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "39",
+    "area_sqft": "९०० चौ. फूट",
+    "consideration_amount": "₹ 0.485 Cr",
+    "market_value": "49 lakh",
+    "stamp_duty": "२,९१,०००"
+   },
+   "expect": {
+    "registration_date": "2023-02-08",
+    "document_type_en": "Gift Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Anand Nagar",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "39",
+    "carpet_area_sqft": 900.0,
+    "consideration_amount": 4850000.0,
+    "market_value": 4900000.0,
+    "stamp_duty": 291000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G030",
+    "registration_date": "15.07.2024",
+    "document_type": "गहाणखत",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "Baner",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "४०/१",
+    "area_sqft": "75 sq.m",
+    "consideration_amount": "Rs. 5500000/-",
+    "market_value": "0.56 कोटी",
+    "stamp_duty": "3.3 lakh"
+   },
+   "expect": {
+    "registration_date": "2024-07-15",
+    "document_type_en": "Mortgage Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Baner",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "40/1",
+    "carpet_area_sqft": 807.29,
+    "consideration_amount": 5500000.0,
+    "market_value": 5600000.0,
+    "stamp_duty": 330000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G031",
+    "registration_date": "22 Dec 2025",
+    "document_type": "भाडेपट्टा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "बाणेर",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "41",
+    "area_sqft": "1 hectare",
+    "consideration_amount": "६१,५०,०००",
+    "market_value": "6300000",
+    "stamp_duty": "0.0369 कोटी"
+   },
+   "expect": {
+    "registration_date": "2025-12-22",
+    "document_type_en": "Lease Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Baner",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "41",
+    "carpet_area_sqft": 107639.0,
+    "consideration_amount": 6150000.0,
+    "market_value": 6300000.0,
+    "stamp_duty": 369000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G032",
+    "registration_date": "May 1, 2018",
+    "document_type": "विकसन करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "खराडी",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "42",
+    "area_sqft": "850",
+    "consideration_amount": "68 lakh",
+    "market_value": "68,00,000",
+    "stamp_duty": "408000"
+   },
+   "expect": {
+    "registration_date": "2018-05-01",
+    "document_type_en": "Development Agreement",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Kharadi",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "42",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 6800000.0,
+    "market_value": 6800000.0,
+    "stamp_duty": 408000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G033",
+    "registration_date": "८ ऑक्टोबर २०१९",
+    "document_type": "मुखत्यारपत्र",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "शिवाजीनगर",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "43/4",
+    "area_sqft": "2 guntha",
+    "consideration_amount": "0.745 कोटी",
+    "market_value": "₹ 0.75 Cr",
+    "stamp_duty": "4,47,000"
+   },
+   "expect": {
+    "registration_date": "2019-10-08",
+    "document_type_en": "Power of Attorney",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Shivajinagar",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "43/4",
+    "carpet_area_sqft": 2178.0,
+    "consideration_amount": 7450000.0,
+    "market_value": 7500000.0,
+    "stamp_duty": 447000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G034",
+    "registration_date": "१५/०३/२०२०",
+    "document_type": "Sale Deed",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "संकेत नगर",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "44",
+    "area_sqft": "80 sqm carpet",
+    "consideration_amount": "8100000",
+    "market_value": "Rs. 8200000/-",
+    "stamp_duty": "₹ 0.0486 Cr"
+   },
+   "expect": {
+    "registration_date": "2020-03-15",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Sanket Nagar",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "44",
+    "carpet_area_sqft": 861.11,
+    "consideration_amount": 8100000.0,
+    "market_value": 8200000.0,
+    "stamp_duty": 486000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G035",
+    "registration_date": "22/08/21",
+    "document_type": "Agreement for Sale",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "हडपसर",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "४५",
+    "area_sqft": "1200 sqft built up",
+    "consideration_amount": "87,50,000",
+    "market_value": "८९,००,०००",
+    "stamp_duty": "Rs. 525000/-"
+   },
+   "expect": {
+    "registration_date": "2021-08-22",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Hadapsar",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "45",
+    "carpet_area_sqft": 1000.0,
+    "consideration_amount": 8750000.0,
+    "market_value": 8900000.0,
+    "stamp_duty": 525000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G036",
+    "registration_date": "2022-01-01",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "वाकड",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "46/2",
+    "area_sqft": "1,050 sq ft",
+    "consideration_amount": "₹ 0.94 Cr",
+    "market_value": "94 lakh",
+    "stamp_duty": "५,६४,०००"
+   },
+   "expect": {
+    "registration_date": "2022-01-01",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Wakad",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "46/2",
+    "carpet_area_sqft": 1050.0,
+    "consideration_amount": 9400000.0,
+    "market_value": 9400000.0,
+    "stamp_duty": 564000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G037",
+    "registration_date": "08-06-2023",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "गणेश नगर",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "47",
+    "area_sqft": "60 sqm",
+    "consideration_amount": "Rs. 2050000/-",
+    "market_value": "0.21 कोटी",
+    "stamp_duty": "1.23 lakh"
+   },
+   "expect": {
+    "registration_date": "2023-06-08",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Ganesh Nagar",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "47",
+    "carpet_area_sqft": 645.83,
+    "consideration_amount": 2050000.0,
+    "market_value": 2100000.0,
+    "stamp_duty": 123000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G038",
+    "registration_date": "15/11/2024",
+    "document_type": "बक्षीसपत्र",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "लक्ष्मी नगर",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "48",
+    "area_sqft": "carpet 620 sqft",
+    "consideration_amount": "२७,००,०००",
+    "market_value": "2800000",
+    "stamp_duty": "0.0162 कोटी"
+   },
+   "expect": {
+    "registration_date": "2024-11-15",
+    "document_type_en": "Gift Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Lakshmi Nagar",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "48",
+    "carpet_area_sqft": 620.0,
+    "consideration_amount": 2700000.0,
+    "market_value": 2800000.0,
+    "stamp_duty": 162000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G039",
+    "registration_date": "22.04.2025",
+    "document_type": "गहाणखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "कोथरूड",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "49/5",
+    "area_sqft": "850 sq.ft",
+    "consideration_amount": "33.5 lakh",
+    "market_value": "35,00,000",
+    "stamp_duty": "201000"
+   },
+   "expect": {
+    "registration_date": "2025-04-22",
+    "document_type_en": "Mortgage Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Kothrud",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "49/5",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 3350000.0,
+    "market_value": 3500000.0,
+    "stamp_duty": 201000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G040",
+    "registration_date": "1 Sep 2018",
+    "document_type": "भाडेपट्टा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "औंध",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "५०",
+    "area_sqft": "0.5 acre",
+    "consideration_amount": "0.4 कोटी",
+    "market_value": "₹ 0.4 Cr",
+    "stamp_duty": "2,40,000"
+   },
+   "expect": {
+    "registration_date": "2018-09-01",
+    "document_type_en": "Lease Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Aundh",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "50",
+    "carpet_area_sqft": 21780.0,
+    "consideration_amount": 4000000.0,
+    "market_value": 4000000.0,
+    "stamp_duty": 240000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G041",
+    "registration_date": "February 8, 2019",
+    "document_type": "विकसन करारनामा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "अंधेरी",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "51",
+    "area_sqft": "1000 sq.ft. built-up",
+    "consideration_amount": "4650000",
+    "market_value": "Rs. 4700000/-",
+    "stamp_duty": "₹ 0.0279 Cr"
+   },
+   "expect": {
+    "registration_date": "2019-02-08",
+    "document_type_en": "Development Agreement",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Andheri",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "51",
+    "carpet_area_sqft": 833.33,
+    "consideration_amount": 4650000.0,
+    "market_value": 4700000.0,
+    "stamp_duty": 279000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G042",
+    "registration_date": "१५ जुलै २०२०",
+    "document_type": "मुखत्यारपत्र",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "आनंद नगर",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "52/3",
+    "area_sqft": "1500 sq ft super built up",
+    "consideration_amount": "53,00,000",
+    "market_value": "५४,००,०००",
+    "stamp_duty": "Rs. 318000/-"
+   },
+   "expect": {
+    "registration_date": "2020-07-15",
+    "document_type_en": "Power of Attorney",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Anand Nagar",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "52/3",
+    "carpet_area_sqft": 1071.43,
+    "consideration_amount": 5300000.0,
+    "market_value": 5400000.0,
+    "stamp_duty": 318000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G043",
+    "registration_date": "२२/१२/२०२१",
+    "document_type": "Sale Deed",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "Baner",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "53",
+    "area_sqft": "45.5 sq m",
+    "consideration_amount": "₹ 0.595 Cr",
+    "market_value": "61 lakh",
+    "stamp_duty": "३,५७,०००"
+   },
+   "expect": {
+    "registration_date": "2021-12-22",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Baner",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "53",
+    "carpet_area_sqft": 489.76,
+    "consideration_amount": 5950000.0,
+    "market_value": 6100000.0,
+    "stamp_duty": 357000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G044",
+    "registration_date": "01/05/22",
+    "document_type": "Agreement for Sale",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "बाणेर",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "54",
+    "area_sqft": "५० चौ.मी.",
+    "consideration_amount": "Rs. 6600000/-",
+    "market_value": "0.66 कोटी",
+    "stamp_duty": "3.96 lakh"
+   },
+   "expect": {
+    "registration_date": "2022-05-01",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Baner",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "54",
+    "carpet_area_sqft": 538.2,
+    "consideration_amount": 6600000.0,
+    "market_value": 6600000.0,
+    "stamp_duty": 396000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G045",
+    "registration_date": "2023-10-08",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "खराडी",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "५५/१",
+    "area_sqft": "९०० चौ. फूट",
+    "consideration_amount": "७२,५०,०००",
+    "market_value": "7300000",
+    "stamp_duty": "0.0435 कोटी"
+   },
+   "expect": {
+    "registration_date": "2023-10-08",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Kharadi",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "55/1",
+    "carpet_area_sqft": 900.0,
+    "consideration_amount": 7250000.0,
+    "market_value": 7300000.0,
+    "stamp_duty": 435000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G046",
+    "registration_date": "15-03-2024",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "शिवाजीनगर",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "56",
+    "area_sqft": "75 sq.m",
+    "consideration_amount": "79 lakh",
+    "market_value": "80,00,000",
+    "stamp_duty": "474000"
+   },
+   "expect": {
+    "registration_date": "2024-03-15",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Shivajinagar",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "56",
+    "carpet_area_sqft": 807.29,
+    "consideration_amount": 7900000.0,
+    "market_value": 8000000.0,
+    "stamp_duty": 474000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G047",
+    "registration_date": "22/08/2025",
+    "document_type": "बक्षीसपत्र",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "संकेत नगर",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "57",
+    "area_sqft": "1 hectare",
+    "consideration_amount": "0.855 कोटी",
+    "market_value": "₹ 0.87 Cr",
+    "stamp_duty": "5,13,000"
+   },
+   "expect": {
+    "registration_date": "2025-08-22",
+    "document_type_en": "Gift Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Sanket Nagar",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "57",
+    "carpet_area_sqft": 107639.0,
+    "consideration_amount": 8550000.0,
+    "market_value": 8700000.0,
+    "stamp_duty": 513000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G048",
+    "registration_date": "01.01.2018",
+    "document_type": "गहाणखत",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "हडपसर",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "58/4",
+    "area_sqft": "850",
+    "consideration_amount": "9200000",
+    "market_value": "Rs. 9200000/-",
+    "stamp_duty": "₹ 0.0552 Cr"
+   },
+   "expect": {
+    "registration_date": "2018-01-01",
+    "document_type_en": "Mortgage Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Hadapsar",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "58/4",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 9200000.0,
+    "market_value": 9200000.0,
+    "stamp_duty": 552000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G049",
+    "registration_date": "8 Jun 2019",
+    "document_type": "भाडेपट्टा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "वाकड",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "59",
+    "area_sqft": "2 guntha",
+    "consideration_amount": "98,50,000",
+    "market_value": "९९,००,०००",
+    "stamp_duty": "Rs. 591000/-"
+   },
+   "expect": {
+    "registration_date": "2019-06-08",
+    "document_type_en": "Lease Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Wakad",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "59",
+    "carpet_area_sqft": 2178.0,
+    "consideration_amount": 9850000.0,
+    "market_value": 9900000.0,
+    "stamp_duty": 591000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G050",
+    "registration_date": "November 15, 2020",
+    "document_type": "विकसन करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "गणेश नगर",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "६०",
+    "area_sqft": "80 sqm carpet",
+    "consideration_amount": "₹ 0.25 Cr",
+    "market_value": "26 lakh",
+    "stamp_duty": "१,५०,०००"
+   },
+   "expect": {
+    "registration_date": "2020-11-15",
+    "document_type_en": "Development Agreement",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Ganesh Nagar",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "60",
+    "carpet_area_sqft": 861.11,
+    "consideration_amount": 2500000.0,
+    "market_value": 2600000.0,
+    "stamp_duty": 150000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G051",
+    "registration_date": "२२ एप्रिल २०२१",
+    "document_type": "मुखत्यारपत्र",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "लक्ष्मी नगर",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "61/2",
+    "area_sqft": "1200 sqft built up",
+    "consideration_amount": "Rs. 3150000/-",
+    "market_value": "0.33 कोटी",
+    "stamp_duty": "1.89 lakh"
+   },
+   "expect": {
+    "registration_date": "2021-04-22",
+    "document_type_en": "Power of Attorney",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Lakshmi Nagar",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "61/2",
+    "carpet_area_sqft": 1000.0,
+    "consideration_amount": 3150000.0,
+    "market_value": 3300000.0,
+    "stamp_duty": 189000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G052",
+    "registration_date": "०१/०९/२०२२",
+    "document_type": "Sale Deed",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "कोथरूड",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "62",
+    "area_sqft": "1,050 sq ft",
+    "consideration_amount": "३८,००,०००",
+    "market_value": "3800000",
+    "stamp_duty": "0.0228 कोटी"
+   },
+   "expect": {
+    "registration_date": "2022-09-01",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Kothrud",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "62",
+    "carpet_area_sqft": 1050.0,
+    "consideration_amount": 3800000.0,
+    "market_value": 3800000.0,
+    "stamp_duty": 228000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G053",
+    "registration_date": "08/02/23",
+    "document_type": "Agreement for Sale",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "औंध",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "63",
+    "area_sqft": "60 sqm",
+    "consideration_amount": "44.5 lakh",
+    "market_value": "45,00,000",
+    "stamp_duty": "267000"
+   },
+   "expect": {
+    "registration_date": "2023-02-08",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Aundh",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "63",
+    "carpet_area_sqft": 645.83,
+    "consideration_amount": 4450000.0,
+    "market_value": 4500000.0,
+    "stamp_duty": 267000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G054",
+    "registration_date": "2024-07-15",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "अंधेरी",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "64/5",
+    "area_sqft": "carpet 620 sqft",
+    "consideration_amount": "0.51 कोटी",
+    "market_value": "₹ 0.52 Cr",
+    "stamp_duty": "3,06,000"
+   },
+   "expect": {
+    "registration_date": "2024-07-15",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Andheri",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "64/5",
+    "carpet_area_sqft": 620.0,
+    "consideration_amount": 5100000.0,
+    "market_value": 5200000.0,
+    "stamp_duty": 306000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G055",
+    "registration_date": "22-12-2025",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "आनंद नगर",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "६५",
+    "area_sqft": "850 sq.ft",
+    "consideration_amount": "5750000",
+    "market_value": "Rs. 5900000/-",
+    "stamp_duty": "₹ 0.0345 Cr"
+   },
+   "expect": {
+    "registration_date": "2025-12-22",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Anand Nagar",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "65",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 5750000.0,
+    "market_value": 5900000.0,
+    "stamp_duty": 345000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G056",
+    "registration_date": "01/05/2018",
+    "document_type": "बक्षीसपत्र",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "Baner",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "66",
+    "area_sqft": "0.5 acre",
+    "consideration_amount": "64,00,000",
+    "market_value": "६४,००,०००",
+    "stamp_duty": "Rs. 384000/-"
+   },
+   "expect": {
+    "registration_date": "2018-05-01",
+    "document_type_en": "Gift Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Baner",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "66",
+    "carpet_area_sqft": 21780.0,
+    "consideration_amount": 6400000.0,
+    "market_value": 6400000.0,
+    "stamp_duty": 384000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G057",
+    "registration_date": "08.10.2019",
+    "document_type": "गहाणखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "बाणेर",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "67/3",
+    "area_sqft": "1000 sq.ft. built-up",
+    "consideration_amount": "₹ 0.705 Cr",
+    "market_value": "71 lakh",
+    "stamp_duty": "४,२३,०००"
+   },
+   "expect": {
+    "registration_date": "2019-10-08",
+    "document_type_en": "Mortgage Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Baner",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "67/3",
+    "carpet_area_sqft": 833.33,
+    "consideration_amount": 7050000.0,
+    "market_value": 7100000.0,
+    "stamp_duty": 423000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G058",
+    "registration_date": "15 Mar 2020",
+    "document_type": "भाडेपट्टा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "खराडी",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "68",
+    "area_sqft": "1500 sq ft super built up",
+    "consideration_amount": "Rs. 7700000/-",
+    "market_value": "0.78 कोटी",
+    "stamp_duty": "4.62 lakh"
+   },
+   "expect": {
+    "registration_date": "2020-03-15",
+    "document_type_en": "Lease Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Kharadi",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "68",
+    "carpet_area_sqft": 1071.43,
+    "consideration_amount": 7700000.0,
+    "market_value": 7800000.0,
+    "stamp_duty": 462000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G059",
+    "registration_date": "August 22, 2021",
+    "document_type": "विकसन करारनामा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "शिवाजीनगर",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "69",
+    "area_sqft": "45.5 sq m",
+    "consideration_amount": "८३,५०,०००",
+    "market_value": "8500000",
+    "stamp_duty": "0.0501 कोटी"
+   },
+   "expect": {
+    "registration_date": "2021-08-22",
+    "document_type_en": "Development Agreement",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Shivajinagar",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "69",
+    "carpet_area_sqft": 489.76,
+    "consideration_amount": 8350000.0,
+    "market_value": 8500000.0,
+    "stamp_duty": 501000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G060",
+    "registration_date": "१ जानेवारी २०२२",
+    "document_type": "मुखत्यारपत्र",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "संकेत नगर",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "७०/१",
+    "area_sqft": "५० चौ.मी.",
+    "consideration_amount": "90 lakh",
+    "market_value": "90,00,000",
+    "stamp_duty": "540000"
+   },
+   "expect": {
+    "registration_date": "2022-01-01",
+    "document_type_en": "Power of Attorney",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Sanket Nagar",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "70/1",
+    "carpet_area_sqft": 538.2,
+    "consideration_amount": 9000000.0,
+    "market_value": 9000000.0,
+    "stamp_duty": 540000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G061",
+    "registration_date": "०८/०६/२०२३",
+    "document_type": "Sale Deed",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "हडपसर",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "71",
+    "area_sqft": "९०० चौ. फूट",
+    "consideration_amount": "0.965 कोटी",
+    "market_value": "₹ 0.97 Cr",
+    "stamp_duty": "5,79,000"
+   },
+   "expect": {
+    "registration_date": "2023-06-08",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Hadapsar",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "71",
+    "carpet_area_sqft": 900.0,
+    "consideration_amount": 9650000.0,
+    "market_value": 9700000.0,
+    "stamp_duty": 579000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G062",
+    "registration_date": "15/11/24",
+    "document_type": "Agreement for Sale",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "वाकड",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "72",
+    "area_sqft": "75 sq.m",
+    "consideration_amount": "2300000",
+    "market_value": "Rs. 2400000/-",
+    "stamp_duty": "₹ 0.0138 Cr"
+   },
+   "expect": {
+    "registration_date": "2024-11-15",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Wakad",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "72",
+    "carpet_area_sqft": 807.29,
+    "consideration_amount": 2300000.0,
+    "market_value": 2400000.0,
+    "stamp_duty": 138000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G063",
+    "registration_date": "2025-04-22",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "गणेश नगर",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "73/4",
+    "area_sqft": "1 hectare",
+    "consideration_amount": "29,50,000",
+    "market_value": "३१,००,०००",
+    "stamp_duty": "Rs. 177000/-"
+   },
+   "expect": {
+    "registration_date": "2025-04-22",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Ganesh Nagar",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "73/4",
+    "carpet_area_sqft": 107639.0,
+    "consideration_amount": 2950000.0,
+    "market_value": 3100000.0,
+    "stamp_duty": 177000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G064",
+    "registration_date": "01-09-2018",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "लक्ष्मी नगर",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "74",
+    "area_sqft": "850",
+    "consideration_amount": "₹ 0.36 Cr",
+    "market_value": "36 lakh",
+    "stamp_duty": "२,१६,०००"
+   },
+   "expect": {
+    "registration_date": "2018-09-01",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Lakshmi Nagar",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "74",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 3600000.0,
+    "market_value": 3600000.0,
+    "stamp_duty": 216000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G065",
+    "registration_date": "08/02/2019",
+    "document_type": "बक्षीसपत्र",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "कोथरूड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "७५",
+    "area_sqft": "2 guntha",
+    "consideration_amount": "Rs. 4250000/-",
+    "market_value": "0.43 कोटी",
+    "stamp_duty": "2.55 lakh"
+   },
+   "expect": {
+    "registration_date": "2019-02-08",
+    "document_type_en": "Gift Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Kothrud",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "75",
+    "carpet_area_sqft": 2178.0,
+    "consideration_amount": 4250000.0,
+    "market_value": 4300000.0,
+    "stamp_duty": 255000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G066",
+    "registration_date": "15.07.2020",
+    "document_type": "गहाणखत",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "औंध",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "76/2",
+    "area_sqft": "80 sqm carpet",
+    "consideration_amount": "४९,००,०००",
+    "market_value": "5000000",
+    "stamp_duty": "0.0294 कोटी"
+   },
+   "expect": {
+    "registration_date": "2020-07-15",
+    "document_type_en": "Mortgage Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Aundh",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "76/2",
+    "carpet_area_sqft": 861.11,
+    "consideration_amount": 4900000.0,
+    "market_value": 5000000.0,
+    "stamp_duty": 294000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G067",
+    "registration_date": "22 Dec 2021",
+    "document_type": "भाडेपट्टा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "अंधेरी",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "77",
+    "area_sqft": "1200 sqft built up",
+    "consideration_amount": "55.5 lakh",
+    "market_value": "57,00,000",
+    "stamp_duty": "333000"
+   },
+   "expect": {
+    "registration_date": "2021-12-22",
+    "document_type_en": "Lease Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Andheri",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "77",
+    "carpet_area_sqft": 1000.0,
+    "consideration_amount": 5550000.0,
+    "market_value": 5700000.0,
+    "stamp_duty": 333000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G068",
+    "registration_date": "May 1, 2022",
+    "document_type": "विकसन करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "आनंद नगर",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "78",
+    "area_sqft": "1,050 sq ft",
+    "consideration_amount": "0.62 कोटी",
+    "market_value": "₹ 0.62 Cr",
+    "stamp_duty": "3,72,000"
+   },
+   "expect": {
+    "registration_date": "2022-05-01",
+    "document_type_en": "Development Agreement",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Anand Nagar",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "78",
+    "carpet_area_sqft": 1050.0,
+    "consideration_amount": 6200000.0,
+    "market_value": 6200000.0,
+    "stamp_duty": 372000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G069",
+    "registration_date": "८ ऑक्टोबर २०२३",
+    "document_type": "मुखत्यारपत्र",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "Baner",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "79/5",
+    "area_sqft": "60 sqm",
+    "consideration_amount": "6850000",
+    "market_value": "Rs. 6900000/-",
+    "stamp_duty": "₹ 0.0411 Cr"
+   },
+   "expect": {
+    "registration_date": "2023-10-08",
+    "document_type_en": "Power of Attorney",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Baner",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "79/5",
+    "carpet_area_sqft": 645.83,
+    "consideration_amount": 6850000.0,
+    "market_value": 6900000.0,
+    "stamp_duty": 411000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G070",
+    "registration_date": "१५/०३/२०२४",
+    "document_type": "Sale Deed",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "बाणेर",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "८०",
+    "area_sqft": "carpet 620 sqft",
+    "consideration_amount": "75,00,000",
+    "market_value": "७६,००,०००",
+    "stamp_duty": "Rs. 450000/-"
+   },
+   "expect": {
+    "registration_date": "2024-03-15",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Baner",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "80",
+    "carpet_area_sqft": 620.0,
+    "consideration_amount": 7500000.0,
+    "market_value": 7600000.0,
+    "stamp_duty": 450000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G071",
+    "registration_date": "22/08/25",
+    "document_type": "Agreement for Sale",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "खराडी",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "81",
+    "area_sqft": "850 sq.ft",
+    "consideration_amount": "₹ 0.815 Cr",
+    "market_value": "83 lakh",
+    "stamp_duty": "४,८९,०००"
+   },
+   "expect": {
+    "registration_date": "2025-08-22",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Kharadi",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "81",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 8150000.0,
+    "market_value": 8300000.0,
+    "stamp_duty": 489000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G072",
+    "registration_date": "2018-01-01",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "शिवाजीनगर",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "82/3",
+    "area_sqft": "0.5 acre",
+    "consideration_amount": "Rs. 8800000/-",
+    "market_value": "0.88 कोटी",
+    "stamp_duty": "5.28 lakh"
+   },
+   "expect": {
+    "registration_date": "2018-01-01",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Shivajinagar",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "82/3",
+    "carpet_area_sqft": 21780.0,
+    "consideration_amount": 8800000.0,
+    "market_value": 8800000.0,
+    "stamp_duty": 528000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G073",
+    "registration_date": "08-06-2019",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "संकेत नगर",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "83",
+    "area_sqft": "1000 sq.ft. built-up",
+    "consideration_amount": "९४,५०,०००",
+    "market_value": "9500000",
+    "stamp_duty": "0.0567 कोटी"
+   },
+   "expect": {
+    "registration_date": "2019-06-08",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Sanket Nagar",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "83",
+    "carpet_area_sqft": 833.33,
+    "consideration_amount": 9450000.0,
+    "market_value": 9500000.0,
+    "stamp_duty": 567000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G074",
+    "registration_date": "15/11/2020",
+    "document_type": "बक्षीसपत्र",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "हडपसर",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "84",
+    "area_sqft": "1500 sq ft super built up",
+    "consideration_amount": "21 lakh",
+    "market_value": "22,00,000",
+    "stamp_duty": "126000"
+   },
+   "expect": {
+    "registration_date": "2020-11-15",
+    "document_type_en": "Gift Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Hadapsar",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "84",
+    "carpet_area_sqft": 1071.43,
+    "consideration_amount": 2100000.0,
+    "market_value": 2200000.0,
+    "stamp_duty": 126000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G075",
+    "registration_date": "22.04.2021",
+    "document_type": "गहाणखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "वाकड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "८५/१",
+    "area_sqft": "45.5 sq m",
+    "consideration_amount": "0.275 कोटी",
+    "market_value": "₹ 0.29 Cr",
+    "stamp_duty": "1,65,000"
+   },
+   "expect": {
+    "registration_date": "2021-04-22",
+    "document_type_en": "Mortgage Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Wakad",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "85/1",
+    "carpet_area_sqft": 489.76,
+    "consideration_amount": 2750000.0,
+    "market_value": 2900000.0,
+    "stamp_duty": 165000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G076",
+    "registration_date": "1 Sep 2022",
+    "document_type": "भाडेपट्टा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "गणेश नगर",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "86",
+    "area_sqft": "५० चौ.मी.",
+    "consideration_amount": "3400000",
+    "market_value": "Rs. 3400000/-",
+    "stamp_duty": "₹ 0.0204 Cr"
+   },
+   "expect": {
+    "registration_date": "2022-09-01",
+    "document_type_en": "Lease Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Ganesh Nagar",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "86",
+    "carpet_area_sqft": 538.2,
+    "consideration_amount": 3400000.0,
+    "market_value": 3400000.0,
+    "stamp_duty": 204000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G077",
+    "registration_date": "February 8, 2023",
+    "document_type": "विकसन करारनामा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "लक्ष्मी नगर",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "87",
+    "area_sqft": "९०० चौ. फूट",
+    "consideration_amount": "40,50,000",
+    "market_value": "४१,००,०००",
+    "stamp_duty": "Rs. 243000/-"
+   },
+   "expect": {
+    "registration_date": "2023-02-08",
+    "document_type_en": "Development Agreement",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Lakshmi Nagar",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "87",
+    "carpet_area_sqft": 900.0,
+    "consideration_amount": 4050000.0,
+    "market_value": 4100000.0,
+    "stamp_duty": 243000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G078",
+    "registration_date": "१५ जुलै २०२४",
+    "document_type": "मुखत्यारपत्र",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "कोथरूड",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "88/4",
+    "area_sqft": "75 sq.m",
+    "consideration_amount": "₹ 0.47 Cr",
+    "market_value": "48 lakh",
+    "stamp_duty": "२,८२,०००"
+   },
+   "expect": {
+    "registration_date": "2024-07-15",
+    "document_type_en": "Power of Attorney",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Kothrud",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "88/4",
+    "carpet_area_sqft": 807.29,
+    "consideration_amount": 4700000.0,
+    "market_value": 4800000.0,
+    "stamp_duty": 282000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G079",
+    "registration_date": "२२/१२/२०२५",
+    "document_type": "Sale Deed",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "औंध",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "89",
+    "area_sqft": "1 hectare",
+    "consideration_amount": "Rs. 5350000/-",
+    "market_value": "0.55 कोटी",
+    "stamp_duty": "3.21 lakh"
+   },
+   "expect": {
+    "registration_date": "2025-12-22",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Aundh",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "89",
+    "carpet_area_sqft": 107639.0,
+    "consideration_amount": 5350000.0,
+    "market_value": 5500000.0,
+    "stamp_duty": 321000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G080",
+    "registration_date": "01/05/18",
+    "document_type": "Agreement for Sale",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "अंधेरी",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "९०",
+    "area_sqft": "850",
+    "consideration_amount": "६०,००,०००",
+    "market_value": "6000000",
+    "stamp_duty": "0.036 कोटी"
+   },
+   "expect": {
+    "registration_date": "2018-05-01",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Andheri",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "90",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 6000000.0,
+    "market_value": 6000000.0,
+    "stamp_duty": 360000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G081",
+    "registration_date": "2019-10-08",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "आनंद नगर",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "91/2",
+    "area_sqft": "2 guntha",
+    "consideration_amount": "66.5 lakh",
+    "market_value": "67,00,000",
+    "stamp_duty": "399000"
+   },
+   "expect": {
+    "registration_date": "2019-10-08",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Anand Nagar",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "91/2",
+    "carpet_area_sqft": 2178.0,
+    "consideration_amount": 6650000.0,
+    "market_value": 6700000.0,
+    "stamp_duty": 399000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G082",
+    "registration_date": "15-03-2020",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "Baner",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "92",
+    "area_sqft": "80 sqm carpet",
+    "consideration_amount": "0.73 कोटी",
+    "market_value": "₹ 0.74 Cr",
+    "stamp_duty": "4,38,000"
+   },
+   "expect": {
+    "registration_date": "2020-03-15",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Baner",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "92",
+    "carpet_area_sqft": 861.11,
+    "consideration_amount": 7300000.0,
+    "market_value": 7400000.0,
+    "stamp_duty": 438000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G083",
+    "registration_date": "22/08/2021",
+    "document_type": "बक्षीसपत्र",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "बाणेर",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "93",
+    "area_sqft": "1200 sqft built up",
+    "consideration_amount": "7950000",
+    "market_value": "Rs. 8100000/-",
+    "stamp_duty": "₹ 0.0477 Cr"
+   },
+   "expect": {
+    "registration_date": "2021-08-22",
+    "document_type_en": "Gift Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Baner",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "93",
+    "carpet_area_sqft": 1000.0,
+    "consideration_amount": 7950000.0,
+    "market_value": 8100000.0,
+    "stamp_duty": 477000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G084",
+    "registration_date": "01.01.2022",
+    "document_type": "गहाणखत",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "खराडी",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "94/5",
+    "area_sqft": "1,050 sq ft",
+    "consideration_amount": "86,00,000",
+    "market_value": "८६,००,०००",
+    "stamp_duty": "Rs. 516000/-"
+   },
+   "expect": {
+    "registration_date": "2022-01-01",
+    "document_type_en": "Mortgage Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Kharadi",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "94/5",
+    "carpet_area_sqft": 1050.0,
+    "consideration_amount": 8600000.0,
+    "market_value": 8600000.0,
+    "stamp_duty": 516000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G085",
+    "registration_date": "8 Jun 2023",
+    "document_type": "भाडेपट्टा",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "शिवाजीनगर",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "९५",
+    "area_sqft": "60 sqm",
+    "consideration_amount": "₹ 0.925 Cr",
+    "market_value": "93 lakh",
+    "stamp_duty": "५,५५,०००"
+   },
+   "expect": {
+    "registration_date": "2023-06-08",
+    "document_type_en": "Lease Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Shivajinagar",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "95",
+    "carpet_area_sqft": 645.83,
+    "consideration_amount": 9250000.0,
+    "market_value": 9300000.0,
+    "stamp_duty": 555000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G086",
+    "registration_date": "November 15, 2024",
+    "document_type": "विकसन करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "Pune",
+    "locality": "संकेत नगर",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "96",
+    "area_sqft": "carpet 620 sqft",
+    "consideration_amount": "Rs. 9900000/-",
+    "market_value": "1 कोटी",
+    "stamp_duty": "5.94 lakh"
+   },
+   "expect": {
+    "registration_date": "2024-11-15",
+    "document_type_en": "Development Agreement",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Sanket Nagar",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "96",
+    "carpet_area_sqft": 620.0,
+    "consideration_amount": 9900000.0,
+    "market_value": 10000000.0,
+    "stamp_duty": 594000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G087",
+    "registration_date": "२२ एप्रिल २०२५",
+    "document_type": "मुखत्यारपत्र",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नाशिक",
+    "locality": "हडपसर",
+    "property_description": "गाळा क्र. 7, ओंकार टॉवर",
+    "survey_number": "97/3",
+    "area_sqft": "850 sq.ft",
+    "consideration_amount": "२५,५०,०००",
+    "market_value": "2700000",
+    "stamp_duty": "0.0153 कोटी"
+   },
+   "expect": {
+    "registration_date": "2025-04-22",
+    "document_type_en": "Power of Attorney",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nashik",
+    "locality_en": "Hadapsar",
+    "property_description_en": "Commercial Unit No. 7, Onkar Tower",
+    "survey_number": "97/3",
+    "carpet_area_sqft": 850.0,
+    "consideration_amount": 2550000.0,
+    "market_value": 2700000.0,
+    "stamp_duty": 153000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G088",
+    "registration_date": "०१/०९/२०१८",
+    "document_type": "Sale Deed",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "ठाणे",
+    "locality": "वाकड",
+    "property_description": "भूखंड क्र. 44, आनंद सोसायटी",
+    "survey_number": "98",
+    "area_sqft": "0.5 acre",
+    "consideration_amount": "32 lakh",
+    "market_value": "32,00,000",
+    "stamp_duty": "192000"
+   },
+   "expect": {
+    "registration_date": "2018-09-01",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Thane",
+    "locality_en": "Wakad",
+    "property_description_en": "Plot No. 44, Anand Society",
+    "survey_number": "98",
+    "carpet_area_sqft": 21780.0,
+    "consideration_amount": 3200000.0,
+    "market_value": 3200000.0,
+    "stamp_duty": 192000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G089",
+    "registration_date": "08/02/19",
+    "document_type": "Agreement for Sale",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "मुंबई",
+    "locality": "गणेश नगर",
+    "property_description": "दुकान क्र. 5, श्रीराम प्लाझा",
+    "survey_number": "99",
+    "area_sqft": "1000 sq.ft. built-up",
+    "consideration_amount": "0.385 कोटी",
+    "market_value": "₹ 0.39 Cr",
+    "stamp_duty": "2,31,000"
+   },
+   "expect": {
+    "registration_date": "2019-02-08",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Mumbai",
+    "locality_en": "Ganesh Nagar",
+    "property_description_en": "Shop No. 5, Shriram Plaza",
+    "survey_number": "99",
+    "carpet_area_sqft": 833.33,
+    "consideration_amount": 3850000.0,
+    "market_value": 3900000.0,
+    "stamp_duty": 231000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G090",
+    "registration_date": "2020-07-15",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "लक्ष्मी नगर",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१०/१",
+    "area_sqft": "1500 sq ft super built up",
+    "consideration_amount": "4500000",
+    "market_value": "Rs. 4600000/-",
+    "stamp_duty": "₹ 0.027 Cr"
+   },
+   "expect": {
+    "registration_date": "2020-07-15",
+    "document_type_en": "Agreement for Sale",
+    "sro_office_en": "Joint Sub Registrar Haveli 1",
+    "district_en": "Pune",
+    "locality_en": "Lakshmi Nagar",
+    "property_description_en": "Flat No. 302, Building A, Ganesh Apartment",
+    "survey_number": "10/1",
+    "carpet_area_sqft": 1071.43,
+    "consideration_amount": 4500000.0,
+    "market_value": 4600000.0,
+    "stamp_duty": 270000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "G091",
+    "registration_date": "22-12-2021",
+    "document_type": "खरेदीखत",
+    "sro_office": "सह दुय्यम निबंधक ठाणे 3",
+    "district": "नागपूर",
+    "locality": "कोथरूड",
+    "property_description": "Flat 401, Sai Residency",
+    "survey_number": "11",
+    "area_sqft": "45.5 sq m",
+    "consideration_amount": "51,50,000",
+    "market_value": "५३,००,०००",
+    "stamp_duty": "Rs. 309000/-"
+   },
+   "expect": {
+    "registration_date": "2021-12-22",
+    "document_type_en": "Sale Deed",
+    "sro_office_en": "Joint Sub Registrar Thane 3",
+    "district_en": "Nagpur",
+    "locality_en": "Kothrud",
+    "property_description_en": "Flat 401, Sai Residency",
+    "survey_number": "11",
+    "carpet_area_sqft": 489.76,
+    "consideration_amount": 5150000.0,
+    "market_value": 5300000.0,
+    "stamp_duty": 309000.0
+   }
+  },
+  {
+   "raw": {
+    "source_record_id": "B000",
+    "registration_date": "soon",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "कोथरूड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१०/१",
+    "area_sqft": "850",
+    "consideration_amount": "20,00,000",
+    "market_value": "२०,००,०००",
+    "stamp_duty": "Rs. 120000/-"
+   },
+   "review": [
+    "registration_date"
+   ]
+  },
+  {
+   "raw": {
+    "source_record_id": "B001",
+    "registration_date": "31/02/2024",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "कोथरूड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१०/१",
+    "area_sqft": "850",
+    "consideration_amount": "20,00,000",
+    "market_value": "२०,००,०००",
+    "stamp_duty": "Rs. 120000/-"
+   },
+   "review": [
+    "registration_date"
+   ]
+  },
+  {
+   "raw": {
+    "source_record_id": "B002",
+    "registration_date": "2018-01-01",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "कोथरूड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१०/१",
+    "area_sqft": "850",
+    "consideration_amount": "TBD",
+    "market_value": "२०,००,०००",
+    "stamp_duty": "Rs. 120000/-"
+   },
+   "review": [
+    "consideration_amount"
+   ]
+  },
+  {
+   "raw": {
+    "source_record_id": "B003",
+    "registration_date": "2018-01-01",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "कोथरूड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१०/१",
+    "area_sqft": "850",
+    "consideration_amount": "20,00,000",
+    "market_value": "ten lakh",
+    "stamp_duty": "Rs. 120000/-"
+   },
+   "review": [
+    "market_value"
+   ]
+  },
+  {
+   "raw": {
+    "source_record_id": "B004",
+    "registration_date": "2018-01-01",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "कोथरूड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१०/१",
+    "area_sqft": "large plot",
+    "consideration_amount": "20,00,000",
+    "market_value": "२०,००,०००",
+    "stamp_duty": "Rs. 120000/-"
+   },
+   "review": [
+    "area_sqft"
+   ]
+  },
+  {
+   "raw": {
+    "source_record_id": "B005",
+    "registration_date": "2018-01-01",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "कोथरूड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१०/१",
+    "area_sqft": "500 yards",
+    "consideration_amount": "20,00,000",
+    "market_value": "२०,००,०००",
+    "stamp_duty": "Rs. 120000/-"
+   },
+   "review": [
+    "area_sqft"
+   ]
+  },
+  {
+   "raw": {
+    "source_record_id": "B006",
+    "registration_date": "2018-01-01",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "कोथरूड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१०/१",
+    "area_sqft": "850",
+    "consideration_amount": "20,00,000",
+    "market_value": "२०,००,०००",
+    "stamp_duty": "12x"
+   },
+   "review": [
+    "stamp_duty"
+   ]
+  },
+  {
+   "raw": {
+    "source_record_id": "B007",
+    "registration_date": "",
+    "document_type": "विक्री करारनामा",
+    "sro_office": "सह दुय्यम निबंधक हवेली 1",
+    "district": "पुणे",
+    "locality": "कोथरूड",
+    "property_description": "सदनिका क्र. 302, इमारत ए, गणेश अपार्टमेंट",
+    "survey_number": "१०/१",
+    "area_sqft": "850",
+    "consideration_amount": "20,00,000",
+    "market_value": "२०,००,०००",
+    "stamp_duty": "Rs. 120000/-"
+   },
+   "review": [
+    "registration_date"
+   ]
+  }
+ ]
+}

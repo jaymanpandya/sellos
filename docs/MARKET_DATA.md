@@ -51,3 +51,24 @@ never changed or deleted, so cleaning (SOS-P3-03) can always be repeated from it
   the original.
 * **Reading.** A company site never holds these rows. `sellos.intel.api.list_raw_transactions` (Platform
   Admin, control site only, pages of at most 200) is the one way to read them.
+
+## The normaliser (SOS-P3-03, `sellos/intel/normaliser.py`, `marathi.py`, `normalise_store.py`)
+
+`normaliser.normalise(record)` cleans one raw record, with no database. `normalise_store.normalise_pending`
+runs it over the raw table on the control site and writes the results; the raw row is never touched.
+
+* **English, original kept.** Marathi text is translated from a glossary (document types, property words,
+  well known Pune and Mumbai places) and any other Devanagari word is transliterated by rule. The original
+  text and area are kept in the Normalised Transaction's `original_fields`, and in the raw row.
+* **Dates** become YYYY-MM-DD (day first; Devanagari digits and Marathi month names understood). A date out
+  of range (before 1980 or more than a year ahead) is unreadable.
+* **Money** (consideration, market value, stamp duty) becomes rupees: commas, Rs, the rupee sign, `/-`,
+  lakh, crore and the Marathi words are understood. `-`, `NA` and `nil` mean no figure.
+* **Area** becomes carpet square feet, with the rule in `area_rule`: sq ft or sq m as given (carpet), built
+  up divided by 1.2, super built up divided by 1.4, and land units (guntha, acre, hectare, are) converted
+  with no carpet adjustment. The two ratios are constants in the module.
+* **Review list.** A record with any unreadable date, amount or area gets no Normalised Transaction and one
+  Normaliser Review entry (status Open, the fields and why). A later run that can read it writes the clean
+  record and marks the entry Resolved. `normalise_pending(force=True)` repeats the cleaning for every record.
+* **Golden file.** `sellos/intel/golden_normaliser.json` has 100 synthetic records (92 readable, 8 not) and
+  the gate needs at least 95 percent of fields correct. The check on real data is SOS-P3-13.
