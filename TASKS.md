@@ -1644,7 +1644,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 8
 - **Dependencies:** SOS-P5-01, SOS-P4-06, SOS-P2-11, SOS-P1-18, SOS-P1-20, SOS-P1-22
-- **Status:** Not Started
+- **Status:** In Progress
 - **Browser spec:** required
 
 ### SOS-P5-03: Build the Channel Partner and Platform reports
