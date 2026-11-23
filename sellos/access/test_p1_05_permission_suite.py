@@ -438,6 +438,7 @@ SAMPLE_CALLS = {
 	"sellos.inventory.shortlists.archive_shortlist": {"name": "{shortlist_archive}"},
 	"sellos.inventory.shortlists.share_shortlist": {"name": "{shortlist}"},
 	"sellos.inventory.shortlists.my_shortlists": {},
+	"sellos.crm.client_views.my_overview": {},  # SOS-P5-05
 	"sellos.inventory.shortlists.my_shortlist": {"name": "{shortlist}"},
 	"sellos.inventory.shortlists.open_shortlist_item": {"name": "{shortlist}", "item": "{shortlist_item}"},
 	"sellos.inventory.shortlists.my_shortlist_pdf": {"name": "{shortlist}"},
