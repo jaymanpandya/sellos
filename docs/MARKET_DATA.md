@@ -72,3 +72,31 @@ runs it over the raw table on the control site and writes the results; the raw r
   record and marks the entry Resolved. `normalise_pending(force=True)` repeats the cleaning for every record.
 * **Golden file.** `sellos/intel/golden_normaliser.json` has 100 synthetic records (92 readable, 8 not) and
   the gate needs at least 95 percent of fields correct. The check on real data is SOS-P3-13.
+
+## LegiScore (decided by Jayman, 24 November 2026; SOS-P3-14 to SOS-P3-17)
+
+The registration data source is LegiScore (https://legiscore.in/docs, base `https://legiscore.in/api/v1`,
+Bearer key). It is a per property or per project lookup service, not a bulk feed. SOS-N12 (a request to
+the Department) is Not Needed.
+
+* **Panel (SOS-P3-14).** The Platform Admin enters the API key (stored encrypted, shown masked, never in
+  code, logs, fixtures or chat), reads the credit balance (`GET /api/v1/search/credits`), sets a monthly
+  credit budget and a per run cap, and confirms before any spend.
+* **Index II (SOS-P3-15).** `index2_property` for Maharashtra, per building from its CTS numbers, one year
+  at a time. District, tahsil and village are resolved by name through the lookups and never enumerated;
+  Mumbai uses the Mumbai tab with `area_name`. One raw row per registered document, each result PDF a
+  private file. A timed out year is "not searched" and a search at the 25 PDF cap is "truncated", never zero.
+* **RERA (SOS-P3-16).** `rera_check` (not `rera_single`, which is replaced) per Project with a RERA number,
+  on a schedule Jayman sets. The summary PDF and the latest sold and booked inventory disclosure PDF are
+  private files, and each run takes a dated snapshot of the parsed figures.
+* **Review (SOS-P3-17).** Extracted figures wait in a review queue. Nothing feeds the Property Matcher or a
+  published view before approval. The reader (the normaliser or Sarvam Vision) is chosen after
+  SOS-P3-17L's check on real PDFs; SOS-P3-03's normaliser parses text and reads no PDF.
+* **Calls.** Every submit sends an `Idempotency-Key`. A search is polled every 5 to 10 seconds for up to
+  20 minutes; there is no callback endpoint. No test and no loop run calls LegiScore: tests use saved
+  responses in `sellos/intel/fixtures/legiscore/`.
+* **Who sees what.** Parties' names stay on the control site (SOS-P3-12). Company sites and the Property
+  Matcher get building level and project level figures only.
+* **Open questions** (recorded by SOS-P3-01L with LegiScore's written answers): permanent storage, use in
+  derived analytics and matching, showing derived figures to several customer companies, and the terms of
+  its upstream sources.

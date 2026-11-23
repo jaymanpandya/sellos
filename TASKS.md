@@ -353,14 +353,14 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Description:** As Jayman, I want the default consent wording written, so that the enquiry page, the website forms and the partner views show it from the start. Write the default text of the company setting "Consent wording" (SOS-P2-08), which each Company Admin can then edit. Counsel reviews it after launch.
 - **Acceptance Criteria:**
   - The default consent wording is written and stored as the setting's default.
-- **Test Criteria:** Verified by Jayman.
-- **Notes:** Added by SOS-SETUP-34 (Jayman, 13 November 2026, question 5). Jayman's work, so it is Waiting and the loop does not pick it.
+- **Test Criteria:** Backend tests in `sellos/crm/test_n22_consent_wording.py`: the default text equals the decided wording and is the default of the setting in the DocType, `{company}` is replaced with the company display name on the enquiry page and the website form, an empty company name falls back to "the company", and the settings screen gets the raw text. Verified by Jayman.
+- **Notes:** Added by SOS-SETUP-34 (Jayman, 13 November 2026, question 5). Jayman's work, so it is Waiting and the loop does not pick it. Decided by Jayman, 24 November 2026: the default consent wording is "I agree that {company} and its agents may contact me about my enquiry by phone, SMS, WhatsApp and email. I can ask them to stop at any time." It is stored as the default of the company setting "Consent wording" (SellOS Settings, and `DEFAULT_WORDING` in `sellos/access/partner_registrations.py`). `{company}` is replaced with the company's display name (the setting "Company name", or "the company" while it is empty) by `render_wording`, on the enquiry page (SOS-P2-08) and the website form endpoint (SOS-P1-09), and the campaign forms (SOS-P4-11, SOS-P4-12) use the same function. The Consent Record's evidence holds the wording as shown, with the name filled in. The settings screen edits the raw text, so saving never bakes a name in. The channel partner confirmation (SOS-P7-02) reads the same setting. Marked Complete by SOS-LOOP: written, stored and tested; counsel still reviews it after launch.
 - **Owner:** Jayman
 - **Priority:** P0
 - **Launch:** Dec 20
 - **Story Points:** 1
 - **Dependencies:** none
-- **Status:** Waiting
+- **Status:** Complete
 
 ### SOS-P2-01: Build Telephony Settings
 - **Epic:** Calling
@@ -715,13 +715,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The call language is Hinglish, and transcripts and prompts are in Roman script.
   - The exact AI disclosure line is written down in Roman Hinglish.
 - **Test Criteria:** Verified by Jayman against `docs/bakeoff/results.md`.
-- **Notes:** Record the choices here, in this block, for SOS-P5-07 to read. Speech to text candidates: Sarvam Saaras V3 and Deepgram Nova-3 (language=multi, with real estate keyterms). Text to speech candidates: Sarvam Bulbul V3 and ElevenLabs. Language model candidates: two or three Anthropic models, named by Jayman in `~/iespl-baseline/bakeoff/llm-models.txt` and compared by SOS-N21A's language model comparison. Rewritten by SOS-SETUP-30 (Jayman, 11 November 2026): the call languages are now Hinglish only, and the choice waits for the bake-off. Added by SOS-SETUP-33 (13 November 2026): this task includes Jayman's live run: record the 20 lines, store the four keys in the Keychain (`sellos_anthropic_key` added by SOS-SETUP-34), write the two or three candidate model names in `llm-models.txt`, run `scripts/bakeoff.sh --live` in a terminal, and fill in the rating sheet. The agent never runs `--live`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, questions 3 and 10): one provider account for the language model, Anthropic, held by Jayman; keys in the Keychain locally and in encrypted settings in production. SOS-P5-07 builds adapters for every bake-off candidate behind the provider setting, and this task only records which ones the settings use. The model is not chosen by the agent.
+- **Notes:** Record the choices here, in this block, for SOS-P5-07 to read. Speech to text candidates: Sarvam Saaras V3 and Deepgram Nova-3 (language=multi, with real estate keyterms). Text to speech candidates: Sarvam Bulbul V3 and ElevenLabs. Language model candidates: two or three Anthropic models, named by Jayman in `~/iespl-baseline/bakeoff/llm-models.txt` and compared by SOS-N21A's language model comparison. Rewritten by SOS-SETUP-30 (Jayman, 11 November 2026): the call languages are now Hinglish only, and the choice waits for the bake-off. Added by SOS-SETUP-33 (13 November 2026): this task includes Jayman's live run: record the 20 lines, store the four keys in the Keychain (`sellos_anthropic_key` added by SOS-SETUP-34), write the two or three candidate model names in `llm-models.txt`, run `scripts/bakeoff.sh --live` in a terminal, and fill in the rating sheet. The agent never runs `--live`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, questions 3 and 10): one provider account for the language model, Anthropic, held by Jayman; keys in the Keychain locally and in encrypted settings in production. SOS-P5-07 builds adapters for every bake-off candidate behind the provider setting, and this task only records which ones the settings use. The model is not chosen by the agent. Decided by Jayman, 24 November 2026: Jayman chose Sarvam for speech to text (Saaras, the current recommended version: `saaras:v4`; `saaras:v3` stays available), text to speech (Bulbul; `bulbul:v4-flash` is available, and both `bulbul:v4-flash` and `bulbul:v3` are recorded as selectable, with v4 Flash the one to try first because Sarvam's documentation recommends it for new integrations) and the voice agent's language model (a Sarvam chat model, its exact model name a setting Jayman enters). The agent assistant uses Claude, default Sonnet 5.5 (`claude-sonnet-5-5`) as a changeable setting, on the Anthropic account Jayman holds. Jayman holds the Sarvam account and enters all keys (Keychain locally, encrypted settings in production; no key in the repository or in chat). This choice was made by Jayman without waiting for the bake-off numbers; this record does not contain the AI disclosure line, which Jayman still writes down (an acceptance criterion of this task), and the Sarvam language model is compared with Claude Haiku 5.5 on the fixed disclosure line and the handover before the voice agent goes live; SOS-N21A is Complete and its harness compares Anthropic models only, so this run needs a follow-up task, proposed to Jayman and not yet added. SOS-P5-07 builds adapters for every candidate behind the provider setting; the settings use Sarvam for the three voice blocks and Claude for the assistant. `docs/bakeoff/results.md` stays "Not run yet" until Jayman runs the harness.
 - **Owner:** Jayman
 - **Priority:** P5
 - **Launch:** Dec 20
 - **Story Points:** 1
 - **Dependencies:** SOS-N21A
-- **Status:** Waiting
+- **Status:** Complete
 
 ### SOS-P5-07: Build the voice agent service
 - **Epic:** Voice AI pilot
@@ -755,7 +755,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - MariaDB and Redis restart automatically after a reboot.
   - A nightly backup file appears in Spaces.
 - **Test Criteria:** A port scan shows only the expected ports, and a server reboot brings every service back.
-- **Notes:** DigitalOcean Bangalore, target 24 November 2026. AMP Labs does this work, so it is Waiting and the loop does not pick it (Jayman, 10 November 2026).
+- **Notes:** DigitalOcean Bangalore, target 24 November 2026. AMP Labs does this work, so it is Waiting and the loop does not pick it (Jayman, 10 November 2026). Owned outside the SellOS build (Jayman, 24 November 2026).
 - **Owner:** AMP Labs
 - **Priority:** P0
 - **Launch:** Dec 20
@@ -771,12 +771,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Claude Code can create repositories and branches in the SellOS organisation.
   - The token covers only the staging and production projects, with no billing or account level rights.
 - **Test Criteria:** (1) Claude Code lists BuildOS files and creates a test branch. (2) A call using the token to delete the account is refused.
+- **Notes:** Decided by Jayman, 24 November 2026: Not Needed.
 - **Owner:** Jayman
 - **Priority:** P0
-- **Launch:** Dec 20
+- **Launch:** none
 - **Story Points:** 2
 - **Dependencies:** none
-- **Status:** Waiting
+- **Status:** Not Needed
 
 ### SOS-P0-05: Create the wildcard DNS record and certificate
 - **Epic:** Platform foundations and DevOps
@@ -802,7 +803,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The certificate is valid for all subdomains.
   - Renewal runs automatically.
 - **Test Criteria:** Two test hostnames serve valid HTTPS, and a renewal dry run succeeds.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). AMP Labs work, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). AMP Labs work, so it is Waiting and the loop does not pick it. Owned outside the SellOS build (Jayman, 24 November 2026).
 - **Owner:** AMP Labs
 - **Priority:** P0
 - **Launch:** Dec 20
@@ -834,7 +835,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Two sites on different subdomains serve separate data.
   - The Frappe version is the one pinned in the script.
 - **Test Criteria:** Create different content on two sites and confirm each hostname shows only its own.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). AMP Labs work, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). AMP Labs work, so it is Waiting and the loop does not pick it. Owned outside the SellOS build (Jayman, 24 November 2026).
 - **Owner:** AMP Labs
 - **Priority:** P0
 - **Launch:** Dec 20
@@ -918,7 +919,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - On staging with two sites, a forced migration failure on one stops the run and reports it.
   - The documented rollback steps were followed once on staging and worked.
 - **Test Criteria:** Deploy to staging with two sites, force a migration failure on one, and confirm the run stops and reports it.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). AMP Labs work, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). AMP Labs work, so it is Waiting and the loop does not pick it. Owned outside the SellOS build (Jayman, 24 November 2026).
 - **Owner:** AMP Labs
 - **Priority:** P0
 - **Launch:** Dec 20
@@ -934,7 +935,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - SPF and DKIM pass for the domain.
   - A test email from a company site arrives and is not marked as spam.
 - **Test Criteria:** Send a test email from production and check its headers.
-- **Notes:** Added by SOS-SETUP-34 (Jayman, 13 November 2026, question 16). AMP Labs work, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-34 (Jayman, 13 November 2026, question 16). AMP Labs work, so it is Waiting and the loop does not pick it. Owned outside the SellOS build (Jayman, 24 November 2026).
 - **Owner:** AMP Labs
 - **Priority:** P0
 - **Launch:** Dec 20
@@ -1237,13 +1238,53 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Unpublishing removes a listing within 15 minutes.
   - An outage shows the last good copy.
 - **Test Criteria:** Toggle a listing and check the site, and simulate an outage.
-- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): 15 minutes.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): 15 minutes. Decided by Jayman, 24 November 2026: the Pandya website is built in WordPress. Pages render from the SellOS endpoint inside WordPress (a theme or plugin snippet), with the last good copy kept for an outage. Campaign forms on the same site are SOS-P4-11 and SOS-P4-12.
 - **Owner:** AMP Labs
 - **Priority:** P4
 - **Launch:** Jan 1
 - **Story Points:** 3
 - **Dependencies:** SOS-P4-08
 - **Status:** Waiting
+
+### SOS-P4-11: Build campaign forms in the web app
+- **Epic:** Inventory, mandates and deals
+- **Description:** As a Company Admin, I want to build a form for each campaign and copy it onto my website, so that every campaign's leads arrive tagged. Build a Campaign Form record and its builder screen in the SellOS web app.
+- **Acceptance Criteria:**
+  - A Company Admin makes a form per campaign: its fields (from the fields the website form endpoint accepts: name, phone, email, message, and the requirement fields that endpoint allows), its consent wording (default from the company setting "Consent wording", `{company}` replaced with the company's display name as in SOS-N22), and a campaign tag.
+  - The screen shows two things to copy: an embed snippet (a div and one script tag) and an optional WordPress shortcode with the few lines of code that register it in the WordPress theme.
+  - The form renders in the host page, not in an iframe, and carries no styling of its own, so it inherits the site's design (plain elements with stable class names the site can style).
+  - A form is Active or Off; an Off form submits nothing. Each form lists the allowed website domains it may be used on.
+  - The snippet carries the company's Lead intake key (SOS-P1-09) and no other key; rotating the key shows a warning that embedded snippets must be updated.
+  - Only a Company Admin builds forms. Nothing is deleted: a form is archived.
+- **Test Criteria:** Backend tests of the record, the permission check, the snippet and shortcode text (no key other than the Lead intake key, no styling, no iframe) and the wording substitution; a Cypress spec of building a form and copying the snippet.
+- **Notes:** Decided by Jayman, 24 November 2026. The website is built in WordPress (SOS-P4-09). A campaign form is not a new kind of guest method: it is the existing public intake method of SOS-P1-09 (scope Lead intake) with extra known fields, built in SOS-P4-12; CLAUDE.md's "Public intake forms" rules apply unchanged. Split with SOS-P4-12 to keep each story within 8 points.
+- **Owner:** Claude Code
+- **Priority:** P4
+- **Launch:** Jan 1
+- **Story Points:** 8
+- **Dependencies:** SOS-P1-09, SOS-N22
+- **Status:** Not Started
+- **Browser spec:** required
+
+### SOS-P4-12: Submit campaign forms into SellOS
+- **Epic:** Inventory, mandates and deals
+- **Description:** As a Company Admin, I want a campaign form on my website to create a tagged lead in SellOS, so that I see which campaign each lead came from. Extend the website lead endpoint of SOS-P1-09 for campaign forms, and ship the script that renders a form in the host page.
+- **Acceptance Criteria:**
+  - The script, served as a static file by SellOS, renders the Campaign Form's fields into the host page and submits straight to `sellos.crm.website_form.submit_website_lead` with the company's Lead intake key. It sets no cookie and reads no record.
+  - The endpoint accepts new known fields only: the campaign form id and the UTM details (source, medium, campaign, term, content). They are length checked, unknown fields are still refused, and a form id of an Off or archived form is refused with the same short answer as a bad key.
+  - The lead carries the campaign (the Lead `campaign` field is set from the form's campaign tag) and the UTM details, in new Lead fields, change tracked like every CRM field.
+  - Allowed website domains per form: a submission from a page whose Origin or Referer is not in the form's list is refused with the same short answer, before any write.
+  - The honeypot, rate limit, size cap, strict validation, consent evidence file (the wording shown with `{company}` filled in, its version, the time and the address) and tenant rules of CLAUDE.md apply unchanged, and `sellos/access/test_webhook_guest_guard.py` still passes with no new guest method.
+  - The answer is only a thank you and a reference code.
+- **Test Criteria:** Backend tests: a valid submission makes a lead with the campaign and UTM details and a Consent Record with the filled in wording; a wrong domain, an Off form, a bad key, a filled honeypot, an unknown field, an oversized body and a flood are each refused or ignored as the rules say; the guard test passes. A Cypress spec of submitting an embedded form on a page served from an allowed domain.
+- **Notes:** Decided by Jayman, 24 November 2026. Reuses SOS-P1-09's per company key endpoint and SOS-P2-08's public intake registry; it adds no registry, no check of its own and no new kind of guest method. The domain check is a declared check of the same registered method.
+- **Owner:** Claude Code
+- **Priority:** P4
+- **Launch:** Jan 1
+- **Story Points:** 5
+- **Dependencies:** SOS-P4-11, SOS-P1-09
+- **Status:** Not Started
+- **Browser spec:** required
 
 ### SOS-P4-04: Build the seller pipeline
 - **Epic:** Inventory, mandates and deals
@@ -1308,13 +1349,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Counts reconcile.
   - Duplicates are resolved.
 - **Test Criteria:** A reconciliation report signed off by Jayman.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): customers never use the desk, and Frappe's Data Import is a desk tool, so the import is built in the web app as SOS-P4-10C, and this task runs it on Pandya's data.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): customers never use the desk, and Frappe's Data Import is a desk tool, so the import is built in the web app as SOS-P4-10C, and this task runs it on Pandya's data. Decided by Jayman, 24 November 2026: Not Needed. SOS-P4-10C is the importer, and Jayman uploads the sheet when needed.
 - **Owner:** AMP Labs, Jayman
 - **Priority:** P4
-- **Launch:** Jan 1
+- **Launch:** none
 - **Story Points:** 3
 - **Dependencies:** SOS-P4-05, SOS-P4-10C
-- **Status:** Waiting
+- **Status:** Not Needed
 
 ### SOS-P4-06: Build Deal and Commission Split
 - **Epic:** Inventory, mandates and deals
@@ -1776,7 +1817,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Confidence is stored.
   - Reviewer decisions are saved and reused.
 - **Test Criteria:** Precision and recall are measured on 200 hand matched records: precision at least 95 percent and recall at least 85 percent.
-- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): precision at least 95 percent, recall at least 85 percent. The gate uses a synthetic golden file Claude Code writes; the check on real data is SOS-P3-13.
+- **Notes:** Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): precision at least 95 percent, recall at least 85 percent. The gate uses a synthetic golden file Claude Code writes; the check on real data is SOS-P3-13. Decided by Jayman, 24 November 2026: the matcher's inputs include building level transaction figures and project level sold inventory from the market data tasks (SOS-P3-14 to SOS-P3-17), only after the review queue approves them, and never parties' names. Dependencies unchanged: SOS-P3-03 and SOS-P3-04 (Blocked) stay; the market data tasks do not need to be dependencies, because the matcher is built against synthetic files and SOS-P3-17's approved figures arrive later through the same record shape.
 - **Owner:** Claude Code
 - **Priority:** P3
 - **Launch:** Jan 1
@@ -1930,28 +1971,127 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The request is sent and acknowledged.
   - The reply, or the absence of one after 30 days, is recorded.
 - **Test Criteria:** Verified by the acknowledgement.
+- **Notes:** Decided by Jayman, 24 November 2026: Not Needed. The registration data source is now LegiScore (SOS-P3-14 to SOS-P3-17), a per property lookup service, not a bulk feed.
 - **Owner:** Jayman, Counsel
 - **Priority:** P0
-- **Launch:** Jan 1
+- **Launch:** none
 - **Story Points:** 2
 - **Dependencies:** none
-- **Status:** Waiting
+- **Status:** Not Needed
 
 ### SOS-P3-01L: Ingest the first real batch from the chosen source
 - **Epic:** Market intelligence
-- **Description:** As Jayman, I want the first real batch of registration data ingested, so that we know the source works before five years are loaded. The live half of SOS-P3-01: once SOS-N12 (or another source Jayman chooses) gives access, Jayman supplies a real export or the access details, and the batch is ingested through SOS-P3-01's file adapter. If the source needs its own adapter, that is written as an SOS-FIX task for Claude Code.
+- **Description:** As Jayman, I want the first small batch of real registration data ingested, so that we know the source works and what it costs before five years are loaded. The live half of SOS-P3-01 and of the LegiScore adapters (SOS-P3-15, SOS-P3-16): Jayman adds the LegiScore API key in the Market data source panel (SOS-P3-14), runs a first small batch, and records the credit price and LegiScore's written answers.
 - **Acceptance Criteria:**
-  - One real batch is ingested, and its record count matches the source's.
-  - The source's licence terms are recorded with the batch.
-  - Nothing solves a captcha or bypasses an access control.
+  - Jayman has added the key in the panel and run a first small batch, and the records are in the raw transaction table.
+  - The credit price of a year of an Index II search and of a RERA check is recorded, from the panel's balance before and after.
+  - LegiScore's written confirmation is recorded on four questions: (1) permanent storage of the results, (2) use in derived analytics and matching, (3) showing derived figures to several customer companies, and (4) the terms of its upstream sources.
   - The ready reckoner rates file is supplied and loaded.
-- **Test Criteria:** Verified by Jayman against the source's own count.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the source and its terms, so it is Waiting and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 8): Market data lives on the control site and reaches company sites through a role checked API. It is loaded from export files Jayman supplies (Index II or DoRS) through SOS-P3-01's file adapter, ready reckoner rates are loaded from a file Jayman supplies, and the data licence switch is a platform setting, On by default for data SellOS owns.
+  - Nothing solves a captcha or bypasses an access control.
+- **Test Criteria:** Verified by Jayman against the panel's credit ledger and LegiScore's written reply.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the source and its terms, so it is Waiting and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 8): Market data lives on the control site and reaches company sites through a role checked API. It is loaded from export files Jayman supplies (Index II or DoRS) through SOS-P3-01's file adapter, ready reckoner rates are loaded from a file Jayman supplies, and the data licence switch is a platform setting, On by default for data SellOS owns. Decided by Jayman, 24 November 2026: SOS-N12 is Not Needed and is no longer a dependency. The acceptance above replaces the earlier one (a count that matches the source's, and the source's licence terms).
 - **Owner:** Jayman
 - **Priority:** P3
 - **Launch:** Jan 1
 - **Story Points:** 1
-- **Dependencies:** SOS-N12, SOS-P3-01
+- **Dependencies:** SOS-P3-01
+- **Status:** Waiting
+
+### SOS-P3-14: Build the market data source panel for the Platform Admin
+- **Epic:** Market intelligence
+- **Description:** As the Platform Admin, I want a panel on the control site where I enter the market data source's API key and control what it may spend, so that no search spends credits I did not allow. Build a Market data source panel in the SellOS web app (control site, Platform Admin only) for LegiScore, with the client that every LegiScore adapter uses (`sellos/intel/legiscore/client.py`).
+- **Acceptance Criteria:**
+  - The Platform Admin enters the API key. It is stored encrypted in a password field of a control site setting, shown only as a masked value (the last four characters), never returned by any API, and never in code, a log, an error message, a fixture or this chat.
+  - The panel shows the credit balance, read with `GET /api/v1/search/credits` (the `data.balance` and `data.spendable` fields), with the time it was read.
+  - The panel holds a monthly credit budget and a per run cap. A run that would take the month's spend over the budget, or its own spend over the cap, is refused before anything is submitted, and says why.
+  - Before any search is submitted the panel shows the estimated credits and asks for confirmation; nothing is spent without it. A scheduled run uses the same budget and cap and spends nothing the settings do not allow.
+  - The client sends `Authorization: Bearer <key>` and an `Idempotency-Key` header on every submit (1 to 255 printable characters, no spaces, derived from the search's own parameters so the same search always has the same key), polls `GET /api/v1/search/{id}` every 5 to 10 seconds for up to 20 minutes, and adds no callback endpoint and sends no `callback_url`. A search still running after 20 minutes is recorded as timed out, not as failed or empty, and is polled again on the next run.
+  - The district, tahsil and village of a property are resolved by name through `GET /api/v1/search/lookups` (at most 10 matches, name of at least 2 characters), never enumerated; an ambiguous name asks the Platform Admin to choose.
+  - Only the Platform Admin can open the panel or call its methods, and every method is declared and in the permission test matrix.
+  - The real transport is refused under the test runner, so no test calls LegiScore.
+- **Test Criteria:** Backend tests with saved responses and a fake transport: the key is stored encrypted and masked in every answer and never appears in a captured log, error, fixture or file (a fake key); balance read; budget and per run cap refuse before submit; no spend without confirmation; the Idempotency-Key is sent and is the same for the same search; polling stops at 20 minutes and marks the search timed out; no callback is sent; a permission test for every role. A Cypress spec of entering a key, reading the balance, setting the budget and confirming a spend.
+- **Notes:** Decided by Jayman, 24 November 2026. Source: LegiScore, https://legiscore.in/docs, base https://legiscore.in/api/v1, Bearer key (the docs read on 24 November 2026: every answer is `{"data": ...}` or `{"error": {...}}`). LegiScore is a per property or per project lookup service, not a bulk feed. No test and no loop run calls LegiScore: tests use saved responses in `sellos/intel/fixtures/legiscore/` through a fake transport, and the real transport refuses to run under the test runner. Market data lives on the control site (SOS-P3-01); parties' names stay on the control site under SOS-P3-12's rules, and company sites and the Property Matcher get building level and project level figures only. Discovery of new projects stays with SOS-P6-08. This task does not depend on SOS-P3-04 (Blocked): it builds against a fixture list of buildings, and reads the real list once SOS-P3-04A supplies it. Added by SOS-LOOP.
+- **Owner:** Claude Code
+- **Priority:** P3
+- **Launch:** Jan 1
+- **Story Points:** 5
+- **Dependencies:** SOS-P3-01, SOS-P1-01
+- **Status:** Not Started
+- **Browser spec:** required
+
+### SOS-P3-15: Build the LegiScore adapter for Maharashtra Index II
+- **Epic:** Market intelligence
+- **Description:** As an Agent, I want the registered transactions of a building, so that comparables rest on real documents. Build the LegiScore adapter behind SOS-P3-01's source adapter interface for the search type `index2_property` (Maharashtra), run per building from the building's CTS numbers, one year at a time.
+- **Acceptance Criteria:**
+  - The adapter reads the buildings to search from a fixture list of buildings in the shape SOS-P3-04 defines (building, CTS numbers, village, tahsil, district); once SOS-P3-04A supplies the real list, it reads that, and the task needs no change.
+  - For each building, CTS number and year, it submits one `index2_property` search with `property_no` (the CTS number, at most 40 characters), `year_from`, and the district, tahsil and village resolved by name through the lookups (never enumerated). For a Mumbai property it uses the Mumbai tab with `area_name` (English, at most 80 characters), and `mumbai_district` Mumbai Suburban where it applies. The exact parameter names are read from the saved responses and the docs page, and a change in them raises an alert, not bad data.
+  - Every submit goes through SOS-P3-14's client and guard: Idempotency-Key, confirmation, budget and per run cap.
+  - One raw transaction row is stored per registered document, in the shape of SOS-P3-02, with the building, CTS number, year and search id. A re-run of the same year changes nothing.
+  - Each result PDF (the Index II abstract) is fetched with `GET /api/v1/search/{id}/documents/{filename}` and stored as a private file linked to its row. A withheld document (410) is recorded as withheld.
+  - A year that timed out is marked not searched, never zero documents. A search that returned the 25 PDF cap is marked truncated, never complete, and its building and year are queued for a narrower search or a manual look.
+  - Parties' names are stored only on the control site, under SOS-P3-12's rules, and are never in the building level data the company sites receive.
+  - The adapter never solves a captcha and never bypasses an access control; an `awaiting_otp` search is recorded and not answered by SellOS.
+- **Test Criteria:** Contract tests with saved responses for: a normal year, a year with no documents (found false), a timed out year (not searched), a result at the 25 PDF cap (truncated), a withheld PDF, a failed search (each failure kind) and a changed response shape (alert). A test that a re-run is idempotent, that a Mumbai Suburban building uses the Mumbai tab and `area_name`, and that a party name never reaches a company site's data. No test calls LegiScore.
+- **Notes:** Decided by Jayman, 24 November 2026. Source: LegiScore, https://legiscore.in/docs, base https://legiscore.in/api/v1, Bearer key (the docs read on 24 November 2026: every answer is `{"data": ...}` or `{"error": {...}}`). LegiScore is a per property or per project lookup service, not a bulk feed. No test and no loop run calls LegiScore: tests use saved responses in `sellos/intel/fixtures/legiscore/` through a fake transport, and the real transport refuses to run under the test runner. Market data lives on the control site (SOS-P3-01); parties' names stay on the control site under SOS-P3-12's rules, and company sites and the Property Matcher get building level and project level figures only. Discovery of new projects stays with SOS-P6-08. This task does not depend on SOS-P3-04 (Blocked): it builds against a fixture list of buildings, and reads the real list once SOS-P3-04A supplies it. The docs do not name a field for a timed out year or for the cap, so the adapter infers them from the result (`record_count`, `documents`, `note`) and the saved responses; if a real response differs, that is found in SOS-P3-01L and fixed as an SOS-FIX. The docs price an Index II search at 20 credits per year. Reading the consideration and stamp duty from the abstract PDF is SOS-P3-17.
+- **Owner:** Claude Code
+- **Priority:** P3
+- **Launch:** Jan 1
+- **Story Points:** 8
+- **Dependencies:** SOS-P3-14, SOS-P3-02, SOS-P3-03
+- **Status:** Not Started
+
+### SOS-P3-16: Build the LegiScore adapter for Maharashtra RERA projects and sold inventory snapshots
+- **Epic:** Market intelligence
+- **Description:** As an Agent, I want each project's sold and booked inventory over time, so that I know how a project is selling. Build the LegiScore adapter for the search type `rera_check` (Maharashtra) for every Project record that has a RERA number, on a schedule Jayman sets, and keep a dated snapshot of the parsed figures each run. `rera_single` is replaced by `rera_check` and is not used.
+- **Acceptance Criteria:**
+  - A schedule (Off by default; daily, weekly or monthly, set by Jayman in the panel) runs one `rera_check` per Project with a RERA number (`rera_number`, at most 20 characters), through SOS-P3-14's client and guard (Idempotency-Key, confirmation or a standing approval within the budget and per run cap).
+  - The summary PDF and the latest sold and booked inventory disclosure PDF (the document named "Disclosure of Sold-Booked Inventory" in the result) are stored as private files.
+  - Each run takes a dated snapshot of the parsed sold and booked figures for the project, so a time series builds up; a snapshot is never edited or deleted, and a run that finds no new disclosure records that it changed nothing.
+  - A name that matches several projects returns a list and charges nothing; the adapter records it for a person to choose, and never guesses.
+  - The figures are extracted by SOS-P3-17 and go through its review queue; nothing from this adapter feeds the Property Matcher or any published view before approval.
+  - The adapter never solves a captcha and never bypasses an access control.
+- **Test Criteria:** Contract tests with saved responses for a project with a disclosure, one without, several matching projects, a failed search and a changed response shape; a test that two runs make two dated snapshots and that an unchanged disclosure makes none new; a test that a snapshot cannot be edited; a test that nothing unapproved reaches the matcher or a published view. No test calls LegiScore.
+- **Notes:** Decided by Jayman, 24 November 2026. Source: LegiScore, https://legiscore.in/docs, base https://legiscore.in/api/v1, Bearer key (the docs read on 24 November 2026: every answer is `{"data": ...}` or `{"error": {...}}`). LegiScore is a per property or per project lookup service, not a bulk feed. No test and no loop run calls LegiScore: tests use saved responses in `sellos/intel/fixtures/legiscore/` through a fake transport, and the real transport refuses to run under the test runner. Market data lives on the control site (SOS-P3-01); parties' names stay on the control site under SOS-P3-12's rules, and company sites and the Property Matcher get building level and project level figures only. Discovery of new projects stays with SOS-P6-08. This task does not depend on SOS-P3-04 (Blocked): it builds against a fixture list of buildings, and reads the real list once SOS-P3-04A supplies it. The Projects come from SOS-P6-08 (discovery) and from Jayman's list; this task only checks the ones that carry a RERA number. The docs do not state a credit price for `rera_check`; SOS-P3-01L records it.
+- **Owner:** Claude Code
+- **Priority:** P3
+- **Launch:** Jan 1
+- **Story Points:** 8
+- **Dependencies:** SOS-P3-14, SOS-P3-02, SOS-P4-01
+- **Status:** Not Started
+
+### SOS-P3-17: Extract figures from LegiScore PDFs and approve them in a review queue
+- **Epic:** Market intelligence
+- **Description:** As the Platform Admin, I want the consideration, stamp duty and sold and booked inventory read from the PDFs and approved by a person before anyone relies on them, so that no wrong figure reaches an agent. Build the extraction behind one interface, a review queue, and the approved building level and project level figures.
+- **Acceptance Criteria:**
+  - The extractor interface has a fake extractor for tests and a manual entry path; a real reader (the SOS-P3-03 normaliser for the text it can parse, and Sarvam Vision for PDF pages) is added behind it only after the live check SOS-P3-17L passes on real PDFs. The task decides nothing about the reader from claims: SOS-P3-03 parses text fields and does not read PDFs.
+  - For an Index II abstract the extractor produces consideration, stamp duty and registration date, in the canonical shape of SOS-P3-01; for a disclosure PDF it produces the sold and booked inventory numbers.
+  - Every extracted figure goes to a review queue with its source PDF beside it, the confidence and the extractor used. Approve, correct and reject are saved, a correction is reused, and each action is logged.
+  - Nothing feeds the Property Matcher (SOS-P3-05) or any published view before approval.
+  - Approved figures are rolled up to building level (transactions) and project level (sold and booked inventory, with the dated snapshots of SOS-P3-16) and are the only data company sites receive, through the role checked API of SOS-P3-01's decision; parties' names never leave the control site.
+  - Only the Platform Admin works the queue.
+- **Test Criteria:** Backend tests with the fake extractor: figures wait in the queue, approval releases them to the roll up, a rejected figure never does, a correction is saved and reused, the roll ups carry no party name, and the permission test for every role. A Cypress spec of approving and correcting a figure.
+- **Notes:** Decided by Jayman, 24 November 2026. Source: LegiScore, https://legiscore.in/docs, base https://legiscore.in/api/v1, Bearer key (the docs read on 24 November 2026: every answer is `{"data": ...}` or `{"error": {...}}`). LegiScore is a per property or per project lookup service, not a bulk feed. No test and no loop run calls LegiScore: tests use saved responses in `sellos/intel/fixtures/legiscore/` through a fake transport, and the real transport refuses to run under the test runner. Market data lives on the control site (SOS-P3-01); parties' names stay on the control site under SOS-P3-12's rules, and company sites and the Property Matcher get building level and project level figures only. Discovery of new projects stays with SOS-P6-08. This task does not depend on SOS-P3-04 (Blocked): it builds against a fixture list of buildings, and reads the real list once SOS-P3-04A supplies it. The check Jayman asked for before choosing a reader (24 November 2026): `sellos/intel/normaliser.py` parses text and numbers, dates, Marathi names and areas and reads no PDF, and `sellos/voice/` is the only code that holds Sarvam keys; so whether Sarvam Vision or the normaliser reads a real Index II abstract and a real disclosure PDF is not known from the code, and is measured on real files in SOS-P3-17L.
+- **Owner:** Claude Code
+- **Priority:** P3
+- **Launch:** Jan 1
+- **Story Points:** 5
+- **Dependencies:** SOS-P3-15, SOS-P3-16, SOS-P3-03
+- **Status:** Not Started
+- **Browser spec:** required
+
+### SOS-P3-17L: Check the PDF reader on a real Index II abstract and a real disclosure PDF
+- **Epic:** Market intelligence
+- **Description:** As Jayman, I want the PDF reader tried on real files before it is switched on, so that no figure is trusted on a guess. The live half of SOS-P3-17: Jayman runs one real Index II abstract and one real sold and booked inventory disclosure PDF through the normaliser and Sarvam Vision, and records which reader got the consideration, stamp duty and sold and booked numbers right.
+- **Acceptance Criteria:**
+  - The result for each reader and each file is recorded in `docs/MARKET_DATA.md`, with the figures read against the figures on the page.
+  - The reader to switch on is chosen from that result, or manual entry stays the only path.
+- **Test Criteria:** Verified by Jayman against the PDFs.
+- **Notes:** Decided by Jayman, 24 November 2026. Jayman holds the files and the Sarvam key, so it is Waiting and the loop does not pick it.
+- **Owner:** Jayman
+- **Priority:** P3
+- **Launch:** Jan 1
+- **Story Points:** 1
+- **Dependencies:** SOS-P3-17
 - **Status:** Waiting
 
 ### SOS-P3-04A: Supply and verify the corridor micro markets and buildings
@@ -2030,6 +2170,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Only approved sources are enabled.
   - Rejected sources stay off.
 - **Test Criteria:** Verified by the decision log and the source switches.
+- **Notes:** Decided by Jayman, 24 November 2026: SOS-P6-08 is the scraper. Every source starts Off, the legal review and switching sources on are Jayman's, and SOS-P6-08's criteria (rate limits, access rules, no captcha solving, no login bypass) are unchanged.
 - **Owner:** Jayman, Counsel
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -2127,26 +2268,31 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The Stripe account is active with test keys.
   - Keys are stored in the password manager, never shared in chat or email.
 - **Test Criteria:** Create one test subscription in each dashboard.
+- **Notes:** Decided by Jayman, 24 November 2026: Parked, not selling yet. SOS-N15 no longer depends on it. SOS-P6-03 and SOS-P6-15 still build against fakes. Bring it back by setting it to Waiting when the company is ready to sell.
 - **Owner:** Jayman, Accountant
+- **Priority:** P0
+- **Launch:** none
+- **Story Points:** 2
+- **Dependencies:** none
+- **Status:** Parked
+
+### SOS-N15: Confirm the GST invoice format
+- **Epic:** Compliance, procurement and access
+- **Description:** As Jayman, I want a written invoice format and a designed invoice template, so that SOS-P6-06 builds invoices that are compliant and look good. Deliver the format specification and the template, from the structure of Jayman's sample invoice: the issuer block, invoice number and date, terms, bill to, numbered particulars with period, rate and amount, total and amount in words, bank details, remarks, and the computer generated line. The accountant confirms the GST parts later.
+- **Acceptance Criteria:**
+  - `docs/INVOICE_FORMAT.md` is the written format specification: every block of the invoice above, each field with its source (a company setting, the subscription, the payment or a rule), the numbering rule with the financial year in the number derived from the invoice date (April to March, never typed), the rounding and amount in words rules, and the credit note rules.
+  - The designed template (`docs/invoice-template/`, an HTML and CSS file) is prettier than the sample and follows `docs/UI_STYLE.md` (its tokens, type and colours, no colour or font of its own), prints on A4, and holds placeholders only.
+  - Party details, descriptions, amounts, the bank account number and the PAN are placeholders read from company settings. None of Jayman's real data is copied into the repository, and a test fails if a real looking PAN, account number or GSTIN is found in the docs or the template.
+  - Three worked examples with placeholder data: an Indian customer, an overseas customer and a credit note.
+  - Every GST item is marked "To be confirmed by the accountant": GSTIN, tax code (SAC), place of supply, the tax split (CGST and SGST, or IGST), the export wording for overseas customers and any reverse charge or zero rating wording. None is invented.
+- **Test Criteria:** A backend test that the spec names every block, that the template holds only placeholders and uses only UI_STYLE tokens, that the financial year in the number is derived from the date at both ends of the year (31 March and 1 April), and that no real PAN, GSTIN or account number is in the repository. The accountant's approval of samples is SOS-P6-06A.
+- **Notes:** Decided by Jayman, 24 November 2026: owner changed from the Accountant to Claude Code, status Not Started, and the dependency on SOS-N14 is removed (N14 is Parked). The accountant confirms the GST fields later, in SOS-P6-06A. SOS-P6-06 builds this format, so it now depends on this task. Jayman's sample invoice is the reference for structure only and is not in the repository.
+- **Owner:** Claude Code
 - **Priority:** P0
 - **Launch:** Jan 1
 - **Story Points:** 2
 - **Dependencies:** none
-- **Status:** Waiting
-
-### SOS-N15: Confirm the GST invoice format
-- **Epic:** Compliance, procurement and access
-- **Description:** As the Accountant, I want to confirm the GST invoice format for SaaS subscriptions, so that invoices are compliant. Confirm invoice fields, GST treatment for Indian and overseas customers, numbering, and credit note rules.
-- **Acceptance Criteria:**
-  - A written format specification.
-  - Examples for an Indian customer and an overseas customer.
-- **Test Criteria:** The accountant approves a sample invoice produced by SOS-P6-06.
-- **Owner:** Accountant
-- **Priority:** P0
-- **Launch:** Jan 1
-- **Story Points:** 2
-- **Dependencies:** SOS-N14
-- **Status:** Waiting
+- **Status:** Not Started
 
 ### SOS-P6-03: Build the Razorpay adapter and recurring payments
 - **Epic:** Billing and subscriptions
@@ -2157,7 +2303,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Webhook handling is idempotent.
   - Failed payments are recorded.
 - **Test Criteria:** Tests with the fake gateway and recorded Razorpay webhook bodies through creation, renewal, failure, cancellation and a replayed webhook. The sandbox run with real test keys is SOS-P6-03L, owned by Jayman.
-- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. SOS-N14 (the accounts) is now a dependency of the live test SOS-P6-03L, not of this task.
+- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. SOS-N14 (the accounts) is now a dependency of the live test SOS-P6-03L, not of this task. Decided by Jayman, 24 November 2026: still built against the fake gateway; SOS-N14 is Parked, so no real keys exist and SOS-P6-03L is Parked.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -2174,13 +2320,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - A failed payment is recorded.
   - Every difference from the fake gateway becomes an SOS-FIX task.
 - **Test Criteria:** Verified by Jayman against Razorpay's test dashboard.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. Razorpay's webhooks need a public HTTPS address (question in `docs/BACKLOG_AUDIT.md`). Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 2): provider webhooks reach a public HTTPS address on staging, never a tunnel to the shared bench on port 8004, so this depends on SOS-P0-06D.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. Razorpay's webhooks need a public HTTPS address (question in `docs/BACKLOG_AUDIT.md`). Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 2): provider webhooks reach a public HTTPS address on staging, never a tunnel to the shared bench on port 8004, so this depends on SOS-P0-06D. Decided by Jayman, 24 November 2026: Parked with SOS-N14 (not selling yet). Its dependency on SOS-N14 stays in place for when it is brought back.
 - **Owner:** Jayman
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** none
 - **Story Points:** 1
 - **Dependencies:** SOS-N14, SOS-P6-03, SOS-P0-06D
-- **Status:** Waiting
+- **Status:** Parked
 
 ### SOS-P6-15: Build the Stripe adapter
 - **Epic:** Billing and subscriptions
@@ -2191,7 +2337,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Webhook handling is idempotent.
   - A customer is routed to Stripe or Razorpay by country.
 - **Test Criteria:** Tests with the fake gateway and recorded Stripe webhook bodies through renewal, failure and a replayed webhook, and a routing test. The sandbox run with real test keys is SOS-P6-15L, owned by Jayman.
-- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key.
+- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. Decided by Jayman, 24 November 2026: still built against the fake gateway; SOS-N14 is Parked, so no real keys exist and SOS-P6-15L is Parked.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -2207,13 +2353,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Stripe's real webhooks update the subscription, and a replayed one changes nothing.
   - Every difference from the fake gateway becomes an SOS-FIX task.
 - **Test Criteria:** Verified by Jayman against Stripe's test dashboard.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 2): provider webhooks reach a public HTTPS address on staging, never a tunnel to the shared bench on port 8004, so this depends on SOS-P0-06D.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Jayman holds the account and keys, so it is Waiting and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 2): provider webhooks reach a public HTTPS address on staging, never a tunnel to the shared bench on port 8004, so this depends on SOS-P0-06D. Decided by Jayman, 24 November 2026: Parked with SOS-N14 (not selling yet). Its dependency on SOS-N14 stays in place for when it is brought back.
 - **Owner:** Jayman
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** none
 - **Story Points:** 1
 - **Dependencies:** SOS-N14, SOS-P6-15, SOS-P0-06D
-- **Status:** Waiting
+- **Status:** Parked
 
 ### SOS-P6-04: Build the billing lifecycle
 - **Epic:** Billing and subscriptions
@@ -2261,12 +2407,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - No invoice is issued to a real customer until SOS-N15 is Complete. A platform setting, "Invoice format approved", is Off until then; while it is Off an invoice can be previewed and saved as a draft but not issued to a customer.
   - The invoice is an editable template that a Platform Admin changes without a code change.
 - **Test Criteria:** Tests of numbering, the GST lines (CGST and SGST within the state, IGST across states, the overseas treatment from the setting) and credit notes, with sample invoices saved for the accountant. The accountant's approval is SOS-P6-06A.
-- **Notes:** Split by SOS-SETUP-33 (13 November 2026): SOS-N15's own test is that the accountant approves a sample invoice made by this task, so this task cannot wait for SOS-N15. It builds the invoice from a format held in a setting (the seller's GSTIN, the service code, the numbering series, the overseas treatment) and the accountant's approval is SOS-P6-06A, which depends on SOS-N15. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 17): invoices are built as an editable template now, and none is issued to a real customer until SOS-N15 is Complete. SOS-N15's dependency on SOS-N14 is unchanged: the answer did not cover it.
+- **Notes:** Split by SOS-SETUP-33 (13 November 2026): SOS-N15's own test is that the accountant approves a sample invoice made by this task, so this task cannot wait for SOS-N15. It builds the invoice from a format held in a setting (the seller's GSTIN, the service code, the numbering series, the overseas treatment) and the accountant's approval is SOS-P6-06A, which depends on SOS-N15. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 17): invoices are built as an editable template now, and none is issued to a real customer until SOS-N15 is Complete. SOS-N15's dependency on SOS-N14 is unchanged: the answer did not cover it. Decided by Jayman, 24 November 2026: builds the format specified and designed in SOS-N15 (`docs/INVOICE_FORMAT.md` and `docs/invoice-template/`).
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 5
-- **Dependencies:** SOS-P6-01
+- **Dependencies:** SOS-P6-01, SOS-N15
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -2278,7 +2424,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Sample invoices for an Indian customer and an overseas customer, and a credit note, are approved in writing.
   - Every change asked for becomes an SOS-FIX task.
 - **Test Criteria:** The accountant approves sample invoices.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). The Accountant's work, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). The Accountant's work, so it is Waiting and the loop does not pick it. Decided by Jayman, 24 November 2026: uses the format built in SOS-N15. It stays the accountant's approval of the samples (an Indian customer, an overseas customer and a credit note), and the accountant confirms the GST fields listed in SOS-N15. Low urgency while nothing is sold.
 - **Owner:** Accountant
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -2329,7 +2475,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Retention is 30 days.
   - The restore script recreates a site on staging.
 - **Test Criteria:** Restore a Pandya test site on staging and compare record counts.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). AMP Labs work, so it is Waiting and the loop does not pick it.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). AMP Labs work, so it is Waiting and the loop does not pick it. Owned outside the SellOS build (Jayman, 24 November 2026).
 - **Owner:** AMP Labs
 - **Priority:** P1
 - **Launch:** Jan 1
@@ -2345,7 +2491,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Alerts fire on errors, disk above 80 percent and failed backups.
   - Alerts reach named people.
 - **Test Criteria:** Stop a service on staging and receive an alert within 5 minutes.
-- **Notes:** AMP Labs work, so it is Waiting and the loop does not pick it (Jayman, 10 November 2026). Dependency added by SOS-SETUP-33 (13 November 2026): the failed backup alert needs the nightly backups of SOS-P1-14D.
+- **Notes:** AMP Labs work, so it is Waiting and the loop does not pick it (Jayman, 10 November 2026). Dependency added by SOS-SETUP-33 (13 November 2026): the failed backup alert needs the nightly backups of SOS-P1-14D. Owned outside the SellOS build (Jayman, 24 November 2026).
 - **Owner:** AMP Labs
 - **Priority:** P0
 - **Launch:** Jan 1
@@ -2377,7 +2523,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The upgrade across 20 sites loses no data.
   - With 50 concurrent users, 95 percent of list screens answer within 1 second.
 - **Test Criteria:** A results report is stored, and every failure becomes an SOS-FIX task.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). The agreed numbers are a question in `docs/BACKLOG_AUDIT.md`. Waiting, and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): restore within 1 hour, 50 concurrent users, 95 percent of list screens within 1 second.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026), as SOS-P0-06L split building from deploying (`docs/DEV_STRATEGY.md` row 26). The agreed numbers are a question in `docs/BACKLOG_AUDIT.md`. Waiting, and the loop does not pick it. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 9): restore within 1 hour, 50 concurrent users, 95 percent of list screens within 1 second. Owned outside the SellOS build (Jayman, 24 November 2026).
 - **Owner:** AMP Labs, Jayman
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -2393,12 +2539,12 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Acceptance is recorded with the user, the company, each text's version and the time, and is never edited.
   - A new version can be added without a code change, and sign ups after it record the new version.
 - **Test Criteria:** A sign up test confirms that acceptance is recorded with the versions, and a Cypress check of the sign up step.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026).
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Decided by Jayman, 24 November 2026: reads the texts, support details and status page link from the Legal and Support section (SOS-P6-18) at sign up; it now depends on SOS-P6-18.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 2
-- **Dependencies:** SOS-P6-07
+- **Dependencies:** SOS-P6-07, SOS-P6-18
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -2410,7 +2556,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Findings are rated.
   - Every high finding is fixed and re tested.
 - **Test Criteria:** Each high finding has a regression test.
-- **Notes:** AMP Labs work, so it is Waiting and the loop does not pick it (Jayman, 10 November 2026). Changed by SOS-SETUP-33 (13 November 2026): there are no phase gates any more, so "before Gate 6" now reads "before SOS-P6-14".
+- **Notes:** AMP Labs work, so it is Waiting and the loop does not pick it (Jayman, 10 November 2026). Changed by SOS-SETUP-33 (13 November 2026): there are no phase gates any more, so "before Gate 6" now reads "before SOS-P6-14". Owned outside the SellOS build (Jayman, 24 November 2026).
 - **Owner:** AMP Labs
 - **Priority:** P5
 - **Launch:** Jan 1
@@ -2427,13 +2573,32 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - A support channel and response targets exist.
   - A status page is live.
 - **Test Criteria:** A sign up test confirms that acceptance is recorded.
-- **Notes:** Split by SOS-SETUP-33 (13 November 2026): showing the terms and recording their acceptance at sign up is code, so it is SOS-P6-13C, owned by Claude Code. This task keeps counsel's approval, the support channel and the status page.
+- **Notes:** Split by SOS-SETUP-33 (13 November 2026): showing the terms and recording their acceptance at sign up is code, so it is SOS-P6-13C, owned by Claude Code. This task keeps counsel's approval, the support channel and the status page. Decided by Jayman, 24 November 2026: stays Waiting for Jayman to add the content in the Legal and Support section (SOS-P6-18).
 - **Owner:** Jayman, Counsel
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 5
 - **Dependencies:** SOS-P6-07
 - **Status:** Waiting
+
+### SOS-P6-18: Build the Legal and Support section for the Platform Admin
+- **Epic:** Launch readiness
+- **Description:** As the Platform Admin, I want one place on the control site to hold the legal texts and the support details, so that sign up shows the current terms and customers know how to get help. Build a Legal and Support section in the SellOS web app (control site, Platform Admin only).
+- **Acceptance Criteria:**
+  - The Platform Admin uploads versioned terms of service, privacy policy and data processing terms, each version with an effective date and its text or file; a version is never edited or deleted, and a new version is added instead.
+  - The section holds the support channel (an address or link), the response targets (text per severity) and the status page link.
+  - SOS-P6-13C reads the current version of each text, the support details and the status page link from here at sign up; nothing is hard coded.
+  - Until Jayman adds the content, the section shows each text as a draft placeholder, as SOS-P6-13C expects.
+  - Only the Platform Admin edits it; sign up reads the current versions.
+- **Test Criteria:** Backend tests of versions, effective dates (the current version on a given date), that a version cannot be edited or deleted, the permission test for every role, and that SOS-P6-13C's read returns the current versions; a Cypress spec of adding a version and the support details.
+- **Notes:** Decided by Jayman, 24 November 2026. SOS-P6-13 stays Waiting for Jayman (and counsel) to add the content; this task is only the place to put it.
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 5
+- **Dependencies:** SOS-P1-01
+- **Status:** Not Started
+- **Browser spec:** required
 
 ### SOS-P6-14: Onboard the first outside agency
 - **Epic:** Launch readiness
@@ -2444,13 +2609,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Issues are logged and triaged.
   - No SOS-FIX task is open, and the flows of the sign up, billing and WhatsApp tasks were walked in a scheduled regression report with no open defect.
 - **Test Criteria:** A cross company isolation check on live data, and a review of the issue log.
-- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): SOS-REG-6 is Not Needed, so its criterion now names the scheduled regressions. Dependencies added: the staging proof (SOS-P6-12D), the legal terms and their acceptance (SOS-P6-13, SOS-P6-13C), the approved prices (SOS-P6-02A), the live Razorpay check (SOS-P6-03L) and the approved invoices (SOS-P6-06A).
+- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): SOS-REG-6 is Not Needed, so its criterion now names the scheduled regressions. Dependencies added: the staging proof (SOS-P6-12D), the legal terms and their acceptance (SOS-P6-13, SOS-P6-13C), the approved prices (SOS-P6-02A), the live Razorpay check (SOS-P6-03L) and the approved invoices (SOS-P6-06A). Decided by Jayman, 24 November 2026: Parked (not selling yet, no outside agency until SOS-N14 is back). Its dependencies stay as they are. SOS-P6-02A stays Waiting for Jayman.
 - **Owner:** Jayman
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** none
 - **Story Points:** 5
 - **Dependencies:** SOS-P6-07, SOS-P6-12, SOS-P5-10, SOS-P6-12D, SOS-P6-13, SOS-P6-13C, SOS-P6-02A, SOS-P6-03L, SOS-P6-06A
-- **Status:** Waiting
+- **Status:** Parked
 
 ### SOS-REG-A: Scheduled regression A (about 24 November)
 - **Epic:** Regression
@@ -2500,7 +2665,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P6
 - **Launch:** Jan 1
-- **Dependencies:** SOS-N12, SOS-N14, SOS-N15, SOS-N16, SOS-N21, SOS-N21A, SOS-P0-01, SOS-P0-02, SOS-P0-03, SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-07, SOS-P0-06L, SOS-P0-08, SOS-P0-09, SOS-P0-12, SOS-P1-06A, SOS-P1-06B, SOS-P1-14, SOS-P6-12, SOS-P0-10, SOS-P1-04, SOS-P1-05, SOS-P1-13, SOS-P5-10, SOS-P0-11, SOS-P1-01, SOS-P1-02, SOS-P1-03, SOS-P1-11, SOS-P1-07, SOS-P1-08, SOS-P1-09, SOS-P1-10, SOS-P1-12, SOS-P2-01, SOS-P2-02, SOS-P2-03, SOS-P2-04, SOS-P2-05, SOS-P2-06, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-13, SOS-P2-14, SOS-P3-01, SOS-P3-02, SOS-P3-03, SOS-P3-04, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12, SOS-P3-13, SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07, SOS-P4-08, SOS-P4-09, SOS-P4-10, SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06, SOS-P5-07, SOS-P5-08, SOS-P5-09, SOS-P6-01, SOS-P6-02, SOS-P6-03, SOS-P6-15, SOS-P6-04, SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-09, SOS-P6-10, SOS-P6-11, SOS-P6-16, SOS-P6-17, SOS-P6-13, SOS-P6-14, SOS-REG-A, SOS-REG-B, SOS-REG-C, SOS-FIX-1, SOS-P0-05D, SOS-P0-06D, SOS-P0-08D, SOS-P1-14D, SOS-P6-12D, SOS-P2-02L, SOS-P3-01L, SOS-P3-04A, SOS-P3-10L, SOS-P4-10C, SOS-P5-07L, SOS-P5-09A, SOS-P6-02A, SOS-P6-03L, SOS-P6-15L, SOS-P6-06A, SOS-P6-10L, SOS-P6-11L, SOS-P6-13C, SOS-N22, SOS-N23, SOS-P0-13, SOS-P1-15, SOS-P1-16, SOS-P1-17, SOS-P1-18, SOS-P1-19, SOS-P1-20, SOS-P1-21, SOS-P1-22, SOS-P1-23, SOS-P1-24, SOS-P1-25, SOS-P1-26, SOS-P7-01, SOS-P7-02, SOS-P7-03, SOS-P7-04, SOS-P7-05, SOS-P7-06, SOS-P7-07, SOS-P7-08, SOS-P7-09, SOS-P7-10, SOS-P7-11, SOS-P7-12, SOS-P7-13, SOS-P7-14, SOS-UI-1, SOS-UI-2, SOS-UI-2B, SOS-UI-3A, SOS-UI-3B, SOS-UI-3C, SOS-UI-3D
+- **Dependencies:** SOS-N15, SOS-N21, SOS-N21A, SOS-P0-01, SOS-P0-02, SOS-P0-03, SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-07, SOS-P0-06L, SOS-P0-08, SOS-P0-09, SOS-P0-12, SOS-P1-06A, SOS-P1-06B, SOS-P1-14, SOS-P6-12, SOS-P0-10, SOS-P1-04, SOS-P1-05, SOS-P1-13, SOS-P5-10, SOS-P0-11, SOS-P1-01, SOS-P1-02, SOS-P1-03, SOS-P1-11, SOS-P1-07, SOS-P1-08, SOS-P1-09, SOS-P1-10, SOS-P1-12, SOS-P2-01, SOS-P2-02, SOS-P2-03, SOS-P2-04, SOS-P2-05, SOS-P2-06, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-13, SOS-P2-14, SOS-P3-01, SOS-P3-02, SOS-P3-03, SOS-P3-04, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12, SOS-P3-13, SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07, SOS-P4-08, SOS-P4-09, SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06, SOS-P5-07, SOS-P5-08, SOS-P5-09, SOS-P6-01, SOS-P6-02, SOS-P6-03, SOS-P6-15, SOS-P6-04, SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-09, SOS-P6-10, SOS-P6-11, SOS-P6-16, SOS-P6-17, SOS-P6-13, SOS-REG-A, SOS-REG-B, SOS-REG-C, SOS-FIX-1, SOS-P0-05D, SOS-P0-06D, SOS-P0-08D, SOS-P1-14D, SOS-P6-12D, SOS-P2-02L, SOS-P3-01L, SOS-P3-04A, SOS-P3-10L, SOS-P4-10C, SOS-P5-07L, SOS-P5-09A, SOS-P6-02A, SOS-P6-06A, SOS-P6-10L, SOS-P6-11L, SOS-P6-13C, SOS-N22, SOS-N23, SOS-P0-13, SOS-P1-15, SOS-P1-16, SOS-P1-17, SOS-P1-18, SOS-P1-19, SOS-P1-20, SOS-P1-21, SOS-P1-22, SOS-P1-23, SOS-P1-24, SOS-P1-25, SOS-P1-26, SOS-P7-01, SOS-P7-02, SOS-P7-03, SOS-P7-04, SOS-P7-05, SOS-P7-06, SOS-P7-07, SOS-P7-08, SOS-P7-09, SOS-P7-10, SOS-P7-11, SOS-P7-12, SOS-P7-13, SOS-P7-14, SOS-UI-1, SOS-UI-2, SOS-UI-2B, SOS-UI-3A, SOS-UI-3B, SOS-UI-3C, SOS-UI-3D, SOS-P3-14, SOS-P3-15, SOS-P3-16, SOS-P3-17, SOS-P3-17L, SOS-P4-11, SOS-P4-12, SOS-P6-18
 - **Status:** Waiting
 
 ### SOS-N07: Counsel reviews the consent basis and calling script

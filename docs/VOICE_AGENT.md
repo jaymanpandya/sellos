@@ -19,3 +19,15 @@ Code: `sellos/voice/agent/`. Built and tested against fakes; the first real call
 
 To confirm in SOS-P5-07L: the exact Plivo field names, Sarvam's keyterm field, the live handover transfer, and the
 real turn times.
+
+## Provider choices (SOS-N21, decided by Jayman, 24 November 2026)
+
+* Speech to text: Sarvam Saaras, the current recommended version (`saaras:v4`; `saaras:v3` stays available).
+* Text to speech: Sarvam Bulbul. `bulbul:v4-flash` is available and is the one Sarvam documents for new
+  integrations; `bulbul:v3` is the older one. Both are selectable, and the model is a setting.
+* The voice agent's language model: a Sarvam chat model, named in a setting by Jayman.
+* The agent assistant: Claude, default Sonnet 5.5 (`claude-sonnet-5-5`), a changeable setting, on the
+  Anthropic account Jayman holds.
+* Jayman holds the Sarvam account and enters all keys. No key is in the repository or in chat.
+* Before the voice agent goes live, the Sarvam model is compared with Claude Haiku 5.5 on the fixed
+  disclosure line and the handover. SOS-N21A's harness compares Anthropic models only, so this needs a follow-up task (proposed, not yet added).
