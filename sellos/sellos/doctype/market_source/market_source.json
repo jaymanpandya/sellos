@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "autoname": "field:source_name",
+ "creation": "2026-11-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_name",
+  "adapter",
+  "file_name",
+  "enabled",
+  "frequency",
+  "section_state",
+  "last_run_at",
+  "next_run_at",
+  "last_status",
+  "consecutive_failures"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "adapter",
+   "fieldtype": "Select",
+   "label": "Adapter",
+   "options": "File",
+   "default": "File",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "file_name",
+   "fieldtype": "Data",
+   "label": "Export file name",
+   "description": "A CSV or JSON file in the private files folder of this site (SOS-P3-01)."
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "options": "Hourly\nDaily\nWeekly",
+   "default": "Daily",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_state",
+   "fieldtype": "Section Break",
+   "label": "Last run"
+  },
+  {
+   "fieldname": "last_run_at",
+   "fieldtype": "Datetime",
+   "label": "Last run at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "next_run_at",
+   "fieldtype": "Datetime",
+   "label": "Next run at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_status",
+   "fieldtype": "Select",
+   "label": "Last status",
+   "options": "\nSucceeded\nFailed",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "consecutive_failures",
+   "fieldtype": "Int",
+   "label": "Failed runs in a row",
+   "read_only": 1,
+   "default": "0"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Market Source",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Platform Admin",
+   "permlevel": 0,
+   "read": 1,
+   "report": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

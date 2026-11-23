@@ -1716,7 +1716,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 5
 - **Dependencies:** none
-- **Status:** In Progress
+- **Status:** Complete
 
 ### SOS-P3-02: Create the raw transaction table
 - **Epic:** Market intelligence

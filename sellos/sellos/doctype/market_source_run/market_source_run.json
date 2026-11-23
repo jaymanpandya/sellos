@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "autoname": "format:MSR-{#####}",
+ "creation": "2026-11-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source",
+  "status",
+  "started_at",
+  "finished_at",
+  "batches",
+  "records_read",
+  "records_accepted",
+  "records_rejected",
+  "error",
+  "rejects"
+ ],
+ "fields": [
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "label": "Source",
+   "options": "Market Source",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Running\nSucceeded\nFailed",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finished_at",
+   "fieldtype": "Datetime",
+   "label": "Finished at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "batches",
+   "fieldtype": "Int",
+   "label": "Batches",
+   "read_only": 1
+  },
+  {
+   "fieldname": "records_read",
+   "fieldtype": "Int",
+   "label": "Records read",
+   "read_only": 1
+  },
+  {
+   "fieldname": "records_accepted",
+   "fieldtype": "Int",
+   "label": "Records accepted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "records_rejected",
+   "fieldtype": "Int",
+   "label": "Records rejected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rejects",
+   "fieldtype": "Small Text",
+   "label": "First rejected records",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Market Source Run",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Platform Admin",
+   "permlevel": 0,
+   "read": 1,
+   "report": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
