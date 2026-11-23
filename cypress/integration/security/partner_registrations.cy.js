@@ -62,7 +62,10 @@ context("SOS-P7-02: register a lead as a channel partner", () => {
 
 	it("registers a new buyer: the consent wording is shown, the phone is masked and the registration waits", () => {
 		openRegister();
-		cy.getByTestId("partner-register-wording").should("contain", "may contact me about my enquiry")  // SOS-N22 default wording;
+		cy.getByTestId("partner-register-wording").should(
+			"contain",
+			"may contact me about my enquiry"
+		); // SOS-N22 default wording;
 		fillBuyer(newName, numbers.new_phone);
 		cy.getByTestId("partner-register-project").type("Gate Tower");
 		cy.get('textarea[data-testid="sellos-partner-register-note"]').type(
