@@ -9,8 +9,8 @@ the control site only (market data lives there).
 * A run fails when the source cannot be read, or when it read records and not one was usable. A failed
   run alerts every enabled Platform Admin once (App Notification, event "Market data run failed").
   The alert carries the source name and a short reason, never a path, a stack or a secret.
-* The sink is where accepted records go. SOS-P3-02 (the raw transaction table) registers its sink with
-  `set_sink`; until then records are counted and not stored.
+* The sink is where accepted records go, as `(raw, mapped)` pairs. By default it is the raw transaction
+  table (`sellos.intel.raw_store`, SOS-P3-02); `set_sink(None)` makes a run count records and store none.
 * Nothing here solves a captcha or goes round an access control; an adapter only reads what it is given.
 """
 
@@ -22,6 +22,7 @@ from sellos.crm import notifications
 from sellos.intel import adapters
 from sellos.intel.adapters import RecordError, SourceError
 from sellos.intel.file_adapter import FileAdapter
+from sellos.intel.raw_store import store as store_raw
 from sellos.provisioning.control import is_control_site
 
 SOURCE = "Market Source"
@@ -34,11 +35,12 @@ MAX_BATCHES = 10_000  # a source that never ends its cursor stops here
 # The adapters a Market Source can choose; importing them registers them.
 BUILT_IN_ADAPTERS = (FileAdapter,)
 
-_sink = None
+_sink = store_raw
 
 
 def set_sink(sink):
-	"""Register the function that stores accepted records: `sink(source_name, records)`. None clears it."""
+	"""Register the function that stores accepted records: `sink(source_name, items)`, where items are
+	`(raw, mapped)` pairs. None clears it, and records are then counted and not stored."""
 	global _sink
 	_sink = sink
 
@@ -86,15 +88,18 @@ def run_adapter(source_name, adapter, now=None) -> dict:
 			batch = adapter.fetch_batch(cursor)
 			batches += 1
 			good = []
+			pairs = []
 			for raw in batch.records:
 				read += 1
 				try:
-					good.append(adapter.map_fields(raw))
+					mapped = adapter.map_fields(raw)
+					good.append(mapped)
+					pairs.append((raw, mapped))
 				except RecordError as e:
 					rejected += 1
 					if len(rejects) < REJECT_SAMPLE:
 						rejects.append(f"record {read}: {_reason(e)}")
-			_store(source_name, good)
+			_store(source_name, pairs)
 			accepted += len(good)
 			cursor = batch.next_cursor
 			if cursor is None:

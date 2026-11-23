@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "autoname": "field:dedupe_key",
+ "creation": "2026-11-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source",
+  "source_record_id",
+  "fetch_time",
+  "record_hash",
+  "dedupe_key",
+  "raw_record"
+ ],
+ "fields": [
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "label": "Source",
+   "options": "Market Source",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "source_record_id",
+   "fieldtype": "Data",
+   "label": "Source record ID",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "fetch_time",
+   "fieldtype": "Datetime",
+   "label": "Fetch time",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "record_hash",
+   "fieldtype": "Data",
+   "label": "Record hash",
+   "reqd": 1,
+   "read_only": 1,
+   "length": 64
+  },
+  {
+   "fieldname": "dedupe_key",
+   "fieldtype": "Data",
+   "label": "Duplicate check key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "length": 64
+  },
+  {
+   "fieldname": "raw_record",
+   "fieldtype": "Code",
+   "label": "Record as received",
+   "options": "JSON",
+   "reqd": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Raw Transaction",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Platform Admin",
+   "permlevel": 0,
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

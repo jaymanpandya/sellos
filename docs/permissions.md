@@ -161,6 +161,7 @@ on a company site, because the data scope above is "none".
 | `sellos.reports.standard.lead_funnel`, `source_performance`, `agent_productivity`, `ageing_report` (SOS-P5-02, the Company Admin's lead funnel and conversion by stage, source performance, agent productivity, and listing and mandate ageing, for a range of dates; no figure holds a phone number) | Company Admin |
 | `sellos.reports.partner.partner_report` (SOS-P5-03, a channel partner's own leads by stage for a range of dates, with their deal and commission panels that switch on when SOS-P4-06 and SOS-P7-04 are done; only a pure partner login, and only their own records) | Channel Partner |
 | `sellos.reports.platform.list_platform_reports`, `run_platform_report` (SOS-P5-03, companies, usage and calling spend as totals per company, with revenue, churn and failed payment panels that switch on when billing is live; totals only, no lead, client or call record and no phone number) | Platform Admin |
+| `sellos.intel.api.list_raw_transactions` (SOS-P3-02, the raw transaction table of market data, one page at a time, each record as received with its source, fetch time and hash. The table is on the control site and the method answers there only; a company site never holds the rows) | Platform Admin |
 
 Each story that adds a method adds a row here.
 

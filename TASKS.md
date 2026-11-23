@@ -1733,7 +1733,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 3
 - **Dependencies:** SOS-P3-01
-- **Status:** In Progress
+- **Status:** Complete
 
 ### SOS-P3-03: Build the normaliser
 - **Epic:** Market intelligence

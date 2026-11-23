@@ -61,6 +61,7 @@ class SourceCase(IntegrationTestCase):
 		):
 			for run in frappe.get_all("Market Source Run", filters={"source": name}, pluck="name"):
 				frappe.db.delete("App Notification", {"dedupe_key": ["like", f"market-run-failed:{run}:%"]})
+			frappe.db.delete("Raw Transaction", {"source": name})  # SOS-P3-02
 			frappe.db.delete("Market Source Run", {"source": name})
 			frappe.db.delete("Market Source", {"name": name})
 

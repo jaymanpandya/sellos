@@ -32,9 +32,22 @@ placed in the control site's private files folder and named in the Market Source
   records with their reasons, and the error of a failed run.
 * A run fails when the source cannot be read or when every record read was rejected. It alerts every
   enabled Platform Admin once, with an App Notification "Market data run failed".
-* Accepted records go to a sink registered with `runner.set_sink`. SOS-P3-02 (the raw transaction
-  table) registers it; until then records are counted and not stored.
+* Accepted records go to the sink, as `(raw, mapped)` pairs: by default the raw transaction table below.
+  `runner.set_sink(None)` makes a run count records and store none.
 
 The adapters only read what they are given. They never solve a captcha or go round an access control.
 The real source's adapter and its first batch are SOS-P3-01L. `FakeSource` (`sellos/intel/fake_source.py`)
 feeds the tests.
+
+## The raw transaction table (SOS-P3-02, `sellos/intel/raw_store.py`)
+
+Every accepted record is stored as received in the Raw Transaction DocType on the control site: the
+canonical fields as the source gave them (`raw_record`, JSON), the Market Source, the fetch time and a
+SHA-256 hash of the record. Other columns of a file are dropped before hashing. A row is written once and
+never changed or deleted, so cleaning (SOS-P3-03) can always be repeated from it.
+
+* **No duplicates.** The duplicate check key is the hash of the source and the record's hash. Running the
+  same file again adds nothing. A source's corrected record has a different hash, so it is stored beside
+  the original.
+* **Reading.** A company site never holds these rows. `sellos.intel.api.list_raw_transactions` (Platform
+  Admin, control site only, pages of at most 200) is the one way to read them.
