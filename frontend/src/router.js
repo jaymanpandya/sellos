@@ -45,6 +45,7 @@ const PartnerCommissionPage = () => import("./pages/PartnerCommissionPage.vue");
 const PartnerEarningsPage = () => import("./pages/PartnerEarningsPage.vue");
 const PlatformReportsPage = () => import("./pages/PlatformReportsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
+const ClientOverviewPage = () => import("./pages/ClientOverviewPage.vue");
 const ClientShortlistsPage = () => import("./pages/ClientShortlistsPage.vue");
 const ClientShortlistPage = () => import("./pages/ClientShortlistPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
@@ -314,6 +315,13 @@ export function createAppRouter() {
 				name: "partner-commission",
 				component: PartnerCommissionPage,
 				meta: { area: "partner", title: "Your commission" },
+			},
+			{
+				// SOS-P5-05: a client's own shortlists, visits, deal status, mandate and enquiries.
+				path: "/client/overview",
+				name: "client-overview",
+				component: ClientOverviewPage,
+				meta: { area: "client", title: "Your dealings" },
 			},
 			{
 				path: "/client/shortlists",

@@ -235,3 +235,9 @@ export const bookingApi = {
 		booking("book_unit", { lead, unit, price, booking_amount, cost_sheet }),
 	cancel: (deal, reason) => booking("cancel_booking", { deal, reason }),
 };
+
+// The client's own overview (SOS-P5-05): shortlists, visits, deal status, mandate status and enquiries.
+export const clientViewApi = {
+	overview: () =>
+		apiRequest({ url: "/api/method/sellos.crm.client_views.my_overview", method: "POST" }),
+};

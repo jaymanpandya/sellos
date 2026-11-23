@@ -46,7 +46,16 @@ CLIENT_FIELDS = (
 	"phone",
 	"overseas_phone",
 )
-LEAD_FIELDS = ("client", "pipeline", "source", "campaign", "assigned_to", "notes", *REQUIREMENT_FIELDS)
+LEAD_FIELDS = (
+	"client",
+	"pipeline",
+	"source",
+	"campaign",
+	"assigned_to",
+	"notes",
+	"property",  # SOS-P5-05
+	*REQUIREMENT_FIELDS,
+)
 ACTIVITY_FIELDS = ("lead", "activity_type", "activity_date", "notes")
 TASK_FIELDS = ("lead", "title", "due_date", "due_at", "status", "assigned_to", "notes")
 VISIT_FIELDS = ("lead", "project_name", "visit_datetime", "agent", "status", "notes")

@@ -261,6 +261,7 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.shortlists.my_shortlist": _CLIENT_ONLY,
 	"sellos.inventory.shortlists.open_shortlist_item": _CLIENT_ONLY,
 	"sellos.inventory.shortlists.my_shortlist_pdf": _CLIENT_ONLY,
+	"sellos.crm.client_views.my_overview": _CLIENT_ONLY,  # SOS-P5-05
 	"sellos.reports.team.team_report": _TEAM_USERS,
 	"sellos.crm.enquiry.get_enquiry_settings": _ADMIN_ONLY,  # SOS-P2-08
 	"sellos.crm.enquiry.rotate_enquiry_key": _ADMIN_ONLY,  # SOS-P2-08

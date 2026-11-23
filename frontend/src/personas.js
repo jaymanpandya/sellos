@@ -160,6 +160,8 @@ export const PERSONAS = [
 		areas: ["client", "home", "profile"],
 		nav: [
 			{ key: "home", label: "Home", to: "/", area: "home" },
+			// SOS-P5-05: shortlists, visits, deal and mandate status, and enquiries on the client's property.
+			{ key: "overview", label: "Your dealings", to: "/client/overview", area: "client" },
 			{ key: "shortlists", label: "Shortlists", to: "/client/shortlists", area: "client" },
 		],
 	},

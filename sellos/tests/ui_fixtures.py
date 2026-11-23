@@ -389,6 +389,7 @@ def remove_seeded_leads():
 		"WhatsApp Message",
 		"WhatsApp Conversation",
 		"Consent Check",
+		"Response Alert",  # SOS-P5-05
 	):
 		if leads and frappe.get_meta(doctype).has_field("lead"):
 			frappe.db.delete(doctype, {"lead": ["in", leads]})
@@ -859,6 +860,12 @@ def seed_regression_data():
 	  which the client never sees. Nothing is opened yet, so the agent's marks read "Not opened yet". Made
 	  through the shortlist API.
 
+	* Client views (SOS-P5-05): Regression Seller One gets the email of the gate client user and a property,
+	  Regression Seller One Flat, linked to its lead by the gate agent. Regression Enquirer One and Two are Buyer
+	  leads on that property, so the client reads "Your sale: Regression Seller One Flat" with the Draft mandate
+	  (the Dossier hidden), and the rows Enquiry 1 and Enquiry 2, each In SLA. Made through the CRM and
+	  inventory APIs.
+
 	* Sharing with partners (SOS-P7-03): the Company Admin shares Regression Pricing (all units, its price list
 	  in force and the brochure Regression Floor Plan) with Regression Firm Approved, shares Regression Heights
 	  (units 1201 and 1202 only) with every Approved firm, and shares Regression Grid with Regression Firm
@@ -957,6 +964,7 @@ def seed_regression_data():
 		_seed_shortlists(agent_one)
 		_seed_partner_shares(admin)
 		_seed_deals(admin, agent_one)
+		_seed_client_views(admin, agent_one)
 		_seed_inbound_opt_in()
 		return _regression_summary()
 
@@ -1097,6 +1105,7 @@ def seed_regression_data():
 	_seed_shortlists(agent_one)
 	_seed_partner_shares(admin)
 	_seed_deals(admin, agent_one)
+	_seed_client_views(admin, agent_one)
 	_seed_inbound_opt_in()
 	_seed_whatsapp(admin, agent_one)
 	_seed_report_definitions()
@@ -1503,6 +1512,47 @@ def _seed_mandates(agent_one):
 				signed, "Access to the flat", "Regression: the caretaker holds the keys."
 			)
 			mandates.add_dossier_file(signed, "Title deed", "regression_mandate_deed.pdf", pdf)
+
+
+def _seed_client_views(admin, agent_one):
+	"""The client views (SOS-P5-05), through the CRM and inventory APIs: Regression Seller One gets the gate
+	client user's email and the property Regression Seller One Flat, and Regression Enquirer One and Two are Buyer
+	leads on that property. A seller that already has a property is left alone, so it is safe to run again."""
+	from sellos.crm import api as crm
+	from sellos.inventory import api as inventory
+
+	seller = frappe.db.get_value("Client", {"client_name": f"{REGRESSION_PREFIX}Seller One"}, "name")
+	lead = frappe.db.get_value("Lead", {"client": seller}, "name") if seller else None
+	if not lead or frappe.db.get_value("Lead", lead, "property"):
+		return
+	with _as_user(admin):
+		prop = inventory.save_property(
+			{
+				"title": f"{REGRESSION_PREFIX}Seller One Flat",
+				"property_type": "Apartment",
+				"city": "Mumbai",
+				"carpet_area": 780,
+			}
+		)["name"]
+	with _as_user(agent_one):
+		crm.save_client(name=seller, values={"email": TEST_USERS["client"]["email"]})
+		crm.save_lead(name=lead, values={"property": prop})
+		for label, seed in (("One", 5105), ("Two", 5106)):
+			client = crm.save_client(
+				values={
+					"client_name": f"{REGRESSION_PREFIX}Enquirer {label}",
+					"client_type": "Buyer",
+					"phone": phones.in_mobile(seed),
+				}
+			)
+			crm.save_lead(
+				values={
+					"client": client["name"],
+					"source": "Website",
+					"assigned_to": agent_one,
+					"property": prop,
+				}
+			)
 
 
 def _seed_deals(admin, agent_one):
@@ -4463,3 +4513,137 @@ def remove_whatsapp():
 	frappe.clear_document_cache("WhatsApp Settings", "WhatsApp Settings")
 	frappe.clear_cache(doctype="WhatsApp Settings")
 	return {"removed": True}
+
+
+CLIENT_VIEWS_SEEDS = (5201, 5202, 5203, 5204, 5205)  # SOS-P5-05: the phone seeds of make_gate_client_views
+
+
+def make_gate_client_views():
+	"""For the client views spec (tests only, SOS-P5-05): the gate client user as a buyer and as a seller.
+
+	The buyer has a Buyer lead, a site visit and a deal. The seller has a Seller lead on the property "Gate Deal
+	Views Flat <tag>" with a Draft mandate and a Dossier note, and two Buyer enquiries on that property (the second
+	has a Response Alert), and a third Buyer lead on another property that must never show. Clients are named
+	"Gate Buyer Views ..." and "Gate Seller Views ..." and the properties "Gate Deal ...", so remove_seeded_leads
+	takes it all away. Returns the labels the spec checks for and the names it must not find."""
+	import base64
+
+	from sellos.crm import api as crm
+	from sellos.inventory import deals, mandates
+	from sellos.tests.files import tiny_pdf
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	mail = TEST_USERS["client"]["email"]
+	agent = TEST_USERS["agent"]["email"]
+	admin = TEST_USERS["company_admin"]["email"]
+	made = {"pdf": base64.b64encode(tiny_pdf()).decode()}
+	with _as_user(admin):
+		properties = {}
+		for key in ("own", "deal", "other"):
+			properties[key] = frappe.get_doc(
+				{
+					"doctype": "Property",
+					"title": f"Gate Deal Views {key.title()} {tag}",
+					"property_type": "Apartment",
+					"city": "Pune",
+					"carpet_area": 500,
+				}
+			).insert()
+		made["property"] = properties["own"].title
+		buyer = crm.save_client(
+			values={
+				"client_name": f"Gate Buyer Views {tag}",
+				"client_type": "Buyer",
+				"email": mail,
+				"phone": phones.in_mobile(CLIENT_VIEWS_SEEDS[0]),
+			}
+		)["name"]
+		buyer_lead = crm.save_lead(values={"client": buyer, "source": "Website", "assigned_to": agent})[
+			"lead"
+		]
+		seller = crm.save_client(
+			values={
+				"client_name": f"Gate Seller Views {tag}",
+				"client_type": "Seller",
+				"email": mail,
+				"phone": phones.in_mobile(CLIENT_VIEWS_SEEDS[1]),
+			}
+		)["name"]
+		seller_lead = crm.save_lead(
+			values={
+				"client": seller,
+				"source": "Referral",
+				"pipeline": "Seller",
+				"assigned_to": agent,
+				"property": properties["own"].name,
+			}
+		)["lead"]["name"]
+		enquiry_leads = []
+		for seed, (label, prop) in zip(
+			CLIENT_VIEWS_SEEDS[2:], (("One", "own"), ("Two", "own"), ("Stray", "other")), strict=True
+		):
+			client = crm.save_client(
+				values={
+					"client_name": f"Gate Buyer Views {label} {tag}",
+					"client_type": "Buyer",
+					"phone": phones.in_mobile(seed),
+				}
+			)
+			enquiry_leads.append(
+				crm.save_lead(
+					values={
+						"client": client["name"],
+						"source": "Website",
+						"assigned_to": agent,
+						"property": properties[prop].name,
+					}
+				)["lead"]["name"]
+			)
+			made[f"{label.lower()}_name"] = f"Gate Buyer Views {label} {tag}"
+		deals.save_deal(
+			{
+				"client": buyer,
+				"property": properties["deal"].name,
+				"price": 6000000,
+				"commission_amount": 60000,
+				"splits": [{"party_type": "Company", "percent": 100}],
+			}
+		)
+		made["deal_property"] = properties["deal"].title
+	with _as_user(agent):
+		crm.save_site_visit(
+			values={
+				"lead": buyer_lead["name"],
+				"project_name": f"Gate Views Project {tag}",
+				"visit_datetime": add_to_date(now_datetime(), days=2),
+				"notes": "Gate views agent note",
+			}
+		)
+		made["visit_project"] = f"Gate Views Project {tag}"
+		mandate = mandates.save_mandate(
+			{"lead": seller_lead, "mandate_type": "Exclusive", "term_months": 6, "fee_percent": 1.5}
+		)["name"]
+		mandates.add_dossier_note(mandate, "Gate owner reserve", "Gate views secret note.")
+		made["mandate"] = mandate
+	frappe.get_doc(
+		{
+			"doctype": "Response Alert",
+			"lead": enquiry_leads[1],
+			"limit_type": "No contact",
+			"counted_from": now_datetime(),
+			"missed_on": now_datetime(),
+		}
+	).insert(ignore_permissions=True)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return made
+
+
+def sign_gate_client_mandate(mandate, pdf):
+	"""Sign the mandate of make_gate_client_views as the gate agent would (tests only, SOS-P5-05)."""
+	from sellos.inventory import mandates
+
+	with _as_user(TEST_USERS["agent"]["email"]):
+		mandates.sign_mandate(mandate, "gate_views_signed.pdf", pdf)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"mandate": mandate, "signed": True}
