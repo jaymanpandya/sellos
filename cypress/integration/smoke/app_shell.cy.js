@@ -13,6 +13,8 @@ context("SOS-P0-10: app shell and access by role", () => {
 
 	roles.forEach((role) => {
 		it(`${role} reaches the web app and can sign out`, () => {
+			const hasBell = ["company_admin", "agent", "channel_partner"].includes(role);
+			cy.intercept("POST", "**/sellos.crm.api.list_notifications*").as("notifications");
 			cy.signInFresh(role);
 			cy.visit("/sellos");
 			cy.getByTestId("app-shell").should("be.visible");
@@ -20,6 +22,8 @@ context("SOS-P0-10: app shell and access by role", () => {
 			// SOS-P1-26: an agent lands on Today. Let its lists finish loading before signing out,
 			// or the sign out answers the request still in flight with a 401.
 			if (role === "agent") cy.getByTestId("today-counts").should("be.visible");
+			// The bell reads its list on load. Wait for that answer so the sign out refuses nothing.
+			if (hasBell) cy.wait("@notifications");
 			cy.signOut();
 		});
 

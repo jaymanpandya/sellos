@@ -335,6 +335,28 @@ SAMPLE_CALLS = {
 		"listing": "{order_listing}",
 		"order": ["{media_asset_two}", "{media_asset}"],
 	},
+	# SOS-P4-05: one draft mandate of a seller lead the company admin owns. In the matrix's order it is corrected,
+	# signed, given a note and a file, opened and archived, so each call finds it in the state it needs.
+	"sellos.inventory.mandates.mandate_overview": {},
+	"sellos.inventory.mandates.save_mandate": {"name": "{spare_mandate}", "values": {"fee_percent": 2}},
+	"sellos.inventory.mandates.sign_mandate": {
+		"name": "{spare_mandate}",
+		"filename": "p405_suite_signed.pdf",
+		"content_base64": tiny_pdf_base64(),
+	},
+	"sellos.inventory.mandates.add_dossier_note": {
+		"name": "{spare_mandate}",
+		"title": "P405 Suite Note",
+		"note": "p405 suite note",
+	},
+	"sellos.inventory.mandates.add_dossier_file": {
+		"name": "{spare_mandate}",
+		"title": "P405 Suite File",
+		"filename": "p405_suite_dossier.pdf",
+		"content_base64": tiny_pdf_base64(),
+	},
+	"sellos.inventory.mandates.open_dossier": {"name": "{spare_mandate}"},
+	"sellos.inventory.mandates.set_mandate_archived": {"name": "{spare_mandate}"},
 	# SOS-P7-08
 	"sellos.inventory.matching.matches_for_lead": {"lead": "{lead}"},
 	"sellos.inventory.matching.leads_for_unit": {"unit": "{spare_unit}"},
@@ -722,6 +744,23 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"media": [{"media_asset": media_assets[1].name}, {"media_asset": media_assets[0].name}],
 			}
 		).insert()
+		# SOS-P4-05: a draft mandate of a seller lead of its own.
+		seller = frappe.get_doc(
+			{"doctype": "Client", "client_name": "P405 Suite Seller", "client_type": "Seller"}
+		).insert()
+		seller_lead = frappe.get_doc(
+			{"doctype": "Lead", "client": seller.name, "source": "Website", "pipeline": "Seller"}
+		).insert()
+		spare_mandate = frappe.get_doc(
+			{
+				"doctype": "Mandate",
+				"lead": seller_lead.name,
+				"mandate_type": "Exclusive",
+				"term_months": 6,
+				"fee_percent": 1.5,
+				"status": "Draft",
+			}
+		).insert()
 		before = set(Path(frappe.get_site_path("public", "files")).glob("media-*"))
 		self.addCleanup(self._remove_media_files, before)
 		self.addCleanup(self._remove_agreement_files)
@@ -846,6 +885,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_tower_two": spare_tower_two.name,
 			"spare_property": spare_property.name,
 			"spare_listing": spare_listing.name,
+			"spare_mandate": spare_mandate.name,
 			"media_listing": media_listing.name,
 			"order_listing": order_listing.name,
 			"media_asset": media_assets[0].name,
@@ -864,7 +904,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 
 	@staticmethod
 	def _remove_agreement_files():
-		for pattern in ("p701_suite_agreement*", "p705_suite_brochure*"):
+		for pattern in ("p701_suite_agreement*", "p705_suite_brochure*", "p405_suite_*"):
 			for path in Path(frappe.get_site_path("private", "files")).glob(pattern):
 				path.unlink()
 
