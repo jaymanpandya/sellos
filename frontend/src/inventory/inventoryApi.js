@@ -220,3 +220,18 @@ export function whenText(value) {
 		minute: "2-digit",
 	});
 }
+
+// Booking a unit from a lead, and cancelling the booking (SOS-P7-10).
+const booking = (method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.inventory.bookings.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const bookingApi = {
+	panel: (lead) => booking("booking_panel", { lead }),
+	book: (lead, unit, price, booking_amount, cost_sheet = "") =>
+		booking("book_unit", { lead, unit, price, booking_amount, cost_sheet }),
+	cancel: (deal, reason) => booking("cancel_booking", { deal, reason }),
+};

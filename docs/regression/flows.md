@@ -401,3 +401,9 @@ FLOW SOS-P5-06-1 | channel_partner | /sellos/partner/earnings | Sign in as the c
 FLOW SOS-P5-06-2 | channel_partner | /sellos/partner/earnings | Look at Your QR code. | A QR code image shows with the partner's own link, which ends with ?partner= and the partner code.
 FLOW SOS-P5-06-3 | channel_partner | /sellos/partner/register | Open Register a buyer, read the consent wording, leave the box "The buyer agreed to this" empty, fill the buyer's name and phone and click Register buyer. | The buyer is registered, not refused: consent is shown as unknown with a warning. After the company's hourly limit, the next registration is refused with a message that says so.
 FLOW SOS-P5-06-4 | agent | /sellos | Look at the navigation. | There is no Deals and earnings link: an agent has no partner page.
+
+## SOS-P7-10: book a unit from the pipeline
+
+FLOW SOS-P7-10-1 | agent | /sellos/crm/leads | Sign in as the agent, open Regression Buyer One, scroll to Book a unit, choose Regression Grid G103 under Unit, type 8000000 as the agreed price and 100000 as the booking amount, and click Confirm booking. | The card lists a booked row for G103 with both amounts, the lead's stage changes to Booking, and the unit shows Booked on Inventory, Regression Grid.
+FLOW SOS-P7-10-2 | agent | /sellos/crm/leads | On the same lead click Cancel booking, click Confirm cancellation with no reason, then type a reason and confirm. | The empty reason shows a message and changes nothing. With a reason the booking moves to the cancelled list with who and why, G103 is Available again on the grid, and the lead's stage stays Booking.
+FLOW SOS-P7-10-3 | agent | /sellos/crm/leads | Open Regression Buyer One and open the Unit list in Book a unit. | Only Available units and units held for this lead are listed (G102 is held for this lead, so it is offered); a unit held for another lead, Booked or Blocked (G104) is not.

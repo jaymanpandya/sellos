@@ -3675,6 +3675,42 @@ def gate_unit_state(project, unit_number):
 	}
 
 
+def make_gate_booking():
+	"""For the booking spec (tests only, SOS-P7-10): the grid project of make_gate_grid (G101 and G102 Available)
+	and the name of the lead the test agent owns, with the client's name. Returns {"project", "lead", "client",
+	"units"}. Names start with "Gate Inventory ", so remove_gate_inventory takes the project and any deal on
+	its units away; the lead comes from seed_agent_leads, so remove_seeded_leads does."""
+	grid = make_gate_grid()
+	lead = frappe.db.get_value("Lead", {"lead_title": ["like", f"%{grid['lead']}%"]}, "name")
+	units = {
+		u.unit_number: u.name
+		for u in frappe.get_all("Unit", filters={"project": grid["project"]}, fields=["name", "unit_number"])
+	}
+	return {"project": grid["project"], "lead": lead, "client": grid["lead"], "units": units}
+
+
+def gate_booking_state(lead):
+	"""A lead's stage, its deals and the status of each deal's unit, for the spec (tests only, SOS-P7-10)."""
+	deals = frappe.get_all(
+		"Deal",
+		filters={"lead": lead},
+		fields=[
+			"name",
+			"unit",
+			"price",
+			"booking_amount",
+			"deal_status",
+			"cancellation_reason",
+			"cancelled_by",
+		],
+		order_by="creation asc",
+	)
+	return {
+		"stage": frappe.db.get_value("Lead", lead, "stage"),
+		"deals": [{**d, "unit_status": frappe.db.get_value("Unit", d.unit, "status")} for d in deals],
+	}
+
+
 def gate_tower_state(project_name):
 	"""Read back a project's towers, floors, units, possession date and amenities, for the spec (tests only,
 	SOS-P7-05)."""
@@ -3703,6 +3739,12 @@ def remove_gate_inventory():
 	projects = frappe.get_all("Project", filters={"project_name": like}, pluck="name")
 	gate_units = frappe.get_all("Unit", filters={"project": ["in", projects or [""]]}, pluck="name")
 	gate_properties = frappe.get_all("Property", filters={"title": like}, pluck="name")
+	for deal in frappe.get_all(
+		"Deal", filters={"unit": ["in", gate_units or [""]]}, pluck="name"
+	):  # SOS-P7-10
+		frappe.db.delete("Commission Split", {"parent": deal})
+		frappe.db.delete("Version", {"ref_doctype": "Deal", "docname": deal})
+		frappe.db.delete("Deal", {"name": deal})
 	for listing in frappe.get_all(  # SOS-P4-02
 		"Listing",
 		or_filters={

@@ -178,6 +178,10 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.holds.release_hold": _INVENTORY_EDITORS,
 	"sellos.inventory.holds.block_unit": _ADMIN_ONLY,
 	"sellos.inventory.holds.unblock_unit": _ADMIN_ONLY,
+	# SOS-P7-10: a Company Admin or an Agent books a unit from a lead and cancels the booking.
+	"sellos.inventory.bookings.booking_panel": _INVENTORY_EDITORS,
+	"sellos.inventory.bookings.book_unit": _INVENTORY_EDITORS,
+	"sellos.inventory.bookings.cancel_booking": _INVENTORY_EDITORS,
 	"sellos.inventory.holds.get_hold_settings": _ADMIN_ONLY,
 	"sellos.inventory.holds.save_hold_settings": _ADMIN_ONLY,
 	# SOS-P7-13: the two response time limits.

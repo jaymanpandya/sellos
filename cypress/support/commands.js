@@ -282,3 +282,20 @@ Cypress.Commands.add("openMoreFilters", () => {
 	});
 	cy.getByTestId("filters-more").should("be.visible");
 });
+
+// SOS-P7-10: the lead page shows a booking panel for the roles that may book. A spec that stubs get_lead for a
+// lead that does not exist stubs the panel too, so the page makes no real call that the server would refuse.
+Cypress.Commands.add("stubBookingPanel", () => {
+	cy.intercept("**/api/method/sellos.inventory.bookings.booking_panel*", {
+		body: {
+			message: {
+				units: [],
+				active: [],
+				cancelled: [],
+				can_book: false,
+				partner: null,
+				consent: { status: "Unknown", warning: false, message: "" },
+			},
+		},
+	});
+});

@@ -11,6 +11,7 @@ const lead = (timeline = []) => ({
 context("SOS-P1-06A: lead detail", () => {
 	it("logs an activity and reloads the timeline", () => {
 		cy.signInFresh("agent");
+		cy.stubBookingPanel();
 		let loads = 0;
 		cy.intercept("**/api/method/sellos.crm.api.get_lead*", (req) => {
 			loads += 1;
@@ -51,6 +52,7 @@ context("SOS-P1-06A: lead detail", () => {
 
 	it("marks an overdue task", () => {
 		cy.signInFresh("agent");
+		cy.stubBookingPanel();
 		cy.intercept("**/api/method/sellos.crm.api.get_lead*", {
 			body: lead([
 				{

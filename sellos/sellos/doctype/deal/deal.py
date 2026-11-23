@@ -14,6 +14,8 @@ from sellos.sellos.doctype.channel_partner_firm.channel_partner_firm import APPR
 
 PENDING = "Pending approval"
 APPROVED = "Approved"
+ACTIVE = "Active"
+CANCELLED = "Cancelled"  # SOS-P7-10: a cancelled booking's deal is kept, never deleted
 AGENT_PARTY = "Agent"
 PARTNER_PARTY = "Channel Partner"
 COMPANY_PARTY = "Company"
@@ -45,7 +47,19 @@ class Deal(InventoryRecord):
 		self.check_deal()
 		self.check_splits()
 		self.check_approval(before)
+		self.check_cancelled(before)
 		self.share_commission()
+
+	def check_cancelled(self, before):
+		"""SOS-P7-10: a deal is Cancelled only by cancelling its booking, and a Cancelled deal stays so."""
+		self.deal_status = self.deal_status or ACTIVE
+		if self.deal_status not in (ACTIVE, CANCELLED):
+			frappe.throw(_("A deal is Active or Cancelled."))
+		cancelling = self.deal_status == CANCELLED and (not before or before.deal_status != CANCELLED)
+		if cancelling and not self.flags.cancelling:
+			frappe.throw(_("A deal is cancelled by cancelling its booking."), frappe.PermissionError)
+		if before and before.deal_status == CANCELLED and self.deal_status != CANCELLED:
+			frappe.throw(_("A cancelled deal is not made active again. Book the unit again instead."))
 
 	def check_deal(self):
 		if not self.client or not frappe.db.exists("Client", self.client):
@@ -132,12 +146,14 @@ class Deal(InventoryRecord):
 	def on_update(self):
 		# SOS-P7-04: an approved split makes the channel partner's payout (Due), from the rate in force on the
 		# deal date. It is safe to run on every save: a payout is made once, and only a Due one is worked out again.
-		if self.approval_status == APPROVED:
+		if self.approval_status == APPROVED and self.deal_status != CANCELLED:
 			from sellos.inventory.commissions import make_payouts
 
 			make_payouts(self)
 
 	def approve(self):
+		if self.deal_status == CANCELLED:
+			frappe.throw(_("A cancelled deal's split is not approved."))
 		self.flags.approving = True
 		self.approval_status = APPROVED
 		self.approved_by = frappe.session.user

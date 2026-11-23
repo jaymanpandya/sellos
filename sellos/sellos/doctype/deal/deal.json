@@ -19,6 +19,14 @@
   "approval_status",
   "approved_by",
   "approved_on",
+  "booking_amount",
+  "cost_sheet",
+  "booked_by",
+  "deal_status",
+  "section_cancel",
+  "cancelled_by",
+  "cancelled_on",
+  "cancellation_reason",
   "section_archive",
   "archived",
   "archived_on",
@@ -110,6 +118,56 @@
    "fieldname": "approved_on",
    "fieldtype": "Datetime",
    "label": "Approved on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "booking_amount",
+   "fieldtype": "Float",
+   "label": "Booking amount"
+  },
+  {
+   "fieldname": "cost_sheet",
+   "fieldtype": "Link",
+   "label": "Cost sheet",
+   "options": "Cost Sheet"
+  },
+  {
+   "fieldname": "booked_by",
+   "fieldtype": "Link",
+   "label": "Booked by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "deal_status",
+   "fieldtype": "Select",
+   "label": "Deal status",
+   "options": "Active\nCancelled",
+   "default": "Active",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_cancel",
+   "fieldtype": "Section Break",
+   "label": "Cancellation"
+  },
+  {
+   "fieldname": "cancelled_by",
+   "fieldtype": "Link",
+   "label": "Cancelled by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_on",
+   "fieldtype": "Datetime",
+   "label": "Cancelled on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancellation_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancellation reason",
    "read_only": 1
   },
   {

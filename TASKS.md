@@ -1390,7 +1390,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Story Points:** 8
 - **Dependencies:** SOS-P7-06, SOS-P1-07, SOS-P4-06, SOS-P7-02
 - **Browser spec:** required
-- **Status:** In Progress
+- **Status:** Complete
 
 ### SOS-P7-12: Notification preferences and email alerts
 - **Epic:** Alerts and notifications

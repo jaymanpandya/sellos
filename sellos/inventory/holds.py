@@ -49,7 +49,7 @@ def _lock(unit):
 		frappe.db.get_value(
 			"Unit",
 			unit,
-			["status", "held_by", "held_until", "archived"],
+			["status", "held_by", "held_for_lead", "held_until", "archived"],
 			as_dict=True,
 			for_update=True,
 		)
