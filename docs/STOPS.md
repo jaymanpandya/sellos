@@ -56,3 +56,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-22 08:44 | SOS-P4-04 | blocked | the gate still failed after 3 gate run(s): CHANGED SPEC FAILED: crm/seller_pipeline.cy.js; the loop went on to the next task | 112 | 0.0 |
 | 2026-11-22 15:20 | - | paused | the regression pause file exists | 0 | 6.0 |
 | 2026-11-23 07:20 | SOS-P7-10 | environment | CI red on f3e7d24 (the commit for SOS-P7-10) for a reason outside the code, still red after one rerun: the log of CI run 45123546228 was still not readable after 1800s | 115 | 1.4 |
+| 2026-11-23 11:33 | SOS-P5-05 | needs-input | SOS-P5-05 says sellers see "enquiries on their property". I can't build that from what exists, and it exposes buyers' personal data to sellers, so I need your decision first. I changed nothing and le… | 0 | 2.3 |
