@@ -863,6 +863,10 @@ def seed_regression_data():
 	  Available), 1202 (2 BHK, Available), 1301 (3 BHK, Held by the gate agent, with its reason in the status
 	  log) and 1302 (3 BHK, Sold). The agent also made a secondary property, Regression Resale Flat in Pune.
 
+	* Inventory import (SOS-P4-10C): Regression Imported Developer, its project Regression Imported Towers (RERA
+	  number P51800099101, Thane) and unit 101 (2 BHK), imported from spreadsheets by the Company Admin through the
+	  import API. Importing the same files again changes nothing.
+
 	* The inbound opt in route (SOS-P2-08), made through sellos.crm.intake.take, the one intake function:
 	  Regression Enquiry One (the enquiry page, Consented with an inquiry record for 7 days),
 	  Regression Enquiry Stop (the enquiry page, "Stop contacting me": Opted out, red warning) and a lead
@@ -910,6 +914,7 @@ def seed_regression_data():
 		_seed_partner_firms(admin)
 		_seed_partner_registrations(admin)
 		_seed_inventory(admin, agent_one)
+		_seed_inventory_import(admin)
 		_seed_shortlists(agent_one)
 		_seed_partner_shares(admin)
 		_seed_inbound_opt_in()
@@ -1048,6 +1053,7 @@ def seed_regression_data():
 	_seed_partner_firms(admin)
 	_seed_partner_registrations(admin)
 	_seed_inventory(admin, agent_one)
+	_seed_inventory_import(admin)
 	_seed_shortlists(agent_one)
 	_seed_partner_shares(admin)
 	_seed_inbound_opt_in()
@@ -2907,6 +2913,26 @@ def _seed_inventory(admin, agent):
 		)
 
 
+def _seed_inventory_import(admin):
+	"""Regression Imported Developer, its project Regression Imported Towers (RERA number P51800099101, Thane)
+	and unit 101 (2 BHK), brought in from spreadsheets through the import API as the Company Admin
+	(SOS-P4-10C), each file imported twice to show that the second run changes nothing. Safe to run again."""
+	from sellos.inventory import import_data
+
+	files = (
+		("Developer", "Developer name,Contact person\nRegression Imported Developer,Regression Sales"),
+		(
+			"Project",
+			"Project name,Developer,RERA number,City\n"
+			"Regression Imported Towers,Regression Imported Developer,P51800099101,Thane",
+		),
+		("Unit", "Project,Unit number,Carpet area,Configuration\nP51800099101,101,610,2 BHK"),
+	)
+	with _as_user(admin):
+		for kind, text in files:
+			import_data.run_inventory_import(kind, text)
+
+
 def _seed_towers(admin):
 	"""Regression Towers, a project with Tower A (floors 1 to 3, the units 101 to 103 on floor 1), a possession
 	date and two amenities, through the structure API (SOS-P7-05). Safe to run again."""
@@ -3516,6 +3542,87 @@ def remove_gate_inventory():
 		frappe.db.delete("Developer", {"name": name})
 	frappe.db.commit()  # nosemgrep
 	return {"projects": len(projects)}
+
+
+def seed_inventory_import_sample():
+	"""The files the inventory import spec uploads (tests only, SOS-P4-10C), and the seller a mandate is for. A
+	developer file, a project file (one project, and a row with an unknown developer), a unit file (unit 102 listed
+	twice), a listing file and a mandate file. Names start with "Gate Inventory Import " so remove_gate_inventory
+	takes them away; the seller is "Gate Seller Import ..." so remove_seeded_leads takes it and its mandate away.
+	The seller's number is generated."""
+	from sellos.crm import api as crm
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	prefix = f"{GATE_INVENTORY_PREFIX}Import "
+	developer, project = f"{prefix}Developer {tag}", f"{prefix}Towers {tag}"
+	rera = f"P5180{int(tag, 16) % 10**7:07d}"
+	number = phones.in_mobile(int(tag, 16) % 10**6)
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		client = crm.save_client(
+			values={"client_name": f"Gate Seller Import {tag}", "client_type": "Seller", "phone": number}
+		)
+		crm.save_lead(values={"client": client["name"], "source": "Website", "pipeline": "Seller"})
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	files = {
+		"Developer": f"Developer name,Contact person\n{developer},Sales desk",
+		"Project": "\n".join(
+			(
+				"Project name,Developer,RERA number,City",
+				f"{project},{developer},{rera},Pune",
+				f"{prefix}Orphan {tag},No Such Developer,P51800000{tag[:3].upper()}0,Pune",
+			)
+		),
+		"Unit": "\n".join(
+			(
+				"Project,Unit number,Carpet area,Configuration",
+				f"{rera},101,600,2 BHK",
+				f"{rera},102,650,2 BHK",
+				f"{rera},102,660,3 BHK",
+			)
+		),
+		"Listing": "\n".join(
+			(
+				"Title,Listing type,Project,Unit number,Asking price,Description",
+				f"{prefix}Listing {tag},Primary,{rera},101,5000000,A bright 2 BHK.",
+			)
+		),
+		"Mandate": "\n".join(
+			(
+				"Seller phone,Mandate type,Start date,Term months,Fee percent",
+				f"{number},Exclusive,2026-12-01,6,1.5",
+			)
+		),
+	}
+	return {"tag": tag, "files": files, "developer": developer, "project": project, "rera": rera}
+
+
+def inventory_import_state(tag):
+	"""What the inventory import made, read back from the database (tests only, SOS-P4-10C)."""
+	prefix = f"{GATE_INVENTORY_PREFIX}Import "
+	projects = frappe.get_all("Project", filters={"project_name": ["like", f"{prefix}%{tag}"]}, pluck="name")
+	units = frappe.get_all(
+		"Unit",
+		filters={"project": ["in", projects or [""]]},
+		fields=["unit_number", "carpet_area", "configuration", "status"],
+		order_by="unit_number",
+	)
+	clients = frappe.get_all("Client", filters={"client_name": f"Gate Seller Import {tag}"}, pluck="name")
+	leads = frappe.get_all("Lead", filters={"client": ["in", clients or [""]]}, pluck="name")
+	mandates = frappe.get_all(
+		"Mandate",
+		filters={"lead": ["in", leads or [""]]},
+		fields=["status", "signed_document", "mandate_type", "term_months"],
+	)
+	return {
+		"developers": frappe.db.count("Developer", {"developer_name": ["like", f"{prefix}%{tag}"]}),
+		"projects": len(projects),
+		"units": [{**u} for u in units],
+		"listings": frappe.get_all(
+			"Listing", filters={"title": ["like", f"{prefix}%{tag}"]}, fields=["published", "listing_type"]
+		),
+		"mandates": [{**m} for m in mandates],
+	}
 
 
 def make_gate_listings():

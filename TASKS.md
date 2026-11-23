@@ -1297,7 +1297,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 5
 - **Dependencies:** SOS-P4-05, SOS-P1-12
-- **Status:** In Progress
+- **Status:** Complete
 - **Browser spec:** required
 
 ### SOS-P4-10: Import current listings and mandates

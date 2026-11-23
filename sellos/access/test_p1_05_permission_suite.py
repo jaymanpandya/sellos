@@ -101,6 +101,17 @@ SAMPLE_CALLS = {
 	# SOS-P1-12: a one row list. The number is generated, never typed.
 	"sellos.crm.api.preview_lead_import": {"csv_text": f"Name,Phone\nP112 Matrix,{phones.in_mobile(112)}"},
 	"sellos.crm.api.import_bought_list": {"csv_text": f"Name,Phone\nP112 Matrix,{phones.in_mobile(113)}"},
+	# SOS-P4-10C: a one row developer file, never run for real by the matrix (a dry run), and the real run
+	"sellos.inventory.import_data.import_template": {"record_type": "Developer"},
+	"sellos.inventory.import_data.import_overview": {},
+	"sellos.inventory.import_data.preview_inventory_import": {
+		"record_type": "Developer",
+		"csv_text": "Developer name\nP4 10C Matrix",
+	},
+	"sellos.inventory.import_data.run_inventory_import": {
+		"record_type": "Developer",
+		"csv_text": "Developer name\nP4 10C Matrix Run",
+	},
 	"sellos.crm.api.save_lead": {"name": "{lead}", "values": {"notes": "p105 edit"}},
 	"sellos.crm.api.get_lead": {"name": "{lead}"},
 	"sellos.crm.api.add_activity": {"lead": "{lead}", "activity_type": "Note", "notes": "p105 added"},

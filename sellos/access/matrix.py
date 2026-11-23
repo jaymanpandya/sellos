@@ -141,6 +141,11 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.access.partner_registrations.get_partner_settings": _ADMIN_ONLY,
 	"sellos.access.partner_registrations.save_partner_settings": _ADMIN_ONLY,
 	# SOS-P7-03: a Company Admin shares projects with partner firms; a partner sees only what is shared with theirs.
+	# SOS-P4-10C: the inventory, listings and mandates import.
+	"sellos.inventory.import_data.import_template": _ADMIN_ONLY,
+	"sellos.inventory.import_data.import_overview": _ADMIN_ONLY,
+	"sellos.inventory.import_data.preview_inventory_import": _ADMIN_ONLY,
+	"sellos.inventory.import_data.run_inventory_import": _ADMIN_ONLY,
 	"sellos.inventory.partner_shares.partner_share_options": _ADMIN_ONLY,
 	"sellos.inventory.partner_shares.list_partner_shares": _ADMIN_ONLY,
 	"sellos.inventory.partner_shares.share_project": _ADMIN_ONLY,

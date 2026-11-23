@@ -31,6 +31,12 @@ export const PERSONAS = [
 			{ key: "visits", label: "Site visits", to: "/crm/visits", area: "crm" },
 			{ key: "import", label: "Import leads", to: "/crm/import", area: "crm" },
 			{ key: "inventory", label: "Inventory", to: "/inventory", area: "inventory" },
+			{
+				key: "inventory-import",
+				label: "Import inventory",
+				to: "/inventory/import",
+				area: "inventory",
+			},
 			{ key: "users", label: "Users", to: "/company/users", area: "company" },
 			{ key: "support", label: "Support access", to: "/company/support", area: "company" },
 			{ key: "telephony", label: "Telephony", to: "/company/telephony", area: "company" },

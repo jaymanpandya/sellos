@@ -9,6 +9,23 @@ const call = (method, params = {}) =>
 		params,
 	});
 
+// The Company Admin's import of developers, projects, units, properties, listings and mandates (SOS-P4-10C).
+const importCall = (method, params = {}) =>
+	apiRequest({
+		url: `/api/method/sellos.inventory.import_data.${method}`,
+		method: "POST",
+		params,
+	});
+
+export const importApi = {
+	overview: () => importCall("import_overview"),
+	template: (recordType) => importCall("import_template", { record_type: recordType }),
+	preview: (recordType, csvText) =>
+		importCall("preview_inventory_import", { record_type: recordType, csv_text: csvText }),
+	run: (recordType, csvText) =>
+		importCall("run_inventory_import", { record_type: recordType, csv_text: csvText }),
+};
+
 export const inventoryApi = {
 	overview: () => call("inventory_overview"),
 	project: (name) => call("get_project", { name }),
