@@ -367,6 +367,7 @@ def remove_seeded_leads():
 			["client_name", "like", "Gate Report Engine %"],  # SOS-P5-01
 			["client_name", "like", "Gate Portal Report %"],  # SOS-P5-03
 			["client_name", "like", "Gate Seller %"],
+			["client_name", "like", "Gate Deal %"],  # SOS-P4-06
 		],
 		pluck="name",
 	)
@@ -375,6 +376,7 @@ def remove_seeded_leads():
 	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name")
 	_remove_shortlists(clients)  # SOS-P7-09
 	_remove_mandates(leads)  # SOS-P4-05
+	_remove_deals(clients)  # SOS-P4-06
 	if leads:
 		frappe.db.delete("Lead Stage Change", {"parent": ["in", leads]})
 		frappe.db.delete("App Notification", {"lead": ["in", leads]})  # SOS-P1-23
@@ -409,6 +411,21 @@ def _remove_mandates(leads):
 		frappe.db.delete(doctype, {"parent": ["in", names]})
 	frappe.db.delete("Version", {"ref_doctype": "Mandate", "docname": ["in", names]})
 	frappe.db.delete("Mandate", {"name": ["in", names]})
+
+
+def _remove_deals(clients):
+	"""The deals of the gate clients and the properties the deal spec made (tests only, SOS-P4-06). The app refuses
+	a delete, so this goes to the tables."""
+	names = frappe.get_all("Deal", filters={"client": ["in", clients or [""]]}, pluck="name")
+	if names:
+		frappe.db.delete("Commission Split", {"parent": ["in", names]})
+		frappe.db.delete("Version", {"ref_doctype": "Deal", "docname": ["in", names]})
+		frappe.db.delete("Deal", {"name": ["in", names]})
+	properties = frappe.get_all("Property", filters={"title": ["like", "Gate Deal %"]}, pluck="name")
+	if properties:
+		frappe.db.delete("Inventory Status Change", {"parent": ["in", properties]})
+		frappe.db.delete("Version", {"ref_doctype": "Property", "docname": ["in", properties]})
+		frappe.db.delete("Property", {"name": ["in", properties]})
 
 
 def _remove_notifications_of_test_users():
@@ -849,6 +866,12 @@ def seed_regression_data():
 	  signed document, a dossier note and a dossier file, so Seller Two can be moved to Listed and Seller One
 	  can not. Made by the first regression agent through the mandate API.
 
+	* Deals (SOS-P4-06): two deals for the clients Regression Deal Buyer One and Two, made by the Company Admin
+	  through the deal API. The first is for unit 1201 of Regression Heights at Rs 1,00,00,000 with a commission of
+	  Rs 2,00,000 split 50 to the first regression agent, 20 to Regression Firm Approved and 30 to the company,
+	  and its split is approved. The second is for the property Regression Resale Flat at Rs 82,00,000 with a
+	  commission of Rs 1,23,000 split 40 to the agent and 60 to the company, and waits for approval.
+
 	* Listings (SOS-P4-02): the published Primary listing Regression Primary 2 BHK (unit 1501 of Regression
 	  Pricing, Rs 1,05,00,000), the published Direct listing Regression Direct Resale (the property Regression
 	  Resale Flat, Rs 82,00,000) and the Partner draft Regression Partner Draft with no price or description,
@@ -917,6 +940,7 @@ def seed_regression_data():
 		_seed_inventory_import(admin)
 		_seed_shortlists(agent_one)
 		_seed_partner_shares(admin)
+		_seed_deals(admin, agent_one)
 		_seed_inbound_opt_in()
 		return _regression_summary()
 
@@ -1056,6 +1080,7 @@ def seed_regression_data():
 	_seed_inventory_import(admin)
 	_seed_shortlists(agent_one)
 	_seed_partner_shares(admin)
+	_seed_deals(admin, agent_one)
 	_seed_inbound_opt_in()
 	_seed_whatsapp(admin, agent_one)
 	_seed_report_definitions()
@@ -1431,6 +1456,93 @@ def _seed_mandates(agent_one):
 				signed, "Access to the flat", "Regression: the caretaker holds the keys."
 			)
 			mandates.add_dossier_file(signed, "Title deed", "regression_mandate_deed.pdf", pdf)
+
+
+def _seed_deals(admin, agent_one):
+	"""An approved deal on a unit and a pending deal on a property (SOS-P4-06), made by the Company Admin through
+	the deal API. A client that has a deal is left alone, so it is safe to run again."""
+	from sellos.crm import api as crm
+	from sellos.inventory import deals
+
+	project = frappe.db.get_value("Project", {"project_name": "Regression Heights"}, "name")
+	unit = frappe.db.get_value("Unit", {"project": project, "unit_number": "1201"}, "name")
+	prop = frappe.db.get_value("Property", {"title": "Regression Resale Flat"}, "name")
+	firm = frappe.db.get_value("Channel Partner Firm", {"firm_name": "Regression Firm Approved"}, "name")
+	if not (project and unit and prop and firm):
+		return
+	with _as_user(admin):
+		for title, target, price, commission, splits in (
+			(
+				"One",
+				{"unit": unit},
+				10000000,
+				200000,
+				[
+					{"party_type": "Agent", "agent": agent_one, "percent": 50},
+					{"party_type": "Channel Partner", "partner_firm": firm, "percent": 20},
+					{"party_type": "Company", "percent": 30},
+				],
+			),
+			(
+				"Two",
+				{"property": prop},
+				8200000,
+				123000,
+				[
+					{"party_type": "Agent", "agent": agent_one, "percent": 40},
+					{"party_type": "Company", "percent": 60},
+				],
+			),
+		):
+			name = f"{REGRESSION_PREFIX}Deal Buyer {title}"
+			client = (
+				frappe.db.get_value("Client", {"client_name": name}, "name")
+				or crm.save_client(values={"client_name": name, "client_type": "Buyer"})["name"]
+			)
+			if frappe.db.exists("Deal", {"client": client}):
+				continue
+			made = deals.save_deal(
+				{
+					"client": client,
+					**target,
+					"price": price,
+					"commission_amount": commission,
+					"splits": splits,
+				}
+			)["name"]
+			if title == "One":
+				deals.approve_splits(made)
+
+
+def make_gate_deal():
+	"""A client, a property, an approved channel partner firm and the test agent for the deal spec (tests only,
+	SOS-P4-06). The client and the property are named "Gate Deal ...", so remove_seeded_leads takes them and the
+	deals the spec records away. Returns their labels."""
+	from sellos.crm import api as crm
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	firm = seed_gate_partner_firm("approved")["name"]
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		client = crm.save_client(
+			values={"client_name": f"Gate Deal {tag}", "client_type": "Buyer", "phone": phones.in_mobile(145)}
+		)
+		prop = frappe.get_doc(
+			{
+				"doctype": "Property",
+				"title": f"Gate Deal Flat {tag}",
+				"property_type": "Apartment",
+				"city": "Pune",
+				"carpet_area": 500,
+			}
+		).insert()
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {
+		"client": client["client_name"],
+		"property": prop.title,
+		"agent": frappe.db.get_value("User", TEST_USERS["agent"]["email"], "full_name"),
+		"firm": frappe.db.get_value("Channel Partner Firm", firm, "firm_name"),
+	}
 
 
 def make_gate_seller():

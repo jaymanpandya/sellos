@@ -368,6 +368,12 @@ SAMPLE_CALLS = {
 	},
 	"sellos.inventory.mandates.open_dossier": {"name": "{spare_mandate}"},
 	"sellos.inventory.mandates.set_mandate_archived": {"name": "{spare_mandate}"},
+	# SOS-P4-06: one pending deal. In the matrix's order it is corrected, approved, reopened and archived.
+	"sellos.inventory.deals.deal_overview": {},
+	"sellos.inventory.deals.save_deal": {"name": "{spare_deal}", "values": {"commission_amount": 1000}},
+	"sellos.inventory.deals.approve_splits": {"name": "{spare_deal}"},
+	"sellos.inventory.deals.reopen_splits": {"name": "{spare_deal}"},
+	"sellos.inventory.deals.set_deal_archived": {"name": "{spare_deal}"},
 	# SOS-P7-08
 	"sellos.inventory.matching.matches_for_lead": {"lead": "{lead}"},
 	"sellos.inventory.matching.leads_for_unit": {"unit": "{spare_unit}"},
@@ -772,6 +778,16 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"status": "Draft",
 			}
 		).insert()
+		# SOS-P4-06: a pending deal of the seller's client, for a property of its own, the whole split the company's.
+		spare_deal = frappe.get_doc(
+			{
+				"doctype": "Deal",
+				"client": seller.name,
+				"property": spare_property.name,
+				"price": 5000000,
+				"splits": [{"party_type": "Company", "percent": 100}],
+			}
+		).insert()
 		before = set(Path(frappe.get_site_path("public", "files")).glob("media-*"))
 		self.addCleanup(self._remove_media_files, before)
 		self.addCleanup(self._remove_agreement_files)
@@ -897,6 +913,7 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_property": spare_property.name,
 			"spare_listing": spare_listing.name,
 			"spare_mandate": spare_mandate.name,
+			"spare_deal": spare_deal.name,
 			"media_listing": media_listing.name,
 			"order_listing": order_listing.name,
 			"media_asset": media_assets[0].name,

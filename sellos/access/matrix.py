@@ -217,6 +217,12 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.mandates.add_dossier_file": _INVENTORY_EDITORS,
 	"sellos.inventory.mandates.open_dossier": _INVENTORY_EDITORS,
 	"sellos.inventory.mandates.set_mandate_archived": _ADMIN_ONLY,
+	# SOS-P4-06: deals and their commission splits. A Company Admin only.
+	"sellos.inventory.deals.deal_overview": _ADMIN_ONLY,
+	"sellos.inventory.deals.save_deal": _ADMIN_ONLY,
+	"sellos.inventory.deals.approve_splits": _ADMIN_ONLY,
+	"sellos.inventory.deals.reopen_splits": _ADMIN_ONLY,
+	"sellos.inventory.deals.set_deal_archived": _ADMIN_ONLY,
 	# SOS-P7-08: match buyers to inventory, and the weights of the score.
 	"sellos.inventory.matching.matches_for_lead": _INVENTORY_READERS,
 	"sellos.inventory.matching.leads_for_unit": _INVENTORY_READERS,

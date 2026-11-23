@@ -26,6 +26,7 @@ export const PERSONAS = [
 			{ key: "leads", label: "Leads", to: "/crm/leads", area: "crm" },
 			{ key: "sellers", label: "Sellers", to: "/crm/sellers", area: "crm" },
 			{ key: "mandates", label: "Mandates", to: "/crm/mandates", area: "crm" },
+			{ key: "deals", label: "Deals", to: "/crm/deals", area: "crm" },
 			{ key: "queue", label: "Call queue", to: "/crm/queue", area: "crm" },
 			{ key: "whatsapp", label: "WhatsApp", to: "/crm/whatsapp", area: "crm" },
 			{ key: "visits", label: "Site visits", to: "/crm/visits", area: "crm" },
