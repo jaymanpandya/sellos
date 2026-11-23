@@ -61,7 +61,7 @@
    "fieldname": "source_doctype",
    "fieldtype": "Select",
    "label": "Records",
-   "options": "Lead\nCall Log\nSite Visit\nLead Task",
+   "options": "Lead\nCall Log\nSite Visit\nLead Task\nDeal\nCommission Payout\nListing\nMandate",
    "reqd": 1,
    "in_list_view": 1
   },

@@ -102,6 +102,130 @@ DEFAULT_DEFINITIONS = (
 		"visible_to_sales_manager": 1,
 		"visible_to_agent": 0,
 	},
+	{
+		"report_key": "my-pipeline",
+		"title": "My pipeline by stage",
+		"description": "New leads in the dates by the stage they are in now, with the budget they add up to.",
+		"source_doctype": "Lead",
+		"group_by": "stage",
+		"measure": "Sum",
+		"measure_field": "budget_to",
+		"visible_to_sales_manager": 1,
+		"visible_to_agent": 1,
+	},
+	{
+		"report_key": "calls-by-outcome",
+		"title": "Calls by outcome",
+		"description": "Calls started in the dates, by the outcome the agent recorded.",
+		"source_doctype": "Call Log",
+		"group_by": "outcome",
+		"visible_to_sales_manager": 1,
+		"visible_to_agent": 1,
+	},
+	{
+		"report_key": "leads-by-agent",
+		"title": "Leads by agent",
+		"description": "New leads in the dates, by the agent who holds them.",
+		"source_doctype": "Lead",
+		"group_by": "assigned_to",
+		"visible_to_sales_manager": 1,
+		"visible_to_agent": 0,
+	},
+	{
+		"report_key": "calls-by-state",
+		"title": "Calls by state (connect rate)",
+		"description": "Calls started in the dates, by how the provider says they ended.",
+		"source_doctype": "Call Log",
+		"group_by": "state",
+		"visible_to_sales_manager": 0,
+		"visible_to_agent": 0,
+	},
+	{
+		"report_key": "call-cost-by-agent",
+		"title": "Call cost by agent",
+		"description": "What the calls started in the dates cost, by agent.",
+		"source_doctype": "Call Log",
+		"group_by": "agent",
+		"measure": "Sum",
+		"measure_field": "cost_rupees",
+		"visible_to_sales_manager": 0,
+		"visible_to_agent": 0,
+	},
+	{
+		"report_key": "talk-time-by-agent",
+		"title": "Talk time by agent",
+		"description": "Seconds of talk in the calls started in the dates, by agent.",
+		"source_doctype": "Call Log",
+		"group_by": "agent",
+		"measure": "Sum",
+		"measure_field": "duration",
+		"visible_to_sales_manager": 0,
+		"visible_to_agent": 0,
+	},
+	{
+		"report_key": "deals-by-approval",
+		"title": "Deal pipeline by approval",
+		"description": "Deals dated in the dates, by whether a Company Admin has approved the split.",
+		"source_doctype": "Deal",
+		"group_by": "approval_status",
+		"measure": "Sum",
+		"measure_field": "price",
+		"visible_to_sales_manager": 0,
+		"visible_to_agent": 0,
+	},
+	{
+		"report_key": "commission-by-approval",
+		"title": "Deal commission by approval",
+		"description": "The commission on deals dated in the dates, by whether the split is approved.",
+		"source_doctype": "Deal",
+		"group_by": "approval_status",
+		"measure": "Sum",
+		"measure_field": "commission_amount",
+		"visible_to_sales_manager": 0,
+		"visible_to_agent": 0,
+	},
+	{
+		"report_key": "deals-by-agent",
+		"title": "Deals by agent",
+		"description": "Deals dated in the dates, by the agent who booked them, with their value.",
+		"source_doctype": "Deal",
+		"group_by": "booked_by",
+		"measure": "Sum",
+		"measure_field": "price",
+		"visible_to_sales_manager": 0,
+		"visible_to_agent": 0,
+	},
+	{
+		"report_key": "payouts-by-status",
+		"title": "Partner commission payouts by status",
+		"description": "Payouts for bookings in the dates, by status, with the commission due.",
+		"source_doctype": "Commission Payout",
+		"group_by": "status",
+		"measure": "Sum",
+		"measure_field": "commission_due",
+		"visible_to_sales_manager": 0,
+		"visible_to_agent": 0,
+	},
+	{
+		"report_key": "listings-by-type",
+		"title": "Listings by type",
+		"description": "Listings made in the dates, by type, with their asking prices.",
+		"source_doctype": "Listing",
+		"group_by": "listing_type",
+		"measure": "Sum",
+		"measure_field": "asking_price",
+		"visible_to_sales_manager": 0,
+		"visible_to_agent": 0,
+	},
+	{
+		"report_key": "mandates-by-status",
+		"title": "Mandates by status",
+		"description": "Mandates that start in the dates, by status.",
+		"source_doctype": "Mandate",
+		"group_by": "status",
+		"visible_to_sales_manager": 0,
+		"visible_to_agent": 0,
+	},
 )
 
 
@@ -139,7 +263,11 @@ def validate_definition(doc):
 		frappe.throw(_("The key may hold only lower case letters, digits and hyphens."))
 	source = SOURCES.get(doc.source_doctype)
 	if not source:
-		frappe.throw(_("The records must be leads, calls, site visits or follow ups."))
+		frappe.throw(
+			_(
+				"The records must be leads, calls, site visits, follow ups, deals, payouts, listings or mandates."
+			)
+		)
 	if doc.group_by and doc.group_by not in source["groups"]:
 		frappe.throw(_("{0} cannot be grouped by {1}.").format(doc.source_doctype, doc.group_by))
 	if doc.measure == "Sum":

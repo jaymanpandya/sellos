@@ -459,9 +459,18 @@ class TestRoleScope(ReportCase):
 			finally:
 				frappe.set_user("Administrator")
 
-		self.assertEqual(keys("agent"), {"leads-by-stage", "site-visits-by-status", "follow-ups-by-status"})
+		self.assertEqual(
+			keys("agent"),
+			{
+				"leads-by-stage",
+				"site-visits-by-status",
+				"follow-ups-by-status",
+				"my-pipeline",
+				"calls-by-outcome",
+			},  # SOS-P5-02 added the last two
+		)
 		self.assertLess(keys("agent"), keys("sales_manager"))
-		self.assertEqual(keys("sales_manager"), keys("company_admin"))
+		self.assertLess(keys("sales_manager"), keys("company_admin"))  # SOS-P5-02: admin only reports
 		frappe.db.set_value("Report Definition", "leads-by-stage", "enabled", 0)
 		self.assertNotIn("leads-by-stage", keys("sales_manager"))
 		self.assertIn("leads-by-stage", keys("company_admin"))  # the Company Admin sees it to switch it on

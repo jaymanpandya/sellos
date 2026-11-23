@@ -77,6 +77,13 @@ export const PERSONAS = [
 			},
 			{ key: "assignment", label: "Assignment", to: "/company/assignment", area: "company" },
 			{ key: "call-reports", label: "Call reports", to: "/reports/calls", area: "reports" },
+			// SOS-P5-02: funnel, source performance, agent productivity and ageing.
+			{
+				key: "business-reports",
+				label: "Business reports",
+				to: "/reports/business",
+				area: "reports",
+			},
 			// SOS-P5-01: the report engine, for every role that works leads.
 			{ key: "reports", label: "Reports", to: "/reports", area: "insights" },
 		],

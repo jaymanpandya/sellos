@@ -24,6 +24,7 @@ const TeamsPage = () => import("./pages/TeamsPage.vue");
 const AssignmentRulesPage = () => import("./pages/AssignmentRulesPage.vue");
 const TeamReportPage = () => import("./pages/TeamReportPage.vue");
 const CallReportsPage = () => import("./pages/CallReportsPage.vue");
+const BusinessReportsPage = () => import("./pages/BusinessReportsPage.vue");
 const ReportsPage = () => import("./pages/ReportsPage.vue");
 const CallListsPage = () => import("./pages/CallListsPage.vue");
 const PartnerFirmsPage = () => import("./pages/PartnerFirmsPage.vue");
@@ -260,6 +261,13 @@ export function createAppRouter() {
 				name: "reports",
 				component: ReportsPage,
 				meta: { area: "insights", title: "Reports" },
+			},
+			{
+				// SOS-P5-02: the Company Admin's funnel, source, productivity and ageing reports.
+				path: "/reports/business",
+				name: "business-reports",
+				component: BusinessReportsPage,
+				meta: { area: "reports", title: "Business reports" },
 			},
 			{
 				path: "/reports/calls",

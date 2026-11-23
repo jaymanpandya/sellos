@@ -78,8 +78,10 @@ context("SOS-P5-01: the report engine", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos/reports");
 		cy.optionTexts("reports-report").should("deep.eq", [
+			"Calls by outcome",
 			"Follow ups by status",
 			"Leads by stage",
+			"My pipeline by stage",
 			"Site visits by status",
 		]);
 		cy.getByTestId("reports-report").select("Leads by stage");

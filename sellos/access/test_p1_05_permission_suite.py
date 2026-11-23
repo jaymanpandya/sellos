@@ -454,6 +454,10 @@ SAMPLE_CALLS = {
 	"sellos.inventory.listings_feed.save_listings_webhook": {},
 	"sellos.reports.calls.call_report": {},
 	"sellos.reports.calls.call_report_calls": {},
+	"sellos.reports.standard.lead_funnel": {},  # SOS-P5-02
+	"sellos.reports.standard.source_performance": {},
+	"sellos.reports.standard.agent_productivity": {},
+	"sellos.reports.standard.ageing_report": {},
 	"sellos.reports.ai_comparison.ai_comparison": {},  # SOS-P5-09
 	"sellos.reports.ai_comparison.ai_comparison_calls": {"group": "ai"},
 	# SOS-P5-01: the default reports are made in setUp.

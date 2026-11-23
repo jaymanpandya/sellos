@@ -244,8 +244,17 @@ function show(unit, value) {
 	return Number(value || 0).toLocaleString("en-IN");
 }
 
+const RUPEE_FIELDS = [
+	"cost_rupees",
+	"price",
+	"commission_amount",
+	"commission_due",
+	"asking_price",
+	"budget_to",
+];
+
 function cell(field, value) {
-	if (field === "cost_rupees") return rupees(value);
+	if (RUPEE_FIELDS.includes(field)) return rupees(value);
 	if (field === "duration") return talkTime(value);
 	if (typeof value === "string" && /^\d{4}-\d\d-\d\d \d\d:\d\d/.test(value))
 		return value.slice(0, 16);

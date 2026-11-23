@@ -2121,13 +2121,30 @@ def report_engine_figures(start, end):
 		and (owner = %s or assigned_to = %s) group by stage""",
 		(start, end, agent, agent),
 	)
-	return {"all": {k: int(v) for k, v in everyone}, "agent": {k: int(v) for k, v in own}}
+	# SOS-P5-02: the buyer leads by source and the gate agent's leads (the Business reports read the buyer funnel).
+	sources = frappe.db.sql(
+		"""select source, count(*) from `tabLead` where archived = 0 and pipeline = 'Buyer'
+		and date(creation) between %s and %s group by source""",
+		(start, end),
+	)
+	mine = frappe.db.sql(
+		"""select count(*) from `tabLead` where archived = 0 and pipeline = 'Buyer' and assigned_to = %s
+		and date(creation) between %s and %s""",
+		(agent, start, end),
+	)[0][0]
+	return {
+		"all": {k: int(v) for k, v in everyone},
+		"agent": {k: int(v) for k, v in own},
+		"buyer_sources": {k or "": int(v) for k, v in sources},
+		"agent_buyer_leads": int(mine),
+	}
 
 
 def seed_report_engine():
 	"""What the Reports spec needs (SOS-P5-01): the standard report definitions and four leads of the gate agent
 	made through sellos.crm.api (two Website, two Referral, moved by the agent to Contacted and Qualified), and
-	the last 30 days with what the Lead table holds for them. remove_report_engine undoes it."""
+	the last 30 days with what the Lead table holds for them (SOS-P5-02: also the buyer leads by source and
+	the gate agent's buyer leads, which the Business reports spec checks). remove_report_engine undoes it."""
 	from sellos.crm import api as crm
 	from sellos.reports.engine import ensure_default_definitions
 
