@@ -49,7 +49,12 @@ class TestPartyNameVisibility(PartyCase):
 
 	def test_no_role_may_read_a_party_name_through_the_generic_paths(self):
 		meta = frappe.get_meta(PARTY)
-		self.assertEqual([p.role for p in meta.permissions], [])
+		# The one System Manager row grants no right: without it a newer Frappe adds a System Manager row
+		# with write, delete and export.
+		self.assertLessEqual({p.role for p in meta.permissions}, {"System Manager"})
+		self.assertFalse(
+			any(p.read or p.write or p.create or p.delete or p.export or p.share for p in meta.permissions)
+		)
 		for key in TEST_USERS:
 			frappe.set_user(TEST_USERS[key]["email"])
 			self.assertFalse(frappe.has_permission(PARTY, "read"), key)

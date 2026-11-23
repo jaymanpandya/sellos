@@ -504,6 +504,8 @@ SAMPLE_CALLS = {
 	"sellos.telephony.dnd.do_not_call_summary": {},
 	# SOS-P3-02: the raw transaction table, read on the control site only.
 	"sellos.intel.api.list_raw_transactions": {},
+	# SOS-P3-12: the Index II names of one registration record, a Company Admin only.
+	"sellos.intel.party_names.get_party_names": {"source_record_id": "P105-none"},
 	"sellos.access.field_history.getdoc": {"doctype": "Client", "name": "{client}"},
 	"sellos.access.field_history.get_docinfo": {"doctype": "Client", "name": "{client}"},
 	# SOS-P6-11: the fake WhatsApp provider is on and connected, the lead's conversation has a customer

@@ -49,7 +49,9 @@
  "module": "SellOS",
  "name": "Party Name",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {"role": "System Manager"}
+ ],
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []
