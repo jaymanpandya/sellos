@@ -131,6 +131,13 @@ export const PERSONAS = [
 			{ key: "leads", label: "Leads", to: "/partner/leads", area: "partner" },
 			// SOS-P5-03: the partner's own leads, deals and commission statements.
 			{ key: "results", label: "Your results", to: "/partner/reports", area: "partner" },
+			// SOS-P5-06: the partner's own deals, earnings so far, potential earnings and QR code.
+			{
+				key: "earnings",
+				label: "Deals and earnings",
+				to: "/partner/earnings",
+				area: "partner",
+			},
 			// SOS-P7-04: the partner's own payouts and statement.
 			{
 				key: "commission",

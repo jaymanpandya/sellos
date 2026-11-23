@@ -232,6 +232,8 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.commissions.move_payout": _ADMIN_ONLY,
 	"sellos.inventory.commissions.export_partner_statement": _ADMIN_ONLY,
 	"sellos.inventory.commissions.partner_commission": _PARTNER_ONLY,
+	# SOS-P5-06: the partner's own deals, earnings and QR code.
+	"sellos.crm.partner_views.partner_overview": _PARTNER_ONLY,
 	# SOS-P7-08: match buyers to inventory, and the weights of the score.
 	"sellos.inventory.matching.matches_for_lead": _INVENTORY_READERS,
 	"sellos.inventory.matching.leads_for_unit": _INVENTORY_READERS,

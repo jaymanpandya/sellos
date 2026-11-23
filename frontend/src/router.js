@@ -41,6 +41,7 @@ const TenantsPage = () => import("./pages/TenantsPage.vue");
 const PartnerReportsPage = () => import("./pages/PartnerReportsPage.vue");
 const CommissionPage = () => import("./pages/CommissionPage.vue");
 const PartnerCommissionPage = () => import("./pages/PartnerCommissionPage.vue");
+const PartnerEarningsPage = () => import("./pages/PartnerEarningsPage.vue");
 const PlatformReportsPage = () => import("./pages/PlatformReportsPage.vue");
 const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
 const ClientShortlistsPage = () => import("./pages/ClientShortlistsPage.vue");
@@ -291,6 +292,13 @@ export function createAppRouter() {
 				name: "partner-reports",
 				component: PartnerReportsPage,
 				meta: { area: "partner", title: "Your results" },
+			},
+			{
+				// SOS-P5-06: a partner's own deals, earnings and QR code.
+				path: "/partner/earnings",
+				name: "partner-earnings",
+				component: PartnerEarningsPage,
+				meta: { area: "partner", title: "Your deals and earnings" },
 			},
 			{
 				// SOS-P7-04: a partner's own commission statement.

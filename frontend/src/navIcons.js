@@ -21,6 +21,7 @@ export const ICONS = {
 	"platform-reports": "lucide-chart-column",
 	results: "lucide-chart-column",
 	commission: "lucide-badge-indian-rupee",
+	earnings: "lucide-wallet",
 	shares: "lucide-share-2",
 	shared: "lucide-building-2",
 };

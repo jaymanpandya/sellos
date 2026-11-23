@@ -389,6 +389,7 @@ SAMPLE_CALLS = {
 	"sellos.inventory.commissions.move_payout": {"name": "{spare_payout}", "to": "Approved"},
 	"sellos.inventory.commissions.export_partner_statement": {"firm": "{spare_firm}"},
 	"sellos.inventory.commissions.partner_commission": {},
+	"sellos.crm.partner_views.partner_overview": {},
 	# SOS-P7-08
 	"sellos.inventory.matching.matches_for_lead": {"lead": "{lead}"},
 	"sellos.inventory.matching.leads_for_unit": {"unit": "{spare_unit}"},
