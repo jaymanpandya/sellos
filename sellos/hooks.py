@@ -231,6 +231,7 @@ scheduler_events = {
 		"sellos.reports.engine.refresh_all_summaries",  # SOS-P5-01
 	],
 	"hourly": [
+		"sellos.reports.exports.send_due_schedules",  # SOS-P5-04
 		"sellos.crm.consent.expire_due_records",
 		"sellos.crm.notifications.notify_site_visits",  # SOS-P1-23
 		"sellos.access.partner_registrations.expire_registrations",  # SOS-P7-02

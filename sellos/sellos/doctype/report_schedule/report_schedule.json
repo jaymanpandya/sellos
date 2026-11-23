@@ -1,0 +1,169 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:RSCH-{#####}",
+ "creation": "2026-11-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "report",
+  "enabled",
+  "section_when",
+  "frequency",
+  "weekday",
+  "day_of_month",
+  "send_hour",
+  "section_what",
+  "range_days",
+  "agent",
+  "file_format",
+  "section_who",
+  "recipients",
+  "section_state",
+  "next_run",
+  "last_sent_on",
+  "last_result"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "report",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Report",
+   "options": "Report Definition",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "section_when",
+   "fieldtype": "Section Break",
+   "label": "When"
+  },
+  {
+   "default": "Weekly",
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "How often",
+   "options": "Daily\nWeekly\nMonthly",
+   "reqd": 1
+  },
+  {
+   "default": "Monday",
+   "depends_on": "eval:doc.frequency=='Weekly'",
+   "fieldname": "weekday",
+   "fieldtype": "Select",
+   "label": "Day of the week",
+   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday"
+  },
+  {
+   "default": "1",
+   "depends_on": "eval:doc.frequency=='Monthly'",
+   "description": "1 to 28.",
+   "fieldname": "day_of_month",
+   "fieldtype": "Int",
+   "label": "Day of the month"
+  },
+  {
+   "default": "8",
+   "description": "The hour of the day, 0 to 23, in the site's time zone.",
+   "fieldname": "send_hour",
+   "fieldtype": "Int",
+   "label": "Hour"
+  },
+  {
+   "fieldname": "section_what",
+   "fieldtype": "Section Break",
+   "label": "What"
+  },
+  {
+   "default": "30",
+   "description": "The report covers this many days, ending yesterday.",
+   "fieldname": "range_days",
+   "fieldtype": "Int",
+   "label": "Days covered"
+  },
+  {
+   "fieldname": "agent",
+   "fieldtype": "Link",
+   "label": "Agent",
+   "options": "User"
+  },
+  {
+   "default": "PDF",
+   "fieldname": "file_format",
+   "fieldtype": "Select",
+   "label": "Attachment",
+   "options": "CSV\nPDF"
+  },
+  {
+   "fieldname": "section_who",
+   "fieldtype": "Section Break",
+   "label": "Who gets it"
+  },
+  {
+   "fieldname": "recipients",
+   "fieldtype": "Table",
+   "label": "People",
+   "options": "Report Schedule Recipient"
+  },
+  {
+   "fieldname": "section_state",
+   "fieldtype": "Section Break",
+   "label": "State"
+  },
+  {
+   "fieldname": "next_run",
+   "fieldtype": "Datetime",
+   "label": "Next delivery",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_sent_on",
+   "fieldtype": "Datetime",
+   "label": "Last delivery",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_result",
+   "fieldtype": "Small Text",
+   "label": "Last result",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Report Schedule",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

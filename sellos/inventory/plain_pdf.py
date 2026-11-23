@@ -219,3 +219,45 @@ def build_shortlist_pdf(view, inr) -> bytes:
 		state["y"] -= 6
 	line("Prices are in rupees and may change. A home marked as no longer available is not on offer.", 8)
 	return _assemble([b"\n".join(p.ops) for p in pages])
+
+
+def build_table_pdf(title, subtitle, columns, rows) -> bytes:
+	"""SOS-P5-04: a report result as a plain PDF, for a machine without the page layout program. A title, a line
+	under it, then the columns and rows as text; the first column is on the left and the others are right
+	aligned. Every cell is text already."""
+	left, right = MARGIN, PAGE_W - MARGIN
+	pages = [_Page()]
+	state = {"y": PAGE_H - MARGIN}
+
+	def room(space):
+		if state["y"] - space < MARGIN:
+			pages.append(_Page())
+			state["y"] = PAGE_H - MARGIN
+
+	def line(text, size=10, bold=False, gap=4):
+		for part in _wrap(text, size, right - left) or [""]:
+			room(size + gap)
+			state["y"] -= size
+			pages[-1].text(left, state["y"], part, size, bold)
+			state["y"] -= gap
+
+	line(title, 16, True, 4)
+	line(subtitle, 9, gap=10)
+	count = max(len(columns), 1)
+	first = (right - left) * (0.46 if count > 1 else 1)
+	step = (right - left - first) / max(count - 1, 1)
+
+	def table_row(cells, bold=False):
+		room(16)
+		state["y"] -= 12
+		for at, cell in enumerate(cells):
+			if at == 0:
+				pages[-1].text(left, state["y"], str(cell)[:60], 10, bold)
+			else:
+				pages[-1].text(left + first + step * at, state["y"], str(cell), 10, bold, right=True)
+		state["y"] -= 4
+
+	table_row(columns, True)
+	for cells in rows:
+		table_row(cells)
+	return _assemble([b"\n".join(p.ops) for p in pages])

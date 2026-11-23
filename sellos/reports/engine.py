@@ -369,8 +369,9 @@ def _filters(defn, start, end, group=_ALL, agent=None):
 	return filters
 
 
-def _fetch(defn, start, end, group=_ALL, agent=None, columns=None, ignore_permissions=False):
-	"""The records of the report between the two days, read as the current user (so with that user's scope)."""
+def _fetch(defn, start, end, group=_ALL, agent=None, columns=None, ignore_permissions=False, user=None):
+	"""The records of the report between the two days, read as the current user (so with that user's scope), or
+	as `user` (SOS-P5-04: a scheduled email is read as its recipient)."""
 	source = SOURCES[defn.source_doctype]
 	fields = {"name", source["date_field"]}
 	fields.update(columns or ())
@@ -385,6 +386,7 @@ def _fetch(defn, start, end, group=_ALL, agent=None, columns=None, ignore_permis
 		order_by=f"{source['date_field']} desc, name desc",
 		limit_page_length=0,
 		ignore_permissions=ignore_permissions,
+		user=user,
 	)
 
 
@@ -411,12 +413,12 @@ def _people() -> dict:
 	return {u.name: u.full_name for u in frappe.get_all("User", fields=["name", "full_name"])}
 
 
-def _figures(defn, start, end, agent) -> dict:
+def _figures(defn, start, end, agent, user=None) -> dict:
 	"""{group: [records, total]} for the dates. A Company Admin's days that the summary table holds are added
 	up from it and the rest are read from the records."""
 	figures = defaultdict(lambda: [0, Decimal(0)])
 	live_start = start
-	wide = scope_for(frappe.get_roles()) == "all"
+	wide = scope_for(frappe.get_roles(user)) == "all"
 	if wide and agent is None and defn.summarised_to:
 		stored_end = min(end, getdate(defn.summarised_to))
 		if start <= stored_end:
@@ -430,7 +432,9 @@ def _figures(defn, start, end, agent) -> dict:
 				figures[row.group_value or ""][1] += Decimal(str(row.total or 0))
 			live_start = add_days(stored_end, 1)
 	if live_start <= end:
-		for (_day, group), (count, total) in _fold(defn, _fetch(defn, live_start, end, agent=agent)).items():
+		for (_day, group), (count, total) in _fold(
+			defn, _fetch(defn, live_start, end, agent=agent, user=user)
+		).items():
 			figures[group][0] += count
 			figures[group][1] += total
 	return figures
@@ -450,9 +454,10 @@ def _total(defn, value: Decimal):
 	return float(value.quantize(Decimal("0.01")))
 
 
-def run_report_figures(defn, start, end, agent=None) -> dict:
+def run_report_figures(defn, start, end, agent=None, user=None) -> dict:
+	"""The figures, read with the scope of the signed in user, or of `user` (a scheduled email's recipient)."""
 	people = _people()
-	figures = _figures(defn, start, end, agent)
+	figures = _figures(defn, start, end, agent, user)
 	rows = [
 		{"group": group, "label": _label(defn, group, people), "count": count, "total": _total(defn, total)}
 		for group, (count, total) in figures.items()

@@ -1,0 +1,106 @@
+{
+ "actions": [],
+ "autoname": "format:REXP-{#####}",
+ "creation": "2026-11-23 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "report",
+  "file_format",
+  "via",
+  "schedule",
+  "column_break_1",
+  "exported_by",
+  "exported_on",
+  "from_date",
+  "to_date",
+  "row_count"
+ ],
+ "fields": [
+  {
+   "fieldname": "report",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Report",
+   "options": "Report Definition",
+   "read_only": 1
+  },
+  {
+   "fieldname": "file_format",
+   "fieldtype": "Select",
+   "label": "Format",
+   "options": "CSV\nPDF",
+   "read_only": 1
+  },
+  {
+   "fieldname": "via",
+   "fieldtype": "Select",
+   "label": "How",
+   "options": "Screen\nEmail",
+   "read_only": 1
+  },
+  {
+   "fieldname": "schedule",
+   "fieldtype": "Link",
+   "label": "Schedule",
+   "options": "Report Schedule",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "exported_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Whose data",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "exported_on",
+   "fieldtype": "Datetime",
+   "label": "Exported on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From",
+   "read_only": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To",
+   "read_only": 1
+  },
+  {
+   "fieldname": "row_count",
+   "fieldtype": "Int",
+   "label": "Rows",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Report Export Log",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "report",
+ "track_changes": 1
+}

@@ -468,6 +468,20 @@ SAMPLE_CALLS = {
 	"sellos.reports.engine.save_report_definition": {
 		"values": {"report_key": "p501-matrix", "title": "P501 Matrix", "source_doctype": "Lead"}
 	},
+	# SOS-P5-04: saved views, export and schedules; the spare view and schedule are made in setUp.
+	"sellos.reports.exports.list_report_views": {},
+	"sellos.reports.exports.save_report_view": {
+		"values": {"title": "P504 Matrix View", "report": "leads-by-stage", "range_days": 7}
+	},
+	"sellos.reports.exports.delete_report_view": {"view": "{spare_view}"},
+	"sellos.reports.exports.export_report": {"report": "leads-by-stage", "format": "csv"},
+	"sellos.reports.exports.list_report_schedules": {},
+	"sellos.reports.exports.save_report_schedule": {
+		"schedule": "{spare_schedule}",
+		"values": {"range_days": 14},
+	},
+	"sellos.reports.exports.delete_report_schedule": {"schedule": "{spare_schedule_two}"},
+	"sellos.reports.exports.send_report_schedule_now": {"schedule": "{spare_schedule}"},
 	# SOS-P2-01: blank values keep what is saved, so the Company Admin's call changes nothing.
 	"sellos.telephony.settings.get_telephony_settings": {},
 	"sellos.telephony.settings.save_telephony_settings": {},
@@ -949,6 +963,20 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			}
 		).insert(ignore_permissions=True)
 		ensure_default_definitions()  # SOS-P5-01
+		spare_view = frappe.get_doc(
+			{"doctype": "Saved Report View", "title": "P504 Spare View", "report": "leads-by-stage"}
+		).insert(ignore_permissions=True)
+		spare_schedules = [
+			frappe.get_doc(
+				{
+					"doctype": "Report Schedule",
+					"title": f"P504 Spare Schedule {n}",
+					"report": "leads-by-stage",
+					"recipients": [{"user": TEST_USERS["company_admin"]["email"]}],
+				}
+			).insert(ignore_permissions=True)
+			for n in (1, 2)
+		]
 		self.names = {
 			"wa_conversation": wa_conversation.name,
 			"call_log": call_row.name,
@@ -968,6 +996,9 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_registration": spare_registrations[0],
 			"spare_registration_two": spare_registrations[1],
 			"spare_rule": spare_rule.name,
+			"spare_view": spare_view.name,
+			"spare_schedule": spare_schedules[0].name,
+			"spare_schedule_two": spare_schedules[1].name,
 			"spare_project": spare_project.name,
 			"spare_share": spare_share.name,
 			"spare_unit": spare_unit.name,

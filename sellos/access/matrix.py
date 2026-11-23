@@ -284,6 +284,15 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.reports.engine.report_records": _LOGGERS,
 	"sellos.reports.engine.refresh_report": _ADMIN_ONLY,
 	"sellos.reports.engine.save_report_definition": _ADMIN_ONLY,
+	# SOS-P5-04: saved views for everyone who reads reports; export and schedules for a Company Admin only.
+	"sellos.reports.exports.list_report_views": _LOGGERS,
+	"sellos.reports.exports.save_report_view": _LOGGERS,
+	"sellos.reports.exports.delete_report_view": _LOGGERS,
+	"sellos.reports.exports.export_report": _ADMIN_ONLY,
+	"sellos.reports.exports.list_report_schedules": _ADMIN_ONLY,
+	"sellos.reports.exports.save_report_schedule": _ADMIN_ONLY,
+	"sellos.reports.exports.delete_report_schedule": _ADMIN_ONLY,
+	"sellos.reports.exports.send_report_schedule_now": _ADMIN_ONLY,
 	# SOS-P5-03: a partner reads their own report, and the Platform Admin the totals per company.
 	"sellos.reports.partner.partner_report": _PARTNER_ONLY,
 	"sellos.reports.platform.list_platform_reports": frozenset({PLATFORM_ADMIN}),

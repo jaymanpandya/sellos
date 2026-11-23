@@ -920,6 +920,11 @@ def seed_regression_data():
 	  spend), so Platform reports shows totals per company. Its revenue, churn and failed payment panels wait
 	  for billing.
 
+	* Saved views and schedules (SOS-P5-04): the view Regression Weekly leads (Leads by stage, the last 30 days,
+	  shared) made by the Company Admin through sellos.reports.exports.save_report_view, so the Agent opens it, and
+	  the schedule Regression Monday report (Leads by stage, weekly, the Company Admin, PDF) made through
+	  save_report_schedule. Neither sends anything: a schedule is sent by the hourly job or Send now.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -1095,6 +1100,7 @@ def seed_regression_data():
 	_seed_inbound_opt_in()
 	_seed_whatsapp(admin, agent_one)
 	_seed_report_definitions()
+	_seed_report_views(admin)
 
 	# bench execute is not a request, and the regression site is read by another process.
 	frappe.db.commit()  # nosemgrep
@@ -1106,6 +1112,36 @@ def _seed_report_definitions():
 	from sellos.reports.engine import ensure_default_definitions
 
 	ensure_default_definitions()
+
+
+def _seed_report_views(admin):
+	"""A shared saved view and a schedule (SOS-P5-04), made by the production functions as the Company Admin. Safe
+	to run again: ones that exist are left alone."""
+	from sellos.reports import exports
+
+	with _as_user(admin):
+		if not frappe.db.exists("Saved Report View", {"title": "Regression Weekly leads"}):
+			exports.save_report_view(
+				{
+					"title": "Regression Weekly leads",
+					"report": "leads-by-stage",
+					"range_days": 30,
+					"shared": 1,
+				}
+			)
+		if not frappe.db.exists("Report Schedule", {"title": "Regression Monday report"}):
+			exports.save_report_schedule(
+				{
+					"title": "Regression Monday report",
+					"report": "leads-by-stage",
+					"frequency": "Weekly",
+					"weekday": "Monday",
+					"send_hour": 8,
+					"range_days": 7,
+					"file_format": "PDF",
+					"recipients": [admin],
+				}
+			)
 
 
 def _seed_call_reports_regression():
@@ -2183,6 +2219,18 @@ def remove_report_engine():
 			"Report Definition", name, {"summarised_to": None, "last_refreshed": None}, update_modified=False
 		)
 	return remove_seeded_leads()
+
+
+def remove_report_exports():
+	"""Undo what the Reports spec of SOS-P5-04 made through the screen (tests only): the views and schedules named
+	Gate P504 and every export log. The app deletes no log, so this goes to the tables."""
+	frappe.db.delete("Report Export Log")
+	frappe.db.delete("Saved Report View", {"title": ["like", "Gate P504%"]})
+	for name in frappe.get_all("Report Schedule", filters={"title": ["like", "Gate P504%"]}, pluck="name"):
+		frappe.db.delete("Report Schedule Recipient", {"parent": name})
+		frappe.db.delete("Report Schedule", {"name": name})
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"removed": True}
 
 
 PORTAL_LEADS = (
