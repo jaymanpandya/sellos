@@ -1766,7 +1766,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Jan 1
 - **Story Points:** 5
 - **Dependencies:** SOS-P3-02
-- **Status:** Not Started
+- **Status:** Blocked
 
 ### SOS-P3-05: Build the matcher
 - **Epic:** Market intelligence
