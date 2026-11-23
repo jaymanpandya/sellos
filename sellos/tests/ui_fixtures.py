@@ -4647,3 +4647,27 @@ def sign_gate_client_mandate(mandate, pdf):
 		mandates.sign_mandate(mandate, "gate_views_signed.pdf", pdf)
 	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
 	return {"mandate": mandate, "signed": True}
+
+
+def seed_party_names():
+	"""SOS-P3-12: store the buyer and seller names of one registration record through the production API.
+
+	Return {"record": source_record_id, "buyer": name, "seller": name}. Committed, because the browser reads
+	it from another process. `remove_party_names` deletes it.
+	"""
+	from sellos.intel import party_names
+
+	suffix = frappe.generate_hash(length=6)
+	record = f"CY-P312-{suffix}"
+	buyer, seller = f"Cypress Buyer {suffix}", f"Cypress Seller {suffix}"
+	party_names.store_party_names(record, buyer, seller)
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return {"record": record, "buyer": buyer, "seller": seller}
+
+
+def remove_party_names():
+	"""SOS-P3-12: delete what `seed_party_names` made, and its access log rows."""
+	frappe.db.delete("Party Name", {"source_record_id": ["like", "CY-P312-%"]})
+	frappe.db.delete("Party Name Access Log", {"source_record_id": ["like", "CY-P312-%"]})
+	frappe.db.commit()  # nosemgrep
+	return {"removed": True}

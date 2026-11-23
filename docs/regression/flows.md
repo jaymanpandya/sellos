@@ -428,3 +428,9 @@ FLOW SOS-P5-04-5 | company_admin | /sellos/reports | Choose Call cost by agent a
 FLOW SOS-P5-05-1 | client | /sellos/client/overview | Sign in as the client user and open Your dealings in the menu. | The page shows Your sale: Regression Seller One Flat with the mandate badge Draft, the line "The Dossier is available once the mandate is signed" and no Dossier title, and under Enquiries on your property exactly two rows, Enquiry 1 and Enquiry 2, each with a stage, a time and a badge "Response: In SLA". No name, phone, email or message of any buyer shows anywhere on the page.
 FLOW SOS-P5-05-2 | client | /sellos/client/overview | On the same page look at the Your search card. | It lists the stage of the client's buyer lead, the shortlist Regression Shortlist with its homes (and not the draft), and the site visits and deals that are theirs, with no agent note and no commission.
 FLOW SOS-P5-05-3 | agent | /sellos/client/overview | Sign in as the gate agent and type the address /sellos/client/overview. | The page says there is no access, and the agent sees no client data.
+
+## SOS-P3-12: party names
+
+FLOW SOS-P3-12-1 | company_admin | /sellos | Sign in as the gate company admin and call the party names method for a registration record that has a buyer and a seller. | The buyer and seller names are returned, and one Party Name Access Log row exists for the view, holding no name.
+FLOW SOS-P3-12-2 | agent | /sellos | Sign in as the gate agent and call the same method, then open the Party Name list through the generic calls. | The method is refused with no access, and no name appears in any answer.
+FLOW SOS-P3-12-3 | company_admin | /sellos | Search the Party Name records for a name through the generic list call, and call the method with a name instead of a record ID. | No name is returned: names are never searchable.

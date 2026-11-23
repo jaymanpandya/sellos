@@ -228,6 +228,7 @@ scheduler_events = {
 		],
 	},
 	"daily": [
+		"sellos.intel.party_names.purge_expired",  # SOS-P3-12
 		"sellos.reports.engine.refresh_all_summaries",  # SOS-P5-01
 	],
 	"hourly": [

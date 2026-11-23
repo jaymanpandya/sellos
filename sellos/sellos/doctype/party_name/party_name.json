@@ -1,0 +1,56 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-11-24 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_record_id",
+  "party_role",
+  "party_name",
+  "retain_until"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_record_id",
+   "fieldtype": "Data",
+   "label": "Source record ID",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "party_role",
+   "fieldtype": "Select",
+   "label": "Party",
+   "options": "Buyer\nSeller",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "party_name",
+   "fieldtype": "Data",
+   "label": "Name",
+   "reqd": 1,
+   "read_only": 1,
+   "length": 200
+  },
+  {
+   "fieldname": "retain_until",
+   "fieldtype": "Date",
+   "label": "Kept until",
+   "reqd": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-24 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Party Name",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

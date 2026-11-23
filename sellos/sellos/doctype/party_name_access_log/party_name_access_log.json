@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-11-24 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "viewer",
+  "viewed_on",
+  "source_record_id",
+  "names_shown"
+ ],
+ "fields": [
+  {
+   "fieldname": "viewer",
+   "fieldtype": "Link",
+   "label": "Viewer",
+   "options": "User",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "viewed_on",
+   "fieldtype": "Datetime",
+   "label": "Viewed on",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source_record_id",
+   "fieldtype": "Data",
+   "label": "Source record ID",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "names_shown",
+   "fieldtype": "Int",
+   "label": "Names shown",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-24 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Party Name Access Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

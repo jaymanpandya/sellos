@@ -300,6 +300,8 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.reports.platform.run_platform_report": frozenset({PLATFORM_ADMIN}),
 	# SOS-P3-02: the raw transaction table is on the control site and is read through this method only.
 	"sellos.intel.api.list_raw_transactions": frozenset({PLATFORM_ADMIN}),
+	# SOS-P3-12: Index II party names, for a Company Admin only, every view logged.
+	"sellos.intel.party_names.get_party_names": _ADMIN_ONLY,
 	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.save_telephony_settings": _ADMIN_ONLY,
 	"sellos.telephony.settings.check_connection": _ADMIN_ONLY,

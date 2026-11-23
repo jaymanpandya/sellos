@@ -5,6 +5,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt, now_datetime
 
+from sellos.inventory import poster
 from sellos.inventory.base import AVAILABLE, HELD, InventoryRecord, squash
 
 PRIMARY = "Primary"
@@ -55,7 +56,11 @@ class Listing(InventoryRecord):
 		else:
 			self.published_on = None
 			self.published_by = None
+		poster.apply(self)  # SOS-P3-12
 		self.log_changes(before)
+
+	def on_change(self):
+		poster.scrub_history(self)  # SOS-P3-12
 
 	def on_update(self):
 		# SOS-P4-08: tell the website when a published listing changes.

@@ -19,6 +19,12 @@
   "published",
   "published_on",
   "published_by",
+  "section_poster",
+  "poster_name",
+  "poster_phone_masked",
+  "poster_phone",
+  "rejected",
+  "rejected_on",
   "section_changes",
   "changes",
   "section_archive",
@@ -145,6 +151,46 @@
    "label": "Archived by",
    "options": "User",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_poster",
+   "fieldtype": "Section Break",
+   "label": "Facebook poster (draft only)"
+  },
+  {
+   "fieldname": "poster_name",
+   "fieldtype": "Data",
+   "label": "Poster name",
+   "length": 200,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "poster_phone_masked",
+   "fieldtype": "Data",
+   "label": "Poster phone (masked)",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "poster_phone",
+   "fieldtype": "Data",
+   "label": "Poster phone",
+   "permlevel": 1,
+   "no_copy": 1,
+   "length": 30
+  },
+  {
+   "fieldname": "rejected",
+   "fieldtype": "Check",
+   "label": "Draft rejected",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "rejected_on",
+   "fieldtype": "Datetime",
+   "label": "Rejected on",
+   "read_only": 1,
+   "no_copy": 1
   }
  ],
  "index_web_pages_for_search": 0,
@@ -174,6 +220,12 @@
    "permlevel": 0,
    "read": 1,
    "role": "SellOS Sales Manager"
+  },
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1
   }
  ],
  "sort_field": "creation",
