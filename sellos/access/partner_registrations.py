@@ -53,10 +53,14 @@ SETTINGS = "SellOS Settings"
 NOT_ACCEPTED = "Not accepted: this buyer is already registered with the company."
 
 DEFAULT_LIMIT = 20
+# The default of the company setting "Consent wording" (Jayman, 24 November 2026, SOS-N22). {company} is
+# replaced with the company's display name wherever the wording is shown (render_wording).
 DEFAULT_WORDING = (
-	"I confirm that the buyer has agreed to be contacted by the company about properties, "
-	"by phone, SMS, WhatsApp and email."
+	"I agree that {company} and its agents may contact me about my enquiry by phone, SMS, WhatsApp "
+	"and email. I can ask them to stop at any time."
 )
+COMPANY_PLACEHOLDER = "{company}"
+FALLBACK_COMPANY = "the company"
 
 
 # --- The company settings ---------------------------------------------------------------------------
@@ -68,8 +72,25 @@ def lead_limit() -> int:
 	return DEFAULT_LIMIT if value is None else max(cint(value), 0)
 
 
-def consent_wording() -> str:
+def company_display_name() -> str:
+	"""The company's display name (company setting "Company name"), or "the company" while it is empty."""
+	return (frappe.db.get_single_value(SETTINGS, "company_name") or "").strip() or FALLBACK_COMPANY
+
+
+def render_wording(text: str, company: str | None = None) -> str:
+	"""Replace {company} in a consent wording with the company's display name (SOS-N22). Plain text
+	replacement, so no other brace in the wording is touched and the display name is never formatted."""
+	return (text or "").replace(COMPANY_PLACEHOLDER, company or company_display_name())
+
+
+def raw_consent_wording() -> str:
+	"""The wording as the Company Admin saved it, {company} still in it (the settings screen edits this)."""
 	return (frappe.db.get_single_value(SETTINGS, "consent_wording") or "").strip() or DEFAULT_WORDING
+
+
+def consent_wording() -> str:
+	"""The wording to show: the setting, or the default, with {company} replaced by the display name."""
+	return render_wording(raw_consent_wording())
 
 
 def protection_days() -> int:
@@ -84,7 +105,7 @@ def get_partner_settings():
 	return {
 		"partner_lead_limit": lead_limit(),
 		"partner_protection_days": protection_days(),
-		"consent_wording": consent_wording(),
+		"consent_wording": raw_consent_wording(),
 	}
 
 

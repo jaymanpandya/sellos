@@ -120,7 +120,7 @@ class TestRegistering(PartnerRegistrationCase):
 		self.assertEqual(client.phone, normalise_phone(phone))
 		self.assertEqual(client.email, "p702@example.com")
 		self.assertEqual([row.to_status for row in reg.status_log], ["Registered"])
-		self.assertEqual(reg.consent_wording, pr.DEFAULT_WORDING)
+		self.assertEqual(reg.consent_wording, pr.consent_wording())  # SOS-N22: {company} replaced
 
 	def test_the_partner_sees_the_phone_masked_never_in_full(self):
 		self.as_partner()

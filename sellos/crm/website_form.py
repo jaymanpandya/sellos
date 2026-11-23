@@ -20,6 +20,7 @@ from frappe import _
 from frappe.utils import get_url, now
 
 from sellos.access import intake_keys
+from sellos.access.partner_registrations import render_wording
 from sellos.access.public_intake import Field, IntakeRequest, public_intake
 from sellos.access.registry import sellos_api
 from sellos.access.roles import COMPANY_ADMIN
@@ -64,7 +65,7 @@ FIELDS = {
 def submit_website_lead(request: IntakeRequest):
 	"""Take one website enquiry. The answer is only a thank you and a reference."""
 	fields = request.fields
-	wording = fields["consent_wording"]
+	wording = render_wording(fields["consent_wording"])  # SOS-N22: {company} becomes the display name
 	evidence = {
 		"page": fields["form"] or "website",
 		"wording": wording,
