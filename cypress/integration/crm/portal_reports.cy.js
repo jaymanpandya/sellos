@@ -69,15 +69,17 @@ context("SOS-P5-03: the Channel Partner and Platform reports", () => {
 			cy.getByTestId("partner-reports-stage").should("not.exist");
 		});
 
-		it("shows deals and commission statements as waiting until their records exist", () => {
+		it("shows deals as waiting until their records exist, and the commission statement live (SOS-P7-04)", () => {
 			open();
 			cy.getByTestId("report-panel").should("have.length", 2);
-			["deals", "commission"].forEach((key) => {
-				cy.getByTestId("report-panel")
-					.filter(`[data-panel="${key}"]`)
-					.should("have.attr", "data-available", "no")
-					.and("contain", "Not live yet");
-			});
+			cy.getByTestId("report-panel")
+				.filter('[data-panel="deals"]')
+				.should("have.attr", "data-available", "no")
+				.and("contain", "Not live yet");
+			cy.getByTestId("report-panel")
+				.filter('[data-panel="commission"]')
+				.should("have.attr", "data-available", "yes")
+				.and("not.contain", "Not live yet");
 		});
 
 		it("has Your results in the navigation, and no other role can open the page", () => {
