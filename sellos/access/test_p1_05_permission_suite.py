@@ -288,6 +288,15 @@ SAMPLE_CALLS = {
 	"sellos.inventory.holds.release_hold": {"unit": "{spare_unit_held}"},
 	"sellos.inventory.holds.block_unit": {"unit": "{spare_unit_block}", "reason": "p706 suite"},
 	"sellos.inventory.holds.unblock_unit": {"unit": "{spare_unit_blocked}", "reason": "p706 suite"},
+	# SOS-P7-10: booking and cancelling each use their own spare unit, and cancelling uses a Booked unit with its deal.
+	"sellos.inventory.bookings.booking_panel": {"lead": "{lead}"},
+	"sellos.inventory.bookings.book_unit": {
+		"lead": "{lead}",
+		"unit": "{spare_unit_book}",
+		"price": 5000000,
+		"booking_amount": 100000,
+	},
+	"sellos.inventory.bookings.cancel_booking": {"deal": "{spare_booking_deal}", "reason": "p710 suite"},
 	"sellos.inventory.holds.get_hold_settings": {},
 	"sellos.inventory.holds.save_hold_settings": {"unit_hold_hours": 48},
 	"sellos.crm.response_times.get_response_limits": {},
@@ -670,6 +679,36 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			).insert()
 			for number, status in (("1", "Available"), ("2", "Held"), ("3", "Available"), ("4", "Blocked"))
 		)
+		# SOS-P7-10: an Available unit to book, and a Booked unit with the deal to cancel.
+		spare_unit_book = frappe.get_doc(
+			{
+				"doctype": "Unit",
+				"project": spare_project.name,
+				"unit_number": "P710-1",
+				"carpet_area": 600,
+				"status": "Available",
+			}
+		).insert()
+		spare_unit_booked = frappe.get_doc(
+			{
+				"doctype": "Unit",
+				"project": spare_project.name,
+				"unit_number": "P710-2",
+				"carpet_area": 600,
+				"status": "Booked",
+			}
+		).insert()
+		spare_booking_deal = frappe.get_doc(
+			{
+				"doctype": "Deal",
+				"client": client.name,
+				"lead": lead.name,
+				"unit": spare_unit_booked.name,
+				"price": 5000000,
+				"booking_amount": 100000,
+				"splits": [{"party_type": "Company", "percent": 100}],
+			}
+		).insert(ignore_permissions=True)
 		# SOS-P7-09: an Available unit to add, and four shortlists of the secret client (see SAMPLE_CALLS).
 		shortlist_unit = frappe.get_doc(
 			{"doctype": "Unit", "project": spare_project.name, "unit_number": "P709-1", "carpet_area": 600}
@@ -932,6 +971,8 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_unit_held": spare_unit_held.name,
 			"spare_unit_block": spare_unit_block.name,
 			"spare_unit_blocked": spare_unit_blocked.name,
+			"spare_unit_book": spare_unit_book.name,
+			"spare_booking_deal": spare_booking_deal.name,
 			"shortlist_unit": shortlist_unit.name,
 			"shortlist": shortlist.name,
 			"shortlist_item": shortlist.items[0].name,
