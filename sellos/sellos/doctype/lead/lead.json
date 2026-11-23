@@ -9,6 +9,7 @@
   "lead_title",
   "source",
   "campaign",
+  "property",
   "partner",
   "assigned_to",
   "pipeline",
@@ -67,6 +68,14 @@
    "fieldtype": "Data",
    "label": "Campaign",
    "description": "Optional. The campaign that brought the lead."
+  },
+  {
+   "fieldname": "property",
+   "fieldtype": "Link",
+   "label": "Property",
+   "options": "Property",
+   "in_standard_filter": 1,
+   "description": "Optional (SOS-P5-05). On a Seller lead: the property being sold. On a Buyer lead: the property the buyer enquired about. Existing leads are not backfilled."
   },
   {
    "fieldname": "partner",
@@ -257,7 +266,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-04 00:00:00.000000",
+ "modified": "2026-11-23 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "SellOS",
  "name": "Lead",

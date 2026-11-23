@@ -15,3 +15,4 @@ sellos.patches.p4_04_seller_pipeline
 sellos.patches.p4_05_mandate
 sellos.patches.p4_06_deal
 sellos.patches.p7_04_commissions
+sellos.patches.p5_05_lead_property

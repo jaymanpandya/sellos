@@ -220,6 +220,17 @@ Registered public intake methods (one row each as they are built):
 
 A missed call to the 022 number (SOS-P2-08) is not a public method: it arrives as a Plivo event through the provider webhook (`plivo_call_event`, signature first) and goes to the same `sellos.crm.intake.take`.
 
+## Client views
+
+Decided by Jayman on 23 November 2026 (SOS-LOOP, for SOS-P5-05). A Client sees only their own data. A seller sees the enquiries on their own property as plain rows, and the server returns exactly four fields per row:
+
+* **A label only:** `Enquiry N`, numbered per property in the order the leads were created. No lead, client or property id.
+* **The stage** the enquiry has reached.
+* **The time stamp** of when it reached that stage.
+* **An SLA badge:** In SLA or Outside SLA, labelled as a response SLA (first assignment and first contact, SOS-P7-13). Outside SLA means the lead has at least one Response Alert, resolved or not. There is no per stage SLA.
+
+Never a name, phone, email, message text, source, consent status or agent notes. The rows are the Buyer pipeline leads whose `Lead.property` equals the `property` of the seller's own Seller lead(s), never the seller's own lead. The seller is the Client record whose email is the signed in user's. Another seller, a buyer and a Channel Partner see none of these rows. A seller lead with no property gets an empty state saying the agent is linking it, and existing seller leads are not backfilled. Build check: a test fails if any other field is returned, and permission tests cover another seller, a buyer and a Channel Partner.
+
 ## Public listings feed
 
 Decided by Jayman on 22 November 2026 (SOS-LOOP). The third kind of method that may be called without a login: the read method the company's website uses to show published listings (SOS-P4-08), using only the Listings read key from the per company key record of SOS-P1-09. It is registered in `sellos.access.public_listings`, built once in SOS-P4-08, and allows guests. `sellos/access/test_webhook_guest_guard.py` fails the build if a guest method is not a registered provider webhook, a registered public intake method or a registered public listings feed with these checks.
