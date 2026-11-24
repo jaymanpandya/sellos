@@ -5,7 +5,7 @@
 	>
 		<div class="flex min-w-0 items-center gap-ui-sm">
 			<!-- Phone and tablet: the sidebar is gone, so the brand sits here. -->
-			<div class="lg:hidden"><CompanyBrand /></div>
+			<div class="min-w-0 lg:hidden"><CompanyBrand /></div>
 			<p class="hidden min-w-0 truncate text-sm lg:block" data-testid="sellos-crumb">
 				<template v-if="crumb">{{ crumb }} / </template
 				><b class="font-semibold">{{ shell.title || "Home" }}</b>
