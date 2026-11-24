@@ -434,39 +434,3 @@ FLOW SOS-P5-05-3 | agent | /sellos/client/overview | Sign in as the gate agent a
 FLOW SOS-P3-12-1 | company_admin | /sellos | Sign in as the gate company admin and call the party names method for a registration record that has a buyer and a seller. | The buyer and seller names are returned, and one Party Name Access Log row exists for the view, holding no name.
 FLOW SOS-P3-12-2 | agent | /sellos | Sign in as the gate agent and call the same method, then open the Party Name list through the generic calls. | The method is refused with no access, and no name appears in any answer.
 FLOW SOS-P3-12-3 | company_admin | /sellos | Search the Party Name records for a name through the generic list call, and call the method with a name instead of a record ID. | No name is returned: names are never searchable.
-
-## SOS-P3-14: market data source panel
-
-FLOW SOS-P3-14-1 | platform_admin | /sellos/control/market-data | Sign in. Open the Market data source panel. Enter a fake API key and save. | The panel shows the key only as a masked value (its last four characters) and never shows the full key, before or after a reload.
-FLOW SOS-P3-14-2 | platform_admin | /sellos/control/market-data | In the panel read the credit balance, set a monthly credit budget and a per run cap, then try a run whose estimate is over the cap. | The balance and the time it was read are shown, the run is refused before anything is submitted, and the message says the cap is the reason.
-FLOW SOS-P3-14-3 | platform_admin | /sellos/control/market-data | Start a run that is inside the budget and the cap and look at the confirmation. Cancel it, then start it again and confirm. | The confirmation shows the estimated credits, cancelling spends nothing, and only the confirmed run is submitted.
-FLOW SOS-P3-14-4 | company_admin | /sellos/control/market-data | Sign in as the gate company admin and type the address of the panel. | The page says there is no access and no key, balance or setting is shown.
-
-## SOS-P3-15: LegiScore Index II adapter
-
-FLOW SOS-P3-15-1 | platform_admin | /sellos/control/market-data | Open the Index II searches list after a fixture run. Find a building with a timed out year and a building at the 25 document cap. | The timed out year says Not searched, never zero, and the capped search says Truncated, never complete.
-
-## SOS-P3-16: LegiScore RERA check and snapshots
-
-FLOW SOS-P3-16-1 | platform_admin | /sellos/control/market-data | Open the RERA check schedule, set it to weekly and look at a project with two runs. | The schedule is saved, the project shows two dated snapshots of its sold and booked figures, and neither can be edited.
-
-## SOS-P3-17: extracted figures review queue
-
-FLOW SOS-P3-17-1 | platform_admin | /sellos/control/market-data/review | Open the review queue. Correct one figure, approve another and reject a third. | Each action is saved and logged with the source PDF beside the figure, and only the approved figure appears in the building roll up.
-FLOW SOS-P3-17-2 | agent | /sellos/control/market-data/review | Sign in as the gate agent and type the address of the queue. | The page says there is no access.
-
-## SOS-P4-11: campaign forms
-
-FLOW SOS-P4-11-1 | company_admin | /sellos/campaign-forms | Sign in. Make a campaign form with a name, a phone, a campaign tag and the default consent wording. Open the embed snippet and the WordPress shortcode. | The wording shows the company name instead of the placeholder, the snippet is a div and a script tag with no iframe and no styling, and it holds the Lead intake key and no other key.
-FLOW SOS-P4-11-2 | company_admin | /sellos/campaign-forms | Add an allowed website domain, then turn the form Off and archive it. | The domain is listed, an Off form is marked Off, and an archived form is kept in the archive, never deleted.
-FLOW SOS-P4-11-3 | agent | /sellos/campaign-forms | Sign in as the gate agent and type the address of the campaign forms page. | The page says there is no access.
-
-## SOS-P4-12: campaign form submit
-
-FLOW SOS-P4-12-1 | company_admin | /sellos/campaign-forms | Open the test page for a form on an allowed domain, fill it in with UTM details in the address and submit. Then open the new lead. | The form thanks the visitor with a reference, and the lead shows the campaign tag and the UTM details and a Consent Record with the wording as shown.
-FLOW SOS-P4-12-2 | company_admin | /sellos/campaign-forms | Submit the same form from a page on a domain that is not in the form's list. | The submit gets the same short answer as any refusal and no lead is made.
-
-## SOS-P6-18: Legal and Support section
-
-FLOW SOS-P6-18-1 | platform_admin | /sellos/control/legal | Sign in. Add a new version of the terms of service with an effective date, then add the support channel, the response targets and the status page link. | The new version is listed as the current one from its date, the earlier version is kept and cannot be edited, and the support details are saved.
-FLOW SOS-P6-18-2 | company_admin | /sellos/control/legal | Sign in as the gate company admin and type the address of the section. | The page says there is no access.

@@ -29,5 +29,19 @@ real turn times.
 * The agent assistant: Claude, default Sonnet 5.5 (`claude-sonnet-5-5`), a changeable setting, on the
   Anthropic account Jayman holds.
 * Jayman holds the Sarvam account and enters all keys. No key is in the repository or in chat.
+* The voice agent's language model is Sarvam 105B, to be confirmed against docs.sarvam.ai.
 * Before the voice agent goes live, the Sarvam model is compared with Claude Haiku 5.5 on the fixed
-  disclosure line and the handover. SOS-N21A's harness compares Anthropic models only, so this needs a follow-up task (proposed, not yet added).
+  disclosure line and the handover. SOS-N21A's harness compares Anthropic models only, so SOS-N21B (Claude Code:
+  the Sarvam adapter and the comparison, with fakes) and SOS-N21BL (Jayman: the live run with his Sarvam key)
+  do it.
+
+## The AI disclosure line (SOS-N21C, decided by Jayman, 24 November 2026)
+
+The default of the company setting "AI disclosure line" (Voice Agent Settings), spoken first on every call:
+
+> Namaste, main Nicole baat kar rahi hoon. Main {company} ka AI assistant hoon. Yeh call quality ke liye record ho rahi hai. Agar aap kisi insaan se baat karna chahein, toh bas bol dijiye.
+
+A Company Admin can edit it. `{company}` is replaced with the company's display name (the setting "Company name",
+or "the company" while it is empty) when the line is spoken, and the settings screen shows the raw text. The persona
+name Nicole is part of the text. Counsel reviews it before launch. The voice agent refuses to place a live call, and
+creates no Call Log, while the setting is empty.
