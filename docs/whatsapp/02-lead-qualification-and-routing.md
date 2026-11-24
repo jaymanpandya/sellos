@@ -34,7 +34,7 @@ Visitors and clients who are buyers. Identity rules apply as written in the sour
 
 ## Consent
 
-The lead's consent status is recorded and shown to the advisor as a warning. Nothing in this flow stops a message on consent while Consent enforcement is Off. Consent never blocks (Jayman, 10 November 2026). After a WhatsApp STOP the rules of flow 1 apply: nothing unprompted, replies only to what the person sends.
+The lead's consent status is recorded and shown to the advisor as a warning. Nothing in this flow stops a call or an SMS on consent. Consent never blocks a call or SMS (Jayman, 10 November 2026); a WhatsApp STOP stops everything sent unprompted, with one confirmation reply, an advisor task and a consent log entry, and the person can still write to us and get replies (Jayman, 24 November 2026). After a WhatsApp STOP the rules of flow 1 apply: nothing unprompted, replies only to what the person sends.
 
 ## Handoff
 
