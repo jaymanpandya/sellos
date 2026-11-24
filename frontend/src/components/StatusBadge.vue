@@ -3,7 +3,7 @@
 		:theme="BADGE_THEME[tone] || 'gray'"
 		variant="subtle"
 		size="lg"
-		class="!rounded-round"
+		:class="['!rounded-round', tone === 'danger' ? 'ui-pill-flash' : '']"
 		v-bind="$attrs"
 	>
 		<template #prefix>

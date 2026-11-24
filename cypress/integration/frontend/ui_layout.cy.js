@@ -54,12 +54,14 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 				.and("have.css", "color", "rgb(255, 255, 255)");
 			cy.getByTestId("tab-calls").click();
 			cy.getByTestId("lead-call").parents("aside").should("have.length", 0);
-			// A secondary action is white with the secondary edge.
-			cy.getByTestId("lead-optout").should(
-				"have.css",
-				"border-top-color",
-				"rgb(201, 208, 221)"
-			);
+			// A secondary action is the outline button: white, with the brand border at 35 percent.
+			cy.getByTestId("lead-optout")
+				.should("have.css", "background-color", "rgb(255, 255, 255)")
+				.and(
+					"have.css",
+					"border-top-color",
+					"color(srgb 0.0588235 0.298039 0.207843 / 0.35)"
+				);
 		});
 	});
 
@@ -128,11 +130,9 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 			cy.getByTestId("bulk").should("not.exist");
 			cy.getByTestId("leads-search").type("Gate");
 			cy.getByTestId("leads-filter-clear").should("have.css", "border-top-style", "solid");
-			// A disabled button is dashed (the merge button waits for a duplicate client to be chosen).
+			// A disabled button is 50 percent opacity (the merge button waits for a duplicate client to be chosen).
 			cy.getByTestId("lead-row").first().click();
-			cy.getByTestId("merge-save")
-				.should("be.disabled")
-				.and("have.css", "border-top-style", "dashed");
+			cy.getByTestId("merge-save").should("be.disabled").and("have.css", "opacity", "0.5");
 		});
 	});
 });

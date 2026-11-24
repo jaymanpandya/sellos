@@ -17,7 +17,7 @@
 			class="-mb-px inline-flex min-h-touch shrink-0 items-center whitespace-nowrap border-b-2 px-ui-md text-base transition-colors"
 			:class="
 				modelValue === tab.key
-					? 'border-brand font-semibold text-brand'
+					? 'ui-tab-open font-semibold text-ink'
 					: 'border-transparent text-ink-body hover:text-ink'
 			"
 			@click="emit('update:modelValue', tab.key)"

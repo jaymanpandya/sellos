@@ -49,6 +49,7 @@ const ClientOverviewPage = () => import("./pages/ClientOverviewPage.vue");
 const ClientShortlistsPage = () => import("./pages/ClientShortlistsPage.vue");
 const ClientShortlistPage = () => import("./pages/ClientShortlistPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
+const GalleryPage = () => import("./pages/GalleryPage.vue");
 
 export function createAppRouter() {
 	const router = createRouter({
@@ -63,6 +64,13 @@ export function createAppRouter() {
 			// A lead replaces the list (SOS-UI-2B, it used to open under it). The list and the lead are sibling
 			// routes, so the list is not on screen while a lead is; its filters ride along in the query and
 			// "Back to leads" returns to them.
+			// The design system gallery (docs/DESIGN_SYSTEM.md): every shared piece in every state. Not in the menu.
+			{
+				path: "/gallery",
+				name: "gallery",
+				component: GalleryPage,
+				meta: { area: "profile", title: "Design system gallery" },
+			},
 			{
 				path: "/crm/leads",
 				name: "leads",

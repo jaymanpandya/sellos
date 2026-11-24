@@ -30,8 +30,8 @@ const props = defineProps({
 });
 
 const classes = computed(() => {
-	if (props.variant === "link") return ["ui-link-button"];
-	const list = ["ui-button"];
+	if (props.variant === "link") return ["inline-flex", "ui-link-button"];
+	const list = ["inline-flex", "ui-button"];
 	if (props.variant === "primary") list.push("ui-button-solid");
 	if (props.variant === "danger")
 		list.push(props.confirm ? "ui-button-danger-solid" : "ui-button-danger");

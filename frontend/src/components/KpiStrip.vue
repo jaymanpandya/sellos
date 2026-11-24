@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="shown.length"
-		class="mb-ui-md grid grid-cols-2 gap-ui-md"
+		class="mb-4 grid grid-cols-2 gap-4"
 		:class="shown.length > 2 ? 'md:grid-cols-4' : ''"
 		data-testid="sellos-kpi-strip"
 	>
@@ -13,6 +13,7 @@
 			:note="item.caption"
 			:icon="item.icon"
 			:tone="item.tone"
+			:to="item.to"
 			v-bind="{
 				...(item.valueTestid ? { 'value-testid': item.valueTestid } : {}),
 				...(item.attrs || {}),

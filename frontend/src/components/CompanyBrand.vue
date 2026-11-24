@@ -1,24 +1,24 @@
 <template>
-	<div
-		class="flex min-w-0 items-center gap-2 text-base font-semibold text-ink"
-		data-testid="sellos-brand"
-	>
+	<div class="flex min-w-0 items-center gap-3 text-ink" data-testid="sellos-brand">
 		<img
 			v-if="session.company.logo"
 			:src="session.company.logo"
 			:alt="session.company.name"
-			class="h-8 w-auto shrink-0"
+			class="h-9 w-auto shrink-0"
 			data-testid="sellos-brand-logo"
 		/>
+		<!-- The logo mark: a 36px rounded square in the brand gradient with a white letter. -->
 		<span
 			v-else
-			class="flex h-8 w-8 shrink-0 items-center justify-center rounded-round bg-brand text-sm font-bold text-on-brand"
+			class="ui-logo-mark flex h-9 w-9 shrink-0 items-center justify-center rounded-control text-base font-bold"
 			aria-hidden="true"
 			>{{ initial }}</span
 		>
-		<span class="truncate" data-testid="sellos-brand-name">{{
-			session.company.name || "SellOS"
-		}}</span>
+		<span
+			class="truncate text-xs font-semibold uppercase tracking-[0.12em]"
+			data-testid="sellos-brand-name"
+			>{{ session.company.name || "SellOS" }}</span
+		>
 	</div>
 </template>
 

@@ -1,27 +1,29 @@
 <template>
-	<div
-		class="rounded-card border border-line bg-surface p-ui-md shadow-card"
+	<component
+		:is="to ? 'router-link' : 'div'"
+		:to="to || undefined"
+		class="ui-stat-tile"
+		:class="to ? 'is-link' : ''"
 		:data-tone="tone || 'neutral'"
+		:style="barStyle"
 	>
-		<div class="flex items-start justify-between gap-ui-sm">
-			<span class="block text-xs font-medium text-ink-muted">{{ label }}</span>
-			<span
-				v-if="icon"
-				class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-round"
-				:style="chipStyle"
-				aria-hidden="true"
-			>
+		<span class="ui-stat-bar" aria-hidden="true" />
+		<span class="flex items-start justify-between gap-2">
+			<span class="ui-text-muted">{{ label }}</span>
+			<span v-if="icon" class="ui-icon-chip-sm" :style="chipStyle" aria-hidden="true">
 				<span :class="icon" class="icon-inherit size-4" />
 			</span>
-		</div>
-		<b class="my-1 block text-stat tabular-nums" :data-testid="valueTestid">{{ value }}</b>
-		<span v-if="note" class="block text-xs text-ink-muted">{{ note }}</span>
-	</div>
+		</span>
+		<b class="ui-stat-number" :data-testid="valueTestid">{{ value }}</b>
+		<span v-if="note" class="ui-text-muted block">{{ note }}</span>
+	</component>
 </template>
 
 <script setup>
-// PAMAA's StatCard (SOS-UI-2B), without the count-up animation and the area colours: a label, a
-// number and a note. `tone` tints the chip in a status colour.
+// The stat tile (docs/DESIGN_SYSTEM.md): the label top left in muted text, a 32px round area icon chip top right, the
+// number under the label (24px, semibold, tabular), an optional helper line, and a 3px bar along the top edge in the
+// tile's colour, clipped by the card's corners: the area's accent for normal, amber for waiting or at risk (`warning`),
+// red for late (`danger`), green for done (`success`). With `to` the whole tile is the link.
 import { computed } from "vue";
 
 import { status } from "../theme/ui-tokens.js";
@@ -32,14 +34,20 @@ const props = defineProps({
 	note: { type: String, default: "" },
 	icon: { type: String, default: "" },
 	tone: { type: String, default: "" },
+	to: { type: [String, Object], default: null },
 	// The test id of the number, when a spec reads it on its own.
 	valueTestid: { type: String, default: "sellos-stat-value" },
 });
 
-const chipStyle = computed(() => {
-	const colours = status[props.tone];
-	return colours
-		? { backgroundColor: colours.bg, color: colours.ink }
-		: { backgroundColor: "var(--ui-brand-soft)", color: "var(--sos-brand)" };
-});
+const colours = computed(() => status[props.tone]);
+const barStyle = computed(() =>
+	colours.value
+		? { "--tile-colour": colours.value.ink }
+		: { "--tile-colour": "var(--area-accent)" }
+);
+const chipStyle = computed(() =>
+	colours.value
+		? { backgroundColor: colours.value.bg, color: colours.value.ink }
+		: { backgroundColor: "var(--area-soft)", color: "var(--area-accent)" }
+);
 </script>

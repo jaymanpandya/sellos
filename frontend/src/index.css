@@ -18,14 +18,6 @@ h3 {
 }
 
 @layer components {
-	/* Page header: title 24px/600, one line of text, actions on the right. */
-	.ui-page-title {
-		@apply text-title text-ink;
-	}
-	.ui-page-lead {
-		@apply mt-1 max-w-3xl text-base text-ink-body;
-	}
-
 	/* Cards (docs/DESIGN_SYSTEM.md, section 2): white, 14px radius, card shadow, padding 16px and 20px from 640px. */
 	.ui-card {
 		@apply rounded-card border border-line bg-surface p-4 shadow-card sm:p-5;
@@ -196,8 +188,8 @@ h3 {
 	/* Empty state, load error, toast. */
 	.ui-empty {
 		@apply flex flex-col items-center gap-2 rounded-card border border-dashed px-4 py-8 text-center text-base text-ink-muted;
-		border-color: var(--ui-dash);
-		background-image: var(--ui-grad-empty);
+		border-color: color-mix(in srgb, var(--area-accent) 35%, transparent);
+		background-color: color-mix(in srgb, var(--area-soft) 60%, white);
 	}
 	.ui-error-box {
 		@apply rounded-card border border-tone-warning-line bg-tone-warning-bg p-4 text-base text-tone-warning;
@@ -370,5 +362,153 @@ input[type="datetime-local"]:invalid::-webkit-datetime-edit {
 @layer components {
 	.ui-content {
 		@apply mx-auto w-full max-w-[1440px] px-4 sm:px-6;
+	}
+}
+
+/* The sidebar (docs/DESIGN_SYSTEM.md, section 2). */
+@layer components {
+	.ui-logo-mark {
+		color: var(--sos-on-brand);
+		background-image: linear-gradient(135deg, var(--sos-brand) 0%, var(--sos-brand-mid) 100%);
+		box-shadow: var(--ui-shadow-button);
+	}
+	.ui-nav-item {
+		@apply relative z-10 flex min-h-touch w-full items-center rounded-control px-3 text-left text-base text-ink-body transition-colors duration-150;
+	}
+	.ui-nav-item:hover {
+		background-color: var(--ui-brand-soft);
+	}
+	.ui-nav-item.ui-nav-current {
+		@apply font-semibold;
+		color: var(--sos-on-brand);
+		background-color: transparent;
+	}
+	.ui-nav-section {
+		@apply flex min-h-touch w-full items-center gap-2 rounded-control px-3 text-left text-heading uppercase text-ink-muted;
+	}
+	.ui-nav-section:hover {
+		background-color: var(--ui-faint);
+	}
+	.ui-area-chip {
+		@apply inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-round;
+		background-color: var(--area-soft);
+		color: var(--area-accent);
+	}
+	.ui-nav-highlight {
+		@apply pointer-events-none absolute left-3 right-3 top-0 z-0 rounded-control;
+		background-color: var(--sos-brand);
+		background-image: linear-gradient(135deg, var(--sos-brand) 0%, var(--sos-brand-mid) 100%);
+		box-shadow: var(--ui-shadow-button);
+		transition: transform 250ms var(--ui-ease), height 180ms var(--ui-ease);
+	}
+	.ui-count-badge {
+		@apply ml-2 inline-flex min-w-6 items-center justify-center rounded-round px-2 text-xs font-semibold;
+		background-color: var(--sos-brand);
+		color: var(--sos-on-brand);
+	}
+	.ui-nav-current .ui-count-badge {
+		background-color: var(--ui-white);
+		color: var(--sos-brand);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.ui-nav-highlight,
+	.ui-nav-item,
+	.ui-button {
+		transition: none !important;
+	}
+}
+
+/* Pieces of docs/DESIGN_SYSTEM.md, section 2: page header, record header, stat tile, notice, tag, form footer. */
+@layer components {
+	.ui-page-header {
+		@apply mb-4 flex flex-wrap items-center justify-between gap-4;
+	}
+	.ui-page-title {
+		@apply text-title text-ink;
+	}
+	.ui-page-lead {
+		@apply mt-1 max-w-3xl text-base text-ink-muted;
+	}
+	.ui-icon-chip {
+		@apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-round;
+		background-color: var(--area-soft);
+		color: var(--area-accent);
+	}
+	.ui-icon-chip-sm {
+		@apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-round;
+	}
+	.ui-record-header {
+		@apply sticky top-topbar z-10 mt-2 flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-4 shadow-card;
+	}
+	.ui-stat-tile {
+		@apply relative block overflow-hidden rounded-card border border-line bg-surface p-4 pt-5 shadow-card sm:p-5 sm:pt-6;
+		transition: box-shadow 180ms var(--ui-ease);
+	}
+	.ui-stat-tile.is-link {
+		@apply no-underline;
+	}
+	.ui-stat-tile.is-link:hover {
+		box-shadow: var(--ui-shadow-lift);
+	}
+	.ui-stat-bar {
+		@apply absolute inset-x-0 top-0 h-[3px];
+		background-color: var(--tile-colour, var(--area-accent));
+	}
+	.ui-stat-number {
+		@apply my-1 block text-stat tabular-nums;
+		color: var(--area-ink);
+	}
+	.ui-notice {
+		@apply rounded-card border border-line bg-surface p-4 shadow-card;
+		border-left: 4px solid var(--sos-brand);
+	}
+	.ui-notice[data-tone="warning"] {
+		border-left-color: var(--ui-warning);
+	}
+	.ui-tag {
+		@apply inline-flex items-center rounded-control px-2 text-xs font-medium text-ink-body;
+		background-color: var(--ui-subtle);
+	}
+	.ui-form-footer {
+		@apply sticky bottom-0 z-10 -mx-4 mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-line bg-surface px-4 py-3 sm:-mx-6 sm:px-6;
+	}
+}
+
+@layer components {
+	/* The open tab: a 2px line in the area colour and bold ink text. */
+	.ui-tab-open {
+		border-bottom-color: var(--area-accent);
+	}
+}
+
+@layer components {
+	/* Filter chips: a small rectangular chip (control radius) with a remove button. */
+	.ui-chip {
+		@apply inline-flex min-h-8 items-center gap-1 rounded-control border border-line bg-surface pl-3 text-xs text-ink;
+	}
+	.ui-chip-remove {
+		@apply inline-flex h-8 w-8 items-center justify-center rounded-control text-ink-muted;
+	}
+	.ui-chip-remove:hover {
+		background-color: var(--ui-brand-soft);
+	}
+	/* A pill that says something is late flashes softly once. */
+	.ui-pill-flash {
+		animation: ui-flash 1.2s var(--ui-ease) 1;
+	}
+}
+@keyframes ui-flash {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 transparent;
+	}
+	40% {
+		box-shadow: 0 0 0 6px color-mix(in srgb, var(--ui-danger) 25%, transparent);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.ui-pill-flash {
+		animation: none;
 	}
 }

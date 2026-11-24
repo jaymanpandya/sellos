@@ -48,6 +48,31 @@
 				{{ clearLabel }}
 			</AppButton>
 		</div>
+		<!-- The filters that are on, as chips that can each be removed. -->
+		<ul
+			v-if="chips.length"
+			class="mt-3 flex flex-wrap items-center gap-2"
+			aria-label="Active filters"
+			data-testid="sellos-filter-chips"
+		>
+			<li
+				v-for="chip in chips"
+				:key="chip.key"
+				class="ui-chip"
+				data-testid="sellos-filter-chip"
+			>
+				<span>{{ chip.label }}</span>
+				<button
+					type="button"
+					class="ui-chip-remove"
+					:aria-label="`Remove filter ${chip.label}`"
+					data-testid="sellos-filter-chip-remove"
+					@click="emit('remove-chip', chip.key)"
+				>
+					<span class="lucide-x icon-inherit size-3.5" aria-hidden="true" />
+				</button>
+			</li>
+		</ul>
 		<!-- The rest. They stay in the page (v-show), so a bookmarked view and a test can reach them. -->
 		<div
 			v-if="$slots.more"
@@ -83,6 +108,8 @@ defineProps({
 	// Whether the `more` slot shows (the page owns it: it opens by itself when a filter in it is on).
 	open: { type: Boolean, default: false },
 	moreCount: { type: Number, default: 0 },
+	// The filters that are on: [{ key, label }]. Each shows as a chip with a remove button.
+	chips: { type: Array, default: () => [] },
 	// True when any filter or the search is on: Clear shows.
 	active: { type: Boolean, default: false },
 	applyLabel: { type: String, default: "Apply filters" },
@@ -91,5 +118,5 @@ defineProps({
 	clearTestid: { type: String, default: "sellos-filter-clear" },
 	applyTestid: { type: String, default: "sellos-filter-apply" },
 });
-const emit = defineEmits(["apply", "clear", "update:search", "update:open"]);
+const emit = defineEmits(["apply", "clear", "update:search", "update:open", "remove-chip"]);
 </script>

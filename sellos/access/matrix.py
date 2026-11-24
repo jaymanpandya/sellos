@@ -319,6 +319,9 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.telephony.hours.save_calling_hours": _ADMIN_ONLY,
 	"sellos.telephony.dnd.import_do_not_call_list": _ADMIN_ONLY,
 	"sellos.telephony.dnd.do_not_call_summary": _ADMIN_ONLY,
+	# Design system pass: which sidebar sections a person has closed, their own setting.
+	"sellos.access.preferences.get_nav_state": _OPENERS,
+	"sellos.access.preferences.set_nav_state": _OPENERS,
 	"sellos.access.field_history.getdoc": _OPENERS,
 	"sellos.access.field_history.get_docinfo": _OPENERS,
 	# SOS-P6-11: the company's WhatsApp number, its templates, and its conversations.

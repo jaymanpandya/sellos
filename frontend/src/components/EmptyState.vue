@@ -1,13 +1,10 @@
 <template>
 	<div class="ui-empty" data-testid="sellos-empty-state">
-		<span
-			class="mb-1 inline-flex h-11 w-11 items-center justify-center rounded-round bg-brand-soft text-brand"
-			aria-hidden="true"
-		>
+		<span class="ui-icon-chip mb-1" aria-hidden="true">
 			<span :class="icon" class="icon-inherit size-5" />
 		</span>
-		<p class="font-semibold text-ink">{{ title }}</p>
-		<p v-if="text" class="mx-auto max-w-md text-sm leading-relaxed text-ink-muted">
+		<p class="ui-text-strong">{{ title }}</p>
+		<p v-if="text" class="ui-text-muted mx-auto max-w-md">
 			{{ text }}
 		</p>
 		<div v-if="$slots.default" class="mt-2 flex justify-center"><slot /></div>
