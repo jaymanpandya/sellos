@@ -26,6 +26,7 @@
 		</div>
 
 		<ListCard title="Deals">
+			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
 			<EmptyState
 				v-if="loaded && !loadError && !deals.length"
 				title="No deals yet"
@@ -40,7 +41,7 @@
 					:data-name="d.name"
 					:data-client="d.client_name"
 					:data-status="d.approval_status"
-					class="rounded-input border border-line-soft p-ui-md"
+					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
 				>
 					<div class="flex flex-wrap items-center gap-3">
 						<span class="font-medium text-ink" data-testid="sellos-deal-title">
@@ -202,6 +203,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import EmptyState from "../components/EmptyState.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import FormField from "../components/FormField.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";

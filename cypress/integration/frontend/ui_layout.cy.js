@@ -42,12 +42,16 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 				});
 			cy.getByTestId("lead-requirements").parents("aside").should("have.length", 0);
 			cy.getByTestId("lead-call").parents("aside").should("have.length", 0);
-			// The main action of a card is solid button/bg with text/button.
+			// The main action of a card is the solid accent with white text.
 			cy.getByTestId("lead-req-save")
-				.should("have.css", "background-color", "rgb(0, 60, 60)")
-				.and("have.css", "color", "rgb(228, 179, 60)");
-			// A secondary action is the ghost fill with a teal/900 line.
-			cy.getByTestId("lead-optout").should("have.css", "border-top-color", "rgb(0, 45, 45)");
+				.should("have.css", "background-color", "rgb(15, 76, 53)")
+				.and("have.css", "color", "rgb(255, 255, 255)");
+			// A secondary action is white with the secondary edge.
+			cy.getByTestId("lead-optout").should(
+				"have.css",
+				"border-top-color",
+				"rgb(201, 208, 221)"
+			);
 		});
 	});
 
@@ -88,12 +92,12 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 		cy.getByTestId("leads-filter-budget-min")
 			.should("be.visible")
 			.and("have.value", "50,00,000");
-		// A native checkbox is the teal box, not the browser's.
+		// A native checkbox is the brand box, not the browser's.
 		cy.getByTestId("leads-filter-untouched").check();
 		cy.getByTestId("leads-filter-untouched").should(
 			"have.css",
 			"background-color",
-			"rgb(0, 60, 60)"
+			"rgb(15, 76, 53)"
 		);
 	});
 

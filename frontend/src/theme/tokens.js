@@ -1,6 +1,6 @@
-// Design tokens for SellOS (SOS-UI-2B): the Pandya palette of ui-tokens.js as Tailwind theme values.
+// Design tokens for SellOS (SOS-UI-2B, docs/UI_STANDARD.md): the shared palette of ui-tokens.js as Tailwind theme values.
 // The brand colours stay CSS variables so each company can still set its own brand at runtime (see
-// applyCompanyTheme in session.js); the Pandya palette is the default. Everything else is the token.
+// applyCompanyTheme in session.js); the SellOS green is the default. Everything else is the token.
 import {
 	colors as ui,
 	fontFamily as uiFont,
@@ -12,13 +12,13 @@ import {
 } from "./ui-tokens.js";
 
 const defaults = {
-	"--sos-brand": ui.brand, // button/bg, sidebar and top bar band
-	"--sos-brand-dark": ui.brand,
-	"--sos-brand-mid": ui["shell-current-bg"], // current sidebar item
+	"--sos-brand": ui.brand, // the accent: primary button, current menu pill, links
+	"--sos-brand-dark": "#0A3626",
+	"--sos-brand-mid": ui["brand-2"], // button hover, avatar
 	"--sos-brand-light": ui["brand-soft"],
-	"--sos-accent": ui.danger, // legacy `accent` on pages not yet moved (SOS-UI-3): error text and alert badges
-	"--sos-on-brand": ui["shell-ink"], // text/onDark: text on the brand band
-	"--sos-on-brand-accent": ui["shell-current-ink"], // text/accent, text/button
+	"--sos-accent": ui.danger, // legacy `accent` on pages not yet moved: error text and alert badges
+	"--sos-on-brand": ui.white, // text on a brand fill
+	"--sos-on-brand-accent": ui.white,
 	"--sos-surface": ui.white,
 	"--sos-surface-muted": ui.page,
 	"--sos-ink": ui.ink,

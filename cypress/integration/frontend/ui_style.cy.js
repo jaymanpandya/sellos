@@ -9,8 +9,8 @@ context("SOS-UI-2B: Pandya palette on the app shell", () => {
 	});
 
 	it("uses the page background, the ink text colour and Inter", () => {
-		cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
-		cy.get("body").should("have.css", "color", "rgb(0, 60, 60)");
+		cy.get("body").should("have.css", "background-color", "rgb(244, 245, 247)");
+		cy.get("body").should("have.css", "color", "rgb(29, 34, 43)");
 		cy.get("body").invoke("css", "font-family").should("match", /Inter/);
 		cy.get("body").should("have.css", "font-size", "16px");
 	});
@@ -20,7 +20,7 @@ context("SOS-UI-2B: Pandya palette on the app shell", () => {
 		cy.getByTestId("home-welcome").should("have.css", "font-weight", "600");
 	});
 
-	it("gives the sidebar 240px on the dark surface, 44px items and the 8px control radius", () => {
+	it("gives the sidebar 240px on the white shell, 44px pill items", () => {
 		cy.getByTestId("nav")
 			.filter(":visible")
 			.parents("aside")
@@ -28,23 +28,27 @@ context("SOS-UI-2B: Pandya palette on the app shell", () => {
 		cy.getByTestId("nav")
 			.filter(":visible")
 			.parents("aside")
-			.should("have.css", "background-color", "rgb(0, 60, 60)");
+			.should("have.css", "background-color", "rgb(255, 255, 255)");
 		cy.getByTestId("nav-home").should("have.css", "min-height", "44px");
-		cy.getByTestId("nav-home").should("have.css", "border-top-left-radius", "8px");
-		cy.getByTestId("nav-leads").should("have.css", "color", "rgb(255, 220, 156)");
+		cy.getByTestId("nav-home").should("have.css", "border-top-left-radius", "9999px");
+		cy.getByTestId("nav-leads").should("have.css", "color", "rgb(63, 74, 92)");
 	});
 
-	it("puts the top bar on the dark surface", () => {
-		cy.getByTestId("phone-topbar").should("have.css", "background-color", "rgb(0, 60, 60)");
+	it("puts the top bar on the white shell", () => {
+		cy.getByTestId("phone-topbar").should(
+			"have.css",
+			"background-color",
+			"rgb(255, 255, 255)"
+		);
 	});
 
-	it("gives a card the 16px radius, a 1px teal line at low opacity and white fill", () => {
+	it("gives a card the 14px radius, a 1px line and white fill", () => {
 		cy.signInFresh("basic");
 		cy.visit("/sellos");
 		cy.getByTestId("no-access")
-			.should("have.css", "border-top-left-radius", "16px")
+			.should("have.css", "border-top-left-radius", "14px")
 			.and("have.css", "border-top-width", "1px")
-			.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)")
+			.and("have.css", "border-top-color", "rgb(221, 226, 236)")
 			.and("have.css", "background-color", "rgb(255, 255, 255)");
 	});
 });
@@ -68,21 +72,21 @@ context("SOS-UI-3A: Home, Call queue and Site visits follow the style", () => {
 	];
 
 	pages.forEach((page) => {
-		it(`${page.name}: page colours, 24px/600 title, 16px card with the teal line`, () => {
+		it(`${page.name}: page colours, 24px/600 title, 14px card with the line`, () => {
 			cy.signInFresh("agent");
 			cy.visit(page.path);
 			cy.getByTestId(page.ready, { timeout: 15000 }).should("be.visible");
-			cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
-			cy.get("body").should("have.css", "color", "rgb(0, 60, 60)");
+			cy.get("body").should("have.css", "background-color", "rgb(244, 245, 247)");
+			cy.get("body").should("have.css", "color", "rgb(29, 34, 43)");
 			cy.getByTestId(page.title)
 				.should("have.css", "font-size", "24px")
 				.and("have.css", "font-weight", "600");
 			cy.getByTestId("app-shell")
 				.find(".ui-card, .rounded-card")
 				.first()
-				.should("have.css", "border-top-left-radius", "16px")
+				.should("have.css", "border-top-left-radius", "14px")
 				.and("have.css", "border-top-width", "1px")
-				.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)");
+				.and("have.css", "border-top-color", "rgb(221, 226, 236)");
 		});
 
 		it(`${page.name}: every control is a frappe-ui control`, () => {
@@ -111,8 +115,8 @@ context("SOS-UI-3A: Home, Call queue and Site visits follow the style", () => {
 		cy.getByTestId("queue-stats", { timeout: 15000 }).should("be.visible");
 		cy.getByTestId("queue-call")
 			.first()
-			.should("have.css", "background-color", "rgb(0, 60, 60)")
-			.and("have.css", "color", "rgb(228, 179, 60)");
+			.should("have.css", "background-color", "rgb(15, 76, 53)")
+			.and("have.css", "color", "rgb(255, 255, 255)");
 		cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads");
 	});
 });
@@ -161,10 +165,10 @@ context("SOS-UI-3B: Import leads, Board, Call lists and Assignment follow the st
 			if (page.seed) cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads");
 		});
 
-		it(`${page.name}: page colours, 24px/600 title, 16px card with the teal line`, () => {
+		it(`${page.name}: page colours, 24px/600 title, 14px card with the line`, () => {
 			open();
-			cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
-			cy.get("body").should("have.css", "color", "rgb(0, 60, 60)");
+			cy.get("body").should("have.css", "background-color", "rgb(244, 245, 247)");
+			cy.get("body").should("have.css", "color", "rgb(29, 34, 43)");
 			cy.get("h1.ui-page-title")
 				.first()
 				.should("have.css", "font-size", "24px")
@@ -172,9 +176,9 @@ context("SOS-UI-3B: Import leads, Board, Call lists and Assignment follow the st
 			cy.getByTestId("app-shell")
 				.find(".ui-card, .rounded-card")
 				.first()
-				.should("have.css", "border-top-left-radius", "16px")
+				.should("have.css", "border-top-left-radius", "14px")
 				.and("have.css", "border-top-width", "1px")
-				.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)");
+				.and("have.css", "border-top-color", "rgb(221, 226, 236)");
 		});
 
 		it(`${page.name}: every control is a frappe-ui control`, () => {
@@ -203,8 +207,8 @@ context("SOS-UI-3B: Import leads, Board, Call lists and Assignment follow the st
 			it(`${page.name}: the primary button is solid button/bg with text/button`, () => {
 				open();
 				cy.getByTestId(page.primary)
-					.should("have.css", "background-color", "rgb(0, 60, 60)")
-					.and("have.css", "color", "rgb(228, 179, 60)");
+					.should("have.css", "background-color", "rgb(15, 76, 53)")
+					.and("have.css", "color", "rgb(255, 255, 255)");
 			});
 		}
 	});
@@ -246,21 +250,21 @@ context("SOS-UI-3C: Users, Teams, Team report, Support and Telephony follow the 
 	];
 
 	pages.forEach((page) => {
-		it(`${page.name}: page colours, 24px/600 title, 16px card with the teal line`, () => {
+		it(`${page.name}: page colours, 24px/600 title, 14px card with the line`, () => {
 			cy.signInFresh(page.role);
 			cy.visit(page.path);
 			cy.getByTestId(page.ready, { timeout: 15000 }).should("be.visible");
-			cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
-			cy.get("body").should("have.css", "color", "rgb(0, 60, 60)");
+			cy.get("body").should("have.css", "background-color", "rgb(244, 245, 247)");
+			cy.get("body").should("have.css", "color", "rgb(29, 34, 43)");
 			cy.getByTestId("page-title")
 				.should("have.css", "font-size", "24px")
 				.and("have.css", "font-weight", "600");
 			cy.getByTestId("app-shell")
 				.find(".ui-card, .rounded-card")
 				.first()
-				.should("have.css", "border-top-left-radius", "16px")
+				.should("have.css", "border-top-left-radius", "14px")
 				.and("have.css", "border-top-width", "1px")
-				.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)");
+				.and("have.css", "border-top-color", "rgb(221, 226, 236)");
 		});
 
 		it(`${page.name}: every control is a frappe-ui control`, () => {
@@ -285,32 +289,32 @@ context("SOS-UI-3C: Users, Teams, Team report, Support and Telephony follow the 
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/company/users");
 		cy.getByTestId("users-invite")
-			.should("have.css", "background-color", "rgb(0, 60, 60)")
-			.and("have.css", "color", "rgb(228, 179, 60)");
+			.should("have.css", "background-color", "rgb(15, 76, 53)")
+			.and("have.css", "color", "rgb(255, 255, 255)");
 	});
 
 	it("Teams: the add team button is solid button/bg with text/button", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/company/teams");
 		cy.getByTestId("teams-add")
-			.should("have.css", "background-color", "rgb(0, 60, 60)")
-			.and("have.css", "color", "rgb(228, 179, 60)");
+			.should("have.css", "background-color", "rgb(15, 76, 53)")
+			.and("have.css", "color", "rgb(255, 255, 255)");
 	});
 
 	it("Support access: the give access button is solid button/bg with text/button", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/company/support");
 		cy.getByTestId("support-grant")
-			.should("have.css", "background-color", "rgb(0, 60, 60)")
-			.and("have.css", "color", "rgb(228, 179, 60)");
+			.should("have.css", "background-color", "rgb(15, 76, 53)")
+			.and("have.css", "color", "rgb(255, 255, 255)");
 	});
 
 	it("Telephony: the save button is solid button/bg with text/button", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/company/telephony");
 		cy.getByTestId("telephony-save")
-			.should("have.css", "background-color", "rgb(0, 60, 60)")
-			.and("have.css", "color", "rgb(228, 179, 60)");
+			.should("have.css", "background-color", "rgb(15, 76, 53)")
+			.and("have.css", "color", "rgb(255, 255, 255)");
 	});
 });
 
@@ -342,10 +346,10 @@ context("SOS-UI-3D: Companies, setup wizard and sign in follow the style", () =>
 			cy.getByTestId(page.ready, { timeout: 15000 }).should("be.visible");
 		};
 
-		it(`${page.name}: page colours, 24px/600 title, 16px card with the teal line`, () => {
+		it(`${page.name}: page colours, 24px/600 title, 14px card with the line`, () => {
 			open();
-			cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
-			cy.get("body").should("have.css", "color", "rgb(0, 60, 60)");
+			cy.get("body").should("have.css", "background-color", "rgb(244, 245, 247)");
+			cy.get("body").should("have.css", "color", "rgb(29, 34, 43)");
 			cy.get("h1.ui-page-title")
 				.first()
 				.should("have.css", "font-size", "24px")
@@ -353,9 +357,9 @@ context("SOS-UI-3D: Companies, setup wizard and sign in follow the style", () =>
 			cy.getByTestId("app-shell")
 				.find(".ui-card, .rounded-card")
 				.first()
-				.should("have.css", "border-top-left-radius", "16px")
+				.should("have.css", "border-top-left-radius", "14px")
 				.and("have.css", "border-top-width", "1px")
-				.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)");
+				.and("have.css", "border-top-color", "rgb(221, 226, 236)");
 		});
 
 		it(`${page.name}: every control is a frappe-ui control`, () => {
@@ -382,8 +386,8 @@ context("SOS-UI-3D: Companies, setup wizard and sign in follow the style", () =>
 		it(`${page.name}: the primary button is solid button/bg with text/button`, () => {
 			open();
 			cy.getByTestId(page.primary)
-				.should("have.css", "background-color", "rgb(0, 60, 60)")
-				.and("have.css", "color", "rgb(228, 179, 60)");
+				.should("have.css", "background-color", "rgb(15, 76, 53)")
+				.and("have.css", "color", "rgb(255, 255, 255)");
 		});
 	});
 

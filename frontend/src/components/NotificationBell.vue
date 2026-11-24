@@ -2,7 +2,7 @@
 	<div v-if="show" ref="root" class="relative" data-testid="sellos-notifications">
 		<Button
 			variant="ghost"
-			class="!relative !flex !min-h-touch !min-w-touch !items-center !justify-center !rounded-badge !px-2 !text-sm !text-on-brand hover:!bg-white/10"
+			class="!relative !flex !min-h-touch !min-w-touch !items-center !justify-center !rounded-badge !px-2 !text-sm !text-ink-body hover:!bg-brand-soft"
 			aria-label="Notifications"
 			:aria-expanded="open"
 			data-testid="sellos-notification-bell"
@@ -24,7 +24,7 @@
 
 			<span
 				v-if="state.unread > 0"
-				class="ml-1 rounded-badge bg-on-brand-accent px-2 py-0.5 text-xs font-semibold text-brand"
+				class="ml-1 rounded-badge bg-brand px-2 py-0.5 text-xs font-semibold text-on-brand"
 				data-testid="sellos-notification-count"
 				>{{ state.unread }}</span
 			>

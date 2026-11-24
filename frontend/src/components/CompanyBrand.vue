@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex items-center gap-2 text-base font-semibold tracking-[0.08em] text-on-brand"
+		class="flex items-center gap-2 text-base font-semibold text-ink"
 		data-testid="sellos-brand"
 	>
 		<img
@@ -10,10 +10,20 @@
 			class="h-8 w-auto"
 			data-testid="sellos-brand-logo"
 		/>
+		<span
+			v-else
+			class="flex h-8 w-8 items-center justify-center rounded-input bg-brand text-sm font-bold text-on-brand"
+			aria-hidden="true"
+			>{{ initial }}</span
+		>
 		<span data-testid="sellos-brand-name">{{ session.company.name || "SellOS" }}</span>
 	</div>
 </template>
 
 <script setup>
+import { computed } from "vue";
+
 import { session } from "../session";
+
+const initial = computed(() => (session.company.name || "SellOS").trim().charAt(0).toUpperCase());
 </script>

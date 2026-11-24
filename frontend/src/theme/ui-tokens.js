@@ -1,113 +1,110 @@
-// SellOS UI tokens (SOS-UI-2B). Colours, radius and spacing are the Pandya Realtors website tokens,
-// copied from docs/ui-reference/pandya-website-design-tokens.md. Fonts and the type scale stay PAMAA's
-// (Inter, 16px body). docs/UI_STYLE.md says where each value is used and records every contrast ratio.
+// SellOS UI tokens (SOS-UI-2B, restated by docs/UI_STANDARD.md). The system SellOS shares with BuildOS and
+// PAMAA: a neutral page, white cards with a soft shadow, Inter, a 10px control and 14px card radius, a pill
+// for the current menu item. Only the accent is SellOS's own: the approved brand green of docs/BRAND.md.
 // Pure data; tokens.js and tailwind.config.js read it, ui-tokens.css repeats it as CSS variables.
 
-// Primitives, as the website names them (color/teal/900 and so on).
-export const primitives = {
-	"teal-900": "#002D2D",
-	"teal-700": "#003C3C",
-	"teal-500": "#004848",
-	"gold-200": "#FFDC9C",
-	"gold-500": "#E4B33C",
-	"cream-100": "#FFF2DC",
-	"teal-700-a25": "rgba(0, 60, 60, 0.25)",
+// The shared neutrals (BuildOS neutral ramp, PAMAA ink, body, muted, line).
+export const neutrals = {
+	ink: "#1D222B", // text, strong borders
+	body: "#3F4A5C", // secondary text, field labels
+	muted: "#525F78", // small print, table headings, breadcrumb
+	field: "#778399", // input borders: 3.8:1 on white (PAMAA's #8A96AD is 3.0 and misses 3:1)
+	line: "#DDE2EC", // card and top bar borders
+	"line-soft": "#EBEEF4", // table row lines
+	page: "#F4F5F7", // page background (BuildOS neutral-grey, PAMAA tint-from)
+	subtle: "#EEF1F6", // locked or switched off areas
+	faint: "#F8F9FB", // quiet boxes
 	white: "#FFFFFF",
 };
 
-// Semantic colours, the website's own names. The `surface/dark` token is `surface-dark` here.
+// SellOS's own colour, the accent only: primary button, current menu pill, links, focus ring, selected tint.
+// A company's brand_color replaces `brand` at runtime (session.js applyCompanyTheme).
+export const brand = {
+	DEFAULT: "#0F4C35", // --sos-brand
+	dark: "#0A3626", // --sos-brand-dark
+	mid: "#2A7A5A", // --sos-brand-mid: avatar, hover
+	light: "#E3F0EA", // --sos-brand-light: selected, hover tint
+};
+
+// Semantic names kept from SOS-UI-2B so every component keeps working.
 export const semantic = {
-	"surface-dark": primitives["teal-700"], // sidebar and top bar
-	"surface-darkest": primitives["teal-900"],
-	"surface-accent": primitives["teal-500"], // current sidebar item
-	"surface-gold": primitives["gold-200"],
-	"surface-cream": primitives["cream-100"], // page background
-	"text-on-dark": primitives["gold-200"],
-	"text-on-light": primitives["teal-700"],
-	"text-accent": primitives["gold-500"], // only on teal, never on gold/200 (1.5:1)
-	"text-button": primitives["gold-500"],
-	"border-default": primitives["teal-900"],
-	"border-on-dark": primitives["gold-500"],
-	"button-bg": primitives["teal-700"],
-	"button-ghost-bg": primitives["teal-700-a25"],
-	"button-ghost-border": primitives["teal-900"],
+	"surface-page": neutrals.page,
+	"surface-card": neutrals.white,
+	"surface-shell": neutrals.white, // sidebar and top bar: light
+	"text-on-light": neutrals.ink,
+	"text-on-brand": neutrals.white,
+	"border-default": neutrals.line,
 };
 
-// Values the website tokens do not give. Each is derived from the palette; docs/UI_STYLE.md lists them.
+// Hover and selected tint of a row or a menu item, over white.
 export const derived = {
-	body: primitives["teal-500"], // labels and secondary text (9.4 on cream)
-	muted: "#3F6767", // small print, table headings, breadcrumb (5.7 on cream, 6.3 on white)
-	faint: "#FFF8EE", // quiet boxes: cream at 50% over white
-	subtle: "#F0E7D2", // locked areas: teal/700 at 6% over cream
-	"brand-soft": "#EBEFEF", // hover and selected tint: teal/700 at 8% over white
-	"tag-bg": "#E1E9E8",
+	body: neutrals.body,
+	muted: neutrals.muted,
+	faint: neutrals.faint,
+	subtle: neutrals.subtle,
+	"brand-soft": brand.light,
+	"tag-bg": "#EEF1F6",
 };
 
-// Jayman's call (20 Nov 2026): cards and inputs are white with a thin teal/900 line at low opacity.
-// The field line is stronger because an input's edge must reach 3:1 against white (WCAG 1.4.11).
+// Cards and top bar: a solid 1px line. Fields: the stronger line that meets 3:1 on white (WCAG 1.4.11).
 export const lines = {
-	card: "rgba(0, 45, 45, 0.20)", // cards, top bar, dividers on light
-	soft: "rgba(0, 45, 45, 0.10)", // table row lines
-	field: "rgba(0, 45, 45, 0.55)", // input borders: 3.6:1 on white
+	card: neutrals.line,
+	soft: neutrals["line-soft"],
+	field: neutrals.field,
 };
 
-// The website has no status colours. These four fit the palette; each has a word and an icon as well.
+// Status colours, PAMAA's with BuildOS's secondary for info. Each badge also has a word and an icon.
 export const status = {
-	success: { ink: "#0B5D3B", bg: "#DDEFDF", line: "#8FC4A0", icon: "lucide-circle-check" },
-	warning: { ink: "#7A4A00", bg: "#FFEBC0", line: "#E4B33C", icon: "lucide-triangle-alert" },
-	danger: { ink: "#A4281B", bg: "#FBE1DC", line: "#E0958B", icon: "lucide-circle-alert" },
-	info: { ink: "#1B5A78", bg: "#DCEAF2", line: "#8DB6CC", icon: "lucide-circle-dot" },
-	// Not a status colour: a badge with no tone, built from the palette (teal/700 on the ghost fill).
-	neutral: {
-		ink: "#003C3C",
-		bg: "#E1E9E8",
-		line: "rgba(0, 45, 45, 0.20)",
-		icon: "lucide-circle-dashed",
-	},
+	success: { ink: "#08724E", bg: "#ECFAF5", line: "#9FE5CD", icon: "lucide-circle-check" },
+	warning: { ink: "#8A4B00", bg: "#FEF8ED", line: "#F5D48A", icon: "lucide-triangle-alert" },
+	danger: { ink: "#BE3910", bg: "#FEF0EC", line: "#F8B5A1", icon: "lucide-circle-alert" },
+	info: { ink: "#1A6175", bg: "#EEF8FA", line: "#AADAE7", icon: "lucide-circle-dot" },
+	// Not a status colour: a badge with no tone.
+	neutral: { ink: "#3F4A5C", bg: "#F0F3F9", line: "#D5DBE6", icon: "lucide-circle-dashed" },
 };
 
 export const colors = {
-	ink: semantic["text-on-light"],
-	body: derived.body,
-	muted: derived.muted,
+	ink: neutrals.ink,
+	body: neutrals.body,
+	muted: neutrals.muted,
 	line: lines.card,
 	"line-soft": lines.soft,
-	dash: lines.card,
+	dash: "#D5DBE6", // dashed list separators
 	field: lines.field,
-	page: semantic["surface-cream"],
-	subtle: derived.subtle,
-	faint: derived.faint,
-	link: primitives["teal-700"], // underlined
+	page: neutrals.page,
+	subtle: neutrals.subtle,
+	faint: neutrals.faint,
+	link: brand.DEFAULT,
 	"info-bg": derived["tag-bg"],
 	danger: status.danger.ink, // required mark, error text
 	"danger-bg": status.danger.bg,
-	brand: primitives["teal-700"],
-	"brand-2": primitives["teal-500"],
-	"brand-soft": derived["brand-soft"],
-	white: primitives.white,
-	// Shell
-	"shell-bg": semantic["surface-dark"],
-	"shell-ink": semantic["text-on-dark"],
-	"shell-current-bg": semantic["surface-accent"],
-	"shell-current-ink": semantic["text-accent"],
-	"shell-line": "rgba(255, 255, 255, 0.15)", // dividers on the dark band
-	"button-ink": semantic["text-button"],
-	"ghost-bg": semantic["button-ghost-bg"],
-	"ghost-border": semantic["button-ghost-border"],
+	brand: brand.DEFAULT,
+	"brand-2": brand.mid,
+	"brand-soft": brand.light,
+	white: neutrals.white,
+	// Shell: white, with the current item a brand pill.
+	"shell-bg": semantic["surface-shell"],
+	"shell-ink": neutrals.body,
+	"shell-current-bg": brand.DEFAULT,
+	"shell-current-ink": neutrals.white,
+	"shell-line": lines.card,
+	"button-ink": neutrals.white,
+	"ghost-bg": neutrals.white,
+	"ghost-border": "#C9D0DD", // secondary button edge
 };
 
 export const gradients = {
-	// Text is solid colour only and so are buttons: the website keeps gradients to photo shapes.
+	// Used with restraint: the empty state card only. No gradient behind tables, forms or buttons.
 	"grad-brand": "none",
-	"grad-empty": `linear-gradient(135deg, ${primitives.white} 0%, ${primitives["cream-100"]} 100%)`,
+	"grad-empty": `linear-gradient(135deg, #FAFBFD 0%, ${neutrals.subtle} 100%)`,
 };
 
-// Fonts stay PAMAA's: Inter, self hosted (ui-tokens.css), not the website's stangith or Figtree.
+// Fonts: Inter, self hosted (ui-tokens.css).
 export const fontFamily = {
-	sans: ["Inter", "system-ui", '"Segoe UI"', "sans-serif"],
+	sans: ["Inter", "InterVar", "system-ui", '"Segoe UI"', "sans-serif"],
 };
 
-// Type scale stays PAMAA's: 16px body, 14px small, 24px title.
+// Type scale (PAMAA's): 16px body, 14px small, 24px title, 13px uppercase card heading, 24px stat.
 export const typography = {
 	title: ["1.5rem", { lineHeight: "1.25", fontWeight: "600" }],
 	heading: ["0.8125rem", { lineHeight: "1.4", letterSpacing: "0.06em", fontWeight: "600" }],
@@ -117,9 +114,7 @@ export const typography = {
 	stat: ["1.5rem", { lineHeight: "2rem", fontWeight: "600" }],
 };
 
-// Spacing is the website scale: xs 4, sm 8, md 14, lg 24, xl 48. The website's page margin is 69 on a 1728
-// canvas; the app uses the scale instead (docs/UI_STYLE.md). Names carry a ui- prefix so they cannot clash
-// with Tailwind's own xs..xl.
+// Spacing scale: 4px base. Names carry a ui- prefix so they cannot clash with Tailwind's own xs..xl.
 export const spacing = {
 	"ui-xs": "4px",
 	"ui-sm": "8px",
@@ -131,16 +126,17 @@ export const spacing = {
 	topbar: "61px",
 };
 
-// Radius is the website's: 8 for buttons and inputs, 16 for cards, 100 for round chips.
+// Radius: PAMAA's 14px card and 10px control (BuildOS's default is 10px), full for pills and badges.
 export const radius = {
-	card: "16px",
-	control: "8px",
+	card: "14px",
+	control: "10px",
 	pill: "9999px",
 };
 
+// Soft shadows, shared by BuildOS and PAMAA (neutral grey, not tinted).
 export const shadows = {
-	card: "0 1px 2px rgba(0, 45, 45, 0.05), 0 6px 20px -8px rgba(0, 45, 45, 0.12)",
-	lift: "0 2px 4px rgba(0, 45, 45, 0.06), 0 14px 32px -12px rgba(0, 45, 45, 0.22)",
+	card: "0 1px 2px rgba(17, 24, 39, 0.04), 0 6px 20px -8px rgba(17, 24, 39, 0.10)",
+	lift: "0 2px 4px rgba(17, 24, 39, 0.05), 0 14px 32px -12px rgba(17, 24, 39, 0.18)",
 	button: "none",
 };
 
@@ -154,7 +150,7 @@ export const motion = {
 export const controls = {
 	height: "44px",
 	"font-size": "1rem",
-	"focus-ring": "0 0 0 2px rgba(228, 179, 60, 0.9)", // gold/500 ring on teal and cream
+	"focus-ring": "0 0 0 3px rgba(15, 76, 53, 0.18)", // a soft brand ring (BuildOS)
 };
 
 // The same values as CSS variables, for plain CSS and for frappe-ui (see tailwind.config.js).

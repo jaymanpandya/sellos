@@ -1,6 +1,6 @@
 <template>
 	<header
-		class="sticky top-0 z-20 flex min-h-topbar items-center justify-between gap-ui-md bg-brand px-ui-md py-2 text-on-brand sm:px-ui-lg"
+		class="sticky top-0 z-20 flex min-h-topbar items-center justify-between gap-ui-md border-b border-line bg-surface px-ui-md py-2 text-ink sm:px-ui-lg"
 		data-testid="sellos-phone-topbar"
 	>
 		<div class="flex min-w-0 items-center gap-ui-sm">
@@ -17,14 +17,14 @@
 			<NotificationBell />
 			<button
 				type="button"
-				class="flex min-h-touch items-center gap-2 rounded-badge py-1 pl-1 pr-2 transition hover:bg-white/10"
+				class="flex min-h-touch items-center gap-2 rounded-badge py-1 pl-1 pr-2 transition hover:bg-brand-soft"
 				:aria-expanded="menuOpen ? 'true' : 'false'"
 				aria-haspopup="true"
 				data-testid="sellos-user-button"
 				@click="menuOpen = !menuOpen"
 			>
 				<span
-					class="flex h-9 w-9 items-center justify-center rounded-badge bg-brand-mid text-xs font-semibold text-on-brand-accent"
+					class="flex h-9 w-9 items-center justify-center rounded-badge bg-brand text-xs font-semibold text-on-brand"
 					aria-hidden="true"
 					>{{ badge }}</span
 				>
@@ -66,7 +66,7 @@
 </template>
 
 <script setup>
-// PAMAA's AppTopBar (SOS-UI-2B), adapted: surface/dark with text/onDark. Breadcrumb, search, the
+// PAMAA's AppTopBar (SOS-UI-2B), adapted: white with a bottom line. Breadcrumb, search, the
 // notification bell (SellOS's own), and the user button with its menu. PAMAA's help panel, offline
 // badge, waiting-to-send link and role switch are left out (see docs/UI_STYLE.md, copy list).
 import { computed, ref, watch } from "vue";

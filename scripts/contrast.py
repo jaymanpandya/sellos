@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Contrast ratios (WCAG 2.x) of every SellOS colour pairing. Run: python3 -I scripts/contrast.py
-Prints a markdown table; docs/UI_STYLE.md records its output (SOS-UI-2B)."""
+Prints a markdown table; docs/UI_STANDARD.md records its output (SOS-UI-2B)."""
 
 
 def rgb(h):
@@ -30,40 +30,38 @@ def hx(c):
 	return "#%02X%02X%02X" % c
 
 
-T900, T700, T500 = rgb("#002D2D"), rgb("#003C3C"), rgb("#004848")
-G200, G500, CREAM, WHITE = rgb("#FFDC9C"), rgb("#E4B33C"), rgb("#FFF2DC"), (255, 255, 255)
+INK, BODY, MUTED = rgb("#1D222B"), rgb("#3F4A5C"), rgb("#525F78")
+FIELD, LINE, PAGE, FAINT = rgb("#778399"), rgb("#DDE2EC"), rgb("#F4F5F7"), rgb("#F8F9FB")
+BRAND, BRAND_MID, BRAND_SOFT, WHITE = rgb("#0F4C35"), rgb("#2A7A5A"), rgb("#E3F0EA"), (255, 255, 255)
 
 STATUS = {  # tone: (ink, background, line)
-	"success": ("#0B5D3B", "#DDEFDF", "#8FC4A0"),
-	"warning": ("#7A4A00", "#FFEBC0", "#E4B33C"),
-	"danger": ("#A4281B", "#FBE1DC", "#E0958B"),
-	"info": ("#1B5A78", "#DCEAF2", "#8DB6CC"),
+	"success": ("#08724E", "#ECFAF5", "#9FE5CD"),
+	"warning": ("#8A4B00", "#FEF8ED", "#F5D48A"),
+	"danger": ("#BE3910", "#FEF0EC", "#F8B5A1"),
+	"info": ("#1A6175", "#EEF8FA", "#AADAE7"),
+	"neutral": ("#3F4A5C", "#F0F3F9", "#D5DBE6"),
 }
-GHOST = over(T700, WHITE, 0.25)  # secondary button fill on a white card
-HOVER_ROW = over(T500, T700, 0.5)  # sidebar hover
 
 PAIRS = [
-	("text/onDark on surface/dark (sidebar, top bar)", G200, T700, 4.5),
-	("text/accent on surface/dark", G500, T700, 4.5),
-	("text/accent on surface/accent (current sidebar item)", G500, T500, 4.5),
-	("text/onDark on surface/accent", G200, T500, 4.5),
-	("text/onDark on sidebar hover (surface/accent at 50%)", G200, HOVER_ROW, 4.5),
-	("text/onLight on surface/cream (page)", T700, CREAM, 4.5),
-	("text/onLight on white (cards, inputs)", T700, WHITE, 4.5),
-	("text/onLight on surface/gold", T700, G200, 4.5),
-	("text/button on button/bg (primary button)", G500, T700, 4.5),
-	("text/onLight on button/ghostBg over white (secondary button)", T700, GHOST, 4.5),
-	("text/onLight on button/ghostBg over cream", T700, over(T700, CREAM, 0.25), 4.5),
-	("link teal/700 on cream", T700, CREAM, 4.5),
-	("link teal/700 on white", T700, WHITE, 4.5),
-	("input border teal/900 at 55% on white (field)", over(T900, WHITE, 0.55), WHITE, 3.0),
-	("card border teal/900 at 20% on cream (decorative)", over(T900, CREAM, 0.20), CREAM, 1.0),
-	("NEVER: text/accent gold/500 on surface/gold gold/200", G500, G200, 4.5),
+	("text on page (ink on neutral page)", INK, PAGE, 4.5),
+	("text on white (ink on cards, inputs)", INK, WHITE, 4.5),
+	("body text on white (labels)", BODY, WHITE, 4.5),
+	("muted text on page (small print, table headings)", MUTED, PAGE, 4.5),
+	("muted text on white", MUTED, WHITE, 4.5),
+	("menu text on white shell (body)", BODY, WHITE, 4.5),
+	("current menu pill (white on brand)", WHITE, BRAND, 4.5),
+	("primary button (white on brand)", WHITE, BRAND, 4.5),
+	("primary button hover (white on brand mid)", WHITE, BRAND_MID, 4.5),
+	("link (brand on white)", BRAND, WHITE, 4.5),
+	("link (brand on page)", BRAND, PAGE, 4.5),
+	("brand on selected tint", BRAND, BRAND_SOFT, 4.5),
+	("input border on white (field)", FIELD, WHITE, 3.0),
+	("card border on page (decorative)", LINE, PAGE, 1.0),
 ]
 for tone, (ink, bg, line) in STATUS.items():
 	PAIRS.append((f"{tone} ink on {tone} background (badge)", rgb(ink), rgb(bg), 4.5))
 	PAIRS.append((f"{tone} ink on white", rgb(ink), WHITE, 4.5))
-	PAIRS.append((f"{tone} ink on cream", rgb(ink), CREAM, 4.5))
+	PAIRS.append((f"{tone} ink on page", rgb(ink), PAGE, 4.5))
 	PAIRS.append((f"{tone} line on {tone} background (border, decorative)", rgb(line), rgb(bg), 1.0))
 
 

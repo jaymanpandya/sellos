@@ -2,7 +2,7 @@
 // --surface-gray-7 and static ramps such as gray-500. This file remaps both to the SellOS tokens, so a
 // frappe-ui Button, Input, Badge, Dialog or Toast picks the Pandya palette up with no extra classes.
 // tailwind.config.js adds `frappeVariables` to :root and `frappePalette` to theme.extend.colors.
-import { derived, lines, primitives, status } from "./ui-tokens.js";
+import { brand, derived, lines, neutrals, status } from "./ui-tokens.js";
 
 const hex = (h) =>
 	h
@@ -31,19 +31,19 @@ function ramp(light, mid, dark) {
 	};
 }
 
-const T900 = primitives["teal-900"];
-const WHITE = primitives.white;
+const INK = neutrals.ink;
+const WHITE = neutrals.white;
 
-// Static ramps (bg-gray-100, text-red-700 ...). Neutrals are teal tinted, blue is teal.
+// Static ramps (bg-gray-100, text-red-700 ...). Neutrals are slate (BuildOS neutral), blue is the SellOS green.
 export const frappePalette = {
-	gray: ramp(WHITE, "#5F7F7F", T900),
-	blue: ramp(WHITE, primitives["teal-500"], T900),
-	green: ramp(WHITE, status.success.ink, "#06251A"),
-	red: ramp(WHITE, status.danger.ink, "#3A0F0A"),
+	gray: ramp(WHITE, "#61708C", INK),
+	blue: ramp(WHITE, brand.DEFAULT, "#031A10"),
+	green: ramp(WHITE, status.success.ink, "#032217"),
+	red: ramp(WHITE, status.danger.ink, "#2B0D04"),
 	orange: ramp(WHITE, status.warning.ink, "#2E1C00"),
-	amber: ramp(WHITE, primitives["gold-500"], "#3A2A00"),
-	yellow: ramp(WHITE, primitives["gold-500"], "#3A2A00"),
-	cyan: ramp(WHITE, status.info.ink, "#0A2230"),
+	amber: ramp(WHITE, "#F7BF50", "#3A2A00"),
+	yellow: ramp(WHITE, "#F7BF50", "#3A2A00"),
+	cyan: ramp(WHITE, status.info.ink, "#081D23"),
 };
 
 // Semantic variables (bg-surface-gray-7, text-ink-gray-8, border-outline-gray-2 ...), light mode.
@@ -54,14 +54,14 @@ export const frappeVariables = {
 	"--surface-cards": WHITE,
 	"--surface-modal": WHITE,
 	"--surface-selected": derived["brand-soft"],
-	"--surface-menu-bar": primitives["cream-100"],
+	"--surface-menu-bar": neutrals.page,
 	"--surface-gray-1": derived.faint,
 	"--surface-gray-2": derived["brand-soft"],
-	"--surface-gray-3": "#DDE5E4",
-	"--surface-gray-4": "#CBD7D6",
-	"--surface-gray-5": T900, // solid button, pressed
+	"--surface-gray-3": "#E5E9F0",
+	"--surface-gray-4": "#D5DBE6",
+	"--surface-gray-5": "var(--sos-brand-dark)", // solid button, pressed
 	"--surface-gray-6": "var(--sos-brand-mid)", // solid button, hover
-	"--surface-gray-7": "var(--sos-brand)", // solid button: button/bg
+	"--surface-gray-7": "var(--sos-brand)", // solid button
 	"--surface-blue-1": derived["tag-bg"],
 	"--surface-blue-2": status.info.bg,
 	"--surface-green-1": "#EFF7F0",
@@ -75,26 +75,26 @@ export const frappeVariables = {
 	"--surface-red-2": status.danger.bg,
 	"--surface-red-3": "#F5C9C2",
 	"--surface-red-4": status.danger.ink,
-	"--surface-red-5": "#8A2016", // solid danger button: gold/500 on it is 5.1
+	"--surface-red-5": "#8A2016", // solid danger button: white on it is 8.6
 	"--surface-red-6": "#6F180F",
 	"--surface-red-7": "#5A130C",
-	"--surface-blue-3": primitives["teal-500"],
+	"--surface-blue-3": "var(--sos-brand)",
 	// Text
 	"--ink-white": "var(--sos-on-brand-accent)", // text/button on the solid button
-	"--ink-gray-9": T900,
-	"--ink-gray-8": primitives["teal-700"], // text/onLight
-	"--ink-gray-7": primitives["teal-500"],
-	"--ink-gray-6": primitives["teal-500"],
+	"--ink-gray-9": INK,
+	"--ink-gray-8": neutrals.ink, // text on light
+	"--ink-gray-7": neutrals.body,
+	"--ink-gray-6": neutrals.body,
 	"--ink-gray-5": derived.muted,
-	"--ink-gray-4": "#577777", // placeholder: 4.9 on white
-	"--ink-gray-3": "#8DA5A3",
-	"--ink-gray-2": "#B8C7C5",
-	"--ink-gray-1": "#D8E1DF",
+	"--ink-gray-4": "#667389", // placeholder: 4.8 on white
+	"--ink-gray-3": "#98A2B5",
+	"--ink-gray-2": "#C4CBD8",
+	"--ink-gray-1": "#E2E6EE",
 	"--ink-blue-1": WHITE,
 	"--ink-blue-2": status.info.ink,
-	"--ink-blue-3": primitives["teal-700"], // links
-	"--ink-blue-4": T900,
-	"--ink-blue-link": primitives["teal-700"],
+	"--ink-blue-3": "var(--sos-brand)", // links
+	"--ink-blue-4": "var(--sos-brand-dark)",
+	"--ink-blue-link": "var(--sos-brand)",
 	"--ink-green-1": WHITE,
 	"--ink-green-2": status.success.ink,
 	"--ink-green-3": status.success.ink,
@@ -109,10 +109,10 @@ export const frappeVariables = {
 	// Borders
 	"--outline-white": WHITE,
 	"--outline-gray-1": lines.soft,
-	"--outline-gray-2": lines.field, // input border: 3.6 on white
-	"--outline-gray-3": "rgba(0, 45, 45, 0.7)",
-	"--outline-gray-4": primitives["teal-700"], // focused field
-	"--outline-gray-5": T900,
+	"--outline-gray-2": lines.field, // input border: 3.8 on white
+	"--outline-gray-3": "#5F6B82",
+	"--outline-gray-4": "var(--sos-brand)", // focused field
+	"--outline-gray-5": INK,
 	"--outline-gray-modals": lines.card,
 	"--outline-blue-1": status.info.line,
 	"--outline-blue-2": status.info.ink,

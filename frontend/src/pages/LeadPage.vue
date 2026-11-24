@@ -861,7 +861,7 @@
 		:retry="false"
 		data-testid="sellos-lead-loading"
 	/>
-	<p v-else data-testid="sellos-lead-loading" class="text-ink-muted">Loading</p>
+	<LoadingSkeleton v-else :rows="6" label="Loading" data-testid="sellos-lead-loading" />
 </template>
 
 <script setup>
@@ -877,6 +877,7 @@ import LeadMatches from "../inventory/LeadMatches.vue";
 import LeadShortlists from "../inventory/LeadShortlists.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import VisitConfirm from "../components/VisitConfirm.vue";
 import { setPageTitle } from "../shell";

@@ -34,6 +34,7 @@
 		</div>
 
 		<ListCard title="Projects">
+			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
 			<EmptyState
 				v-if="loaded && !loadError && !projects.length"
 				title="No projects yet"
@@ -46,7 +47,7 @@
 					:key="p.name"
 					data-testid="sellos-inventory-project-row"
 					:data-name="p.name"
-					class="rounded-input border border-line-soft p-ui-md"
+					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
 				>
 					<div class="flex flex-wrap items-center gap-3">
 						<router-link
@@ -74,6 +75,7 @@
 		</ListCard>
 
 		<ListCard title="Secondary properties" class="mt-ui-md">
+			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
 			<EmptyState
 				v-if="loaded && !loadError && !properties.length"
 				title="No properties yet"
@@ -87,7 +89,7 @@
 					data-testid="sellos-inventory-property-row"
 					:data-name="p.name"
 					:data-status="p.status"
-					class="rounded-input border border-line-soft p-ui-md"
+					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
 				>
 					<div class="flex flex-wrap items-center gap-3">
 						<span class="font-medium text-ink">{{ p.title }}</span>
@@ -140,6 +142,7 @@
 		</ListCard>
 
 		<ListCard title="Developers" class="mt-ui-md">
+			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
 			<EmptyState
 				v-if="loaded && !loadError && !developers.length"
 				title="No developers yet"
@@ -151,7 +154,7 @@
 					v-for="d in developers"
 					:key="d.name"
 					data-testid="sellos-inventory-developer-row"
-					class="rounded-input border border-line-soft p-ui-md text-sm"
+					class="rounded-card border border-line-soft bg-surface-faint p-ui-md text-sm"
 				>
 					<span class="font-medium text-ink">{{ d.developer_name }}</span>
 					<span v-if="d.contact_person" class="text-ink-muted">
@@ -335,6 +338,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import EmptyState from "../components/EmptyState.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import FormField from "../components/FormField.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";

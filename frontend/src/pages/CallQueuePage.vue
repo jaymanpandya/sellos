@@ -38,7 +38,7 @@
 					<li
 						v-for="row in view.leads"
 						:key="row.lead"
-						class="rounded-input border border-line-soft p-ui-md"
+						class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
 						data-testid="sellos-queue-row"
 						:data-lead="row.lead"
 						:data-status="row.consent_status"

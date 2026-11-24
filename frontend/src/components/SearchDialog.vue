@@ -1,7 +1,7 @@
 <template>
 	<button
 		type="button"
-		class="flex min-h-touch min-w-touch shrink-0 items-center justify-center rounded-badge hover:bg-white/10"
+		class="flex min-h-touch min-w-touch shrink-0 items-center justify-center rounded-badge hover:bg-brand-soft"
 		aria-label="Search leads"
 		aria-haspopup="dialog"
 		data-testid="sellos-search-open"

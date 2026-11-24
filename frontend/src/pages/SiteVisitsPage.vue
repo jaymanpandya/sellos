@@ -38,7 +38,7 @@
 					v-for="v in tomorrow?.visits || []"
 					:key="v.name"
 					data-testid="sellos-visits-tomorrow-item"
-					class="rounded-input border border-line-soft p-ui-md"
+					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
 				>
 					<div class="flex flex-wrap items-center justify-between gap-ui-sm">
 						<span class="text-ink">
@@ -99,7 +99,7 @@
 					:key="d.date"
 					data-testid="sellos-visits-day"
 					:data-date="d.date"
-					class="rounded-input border border-line-soft p-ui-md"
+					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
 				>
 					<p class="text-sm font-medium text-ink">{{ dayLabel(d.date) }}</p>
 					<p v-if="!d.visits.length" class="text-sm text-ink-muted">No visits.</p>

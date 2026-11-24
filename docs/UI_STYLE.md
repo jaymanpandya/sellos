@@ -1,5 +1,7 @@
 # SellOS UI style guide (SOS-UI-1, SOS-UI-2B)
 
+> **Colours, radius, shadows, the shell and the nav pill are now defined in [`UI_STANDARD.md`](UI_STANDARD.md)** (24 November 2026: the shared BuildOS and PAMAA look, with the SellOS green as the accent only). The Pandya palette, cream page and dark shell described in the sections below are **superseded**; this file stays for the component list ("Copied from PAMAA"), the patterns and the checklist, and its colour tables are kept as history.
+
 SellOS has PAMAA's layout and components in the **Pandya Realtors palette**. Three sources, each used for one thing:
 
 | What | Source |

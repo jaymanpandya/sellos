@@ -1,6 +1,6 @@
 <template>
 	<nav
-		class="fixed inset-x-0 bottom-0 z-30 flex border-t border-white/15 bg-brand text-on-brand lg:hidden"
+		class="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface text-ink-body lg:hidden"
 		aria-label="Main (phone)"
 		data-testid="sellos-phone-nav"
 	>
@@ -42,7 +42,7 @@
 		>
 			<div class="absolute inset-0 bg-black/40" @click="closeMenu" />
 			<div
-				class="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-card bg-brand p-ui-md pb-[calc(1rem+57px)] text-on-brand shadow-lift"
+				class="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-card bg-surface p-ui-md pb-[calc(1rem+57px)] text-ink shadow-lift"
 			>
 				<router-link
 					v-for="item in rest"
@@ -82,8 +82,8 @@ const rest = computed(() => (items.value.length <= 5 ? [] : items.value.slice(4)
 
 <style scoped>
 .ui-bar-active {
-	color: var(--sos-on-brand-accent);
-	background-color: var(--sos-brand-mid);
+	color: var(--sos-brand);
+	background-color: var(--ui-brand-soft);
 	font-weight: 600;
 }
 </style>

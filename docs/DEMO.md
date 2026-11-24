@@ -91,17 +91,34 @@ Every password is **`Demo@2026`**. They are published here on purpose and exist 
 
 ## Every feature built so far (SOS-DEMO-2)
 
-Both companies get the same set of features, so each screen has something to show. The inventory, partner,
-share and inbound records come from the regression seed's own functions (`sellos.tests.ui_fixtures`), built
-through the production APIs, so they are named "Regression ...", as on the regression site.
+Both companies get the same set of features, so each screen has something to show. Skyline Realty (Mumbai) and
+Greenfield Homes (Pune) each have their own realistic content, written in `sellos/testing/demo_data.py` and built by
+`sellos/testing/demo.py` through the production APIs, as the person who would do it. Every developer, project and
+person is made up. Nothing is named "Regression": that is the regression site's seed (`sellos.tests.ui_fixtures`),
+which the demo no longer uses. A step that fails prints `DEMO SEED STEP FAILED: <step>` and the others still run.
 
-* **Inventory**: developers, projects with towers, a unit grid, pricing and units (some Held, Sold or
-  blocked), and secondary properties (Regression Resale Flat).
-* **Listings**: three, one of them published (a Primary, a Direct resale, and a Partner draft), with photos.
-* **Channel partner firms**: four, one in each state: Invited, Pending approval, Approved and Suspended.
-* **Partner registrations**: three, Registered (waiting), Approved (protected) and Rejected.
-* **Partner shares**: a project shared with the approved firm, one shared with every approved firm, and a
-  withdrawn share.
+* **Inventory**: two developers and four projects with RERA numbers. Skyline: Meridian Skyline Residences (Andheri
+  West, Tower A with 12 units on floors 10 to 12), Powai Lakeview Heights, Worli Sea Crest and Thane Greens Phase 2.
+  Greenfield: Baner Orchid Heights, Kharadi Riverside Residences, Hinjewadi Greenview and Wakad Lotus Park. Units
+  carry configuration, floor, carpet area and parking; one unit is held for a lead and one is blocked by the company.
+  Each project has a price list (rate per sq ft) and the flagship projects have payment plans and a cost sheet.
+  Two resale properties each (Bandra West and Vashi; Aundh and Kothrud).
+* **Listings**: four published, two Primary (a unit of the first two projects) and two Direct resale.
+* **Channel partner firms**: three each. The demo Channel Partner (`partner.<company>@...`) is the contact person of
+  an Approved firm (Skyline: Kothari & Rao Property Consultants; Greenfield: Deccan Property Advisors), so the
+  partner screens show data. The other two are Invited and Pending approval.
+* **Partner registrations**: three buyers the partner registers: Approved (protected), Registered (waiting) and Rejected.
+* **Partner shares**: a project shared with the approved firm with its price list, one shared with every approved firm,
+  and a third shared with the firm.
+* **Sellers and mandates**: two sellers each with their property: a Draft Exclusive mandate with a hidden dossier note,
+  and a Signed Open mandate with a dossier note and the title deed.
+* **Deals and Commission**: four deals each, made by the Company Admin: the commission rate of each project is 2 percent
+  from 1 January 2025. One deal's split is approved and its partner payout is **Paid** (with a payment reference), one
+  is **Approved**, one is **Due**, and the fourth, a resale flat, still waits for its split to be approved (no payout).
+* **WhatsApp**: the company's number (the fake provider, fake keys) with the template `site_visit_reminder` and five
+  conversations in Hinglish (Marathi mixed in for Pune): a customer who writes and gets replies, one who opts in
+  with START (Consented), one handed to a human with a note, one who sends STOP (Opted out), and one who is sent the
+  visit reminder template. Messages are delivered or read.
 * **Inbound leads**: two enquiry page leads (one consented, one "Stop contacting me") and a missed call lead.
 * **Sales team**: the Sales Manager (`sales.skyline@...`, `sales.greenfield@...`) runs "<Company> Sales Team"
   with both agents, so Teams and the Team report show data and the manager sees both agents' leads.
@@ -116,10 +133,15 @@ through the production APIs, so they are named "Regression ...", as on the regre
 * **Do not call list**: four numbers that belong to nobody on the demo. Calling hours are off.
 * **Consent wording**: the default wording is set on both companies, with the company's name in it.
 * **Notifications**: each agent's bell holds Lead assigned, Follow up due or overdue and Site visit tomorrow.
-* **Home and Today**: each Agent has open follow ups (overdue, due soon, tomorrow) and a site visit tomorrow.
+* **Home and Today**: each Agent has open follow ups (overdue by hours and by one or two days, due soon, tomorrow), a site
+  visit tomorrow and site visits **today** (three per company; each `scripts/demo.sh update` on a new day adds that day's).
   The Sales Manager's Today reads the same by agent, and the Company Admin's Home shows the counts.
 
 ## When something looks wrong
 
 `scripts/demo.sh status`, then `~/iespl-baseline/sellos-demo.log`. `scripts/demo.sh reset` rebuilds everything.
 The demo uses the same SellOS code as the loop (`apps/sellos`), so a half merged change can show there too.
+
+Records an earlier seed already made stay: `update` adds the content above beside them and never deletes. A site that
+was seeded before this content existed still shows its "Regression ..." projects, firms and shares next to the new ones;
+`scripts/demo.sh reset` rebuilds a site with only the realistic content.

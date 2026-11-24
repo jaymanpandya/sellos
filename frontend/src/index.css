@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SOS-UI-2B: PAMAA's layout in the Pandya palette (docs/UI_STYLE.md). Values come from the tokens, never written by hand. */
+/* SOS-UI-2B: the shared BuildOS and PAMAA look (docs/UI_STANDARD.md). Values come from the tokens, never written by hand. */
 body {
 	@apply bg-surface-muted font-sans text-base text-ink antialiased;
 	font-family: var(--ui-font);
@@ -26,7 +26,7 @@ h3 {
 		@apply mt-1 max-w-3xl text-base text-ink-body;
 	}
 
-	/* Cards: white, 16px radius, 1px teal/900 line at 20%, card shadow. */
+	/* Cards: white, 14px radius, 1px line, soft card shadow. */
 	.ui-card {
 		@apply rounded-card border border-line bg-surface p-ui-md shadow-card sm:p-ui-lg;
 	}
@@ -34,31 +34,33 @@ h3 {
 		@apply text-heading uppercase text-ink-muted;
 	}
 
-	/* Buttons: 44px, 8px radius. Secondary (ghost fill and border) by default, solid for the one main action. */
+	/* Buttons: 44px, 10px radius. Secondary (white, line) by default, solid brand for the one main action. */
 	.btn,
 	.ui-button {
 		@apply inline-flex min-h-touch min-w-touch items-center justify-center gap-2 rounded-input border border-ghost-border bg-ghost-bg px-[18px] text-base font-medium text-ink transition active:scale-[0.98] disabled:opacity-50;
 	}
 	.btn:hover,
 	.ui-button:hover {
-		background-color: color-mix(in srgb, var(--sos-brand) 35%, transparent);
+		background-color: var(--ui-brand-soft);
+		border-color: var(--sos-brand);
 	}
 	.ui-button-solid {
 		@apply border-transparent text-on-brand-accent;
 		background-color: var(--sos-brand);
 	}
 	.ui-button-solid:hover {
-		background-color: var(--sos-brand-mid);
+		background-color: var(--sos-brand-dark);
+		border-color: transparent;
 	}
 	.btn:focus-visible,
 	.field:focus,
 	.ui-field:focus {
 		@apply outline-none;
 		border-color: var(--sos-brand);
-		box-shadow: 0 0 0 2px color-mix(in srgb, var(--sos-brand) 70%, transparent);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--sos-brand) 18%, transparent);
 	}
 
-	/* Fields: 44px, 8px radius, 1px teal/900 line at 55% (3.6:1 on white), 16px text. */
+	/* Fields: 44px, 10px radius, 1px line (3.8:1 on white), 16px text. */
 	.field,
 	.ui-field {
 		@apply block min-h-touch w-full rounded-input border border-line-field bg-surface px-3 text-base text-ink;
@@ -75,7 +77,7 @@ h3 {
 	.ui-error {
 		@apply text-xs text-danger;
 	}
-	/* Links: teal/700, underlined. */
+	/* Links: the brand colour, underlined. */
 	.ui-link,
 	a:not([class]) {
 		@apply text-link underline underline-offset-2;
@@ -86,7 +88,7 @@ h3 {
 		@apply w-full text-left text-base;
 	}
 	.ui-table th {
-		@apply border-b border-line px-2.5 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted;
+		@apply border-b border-line bg-surface-faint px-2.5 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted;
 	}
 	.ui-table td {
 		@apply border-b border-line-soft px-2.5 py-2;
@@ -119,7 +121,7 @@ h3 {
 	/* Empty state, load error, toast. */
 	.ui-empty {
 		@apply flex flex-col items-center gap-2 rounded-card border border-dashed px-4 py-8 text-center text-base text-ink-muted;
-		border-color: color-mix(in srgb, var(--sos-brand) 25%, transparent);
+		border-color: var(--ui-dash);
 		background-image: var(--ui-grad-empty);
 	}
 	.ui-error-box {
@@ -127,6 +129,22 @@ h3 {
 	}
 	.ui-toast {
 		@apply flex min-h-touch max-w-sm items-center gap-2 rounded-card border bg-surface px-3 text-base shadow-lift;
+	}
+
+	/* The current menu item: a brand pill (the one place the accent fills a shell element). */
+	.ui-pill-active {
+		background-color: var(--sos-brand) !important;
+		color: var(--sos-on-brand) !important; /* beats the item's own text colour utility */
+		font-weight: 600;
+		box-shadow: var(--ui-shadow-card);
+	}
+	.ui-pill-hover:hover {
+		background-color: var(--ui-brand-soft);
+	}
+
+	/* Card that is a link lifts a little when pointed at. */
+	a.ui-card:hover {
+		box-shadow: var(--ui-shadow-lift);
 	}
 }
 
@@ -156,10 +174,10 @@ textarea.form-textarea,
 }
 .form-input:focus-visible,
 [data-slot="trigger"]:focus-visible {
-	box-shadow: 0 0 0 2px color-mix(in srgb, var(--sos-brand) 70%, transparent);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--sos-brand) 18%, transparent);
 }
 
-/* Native checkboxes: a teal box with a white tick (button/bg), the field line when empty. */
+/* Native checkboxes: a brand box with a white tick (button/bg), the field line when empty. */
 input[type="checkbox"] {
 	appearance: none;
 	display: inline-grid;
@@ -188,7 +206,7 @@ input[type="checkbox"]:checked {
 }
 input[type="checkbox"]:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 2px color-mix(in srgb, var(--sos-brand) 70%, transparent);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--sos-brand) 18%, transparent);
 }
 input[type="checkbox"]:disabled {
 	border-style: dashed;
@@ -196,7 +214,7 @@ input[type="checkbox"]:disabled {
 	cursor: not-allowed;
 }
 
-/* Native date and time inputs: the field's own look, a teal picker icon and the teal date parts. */
+/* Native date and time inputs: the field's own look and a brand picker icon. */
 input[type="date"],
 input[type="datetime-local"],
 input[type="time"] {
@@ -210,8 +228,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 	border-radius: 4px;
 	padding: 2px;
 	opacity: 0.8;
-	/* teal/700 */
-	filter: brightness(0) saturate(100%) invert(15%) sepia(60%) saturate(1200%) hue-rotate(135deg) brightness(90%);
+	filter: brightness(0) saturate(100%) invert(22%) sepia(30%) saturate(1100%) hue-rotate(110deg) brightness(90%);
 }
 input[type="date"]::-webkit-calendar-picker-indicator:hover,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
@@ -230,7 +247,7 @@ input[type="datetime-local"]:invalid::-webkit-datetime-edit {
 
 /* Shimmer rows while a list loads (PAMAA's skeleton), in the palette. */
 .ui-shimmer {
-	background: linear-gradient(90deg, rgba(0, 60, 60, 0.08) 0%, rgba(0, 60, 60, 0.03) 45%, rgba(0, 60, 60, 0.08) 90%);
+	background: linear-gradient(90deg, rgba(17, 24, 39, 0.07) 0%, rgba(17, 24, 39, 0.03) 45%, rgba(17, 24, 39, 0.07) 90%);
 	background-size: 220% 100%;
 	animation: ui-shimmer 1.3s linear infinite;
 }

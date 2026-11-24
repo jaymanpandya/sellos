@@ -36,6 +36,7 @@
 		</div>
 
 		<ListCard title="Payouts">
+			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
 			<EmptyState
 				v-if="loaded && !loadError && !payouts.length"
 				title="No payouts yet"
@@ -51,7 +52,7 @@
 					:data-deal="p.deal"
 					:data-firm="p.firm_name"
 					:data-status="p.status"
-					class="rounded-input border border-line-soft p-ui-md"
+					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
 				>
 					<div class="flex flex-wrap items-center gap-3">
 						<span class="font-medium text-ink">{{ p.firm_name }}, {{ p.target }}</span>
@@ -178,6 +179,7 @@
 		</ListCard>
 
 		<ListCard title="Commission rates" class="mt-ui-lg">
+			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
 			<EmptyState
 				v-if="loaded && !loadError && !rates.length"
 				title="No rates yet"
@@ -191,7 +193,7 @@
 					data-testid="sellos-commission-rate"
 					:data-project="r.project_name"
 					:data-start="r.start_date"
-					class="flex flex-wrap items-center gap-3 rounded-input border border-line-soft p-ui-md text-sm text-ink"
+					class="flex flex-wrap items-center gap-3 rounded-card border border-line-soft bg-surface-faint p-ui-md text-sm text-ink"
 				>
 					<span class="font-medium">{{ r.project_name }}</span>
 					<span>{{ r.firm_name || "All partners" }}</span>
@@ -310,6 +312,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import EmptyState from "../components/EmptyState.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import FormField from "../components/FormField.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";

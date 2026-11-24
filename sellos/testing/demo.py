@@ -759,7 +759,7 @@ def _activities(lead, agent, stage_index, days):
 		).insert(ignore_permissions=True)
 
 
-def _tasks_and_visits(lead, agent, stage, days):
+def _tasks_and_visits(lead, agent, stage, days, data):
 	import frappe
 	from frappe.utils import add_days, now_datetime, today
 
@@ -781,7 +781,7 @@ def _tasks_and_visits(lead, agent, stage, days):
 			{
 				"doctype": "Site Visit",
 				"lead": lead,
-				"project_name": "Skyline Towers" if stage == "Site visit booked" else "Greenfield Park",
+				"project_name": _market(data)["visit_projects"][0 if stage == "Site visit booked" else 1],
 				"visit_datetime": add_days(now_datetime(), 2 if stage == "Site visit booked" else -3),
 				"status": "Scheduled" if stage == "Site visit booked" else "Done",
 			}
@@ -872,7 +872,7 @@ def seed_company(index=0):
 		made += 1 if new else 0
 		agent = users["partner"] if row[8] is None else users["agents"][row[8]]
 		_activities(lead, agent, stage_order.index(row[6]), row[10])
-		_tasks_and_visits(lead, agent, row[6], row[10])
+		_tasks_and_visits(lead, agent, row[6], row[10], data)
 	_support_grants(users["admin"])
 	_seed_features(index, data, users)
 	frappe.db.commit()  # nosemgrep  bench execute commits too
@@ -880,9 +880,9 @@ def seed_company(index=0):
 
 
 # --- Every feature built so far (SOS-DEMO-2) ---------------------------------------------------------
-# Inventory, partner firms, registrations, shares, listings and the inbound leads come from the regression
-# seed's own functions (sellos.tests.ui_fixtures), which build them through the production APIs. Their
-# records are named "Regression ...", as on the regression site. Everything below is safe to run again.
+# The demo's content is realistic (sellos/testing/demo_data.py): Mumbai and Pune projects, partner firms,
+# deals, commission payouts and WhatsApp conversations, built through the production APIs further down. The
+# regression seed's "Regression ..." records are not used here. Everything below is safe to run again.
 
 SALES_PASSWORD_WORD = "sales"
 DEMO_TELEPHONY_ID = "FAKEOK-DEMO-NOT-A-REAL-KEY"  # FAKEOK: the fake provider accepts it
@@ -932,8 +932,6 @@ def _lead_of(data, row_index):
 def _seed_features(index, data, users):
 	import frappe
 
-	from sellos.tests import ui_fixtures as fx
-
 	admin, agents = users["admin"], users["agents"]
 	frappe.db.set_single_value(
 		"SellOS Settings", "consent_wording", DEMO_CONSENT_WORDING.format(company=data["name"])
@@ -941,13 +939,16 @@ def _seed_features(index, data, users):
 	_seed_telephony_demo(index, admin)
 	_seed_sales_team(data, admin, agents)
 	_seed_do_not_call(admin)
-	fx._seed_inventory(admin, agents[0])
-	fx._seed_partner_firms(admin)
-	fx._seed_partner_registrations(admin)
-	fx._seed_partner_shares(admin)
-	fx._seed_inbound_opt_in()
+	frappe.db.commit()  # nosemgrep  so a failed step below rolls back only itself
+	_isolated("inventory", _seed_demo_inventory, data, users)
+	_isolated("partners", _seed_demo_partners, data, users)
+	_isolated("enquiries", _seed_demo_enquiries, data)
+	_isolated("sellers", _seed_demo_sellers, data, users)
+	_isolated("deals and commission", _seed_demo_deals, data, users)
+	_isolated("whatsapp", _seed_demo_whatsapp, data, users)
 	_seed_calls(data, agents)
 	_seed_agent_work(data, agents)
+	_isolated("visits and follow ups", _seed_demo_visits_and_follow_ups, data, users)
 
 
 def _seed_telephony_demo(index, admin):
@@ -1060,10 +1061,17 @@ def _seed_agent_work(data, agents):
 					"assigned_to": agents[agent_index],
 				}
 			)
-	visits = ((0, 5, "Tomorrow tour", 11), (1, 6, "Tomorrow walkthrough", 15))
-	for agent_index, row, project, hour in visits:
+	market = _market(data)
+	# (agent, lead row, project, hour, the name an earlier seed gave it, so a site made before is not doubled)
+	visits = (
+		(0, 5, market["visit_projects"][2], 11, "Tomorrow tour"),
+		(1, 6, market["visit_projects"][0], 15, "Tomorrow walkthrough"),
+	)
+	for agent_index, row, project, hour, earlier in visits:
 		lead = _lead_of(data, row)
-		if not lead or frappe.db.exists("Site Visit", {"lead": lead, "project_name": project}):
+		if not lead or frappe.db.exists(
+			"Site Visit", {"lead": lead, "project_name": ["in", [project, earlier]]}
+		):
 			continue
 		stage = frappe.db.get_value("Lead", lead, "stage")
 		with _as(agents[agent_index]):
@@ -1092,6 +1100,557 @@ def _seed_agent_work(data, agents):
 			)
 	notifications.notify_follow_ups()
 	notifications.notify_site_visits()
+
+
+# --- Realistic content: inventory, partners, deals, commission, WhatsApp (replaces the "Regression" names) --
+# Everything below reads sellos/testing/demo_data.py and goes through the production APIs, as the person who
+# would do it. Each function looks a record up first, so running it again adds nothing. Each runs on its own
+# (`_isolated`): if one fails, the others still run and the failure is printed, so one bad record never stops
+# `scripts/demo.sh update`.
+
+
+def _market(data):
+	from sellos.testing import demo_data
+
+	return demo_data.MARKET[data["word"]]
+
+
+def demo_seed(kind, n):
+	"""The phone seed (not the number) for sellos.tests.phones.in_mobile, one range per kind."""
+	from sellos.testing import demo_data
+
+	return demo_data.PHONE_SEEDS[kind] + n
+
+
+def _seed(kind, n):
+	"""A fake phone number for the demo, from sellos.tests.phones, never written by hand."""
+	from sellos.tests import phones
+
+	return phones.in_mobile(demo_seed(kind, n))
+
+
+def _isolated(label, function, *args):
+	"""Run one seed step. A failure is printed and rolled back to the last commit; the next step still runs."""
+	import traceback
+
+	import frappe
+
+	try:
+		result = function(*args)
+		frappe.db.commit()  # nosemgrep  bench execute commits too
+		return result
+	except Exception:
+		frappe.db.rollback()
+		print(f"DEMO SEED STEP FAILED: {label}\n{traceback.format_exc()}", file=sys.stderr)
+		return None
+
+
+def _project_name_of(market, index):
+	return market["projects"][index]["name"]
+
+
+def _price_list(title, rate, on="2025-01-01"):
+	"""A dated price list: the project's base rate per sq ft, a floor rise above floor 4 and three charges."""
+	return {
+		"title": title,
+		"effective_from": on,
+		"base_rate": rate,
+		"floor_rise_rate": 100,
+		"floor_rise_from_floor": 4,
+		"charges": [
+			{
+				"charge_type": "Preferred location",
+				"charge_name": "Garden facing",
+				"basis": "Rate per sq ft",
+				"value": 150,
+			},
+			{"charge_type": "Parking", "charge_name": "Covered parking", "basis": "Amount", "value": 400000},
+			{
+				"charge_type": "Other",
+				"charge_name": "Development charges",
+				"basis": "Amount",
+				"value": 250000,
+				"always_apply": 1,
+			},
+		],
+	}
+
+
+def _seed_demo_inventory(data, users):
+	"""Developers, projects with towers, units and holds, a price list, payment plans, a cost sheet, resale
+	properties and published listings."""
+	import frappe
+
+	from sellos.inventory import api, cost_sheet, holds, listings, pricing, structure
+
+	market = _market(data)
+	admin, agent = users["admin"], users["agents"][0]
+	first = _project_name_of(market, 0)
+	if frappe.db.exists("Project", {"project_name": first}):
+		return
+	with _as(admin):
+		for name, person, email in market["developers"]:
+			if not frappe.db.exists("Developer", name):
+				api.save_developer({"developer_name": name, "contact_person": person, "email": email})
+		pricing.save_cost_settings(6, 1, 5)
+		projects = []
+		for spec in market["projects"]:
+			developer = market["developers"][spec["developer"]][0]
+			project = api.save_project(
+				{
+					"project_name": spec["name"],
+					"developer": developer,
+					"rera_number": spec["rera"],
+					"city": spec["city"],
+					"locality": spec["locality"],
+					"project_status": spec["status"],
+				}
+			)["name"]
+			projects.append(project)
+			if "tower" in spec:
+				tower_name, floor, ranges, area, configuration = spec["tower"]
+				for amenity in spec["amenities"]:
+					structure.save_amenity(amenity)
+				structure.save_project_details(project, spec["possession"], list(spec["amenities"]))
+				tower = structure.add_tower(project, tower_name, f"{floor} to {floor + len(ranges) - 1}")[
+					"name"
+				]
+				for offset, (low, high) in enumerate(ranges):
+					structure.generate_floor_units(
+						tower, floor + offset, f"{low} to {high}", area, configuration
+					)
+				units = {u["unit_number"]: u["name"] for u in api.get_project(project)["units"]}
+				for number in spec["three_bhk"]:
+					api.save_unit({"configuration": "3 BHK", "carpet_area": 905}, name=units[number])
+			else:
+				for number, configuration, floor, area, parking in spec["units"]:
+					api.save_unit(
+						{
+							"project": project,
+							"unit_number": number,
+							"configuration": configuration,
+							"floor": floor,
+							"carpet_area": area,
+							"parking": parking,
+						}
+					)
+			pricing.save_price_list(project, _price_list(f"{spec['name']} price list 2025", spec["rate"]))
+		plan = pricing.save_payment_plan(
+			projects[0],
+			{
+				"plan_name": "Construction linked 20:30:50",
+				"plan_type": "Construction linked",
+				"instalments": [
+					{"label": "On booking", "due_on": "On booking", "percent": 20},
+					{"label": "On the 8th floor slab", "due_on": "On the 8th floor slab", "percent": 30},
+					{"label": "On possession", "due_on": "On possession", "percent": 50},
+				],
+			},
+		)["name"]
+		pricing.save_payment_plan(
+			projects[1],
+			{
+				"plan_name": "Ready home 10:90",
+				"plan_type": "Time linked",
+				"instalments": [
+					{"label": "Booking amount", "days_after_booking": 0, "percent": 10},
+					{"label": "At agreement, 30 days after", "days_after_booking": 30, "percent": 90},
+				],
+			},
+		)
+		holds.block_unit(_unit_of(projects, market, market["block"]), market["block"]["reason"])
+		sample_unit = _unit_of(
+			projects, market, {"project": 0, "unit": market["projects"][0]["tower"][2][0][0]}
+		)
+	with _as(agent):
+		cost_sheet.make_cost_sheet(sample_unit, plan, ["Garden facing"])
+		hold = market["hold"]
+		lead = _lead_of(data, hold["lead"])
+		if lead:
+			holds.hold_unit(_unit_of(projects, market, hold), lead)
+		props = []
+		for spec in market["properties"]:
+			values = {k: v for k, v in spec.items() if k != "asking_price"}
+			props.append(api.save_property(values)["name"])
+		# Published listings: a unit of each of the first two projects, and the resale flats.
+		for project_index, unit_number, title, price in _listing_plan(market):
+			listing = listings.save_listing(
+				{
+					"title": title,
+					"listing_type": "Primary",
+					"unit": _unit_of(projects, market, {"project": project_index, "unit": unit_number}),
+					"asking_price": price,
+					"description": f"{title}. Registered with RERA, with a payment plan to suit.",
+				}
+			)["name"]
+			listings.publish_listing(listing)
+		for prop, spec in zip(props, market["properties"], strict=True):
+			listing = listings.save_listing(
+				{
+					"title": spec["title"],
+					"listing_type": "Direct",
+					"property": prop,
+					"asking_price": spec["asking_price"],
+					"description": f"{spec['title']}. Society with 24 hour security and a lift.",
+				}
+			)["name"]
+			listings.publish_listing(listing)
+
+
+def _listing_plan(market):
+	"""(project index, unit number, title, asking price) of the published primary listings."""
+	out = []
+	for index in (0, 1):
+		spec = market["projects"][index]
+		unit_number = spec["tower"][2][0][0] if "tower" in spec else spec["units"][0][0]
+		area = spec["tower"][3] if "tower" in spec else spec["units"][0][3]
+		configuration = spec["tower"][4] if "tower" in spec else spec["units"][0][1]
+		price = int(area * spec["rate"])
+		out.append((index, str(unit_number), f"{configuration} at {spec['name']}, {spec['locality']}", price))
+	return out
+
+
+def _unit_of(projects, market, ref):
+	import frappe
+
+	return frappe.db.get_value(
+		"Unit", {"project": projects[ref["project"]], "unit_number": str(ref["unit"])}, "name"
+	)
+
+
+def _seed_demo_partners(data, users):
+	"""The company's partner firm (the demo Channel Partner is its contact person), two more firms at other
+	stages, the buyers the partner registers and the projects the company shares with its firms."""
+	import frappe
+
+	from sellos.access import partner_firms, partner_registrations
+	from sellos.inventory import partner_shares
+	from sellos.tests import ui_fixtures as fx
+	from sellos.tests.files import tiny_pdf_base64
+
+	market = _market(data)
+	admin, partner = users["admin"], users["partner"]
+	spec = market["partner"]
+	if not frappe.db.exists("Channel Partner Firm", {"firm_name": spec["firm"]}):
+		with _as(admin):
+			doc = frappe.get_doc(
+				{
+					"doctype": "Channel Partner Firm",
+					"firm_name": spec["firm"],
+					"contact_user": partner,
+					"contact_person": spec["person"],
+					"email": partner,
+				}
+			).insert()
+		with _as(partner):
+			partner_firms.submit_partner_details(
+				{"phone": _seed("partner", 0), "rera_number": spec["rera"], "pan": spec["pan"]}
+			)
+			partner_firms.upload_my_agreement("partner_agreement_signed.pdf", tiny_pdf_base64())
+		with _as(admin):
+			partner_firms.approve_partner_firm(doc.name)
+	firm = frappe.db.get_value("Channel Partner Firm", {"firm_name": spec["firm"]}, "name")
+	for offset, (name, stage, local) in enumerate(market["other_firms"], start=1):
+		if not frappe.db.exists("Channel Partner Firm", {"firm_name": name}):
+			fx._make_partner_firm(admin, name, f"{local}.{EMAIL_DOMAIN}", stage, demo_seed("partner", offset))
+	for offset, (buyer, project, note, decision) in enumerate(market["registrations"], start=3):
+		if frappe.db.exists("Partner Registration", {"buyer_name": buyer}):
+			continue
+		with _as(partner):
+			result = partner_registrations.register_buyer(
+				buyer, _seed("partner", offset), project, note, 1 if decision == "approve" else 0
+			)
+		code = result["registration"]["name"]
+		with _as(admin):
+			if decision == "approve":
+				partner_registrations.approve_partner_registration(code)
+			elif decision == "reject":
+				partner_registrations.reject_partner_registration(code, "The buyer is not looking right now")
+	names = [_project_name_of(market, i) for i in range(len(market["projects"]))]
+	ids = [frappe.db.get_value("Project", {"project_name": n}, "name") for n in names]
+	# Looked up by the demo's own projects, so shares an earlier seed made do not stop these.
+	if all(ids) and not frappe.db.exists("Partner Share", {"project": ["in", ids]}):
+		with _as(admin):
+			partner_shares.share_project(ids[0], [firm], share_price_list=1)
+			partner_shares.share_project(ids[1], "all")
+			partner_shares.share_project(ids[2], [firm])
+	return firm
+
+
+def _seed_demo_deals(data, users):
+	"""Deals in four stages with commission payouts for the partner firm: Paid, Approved, Due, and one deal
+	whose split still waits for approval. Made by the Company Admin through the deal and commission methods."""
+	import frappe
+	from frappe.utils import add_days, today
+
+	from sellos.inventory import commissions, deals
+
+	market = _market(data)
+	admin, agents = users["admin"], users["agents"]
+	firm = frappe.db.get_value("Channel Partner Firm", {"firm_name": market["partner"]["firm"]}, "name")
+	if not firm:
+		return
+	projects = [
+		frappe.db.get_value("Project", {"project_name": spec["name"]}, "name") for spec in market["projects"]
+	]
+	with _as(admin):
+		for project in projects:
+			if project and not frappe.db.exists("Commission Rate", {"project": project}):
+				commissions.save_commission_rate(
+					{"project": project, "rate_type": "Percentage", "value": 2, "start_date": "2025-01-01"}
+				)
+		for spec in market["deals"]:
+			row = data["leads"][spec["lead"]]
+			client = frappe.db.get_value("Client", {"client_name": row[0], "email": row[3]}, "name")
+			lead = _lead_of(data, spec["lead"])
+			if not client or frappe.db.exists("Deal", {"client": client}):
+				continue
+			if "property" in spec:
+				prop = frappe.db.get_value(
+					"Property", {"title": market["properties"][spec["property"]]["title"]}
+				)
+				target = {"property": prop}
+			else:
+				target = {"unit": _unit_of(projects, market, spec)}
+			if not next(iter(target.values())):
+				continue
+			commission = int(spec["price"] * 0.02)
+			agent = agents[0 if row[8] in (None, 0) else 1]
+			partner_percent = spec["partner"]
+			splits = [{"party_type": "Agent", "agent": agent, "percent": 100 - 30 - partner_percent}]
+			if partner_percent:
+				splits.append(
+					{"party_type": "Channel Partner", "partner_firm": firm, "percent": partner_percent}
+				)
+			splits.append({"party_type": "Company", "percent": 30})
+			made = deals.save_deal(
+				{
+					"client": client,
+					"lead": lead,
+					**target,
+					"price": spec["price"],
+					"deal_date": str(add_days(today(), -spec["days"])),
+					"commission_amount": commission,
+					"splits": splits,
+				}
+			)["name"]
+			if spec["approved"]:
+				deals.approve_splits(made)
+			payout = frappe.db.get_value("Commission Payout", {"deal": made, "partner_firm": firm})
+			if payout and spec["payout"] in ("approved", "paid"):
+				commissions.move_payout(payout, "Approved")
+			if payout and spec["payout"] == "paid":
+				commissions.move_payout(
+					payout,
+					"Paid",
+					payment_reference=f"UTR2611{spec['days']:03d}{spec['lead']:02d}7781",
+					paid_on=str(add_days(today(), -max(spec["days"] - 12, 1))),
+				)
+
+
+def _seed_demo_sellers(data, users):
+	"""Two owners who want to sell: each a Seller lead with its property, one with a Draft Exclusive mandate
+	and one with a Signed Open mandate and a dossier."""
+	import base64
+
+	import frappe
+
+	from sellos.crm import api as crm
+	from sellos.inventory import api, mandates
+	from sellos.tests.files import tiny_pdf
+
+	market = _market(data)
+	admin, agent = users["admin"], users["agents"][0]
+	pdf = base64.b64encode(tiny_pdf()).decode()
+	for offset, spec in enumerate(market["sellers"]):
+		if frappe.db.exists("Client", {"client_name": spec["name"]}):
+			continue
+		with _as(admin):
+			client = crm.save_client(
+				values={
+					"client_name": spec["name"],
+					"client_type": "Seller",
+					"phone": _seed("seller", offset),
+					"email": spec["email"],
+					"city": spec["city"],
+				}
+			)
+		with _as(agent):
+			prop = api.save_property({**spec["property"], "property_type": "Apartment"})["name"]
+		with _as(admin):
+			lead = crm.save_lead(
+				values={
+					"client": client["name"],
+					"pipeline": "Seller",
+					"source": "Referral",
+					"assigned_to": agent,
+					"property": prop,
+				}
+			)["lead"]["name"]
+		with _as(agent):
+			crm.move_lead_stage(lead, "Seller Qualified")
+			if spec["stage"] == "Seller Valuation shared":
+				crm.move_lead_stage(lead, spec["stage"])
+			kind, months, fee, signed = spec["mandate"]
+			mandate = mandates.save_mandate(
+				{"lead": lead, "mandate_type": kind, "term_months": months, "fee_percent": fee}
+			)["name"]
+			if signed:
+				mandates.sign_mandate(mandate, "mandate_signed.pdf", pdf)
+				mandates.add_dossier_note(mandate, "Access to the flat", "The caretaker holds the keys.")
+				mandates.add_dossier_file(mandate, "Title deed", "title_deed.pdf", pdf)
+			else:
+				mandates.add_dossier_note(mandate, "Owner's reserve price", "The owner will not go below it.")
+
+
+def _seed_demo_enquiries(data):
+	"""Two leads from the enquiry page (one asks to be left alone) and one missed call, through the one
+	lead intake. A number that already belongs to a client is left alone."""
+	import frappe
+
+	from sellos.crm import intake
+	from sellos.crm.duplicates import normalise_phone
+	from sellos.telephony import inbound
+	from sellos.telephony.base import CallEvent
+
+	market = _market(data)
+	for offset, (name, stop) in enumerate(market["enquiries"]):
+		phone = _seed("enquiry", offset)
+		if frappe.db.exists("Client", {"phone_key": normalise_phone(phone)}):
+			continue
+		intake.take(
+			phone=phone,
+			source="Website",
+			campaign="Enquiry page",
+			kind="enquiry",
+			reference=f"demo-enquiry-{data['word']}-{offset}",
+			evidence={"page": "enquiry", "wording": DEMO_CONSENT_WORDING.format(company=data["name"])},
+			name=name,
+			notes="Sent the enquiry page.",
+			stop_source=stop,
+		)
+	our_number = inbound.our_number()
+	phone = _seed("enquiry", 5)
+	if our_number and not frappe.db.exists("Client", {"phone_key": normalise_phone(phone)}):
+		inbound.handle_missed_call(
+			CallEvent(
+				call_id=f"demo-missed-call-{data['word']}",
+				state="no-answer",
+				from_number=phone,
+				to_number=our_number,
+				direction="inbound",
+			)
+		)
+
+
+DEMO_WHATSAPP_TOKEN = "FAKEOK-DEMO-WHATSAPP"  # FAKEOK: the fake provider accepts it
+DEMO_WHATSAPP_SECRET = "demo-whatsapp-signing-secret"  # never a real secret
+
+
+def _seed_demo_whatsapp(data, users):
+	"""The company's WhatsApp number with a template, and five conversations through the production receive
+	and send functions with the fake provider: a customer who writes in Hinglish and gets replies, one who
+	opts in, one handed to a human, one who sends STOP, and one who gets a visit reminder template."""
+	import frappe
+
+	from sellos.tests import ui_fixtures as fx
+	from sellos.whatsapp import conversations
+	from sellos.whatsapp.base import InboundMessage, StatusEvent
+
+	market = _market(data)
+	spec = market["whatsapp"]
+	admin, agent = users["admin"], users["agents"][0]
+	fx._save_whatsapp_account(admin, spec["template"], token=DEMO_WHATSAPP_TOKEN, secret=DEMO_WHATSAPP_SECRET)
+	for offset, customer in enumerate(spec["customers"]):
+		name = customer["name"]
+		if frappe.db.exists("Client", {"client_name": name}):
+			continue
+		phone = _seed("whatsapp", offset)
+		lead = fx._whatsapp_customer(admin, agent, name, demo_seed("whatsapp", offset))
+		sent = []
+		for step, (kind, payload) in enumerate(customer["script"]):
+			if kind == "in":
+				conversations.receive(
+					InboundMessage(f"wamid-demo-{data['word']}-{offset}-{step}", phone, payload, name=name)
+				)
+			elif kind == "out":
+				with _as(agent):
+					sent.append(conversations.send(lead, text=payload)["message"])
+			elif kind == "template":
+				with _as(agent):
+					sent.append(
+						conversations.send(lead, template=spec["template"], parameters=list(payload))[
+							"message"
+						]
+					)
+			elif kind == "handoff":
+				with _as(agent):
+					conversations.hand_off(
+						frappe.db.get_value("WhatsApp Conversation", {"lead": lead}), None, payload
+					)
+		for message in [m for m in sent if m]:
+			provider_id = frappe.db.get_value("WhatsApp Message", message, "provider_message_id")
+			if provider_id:
+				conversations.apply_status(StatusEvent(provider_id, "read" if offset == 0 else "delivered"))
+
+
+def _seed_demo_visits_and_follow_ups(data, users):
+	"""What the Home screen reads: three site visits TODAY (the lead's own agent, on the next demo update a new
+	day gets new visits) and follow ups that are one and two days overdue. A visit moves its lead to Site visit
+	booked, so the lead is put back on the stage it was seeded in."""
+	import frappe
+	from frappe.utils import add_days, add_to_date, get_datetime, now_datetime, today
+
+	from sellos.crm import api as crm
+
+	market = _market(data)
+	agents = users["agents"]
+	plan = ((2, 11, 0), (3, 15, 1), (6, 17, 1))  # lead row, hour, agent index
+	day = get_datetime(today())
+	for (row, hour, agent_index), project in zip(plan, market["visit_projects"], strict=True):
+		lead = _lead_of(data, row)
+		if not lead:
+			continue
+		if frappe.db.exists(
+			"Site Visit",
+			{
+				"lead": lead,
+				"project_name": project,
+				"visit_datetime": ["between", [str(day), str(add_days(day, 1))]],
+			},
+		):
+			continue
+		stage = frappe.db.get_value("Lead", lead, "stage")
+		with _as(agents[agent_index]):
+			crm.save_site_visit(
+				values={
+					"lead": lead,
+					"project_name": project,
+					"visit_datetime": add_to_date(day, hours=hour),
+					"status": "Scheduled",
+				}
+			)
+			if frappe.db.get_value("Lead", lead, "stage") != stage:
+				crm.move_lead_stage(lead, stage)
+	late = (
+		(7, 0, "Collect the token cheque for the booking", add_days(now_datetime(), -2)),
+		(5, 0, "Send the revised cost sheet", add_days(now_datetime(), -1)),
+		(1, 1, "Share the project brochure again", add_days(now_datetime(), -1)),
+	)
+	for row, agent_index, title, when in late:
+		lead = _lead_of(data, row)
+		if not lead or frappe.db.exists("Lead Task", {"lead": lead, "title": title}):
+			continue
+		with _as(agents[agent_index]):
+			crm.save_task(
+				values={
+					"lead": lead,
+					"title": title,
+					"due_at": when,
+					"status": "Open",
+					"assigned_to": agents[agent_index],
+				}
+			)
 
 
 # --- The orchestration (plain Python, run with the bench's own interpreter) -----------------------

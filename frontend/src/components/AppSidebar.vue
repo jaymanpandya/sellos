@@ -1,6 +1,6 @@
 <template>
-	<div class="flex h-full flex-col bg-brand">
-		<div class="flex min-h-topbar items-center border-b border-white/15 px-ui-md">
+	<div class="flex h-full flex-col bg-surface">
+		<div class="flex min-h-topbar items-center border-b border-line px-ui-md">
 			<CompanyBrand />
 		</div>
 		<nav
@@ -11,7 +11,7 @@
 			<div v-for="section in sections" :key="section.key" class="mb-ui-lg">
 				<p
 					v-if="section.label"
-					class="mb-1 px-3 py-1 text-heading uppercase text-on-brand opacity-80"
+					class="mb-1 px-3 py-1 text-heading uppercase text-ink-muted"
 				>
 					{{ section.label }}
 				</p>
@@ -20,9 +20,9 @@
 					:key="item.key"
 					:to="item.to"
 					:data-testid="`sellos-nav-${item.key}`"
-					:active-class="item.key === 'home' ? '' : 'ui-nav-active'"
-					exact-active-class="ui-nav-active"
-					class="ui-nav-item flex min-h-touch items-center rounded-input px-3 text-base text-on-brand transition-colors duration-150 hover:bg-white/10"
+					:active-class="item.key === 'home' ? '' : 'ui-pill-active'"
+					exact-active-class="ui-pill-active"
+					class="ui-nav-item ui-pill-hover mb-0.5 flex min-h-touch items-center rounded-pill px-3 text-base text-ink-body transition-colors duration-150"
 				>
 					<span
 						:class="ICONS[item.key] || 'lucide-circle'"
@@ -33,13 +33,17 @@
 				</router-link>
 			</div>
 		</nav>
-		<div class="border-t border-white/15 p-ui-md">
+		<div class="border-t border-line p-ui-md">
 			<button
 				type="button"
-				class="flex min-h-touch w-full items-center rounded-input px-3 text-left text-base text-on-brand hover:bg-white/10"
+				class="ui-pill-hover flex min-h-touch w-full items-center rounded-pill px-3 text-left text-base text-ink-body"
 				data-testid="sellos-signout"
 				@click="signOut()"
 			>
+				<span
+					class="lucide-log-out icon-inherit mr-3 size-4 shrink-0"
+					aria-hidden="true"
+				/>
 				Sign out
 			</button>
 		</div>
@@ -49,7 +53,7 @@
 <script setup>
 // PAMAA's AppSidebar (SOS-UI-2B), adapted: the menu is the persona's navigation (personas.js), grouped
 // by area into labelled sections. The sections stay open (the longest menu has 11 places) and the
-// highlight does not slide. Current item: surface/accent with text/accent. The links are the same
+// highlight does not slide. Current item: a brand pill (docs/UI_STANDARD.md). The links are the same
 // anchors, in the same order, with the same data-testid as before.
 import { computed } from "vue";
 
@@ -81,11 +85,3 @@ const sections = computed(() => {
 	return out;
 });
 </script>
-
-<style scoped>
-.ui-nav-active {
-	background-color: var(--sos-brand-mid);
-	color: var(--sos-on-brand-accent);
-	font-weight: 600;
-}
-</style>

@@ -7,7 +7,7 @@
 	>
 		<!-- Computer (from 1024px): the sidebar stays on the left. Phone and tablet: a bottom bar. -->
 		<aside
-			class="fixed inset-y-0 left-0 z-40 hidden w-sidebar border-r border-white/15 bg-brand text-on-brand lg:block"
+			class="fixed inset-y-0 left-0 z-40 hidden w-sidebar border-r border-line bg-surface text-ink lg:block"
 		>
 			<AppSidebar />
 		</aside>
@@ -23,8 +23,8 @@
 </template>
 
 <script setup>
-// PAMAA's AppShell (SOS-UI-2B). The page background is surface/cream; the sidebar and top bar are
-// surface/dark. The sidebar and the bottom bar are switched by CSS (lg = 1024px) so both stay in the
+// PAMAA's AppShell (SOS-UI-2B). The page background is the neutral page grey; the sidebar and top bar are
+// white (docs/UI_STANDARD.md). The sidebar and the bottom bar are switched by CSS (lg = 1024px) so both stay in the
 // page and the tests' visible and not visible checks keep their meaning.
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
