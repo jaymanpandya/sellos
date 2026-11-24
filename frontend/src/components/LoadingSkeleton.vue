@@ -11,7 +11,7 @@
 			<div
 				v-for="index in rows"
 				:key="index"
-				class="rounded-card border border-line bg-surface p-ui-md shadow-card"
+				class="rounded border border-line bg-surface p-ui-md shadow-card"
 			>
 				<div class="ui-shimmer h-3 w-20 rounded" />
 				<div class="ui-shimmer my-3 h-7 w-16 rounded" />
@@ -26,7 +26,7 @@
 			>
 				<div class="ui-shimmer h-4 flex-[2] rounded" />
 				<div class="ui-shimmer hidden h-4 flex-1 rounded sm:block" />
-				<div class="ui-shimmer h-5 w-16 rounded-badge" />
+				<div class="ui-shimmer h-5 w-16 rounded" />
 			</div>
 		</div>
 	</div>

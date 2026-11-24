@@ -57,7 +57,7 @@
 			<div
 				v-for="t in grid.towers"
 				:key="t.name"
-				class="mb-ui-md rounded-input border border-line-soft p-ui-md"
+				class="mb-ui-md rounded border border-line-soft p-ui-md"
 				data-testid="sellos-grid-tower"
 				:data-tower="t.tower_name"
 			>

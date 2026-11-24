@@ -40,3 +40,48 @@ export const ICONS = {
 	shares: "lucide-share-2",
 	shared: "lucide-building-2",
 };
+
+// The sidebar groups (docs/UI_STANDARD.md, "Sidebar"): each has an icon and a small caps label, and
+// remembers whether it is open. `GROUP_OF` puts a menu key in a group; the partner, platform and client
+// areas are groups of their own. A key not listed here stays under "Company".
+export const GROUPS = [
+	{ key: "work", label: "Work", icon: "lucide-briefcase" },
+	{ key: "sales", label: "Sales", icon: "lucide-trending-up" },
+	{ key: "inventory", label: "Inventory", icon: "lucide-building" },
+	{ key: "data", label: "Data", icon: "lucide-database" },
+	{ key: "reports", label: "Reports", icon: "lucide-chart-column" },
+	{ key: "company", label: "Company", icon: "lucide-building-2" },
+	{ key: "platform", label: "Platform", icon: "lucide-server" },
+	{ key: "partner", label: "Partner", icon: "lucide-heart-handshake" },
+	{ key: "client", label: "Your account", icon: "lucide-contact" },
+];
+
+export const GROUP_OF = {
+	leads: "work",
+	queue: "work",
+	visits: "work",
+	whatsapp: "work",
+	"call-lists": "work",
+	"response-alerts": "work",
+	sellers: "sales",
+	mandates: "sales",
+	deals: "sales",
+	commission: "sales",
+	inventory: "inventory",
+	"inventory-import": "inventory",
+	import: "data",
+	"call-reports": "reports",
+	"business-reports": "reports",
+	"team-report": "reports",
+	reports: "reports",
+	users: "company",
+	support: "company",
+};
+
+// The group of a menu item of a persona: its area decides for the three areas that are groups of their own.
+export function groupOf(item) {
+	if (item.area === "platform") return "platform";
+	if (item.area === "partner") return "partner";
+	if (item.area === "client") return "client";
+	return GROUP_OF[item.key] || "company";
+}

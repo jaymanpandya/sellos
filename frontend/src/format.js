@@ -23,3 +23,31 @@ export function formatDateTime(value) {
 	const [, year, month, day, hour, minute] = match;
 	return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}, ${hour}:${minute}`;
 }
+
+// A date alone, "24 Nov 2026", from a server date or timestamp. Anything else comes back unchanged.
+export function formatDate(value) {
+	const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value ?? ""));
+	if (!match) return value ?? "";
+	const [, year, month, day] = match;
+	return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
+}
+
+// A day and, when the value has one, its time: "24 Nov 2026, 11:44". A date with no time shows as a date.
+export function formatWhen(value) {
+	const text = String(value ?? "");
+	const time = /[ T](\d{2}:\d{2})/.exec(text);
+	if (!time || time[1] === "00:00") return formatDate(text);
+	return formatDateTime(text);
+}
+
+// Rupees with Indian digit grouping: 1250000 is "Rs 12,50,000". An empty value is an empty cell.
+// A second argument gives the decimals to keep (a payout shows paise: formatMoney(3200000, 2)).
+export function formatMoney(value, decimals = 0) {
+	if (value === "" || value === null || value === undefined) return "";
+	const number = Number(value);
+	if (Number.isNaN(number)) return "";
+	return `Rs ${new Intl.NumberFormat("en-IN", {
+		minimumFractionDigits: decimals,
+		maximumFractionDigits: decimals,
+	}).format(number)}`;
+}

@@ -21,6 +21,7 @@ context("SOS-P4-02: listings", () => {
 
 			cy.intercept("POST", "**/sellos.inventory.listings.save_listing*").as("save");
 			cy.intercept("POST", "**/sellos.inventory.listings.publish_listing*").as("publish");
+			cy.getByTestId("listing-new").click();
 			cy.getByTestId("listing-title").type(title);
 			cy.getByTestId("listing-type-field").select("Direct");
 			cy.getByTestId("listing-target-field").select(flat);
@@ -81,6 +82,7 @@ context("SOS-P4-02: listings", () => {
 			cy.signInFresh("company_admin");
 			openListings();
 			cy.intercept("POST", "**/sellos.inventory.listings.save_listing*").as("save");
+			cy.getByTestId("listing-new").click();
 			cy.getByTestId("listing-title").type(title);
 			cy.getByTestId("listing-type-field").select("Primary");
 			cy.getByTestId("listing-target-field").select(`Unit: ${made.project_name}, unit 1201`);

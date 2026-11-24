@@ -21,13 +21,14 @@ export default {
 		"./node_modules/frappe-ui/src/components/**/*.{vue,js,ts}",
 	],
 	theme: {
+		// Replaces, not extends: no other radius exists (docs/UI_STANDARD.md, Radius).
+		borderRadius: radius,
 		extend: {
 			// frappe-ui's own palette, remapped to the SellOS tokens (src/theme/frappe-ui-map.js).
 			colors: { ...frappePalette, ...colors },
 			fontFamily,
 			fontSize: typography,
 			spacing,
-			borderRadius: radius,
 			boxShadow,
 			backgroundImage: gradients,
 		},

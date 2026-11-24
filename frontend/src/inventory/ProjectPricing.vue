@@ -31,7 +31,7 @@
 					data-testid="sellos-pricelist-row"
 					:data-title="l.title"
 					:data-in-force="l.in_force ? 1 : 0"
-					class="rounded-input border border-line-soft p-ui-md"
+					class="rounded border border-line-soft p-ui-md"
 				>
 					<div class="flex flex-wrap items-center gap-3">
 						<span class="font-medium text-ink">{{ l.title }}</span>
@@ -187,7 +187,7 @@
 					data-testid="sellos-plan-row"
 					:data-name="p.plan_name"
 					:data-archived="p.archived"
-					class="rounded-input border border-line-soft p-ui-md"
+					class="rounded border border-line-soft p-ui-md"
 				>
 					<div class="flex flex-wrap items-center gap-3">
 						<span class="font-medium text-ink">{{ p.plan_name }}</span>

@@ -65,6 +65,7 @@ context("SOS-P5-04: saved views, export and scheduling", () => {
 
 	it("saves a shared view that an Agent opens with their own records", () => {
 		open("company_admin", "Leads by stage");
+		cy.getByTestId("reports-view-new").click();
 		cy.getByTestId("reports-view-name").type("Gate P504 Shared view");
 		cy.getByTestId("reports-view-shared").check();
 		cy.getByTestId("reports-view-relative").check();
@@ -95,6 +96,7 @@ context("SOS-P5-04: saved views, export and scheduling", () => {
 	it("schedules a report for the Company Admin and runs it", () => {
 		cy.roleUser("company_admin").then(({ full_name: name }) => {
 			open("company_admin", "Leads by stage");
+			cy.getByTestId("reports-schedule-new").click();
 			cy.getByTestId("reports-schedule-title").type("Gate P504 Weekly leads");
 			cy.contains("label", name).click();
 			cy.getByTestId("reports-schedule-save").click();
@@ -120,6 +122,7 @@ context("SOS-P5-04: saved views, export and scheduling", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/reports");
 		cy.getByTestId("reports-report").should("be.visible").select("Call cost by agent");
+		cy.getByTestId("reports-schedule-new").click();
 		cy.getByTestId("reports-schedule-title").type("Gate P504 Cost");
 		cy.getByTestId("reports-schedule-save").click();
 		cy.getByTestId("reports-schedule-note").should("contain", "at least one person");

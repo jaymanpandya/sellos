@@ -31,7 +31,7 @@
 					data-testid="sellos-tower-row"
 					:data-name="t.name"
 					:data-tower="t.tower_name"
-					class="rounded-input border border-line-soft p-ui-md"
+					class="rounded border border-line-soft p-ui-md"
 				>
 					<div class="flex flex-wrap items-center gap-3">
 						<span class="font-medium text-ink" data-testid="sellos-tower-name">{{

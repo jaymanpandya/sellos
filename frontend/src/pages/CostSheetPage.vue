@@ -1,15 +1,22 @@
 <template>
-	<div data-testid="sellos-cost-sheet-page">
-		<PageHeader
-			:title="options ? `Cost sheet for unit ${options.unit.unit_number}` : 'Cost sheet'"
-			text="The price from the price list in force, the charges, stamp duty, registration and GST, the total and the payment plan's schedule."
-			icon="lucide-receipt-indian-rupee"
-		/>
+	<PageTemplate data-testid="sellos-cost-sheet-page">
+		<template #header>
+			<PageHeader
+				:title="options ? `Cost sheet for unit ${options.unit.unit_number}` : 'Cost sheet'"
+				text="The price from the price list in force, the charges, stamp duty, registration and GST, the total and the payment plan's schedule."
+				icon="lucide-receipt-indian-rupee"
+			/>
+		</template>
+
+		<template v-if="sheet" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-cost-stats" />
+		</template>
+
 		<p
 			v-if="error"
 			role="alert"
 			data-testid="sellos-cost-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md text-sm text-danger"
 		>
 			{{ error }}
 		</p>
@@ -37,8 +44,8 @@
 				data-testid="sellos-cost-list"
 			>
 				Price list in force: {{ options.price_list.title }} (from
-				{{ options.price_list.effective_from }}),
-				{{ rupees(options.price_list.base_rate) }} per sq ft.
+				{{ formatDate(options.price_list.effective_from) }}),
+				{{ formatMoney(options.price_list.base_rate) }} per sq ft.
 			</p>
 		</div>
 
@@ -46,7 +53,7 @@
 			v-if="options && !options.ready"
 			role="status"
 			data-testid="sellos-cost-problem"
-			class="ui-card mb-ui-md text-sm text-accent"
+			class="ui-card mb-ui-md text-sm text-danger"
 		>
 			{{ options.problem }}
 		</p>
@@ -80,7 +87,7 @@
 					v-for="c in optional"
 					:key="c.charge_name"
 					:model-value="!!chosen[c.charge_name]"
-					:label="`${c.charge_name} (${rupees(c.value)}${
+					:label="`${c.charge_name} (${formatMoney(c.value)}${
 						c.basis === 'Rate per sq ft' ? ' per sq ft' : ''
 					})`"
 					:data-testid="`sellos-cost-charge-${c.charge_name}`"
@@ -102,8 +109,8 @@
 		<ListCard v-if="sheet" :title="`Cost sheet ${sheet.name}`" class="mb-ui-md">
 			<div data-testid="sellos-cost-sheet" :data-name="sheet.name">
 				<p class="mb-ui-sm text-sm text-ink-muted">
-					Price list {{ sheet.price_list_title }} (from {{ sheet.price_list_from }}),
-					made by {{ sheet.made_by }}.
+					Price list {{ sheet.price_list_title }} (from
+					{{ formatDate(sheet.price_list_from) }}), made by {{ sheet.made_by }}.
 				</p>
 				<ul class="divide-y divide-line-soft" data-testid="sellos-cost-lines">
 					<li
@@ -115,7 +122,7 @@
 					>
 						<span>{{ line.label }}</span>
 						<span class="tabular-nums" data-testid="sellos-cost-amount">{{
-							rupees(line.amount)
+							formatMoney(line.amount)
 						}}</span>
 					</li>
 				</ul>
@@ -130,11 +137,12 @@
 						class="flex justify-between gap-ui-md py-1 text-sm text-ink"
 					>
 						<span
-							>{{ i.label }}<span v-if="i.due_on"> ({{ i.due_on }})</span>,
+							>{{ i.label
+							}}<span v-if="i.due_on"> ({{ formatDate(i.due_on) }})</span>,
 							{{ i.percent }}%</span
 						>
 						<span class="tabular-nums" data-testid="sellos-cost-instalment-amount">{{
-							rupees(i.amount)
+							formatMoney(i.amount)
 						}}</span>
 					</li>
 				</ul>
@@ -152,33 +160,27 @@
 			</div>
 		</ListCard>
 
-		<ListCard v-if="options" title="Cost sheets of this unit">
-			<EmptyState
-				v-if="!options.sheets.length"
-				title="No cost sheet yet"
-				text="Make the first one above."
-				icon="lucide-receipt-indian-rupee"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-cost-sheets">
-				<li
-					v-for="s in options.sheets"
-					:key="s.name"
-					data-testid="sellos-cost-sheet-row"
-					:data-name="s.name"
-					class="flex flex-wrap items-center gap-3 rounded-input border border-line-soft p-ui-md"
-				>
-					<span class="font-medium text-ink">{{ s.name }}</span>
-					<span class="text-sm text-ink-muted">
-						{{ rupees(s.total) }}, {{ s.plan_name }}, {{ s.price_list_title }}, by
-						{{ s.made_by }}
-					</span>
-					<AppButton type="button" data-testid="sellos-cost-open" @click="open(s.name)">
-						Open
-					</AppButton>
-				</li>
-			</ul>
-		</ListCard>
-	</div>
+		<DataTable
+			v-if="options"
+			title="Cost sheets of this unit"
+			caption="Cost sheets of this unit"
+			:columns="sheetColumns"
+			:rows="options.sheets"
+			:row-name="(r) => r.name"
+			empty-title="No cost sheet yet"
+			empty-text="Make the first one above."
+			empty-icon="lucide-receipt-indian-rupee"
+			testid="sellos-cost-sheets"
+			row-testid="sellos-cost-sheet-row"
+		>
+			<template #cell-total="{ row }">{{ formatMoney(row.total) }}</template>
+			<template #cell-open="{ row }">
+				<AppButton type="button" data-testid="sellos-cost-open" @click="open(row.name)">
+					Open
+				</AppButton>
+			</template>
+		</DataTable>
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -187,13 +189,17 @@ import { useRoute } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
 import AppCheckbox from "../components/AppCheckbox.vue";
+import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FormField from "../components/FormField.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import { serverMessage } from "../crm/crmApi";
-import { costSheetApi, rupees } from "../inventory/inventoryApi";
+import { formatDate, formatMoney } from "../format";
+import { costSheetApi } from "../inventory/inventoryApi";
 
 // A cost sheet made from a unit (SOS-P7-07). The agent chooses a payment plan and the optional charges; the
 // server works the price out from the price list in force and the company's percentages, keeps it, and
@@ -205,6 +211,46 @@ const planName = ref("");
 const chosen = reactive({});
 const error = ref("");
 const loadError = ref("");
+
+const kpis = computed(() => {
+	const s = sheet.value;
+	if (!s) return [];
+	return [
+		{
+			label: "Base price",
+			value: formatMoney(s.base_price),
+			caption: `${s.carpet_area} sq ft carpet area`,
+			icon: "lucide-ruler",
+		},
+		{
+			label: "Agreement value",
+			value: formatMoney(s.agreement_value),
+			caption: "price and charges",
+			icon: "lucide-file-text",
+		},
+		{
+			label: "Total",
+			value: formatMoney(s.total),
+			caption: "with stamp duty, registration and GST",
+			icon: "lucide-receipt-indian-rupee",
+			tone: "success",
+		},
+	];
+});
+const sheetColumns = [
+	{ key: "name", label: "Cost sheet", primary: true },
+	{
+		key: "total",
+		label: "Total",
+		align: "right",
+		sortable: true,
+		sortValue: (r) => Number(r.total || 0),
+	},
+	{ key: "plan_name", label: "Payment plan" },
+	{ key: "price_list_title", label: "Price list" },
+	{ key: "made_by", label: "Made by" },
+	{ key: "open", label: "" },
+];
 
 const optional = computed(() =>
 	(options.value?.price_list?.charges || []).filter((c) => !c.always_apply)
@@ -218,7 +264,7 @@ const lines = computed(() => {
 	return [
 		{
 			key: "base",
-			label: `Base price (${s.carpet_area} sq ft at ${rupees(s.base_rate)})`,
+			label: `Base price (${s.carpet_area} sq ft at ${formatMoney(s.base_rate)})`,
 			amount: s.base_price,
 		},
 		...(s.floor_rise_amount

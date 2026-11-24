@@ -22,10 +22,12 @@ context("SOS-P7-05: towers, wings and floors for projects", () => {
 		cy.visit("/sellos/inventory");
 		cy.wait("@overview");
 		cy.intercept("POST", "**/sellos.inventory.api.save_developer*").as("saveDeveloper");
+		cy.getByTestId("inventory-add-developer").click();
 		cy.getByTestId("inventory-developer-name").type(developer);
 		cy.getByTestId("inventory-developer-save").click();
 		cy.wait("@saveDeveloper").its("response.statusCode").should("eq", 200);
 		cy.intercept("POST", "**/sellos.inventory.api.save_project*").as("saveProject");
+		cy.getByTestId("inventory-add-project").click();
 		cy.getByTestId("inventory-project-name").type(projectName);
 		cy.getByTestId("inventory-project-developer").select(developer);
 		cy.getByTestId("inventory-project-city").type("Mumbai");
@@ -110,7 +112,7 @@ context("SOS-P7-05: towers, wings and floors for projects", () => {
 		cy.intercept("POST", "**/sellos.inventory.structure.save_project_details*").as("details");
 		cy.getByTestId("details-save").click();
 		cy.wait("@details").its("response.statusCode").should("eq", 200);
-		cy.getByTestId("project-possession").should("contain", "2028-03-31");
+		cy.getByTestId("project-possession").should("contain", "31 Mar 2028");
 		cy.bench("sellos.tests.ui_fixtures.gate_tower_state", { project_name: projectName }).then(
 			(state) => {
 				expect(state.possession_date).to.eq("2028-03-31");

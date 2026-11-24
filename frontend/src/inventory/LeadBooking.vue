@@ -21,7 +21,7 @@
 			<li
 				v-for="deal in panel.active"
 				:key="deal.name"
-				class="rounded-input border border-line-soft p-ui-md"
+				class="rounded border border-line-soft p-ui-md"
 				data-testid="sellos-booking-row"
 				:data-deal="deal.name"
 				:data-unit="deal.unit_label"

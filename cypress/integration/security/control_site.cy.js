@@ -9,6 +9,8 @@ context("SOS-P1-01: the control site", () => {
 		cy.signInFresh("platform_admin");
 		cy.visit("/sellos/control/tenants");
 		cy.getByTestId("tenant-empty").should("be.visible");
+		// The company form is a drawer, opened by Add company.
+		cy.getByTestId("tenant-new").click();
 		cy.getByTestId("tenant-id").type("cyacme");
 		cy.getByTestId("tenant-company").type("Cypress Acme Realty");
 		cy.getByTestId("tenant-email").type("owner@example.com");
@@ -31,6 +33,7 @@ context("SOS-P1-01: the control site", () => {
 		cy.expectApiStatus("frappe.client.insert", 417);
 		cy.signInFresh("platform_admin");
 		cy.visit("/sellos/control/tenants");
+		cy.getByTestId("tenant-new").click();
 		cy.getByTestId("tenant-id").invoke("removeAttr", "pattern");
 		cy.getByTestId("tenant-id").type("Bad Id");
 		cy.getByTestId("tenant-company").type("Bad Realty");

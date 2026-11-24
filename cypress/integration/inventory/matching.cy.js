@@ -20,7 +20,7 @@ context("SOS-P7-08: match buyers to inventory", () => {
 	it("shows an agent the matching homes of their lead, scored, with the reason of each part", () => {
 		cy.signInFresh("agent");
 		cy.intercept("POST", "**/sellos.inventory.matching.matches_for_lead*").as("matches");
-		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.agent_lead)}`);
+		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.agent_lead)}?tab=requirements`);
 		cy.getByTestId("lead-matches-load").click();
 		cy.wait("@matches").its("response.statusCode").should("eq", 200);
 		match("M101")

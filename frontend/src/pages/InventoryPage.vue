@@ -1,23 +1,57 @@
 <template>
-	<div data-testid="sellos-inventory-page">
-		<PageHeader
-			title="Inventory"
-			text="Developers, primary projects with their RERA numbers, and secondary properties. Open a project to add its units."
-			icon="lucide-building-2"
-		>
-			<router-link
-				:to="{ name: 'listings' }"
-				class="ui-link font-medium"
-				data-testid="sellos-inventory-listings-link"
+	<PageTemplate data-testid="sellos-inventory-page">
+		<template #header>
+			<PageHeader
+				title="Inventory"
+				text="Developers, primary projects with their RERA numbers, and secondary properties. Open a project to add its units."
+				icon="lucide-building-2"
 			>
-				Listings
-			</router-link>
-		</PageHeader>
+				<router-link
+					:to="{ name: 'listings' }"
+					class="ui-link font-medium"
+					data-testid="sellos-inventory-listings-link"
+				>
+					Listings
+				</router-link>
+				<template v-if="canEdit">
+					<AppButton
+						type="button"
+						data-testid="sellos-inventory-add-developer"
+						@click="openDrawer('developer')"
+					>
+						Add developer
+					</AppButton>
+					<AppButton
+						type="button"
+						data-testid="sellos-inventory-add-property"
+						@click="openDrawer('property')"
+					>
+						Add property
+					</AppButton>
+					<AppButton
+						type="button"
+						variant="primary"
+						data-testid="sellos-inventory-add-project"
+						@click="openDrawer('project')"
+					>
+						<template #prefix
+							><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+						/></template>
+						Add project
+					</AppButton>
+				</template>
+			</PageHeader>
+		</template>
+
+		<template v-if="loaded && !loadError" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-inventory-stats" />
+		</template>
+
 		<p
 			v-if="error"
 			role="alert"
 			data-testid="sellos-inventory-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md text-sm text-danger"
 		>
 			{{ error }}
 		</p>
@@ -33,147 +67,128 @@
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 
-		<ListCard title="Projects">
-			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
-			<EmptyState
-				v-if="loaded && !loadError && !projects.length"
-				title="No projects yet"
-				text="Add a developer, then the first project."
-				icon="lucide-building-2"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-inventory-projects">
-				<li
-					v-for="p in projects"
-					:key="p.name"
-					data-testid="sellos-inventory-project-row"
-					:data-name="p.name"
-					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
-				>
-					<div class="flex flex-wrap items-center gap-3">
-						<router-link
-							:to="{ name: 'project', params: { name: p.name } }"
-							class="font-medium text-accent underline"
-							data-testid="sellos-inventory-project-link"
-						>
-							{{ p.project_name }}
-						</router-link>
-						<span class="text-sm text-ink-muted">{{ p.developer }}</span>
-						<span class="text-sm text-ink-muted" data-testid="sellos-inventory-rera">
-							RERA {{ p.rera_number }}
-						</span>
-					</div>
-					<p class="text-sm text-ink-muted">
-						{{ [p.locality, p.city].filter(Boolean).join(", ") }}.
-						{{ p.project_status }}.
-						<span data-testid="sellos-inventory-unit-counts">
-							{{ p.units.total }} units: {{ p.units.Available }} available,
-							{{ p.units.Held }} held, {{ p.units.Sold }} sold.
-						</span>
-					</p>
-				</li>
-			</ul>
-		</ListCard>
-
-		<ListCard title="Secondary properties" class="mt-ui-md">
-			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
-			<EmptyState
-				v-if="loaded && !loadError && !properties.length"
-				title="No properties yet"
-				text="Add a resale or rental property below."
-				icon="lucide-home"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-inventory-properties">
-				<li
-					v-for="p in properties"
-					:key="p.name"
-					data-testid="sellos-inventory-property-row"
-					:data-name="p.name"
-					:data-status="p.status"
-					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
-				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink">{{ p.title }}</span>
-						<StatusBadge
-							:tone="STATUS_TONE[p.status] || 'neutral'"
-							:label="p.status"
-							data-testid="sellos-inventory-property-status"
-						/>
-						<span v-if="p.rera_number" class="text-sm text-ink-muted">
-							RERA {{ p.rera_number }}
-						</span>
-					</div>
-					<p class="text-sm text-ink-muted">
-						{{ p.property_type }}{{ p.configuration ? `, ${p.configuration}` : "" }},
-						{{ p.carpet_area }} sq ft carpet, floor {{ p.floor ?? "-" }},
-						{{ p.parking }} parking.
-						{{ [p.locality, p.city].filter(Boolean).join(", ") }}.
-					</p>
-					<div v-if="canEdit" class="mt-ui-sm flex flex-wrap gap-ui-sm">
-						<AppButton
-							v-for="s in otherStatuses(p.status)"
-							:key="s"
-							type="button"
-							:data-testid="`sellos-inventory-property-set-${s.toLowerCase()}`"
-							@click="
-								act(
-									() => inventoryApi.setStatus('Property', p.name, s),
-									`${p.title} is now ${s}.`
-								)
-							"
-						>
-							Mark {{ s }}
-						</AppButton>
-					</div>
-					<details class="mt-ui-sm">
-						<summary class="cursor-pointer text-sm text-ink-muted">Status log</summary>
-						<ul class="mt-1 space-y-1 text-sm text-ink-muted">
-							<li v-for="(l, i) in p.log" :key="i">
-								{{ l.changed_on }}: {{ l.changed_by_name }}
-								<span v-if="l.from_status"
-									>moved it from {{ l.from_status }} to</span
-								>
-								<span v-else>set it</span>
-								{{ l.to_status }}<span v-if="l.reason"> ({{ l.reason }})</span>
-							</li>
-						</ul>
-					</details>
-				</li>
-			</ul>
-		</ListCard>
-
-		<ListCard title="Developers" class="mt-ui-md">
-			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
-			<EmptyState
-				v-if="loaded && !loadError && !developers.length"
-				title="No developers yet"
-				text="Add the first developer below."
-				icon="lucide-hard-hat"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-inventory-developers">
-				<li
-					v-for="d in developers"
-					:key="d.name"
-					data-testid="sellos-inventory-developer-row"
-					class="rounded-card border border-line-soft bg-surface-faint p-ui-md text-sm"
-				>
-					<span class="font-medium text-ink">{{ d.developer_name }}</span>
-					<span v-if="d.contact_person" class="text-ink-muted">
-						, {{ d.contact_person }}</span
+		<div v-if="!loadError" class="space-y-ui-md">
+			<DataTable
+				title="Projects"
+				caption="Projects"
+				:columns="projectColumns"
+				:rows="projects"
+				:loading="!loaded"
+				loading-label="Loading projects."
+				:row-to="projectTo"
+				:row-name="(p) => p.project_name"
+				empty-title="No projects yet"
+				empty-text="Add a developer, then the first project."
+				empty-icon="lucide-building-2"
+				testid="sellos-inventory-projects"
+				row-testid="sellos-inventory-project-row"
+			>
+				<template #cell-project_name="{ row }">
+					<router-link
+						:to="projectTo(row)"
+						class="text-ink no-underline hover:underline"
+						data-testid="sellos-inventory-project-link"
 					>
-				</li>
-			</ul>
-		</ListCard>
+						{{ row.project_name }}
+					</router-link>
+				</template>
+				<template #cell-rera_number="{ row }">
+					<span data-testid="sellos-inventory-rera">RERA {{ row.rera_number }}</span>
+				</template>
+				<template #cell-location="{ row }">
+					{{ [row.locality, row.city].filter(Boolean).join(", ") }}
+				</template>
+				<template #cell-project_status="{ row }">
+					<StatusBadge tone="neutral" :label="row.project_status" />
+				</template>
+				<template #cell-units="{ row }">
+					<span data-testid="sellos-inventory-unit-counts">
+						{{ row.units.total }} units: {{ row.units.Available }} available,
+						{{ row.units.Held }} held, {{ row.units.Sold }} sold.
+					</span>
+				</template>
+			</DataTable>
 
-		<MatchWeights />
+			<DataTable
+				title="Secondary properties"
+				caption="Secondary properties"
+				:columns="propertyColumns"
+				:rows="properties"
+				:loading="!loaded"
+				loading-label="Loading properties."
+				:actions="propertyActions"
+				:row-name="(p) => p.title"
+				empty-title="No properties yet"
+				empty-text="Add a resale or rental property."
+				empty-icon="lucide-home"
+				testid="sellos-inventory-properties"
+				row-testid="sellos-inventory-property-row"
+			>
+				<template #cell-status="{ row }">
+					<StatusBadge
+						:tone="STATUS_TONE[row.status] || 'neutral'"
+						:label="row.status"
+						:data-status="row.status"
+						data-testid="sellos-inventory-property-status"
+					/>
+				</template>
+				<template #cell-details="{ row }">
+					{{ row.property_type }}{{ row.configuration ? `, ${row.configuration}` : "" }},
+					floor {{ row.floor ?? "-" }}, {{ row.parking }} parking
+				</template>
+				<template #cell-carpet_area="{ row }">{{ row.carpet_area }} sq ft</template>
+				<template #cell-location="{ row }">
+					{{ [row.locality, row.city].filter(Boolean).join(", ") }}
+				</template>
+			</DataTable>
+
+			<DataTable
+				title="Developers"
+				caption="Developers"
+				:columns="developerColumns"
+				:rows="developers"
+				:loading="!loaded"
+				loading-label="Loading developers."
+				:row-name="(d) => d.developer_name"
+				empty-title="No developers yet"
+				empty-text="Add the first developer."
+				empty-icon="lucide-hard-hat"
+				testid="sellos-inventory-developers"
+				row-testid="sellos-inventory-developer-row"
+			/>
+
+			<MatchWeights />
+		</div>
+
+		<!-- The status log of a secondary property. -->
+		<Dialog v-model="logOpen" :options="{ title: logTitle, size: 'md' }">
+			<template #body-content>
+				<ul
+					class="space-y-1 text-sm text-ink-muted"
+					data-testid="sellos-inventory-property-log"
+				>
+					<li v-for="(l, i) in logRows" :key="i">
+						{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}
+						<span v-if="l.from_status">moved it from {{ l.from_status }} to</span>
+						<span v-else>set it</span>
+						{{ l.to_status }}<span v-if="l.reason"> ({{ l.reason }})</span>
+					</li>
+				</ul>
+			</template>
+		</Dialog>
 
 		<template v-if="canEdit">
-			<form
-				class="ui-card mt-ui-md"
-				data-testid="sellos-inventory-developer-form"
-				@submit.prevent="addDeveloper"
+			<FormDrawer
+				:open="drawer === 'developer'"
+				title="Add a developer"
+				submit-label="Add developer"
+				:busy="saving"
+				testid="sellos-inventory-developer-form"
+				submit-testid="sellos-inventory-developer-save"
+				@close="drawer = ''"
+				@submit="addDeveloper"
 			>
-				<h2 class="ui-card-heading mb-ui-md">Add a developer</h2>
-				<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+				<FormSection title="Developer">
 					<FormField
 						v-model="developer.developer_name"
 						label="Developer name"
@@ -185,25 +200,28 @@
 						label="Contact person"
 						data-testid="sellos-inventory-developer-contact"
 					/>
-				</div>
-				<div class="mt-ui-md">
-					<AppButton
-						type="submit"
-						variant="primary"
-						data-testid="sellos-inventory-developer-save"
-					>
-						Add developer
-					</AppButton>
-				</div>
-			</form>
+				</FormSection>
+				<p
+					v-if="error"
+					role="alert"
+					class="text-sm text-danger"
+					data-testid="sellos-inventory-drawer-error"
+				>
+					{{ error }}
+				</p>
+			</FormDrawer>
 
-			<form
-				class="ui-card mt-ui-md"
-				data-testid="sellos-inventory-project-form"
-				@submit.prevent="addProject"
+			<FormDrawer
+				:open="drawer === 'project'"
+				title="Add a project"
+				submit-label="Add project"
+				:busy="saving"
+				testid="sellos-inventory-project-form"
+				submit-testid="sellos-inventory-project-save"
+				@close="drawer = ''"
+				@submit="addProject"
 			>
-				<h2 class="ui-card-heading mb-ui-md">Add a project</h2>
-				<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+				<FormSection title="Project">
 					<FormField
 						v-model="project.project_name"
 						label="Project name"
@@ -232,6 +250,8 @@
 						:options="projectStatuses"
 						data-testid="sellos-inventory-project-status"
 					/>
+				</FormSection>
+				<FormSection title="Location">
 					<FormField
 						v-model="project.city"
 						label="City"
@@ -243,25 +263,28 @@
 						label="Locality"
 						data-testid="sellos-inventory-project-locality"
 					/>
-				</div>
-				<div class="mt-ui-md">
-					<AppButton
-						type="submit"
-						variant="primary"
-						data-testid="sellos-inventory-project-save"
-					>
-						Add project
-					</AppButton>
-				</div>
-			</form>
+				</FormSection>
+				<p
+					v-if="error"
+					role="alert"
+					class="text-sm text-danger"
+					data-testid="sellos-inventory-drawer-error"
+				>
+					{{ error }}
+				</p>
+			</FormDrawer>
 
-			<form
-				class="ui-card mt-ui-md"
-				data-testid="sellos-inventory-property-form"
-				@submit.prevent="addProperty"
+			<FormDrawer
+				:open="drawer === 'property'"
+				title="Add a secondary property"
+				submit-label="Add property"
+				:busy="saving"
+				testid="sellos-inventory-property-form"
+				submit-testid="sellos-inventory-property-save"
+				@close="drawer = ''"
+				@submit="addProperty"
 			>
-				<h2 class="ui-card-heading mb-ui-md">Add a secondary property</h2>
-				<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+				<FormSection title="Property">
 					<FormField
 						v-model="property.title"
 						label="Title"
@@ -307,6 +330,8 @@
 						label="RERA number (optional)"
 						data-testid="sellos-inventory-property-rera"
 					/>
+				</FormSection>
+				<FormSection title="Location">
 					<FormField
 						v-model="property.city"
 						label="City"
@@ -318,38 +343,41 @@
 						label="Locality"
 						data-testid="sellos-inventory-property-locality"
 					/>
-				</div>
-				<div class="mt-ui-md">
-					<AppButton
-						type="submit"
-						variant="primary"
-						data-testid="sellos-inventory-property-save"
-					>
-						Add property
-					</AppButton>
-				</div>
-			</form>
+				</FormSection>
+				<p
+					v-if="error"
+					role="alert"
+					class="text-sm text-danger"
+					data-testid="sellos-inventory-drawer-error"
+				>
+					{{ error }}
+				</p>
+			</FormDrawer>
 		</template>
-	</div>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
+import { Dialog } from "frappe-ui";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
-import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
+import { formatWhen } from "../format";
 import { inventoryApi, STATUS_TONE } from "../inventory/inventoryApi";
 import MatchWeights from "../inventory/MatchWeights.vue";
 
 // Developers, projects and secondary properties (SOS-P4-01). Every change is made on the server and the
-// overview read back, so what is shown is what is saved.
+// overview read back, so what is shown is what is saved. The three add forms are drawers.
 const developers = ref([]);
 const projects = ref([]);
 const properties = ref([]);
@@ -362,6 +390,11 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+const drawer = ref("");
+const saving = ref(false);
+const logOpen = ref(false);
+const logTitle = ref("");
+const logRows = ref([]);
 
 const blankDeveloper = () => ({ developer_name: "", contact_person: "" });
 const blankProject = () => ({
@@ -390,6 +423,96 @@ const property = reactive(blankProperty());
 const developerOptions = computed(() => developers.value.map((d) => d.developer_name));
 const otherStatuses = (current) => statuses.value.filter((s) => s !== current);
 
+const kpis = computed(() => {
+	const units = projects.value.reduce((n, p) => n + (p.units?.total || 0), 0);
+	const available = projects.value.reduce((n, p) => n + (p.units?.Available || 0), 0);
+	return [
+		{
+			label: "Projects",
+			value: projects.value.length,
+			caption: "primary projects",
+			icon: "lucide-building-2",
+		},
+		{
+			label: "Units",
+			value: units,
+			caption: "across all projects",
+			icon: "lucide-layout-grid",
+		},
+		{
+			label: "Available units",
+			value: available,
+			caption: "ready to sell",
+			icon: "lucide-door-open",
+			tone: "success",
+		},
+		{
+			label: "Secondary properties",
+			value: properties.value.length,
+			caption: "resale and rental",
+			icon: "lucide-home",
+		},
+	];
+});
+
+const projectTo = (p) => ({ name: "project", params: { name: p.name } });
+const projectColumns = [
+	{ key: "project_name", label: "Project", primary: true, sortable: true },
+	{ key: "developer", label: "Developer", sortable: true },
+	{ key: "rera_number", label: "RERA number" },
+	{ key: "location", label: "Location", wrap: true },
+	{ key: "project_status", label: "Status", sortable: true },
+	{ key: "units", label: "Units", wrap: true },
+];
+const propertyColumns = [
+	{ key: "title", label: "Property", primary: true, sortable: true },
+	{ key: "status", label: "Status", sortable: true },
+	{ key: "details", label: "Details", wrap: true },
+	{
+		key: "carpet_area",
+		label: "Carpet area",
+		align: "right",
+		sortable: true,
+		sortValue: (p) => Number(p.carpet_area || 0),
+	},
+	{ key: "location", label: "Location", wrap: true },
+	{ key: "rera_number", label: "RERA number" },
+];
+const developerColumns = [
+	{ key: "developer_name", label: "Developer", primary: true, sortable: true },
+	{ key: "contact_person", label: "Contact person" },
+];
+
+function propertyActions(p) {
+	const out = [];
+	if (canEdit.value) {
+		for (const s of otherStatuses(p.status)) {
+			out.push({
+				label: `Mark ${s}`,
+				onClick: () =>
+					act(
+						() => inventoryApi.setStatus("Property", p.name, s),
+						`${p.title} is now ${s}.`
+					),
+			});
+		}
+	}
+	out.push({
+		label: "Status log",
+		onClick: () => {
+			logTitle.value = `Status log: ${p.title}`;
+			logRows.value = p.log || [];
+			logOpen.value = true;
+		},
+	});
+	return out;
+}
+
+function openDrawer(kind) {
+	error.value = "";
+	drawer.value = kind;
+}
+
 function show(data) {
 	developers.value = data.developers;
 	projects.value = data.projects;
@@ -415,6 +538,7 @@ async function load() {
 async function act(action, message, fallback = "The change could not be saved.") {
 	error.value = "";
 	notice.value = "";
+	saving.value = true;
 	try {
 		show(await action());
 		notice.value = message;
@@ -422,6 +546,8 @@ async function act(action, message, fallback = "The change could not be saved.")
 	} catch (e) {
 		error.value = serverMessage(e, fallback);
 		return false;
+	} finally {
+		saving.value = false;
 	}
 }
 
@@ -436,6 +562,7 @@ const addDeveloper = async () => {
 	const name = developer.developer_name;
 	if (await act(() => inventoryApi.saveDeveloper({ ...developer }), `${name} was added.`)) {
 		Object.assign(developer, blankDeveloper());
+		drawer.value = "";
 	}
 };
 
@@ -443,6 +570,7 @@ const addProject = async () => {
 	const name = project.project_name;
 	if (await act(() => inventoryApi.saveProject({ ...project }), `${name} was added.`)) {
 		Object.assign(project, blankProject());
+		drawer.value = "";
 	}
 };
 
@@ -451,6 +579,7 @@ const addProperty = async () => {
 	const values = numbers(property, ["carpet_area", "floor", "parking"]);
 	if (await act(() => inventoryApi.saveProperty(values), `${title} was added.`)) {
 		Object.assign(property, blankProperty());
+		drawer.value = "";
 	}
 };
 

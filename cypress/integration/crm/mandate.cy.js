@@ -23,6 +23,7 @@ context("SOS-P4-05: mandates and the Private Sale Dossier", () => {
 
 			// Record the mandate: a draft with its type, term and fee.
 			cy.intercept("POST", "**/sellos.inventory.mandates.save_mandate*").as("save");
+			cy.getByTestId("mandate-new").click();
 			cy.getByTestId("mandate-lead").select(made.lead);
 			cy.getByTestId("mandate-type").select("Open");
 			cy.getByTestId("mandate-term").type("12");

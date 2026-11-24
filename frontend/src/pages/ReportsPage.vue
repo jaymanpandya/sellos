@@ -1,10 +1,103 @@
 <template>
-	<div data-testid="sellos-reports-page">
-		<PageHeader
-			title="Reports"
-			text="Choose a report and the dates. Every figure opens the records behind it. You see the records you may see."
-			icon="lucide-chart-column"
-		/>
+	<PageTemplate data-testid="sellos-reports-page">
+		<template #header>
+			<PageHeader
+				title="Reports"
+				text="Choose a report and the dates. Every figure opens the records behind it. You see the records you may see."
+				icon="lucide-chart-column"
+			>
+				<template v-if="reports && reports.length">
+					<template v-if="canExport">
+						<AppButton
+							data-testid="sellos-reports-export-csv"
+							@click="exportFile('csv')"
+						>
+							Export CSV
+						</AppButton>
+						<AppButton
+							data-testid="sellos-reports-export-pdf"
+							@click="exportFile('pdf')"
+						>
+							Export PDF
+						</AppButton>
+						<AppButton
+							v-if="schedules"
+							type="button"
+							data-testid="sellos-reports-schedule-new"
+							@click="scheduling = true"
+						>
+							Schedule report
+						</AppButton>
+					</template>
+					<AppButton
+						v-if="chosenView && (chosenView.mine || canExport)"
+						variant="danger"
+						data-testid="sellos-reports-view-delete"
+						@click="deleteView"
+					>
+						Delete view
+					</AppButton>
+					<AppButton
+						type="button"
+						variant="primary"
+						data-testid="sellos-reports-view-new"
+						@click="savingView = true"
+					>
+						Save view
+					</AppButton>
+				</template>
+			</PageHeader>
+		</template>
+
+		<template v-if="result" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-reports-stats" />
+		</template>
+
+		<template v-if="reports && reports.length" #filters>
+			<FilterBar
+				v-model:open="moreOpen"
+				hide-search
+				apply-label="Show report"
+				clear-label="Last 30 days"
+				more-testid="sellos-reports-filters-toggle"
+				:active="datesChanged"
+				data-testid="sellos-reports-filters"
+				@apply="load"
+				@clear="reset"
+			>
+				<FormField
+					v-model="key"
+					compact
+					type="select"
+					label="Report"
+					:options="reports.map((r) => ({ label: r.title, value: r.key }))"
+					data-testid="sellos-reports-report"
+				/>
+				<FormField
+					v-model="viewKey"
+					compact
+					type="select"
+					label="Open a saved view"
+					:options="viewOptions"
+					data-testid="sellos-reports-view"
+				/>
+				<template #more>
+					<FormField
+						v-model="range.from_date"
+						type="date"
+						label="From"
+						data-testid="sellos-reports-from"
+					/>
+					<FormField
+						v-model="range.to_date"
+						type="date"
+						label="To"
+						data-testid="sellos-reports-to"
+					/>
+				</template>
+			</FilterBar>
+		</template>
+
 		<div v-if="error" data-testid="sellos-reports-error">
 			<LoadError :message="error" @retry="start" />
 		</div>
@@ -15,393 +108,326 @@
 			text="No report has been made visible to your role."
 			icon="lucide-chart-column"
 		/>
-		<template v-else>
-			<FilterBar
-				apply-label="Show report"
-				clear-label="Last 30 days"
-				@apply="load"
-				@clear="reset"
+		<div v-else class="space-y-ui-md">
+			<p
+				v-if="!savingView && viewNote"
+				class="text-sm text-ink-muted"
+				data-testid="sellos-reports-view-note"
 			>
-				<FormField
-					v-model="key"
-					type="select"
-					label="Report"
-					:options="reports.map((r) => ({ label: r.title, value: r.key }))"
-					data-testid="sellos-reports-report"
-				/>
-				<FormField
-					v-model="range.from_date"
-					type="date"
-					label="From"
-					data-testid="sellos-reports-from"
-				/>
-				<FormField
-					v-model="range.to_date"
-					type="date"
-					label="To"
-					data-testid="sellos-reports-to"
-				/>
-			</FilterBar>
-			<ListCard title="Saved views" class="mb-ui-md">
-				<div class="grid gap-ui-md md:grid-cols-3">
-					<FormField
-						v-model="viewKey"
-						type="select"
-						label="Open a saved view"
-						:options="viewOptions"
-						data-testid="sellos-reports-view"
-					/>
-					<FormField
-						v-model="viewName"
-						label="Name for this view"
-						data-testid="sellos-reports-view-name"
-					/>
-					<div class="flex flex-col justify-end gap-ui-xs">
-						<FormField
-							v-model="viewShared"
-							type="checkbox"
-							label="Share with everyone who may read this report"
-							data-testid="sellos-reports-view-shared"
-						/>
-						<FormField
-							v-model="viewRelative"
-							type="checkbox"
-							label="Always the same number of days, ending today"
-							data-testid="sellos-reports-view-relative"
-						/>
-					</div>
-				</div>
-				<div class="mt-ui-sm flex flex-wrap items-center gap-ui-sm">
-					<AppButton data-testid="sellos-reports-view-save" @click="saveView">
-						Save view
-					</AppButton>
-					<AppButton
-						v-if="chosenView && (chosenView.mine || canExport)"
-						variant="danger"
-						data-testid="sellos-reports-view-delete"
-						@click="deleteView"
-					>
-						Delete view
-					</AppButton>
-					<span class="text-sm text-ink-muted" data-testid="sellos-reports-view-note">{{
-						viewNote
-					}}</span>
-				</div>
-			</ListCard>
-			<ListCard v-if="canExport" title="Export" class="mb-ui-md">
-				<p class="mb-ui-sm text-sm text-ink-muted">
-					Exports the rows and figures on this screen, for these dates. Every export is
-					logged.
-				</p>
-				<div class="flex flex-wrap items-center gap-ui-sm">
-					<AppButton data-testid="sellos-reports-export-csv" @click="exportFile('csv')">
-						Export CSV
-					</AppButton>
-					<AppButton data-testid="sellos-reports-export-pdf" @click="exportFile('pdf')">
-						Export PDF
-					</AppButton>
-					<span
-						class="text-sm text-ink-muted"
-						data-testid="sellos-reports-export-note"
-						>{{ exportNote }}</span
-					>
-				</div>
-			</ListCard>
-			<ListCard v-if="canExport && schedules" title="Email schedules" class="mb-ui-md">
-				<p v-if="!schedules.mail_ready" class="mb-ui-sm text-sm text-ink-muted">
-					This site cannot send email yet, so a schedule is kept but nothing is sent.
-				</p>
-				<table
-					v-if="schedules.schedules.length"
-					class="mb-ui-md w-full text-left text-sm"
-					data-testid="sellos-reports-schedules"
-				>
-					<thead class="text-xs text-ink-muted">
-						<tr>
-							<th scope="col" class="py-ui-sm">Name</th>
-							<th scope="col">Report</th>
-							<th scope="col">When</th>
-							<th scope="col">Next</th>
-							<th scope="col">Last result</th>
-							<th scope="col"><span class="sr-only">Actions</span></th>
-						</tr>
-					</thead>
-					<tbody class="divide-y divide-line-soft">
-						<tr
-							v-for="item in schedules.schedules"
-							:key="item.name"
-							data-testid="sellos-reports-schedule"
-							:data-schedule="item.name"
-							class="text-ink"
-						>
-							<td class="py-ui-sm">{{ item.title }}</td>
-							<td>{{ item.report_title }}</td>
-							<td>{{ whenText(item) }}</td>
-							<td>{{ item.next_run ? item.next_run.slice(0, 16) : "Off" }}</td>
-							<td data-col="result">{{ item.last_result || "Not sent yet" }}</td>
-							<td class="flex gap-ui-xs py-ui-xs">
-								<AppButton
-									data-testid="sellos-reports-schedule-send"
-									@click="sendSchedule(item)"
-								>
-									Send now
-								</AppButton>
-								<AppButton
-									variant="danger"
-									data-testid="sellos-reports-schedule-delete"
-									@click="deleteSchedule(item)"
-								>
-									Delete
-								</AppButton>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-				<div class="grid gap-ui-md md:grid-cols-3">
-					<FormField
-						v-model="plan.title"
-						label="Name of the schedule"
-						data-testid="sellos-reports-schedule-title"
-					/>
-					<FormField
-						v-model="plan.frequency"
-						type="select"
-						label="How often"
-						:options="['Daily', 'Weekly', 'Monthly']"
-						data-testid="sellos-reports-schedule-frequency"
-					/>
-					<FormField
-						v-if="plan.frequency === 'Weekly'"
-						v-model="plan.weekday"
-						type="select"
-						label="Day of the week"
-						:options="WEEKDAYS"
-						data-testid="sellos-reports-schedule-weekday"
-					/>
-					<FormField
-						v-if="plan.frequency === 'Monthly'"
-						v-model="plan.day_of_month"
-						type="number"
-						label="Day of the month (1 to 28)"
-						data-testid="sellos-reports-schedule-day"
-					/>
-					<FormField
-						v-model="plan.send_hour"
-						type="number"
-						label="Hour of the day (0 to 23)"
-						data-testid="sellos-reports-schedule-hour"
-					/>
-					<FormField
-						v-model="plan.range_days"
-						type="number"
-						label="Days covered, ending yesterday"
-						data-testid="sellos-reports-schedule-days"
-					/>
-					<FormField
-						v-model="plan.file_format"
-						type="select"
-						label="Attachment"
-						:options="['PDF', 'CSV']"
-						data-testid="sellos-reports-schedule-format"
-					/>
-				</div>
-				<p class="mb-ui-xs mt-ui-md text-sm text-ink-muted">
-					Who gets it. Each person is sent the report with only the records they may see.
-				</p>
-				<div class="flex flex-wrap gap-ui-md">
-					<FormField
-						v-for="person in schedules.people"
-						:key="person.email"
-						type="checkbox"
-						:label="person.name"
-						:model-value="plan.recipients.includes(person.email)"
-						:value="person.email"
-						data-testid="sellos-reports-schedule-person"
-						@update:model-value="togglePerson(person.email, $event)"
-					/>
-				</div>
-				<div class="mt-ui-sm flex flex-wrap items-center gap-ui-sm">
-					<AppButton
-						variant="primary"
-						data-testid="sellos-reports-schedule-save"
-						@click="saveSchedule"
-					>
-						Schedule this report
-					</AppButton>
-					<span
-						class="text-sm text-ink-muted"
-						data-testid="sellos-reports-schedule-note"
-						>{{ scheduleNote }}</span
-					>
-				</div>
-			</ListCard>
+				{{ viewNote }}
+			</p>
+			<p
+				v-if="exportNote"
+				class="text-sm text-ink-muted"
+				data-testid="sellos-reports-export-note"
+			>
+				{{ exportNote }}
+			</p>
 			<LoadingSkeleton v-if="!result" />
 			<template v-else>
-				<p class="mb-ui-xs text-sm text-ink-muted" data-testid="sellos-reports-about">
-					{{ result.report.description }} {{ result.report.date_label }} from
-					{{ result.from_date }} to {{ result.to_date }}.
-				</p>
-				<p class="mb-ui-md text-sm text-ink-muted" data-testid="sellos-reports-scope">
-					{{ scopeText }}
-					<span
-						v-if="result.report.last_refreshed"
-						data-testid="sellos-reports-refreshed"
-					>
-						Summary table refreshed {{ result.report.last_refreshed.slice(0, 16) }}.
-					</span>
-					<AppButton
-						v-if="canRefresh"
-						class="ml-ui-sm"
-						data-testid="sellos-reports-refresh"
-						@click="refresh"
-					>
-						Refresh summary table
-					</AppButton>
-				</p>
-				<div class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-3">
-					<div>
-						<StatCard
-							:label="result.report.measure_label"
-							:value="show(result.report.unit, grand)"
-							:note="`${result.totals.count} records`"
-							icon="lucide-sigma"
-							value-testid="sellos-reports-total"
-						/>
+				<section class="ui-card flex flex-wrap items-center justify-between gap-ui-md">
+					<div class="min-w-0 text-sm text-ink-muted">
+						<p data-testid="sellos-reports-about">
+							{{ result.report.description }} {{ result.report.date_label }} from
+							{{ result.from_date }} to {{ result.to_date }}.
+						</p>
+						<p data-testid="sellos-reports-scope">
+							{{ scopeText }}
+							<span
+								v-if="result.report.last_refreshed"
+								data-testid="sellos-reports-refreshed"
+							>
+								Summary table refreshed
+								{{ formatDateTime(result.report.last_refreshed) }}.
+							</span>
+						</p>
+					</div>
+					<div class="flex flex-wrap items-center gap-ui-sm">
 						<AppButton
-							class="mt-ui-sm w-full"
+							v-if="canRefresh"
+							data-testid="sellos-reports-refresh"
+							@click="refresh"
+						>
+							Refresh summary table
+						</AppButton>
+						<AppButton
 							data-testid="sellos-reports-open-all"
 							@click="open('All records', undefined)"
 						>
 							See records
 						</AppButton>
 					</div>
-				</div>
-				<ListCard
+				</section>
+
+				<DataTable
 					:title="`By ${result.report.group_label.toLowerCase()}`"
-					class="mb-ui-md"
+					:columns="groupColumns"
+					:rows="result.rows"
+					row-key="group"
+					:row-attrs="(row) => ({ 'data-group': row.group })"
+					:page-size="200"
+					empty-title="Nothing in these dates"
+					empty-text="No record falls between these dates. Choose other dates."
+					empty-icon="lucide-chart-column"
+					testid="sellos-reports-rows"
+					row-testid="sellos-reports-row"
+					empty-testid="sellos-reports-rows-empty"
 				>
-					<EmptyState
-						v-if="!result.rows.length"
-						title="Nothing in these dates"
-						text="No record falls between these dates. Choose other dates."
-						icon="lucide-chart-column"
-					/>
-					<table
-						v-else
-						class="w-full text-left text-sm"
-						data-testid="sellos-reports-rows"
-					>
-						<thead class="text-xs text-ink-muted">
-							<tr>
-								<th scope="col" class="py-ui-sm">
-									{{ result.report.group_label }}
-								</th>
-								<th scope="col">Records</th>
-								<th v-if="isSum" scope="col">{{ result.report.measure_label }}</th>
-								<th scope="col"><span class="sr-only">Records</span></th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-line-soft">
-							<tr
-								v-for="row in result.rows"
-								:key="row.group"
-								data-testid="sellos-reports-row"
-								:data-group="row.group"
-								class="text-ink"
-							>
-								<td class="py-ui-sm">{{ row.label }}</td>
-								<td class="tabular-nums" data-col="count">{{ row.count }}</td>
-								<td v-if="isSum" class="tabular-nums" data-col="total">
-									{{ show(result.report.unit, row.total) }}
-								</td>
-								<td>
-									<AppButton
-										data-testid="sellos-reports-open"
-										@click="open(row.label, row.group)"
-									>
-										Records
-									</AppButton>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-				</ListCard>
-				<ListCard v-if="drill" :title="drill.title" class="mb-ui-md">
-					<div data-testid="sellos-reports-drill" :data-count="drill.total">
-						<p
-							class="mb-ui-sm text-sm text-ink-muted"
-							data-testid="sellos-reports-drill-total"
+					<template #cell-count="{ row }">
+						<span class="tabular-nums" data-col="count">{{ row.count }}</span>
+					</template>
+					<template #cell-total="{ row }">
+						<span class="tabular-nums" data-col="total">{{
+							show(result.report.unit, row.total)
+						}}</span>
+					</template>
+					<template #cell-open="{ row }">
+						<AppButton
+							data-testid="sellos-reports-open"
+							@click="open(row.label, row.group)"
 						>
-							{{ drill.total }} records<span v-if="drill.truncated">
-								, the newest {{ drill.shown }} are listed</span
-							>.
-						</p>
-						<EmptyState
-							v-if="!drill.records.length"
-							title="No records"
-							text="No record matches this figure."
-							icon="lucide-file-search"
-						/>
-						<table v-else class="w-full text-left text-sm">
-							<thead class="text-xs text-ink-muted">
-								<tr>
-									<th
-										v-for="(column, at) in drill.columns"
-										:key="column.field"
-										scope="col"
-										:class="at === 0 ? 'py-ui-sm' : ''"
-									>
-										{{ column.label }}
-									</th>
-								</tr>
-							</thead>
-							<tbody class="divide-y divide-line-soft">
-								<tr
-									v-for="record in drill.records"
-									:key="record.name"
-									data-testid="sellos-reports-record"
-									:data-record="record.name"
-									class="text-ink"
-								>
-									<td
-										v-for="(column, at) in drill.columns"
-										:key="column.field"
-										:class="at === 0 ? 'py-ui-sm' : ''"
-									>
-										<router-link
-											v-if="column.field === leadColumn && record.lead"
-											class="text-brand underline"
-											:to="`/crm/leads/${record.lead}`"
-										>
-											{{ cell(column.field, record.values[at]) }}
-										</router-link>
-										<span v-else>{{
-											cell(column.field, record.values[at])
-										}}</span>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</ListCard>
+							Records
+						</AppButton>
+					</template>
+				</DataTable>
+
+				<div v-if="drill" data-testid="sellos-reports-drill" :data-count="drill.total">
+					<p
+						class="mb-ui-sm text-sm text-ink-muted"
+						data-testid="sellos-reports-drill-total"
+					>
+						{{ drill.total }} records<span v-if="drill.truncated">
+							, the newest {{ drill.shown }} are listed</span
+						>.
+					</p>
+					<DataTable
+						:title="drill.title"
+						:columns="drillColumns"
+						:rows="drillRows"
+						row-key="name"
+						:row-attrs="(row) => ({ 'data-record': row.name })"
+						:page-size="200"
+						empty-title="No records"
+						empty-text="No record matches this figure."
+						empty-icon="lucide-file-search"
+						testid="sellos-reports-drill-table"
+						row-testid="sellos-reports-record"
+						empty-testid="sellos-reports-drill-empty"
+					>
+						<template
+							v-for="(column, at) in drill.columns"
+							:key="column.field"
+							#[drillSlot(at)]="{ row }"
+						>
+							<router-link
+								v-if="column.field === leadColumn && row.lead"
+								class="text-brand underline"
+								:to="`/crm/leads/${row.lead}`"
+							>
+								{{ row[drillKey(at)] }}
+							</router-link>
+							<span v-else>{{ row[drillKey(at)] }}</span>
+						</template>
+					</DataTable>
+				</div>
 			</template>
-		</template>
-	</div>
+
+			<div v-if="canExport && schedules" class="space-y-ui-sm">
+				<p v-if="!schedules.mail_ready" class="text-sm text-ink-muted">
+					This site cannot send email yet, so a schedule is kept but nothing is sent.
+				</p>
+				<p
+					v-if="!scheduling && scheduleNote"
+					class="text-sm text-ink-muted"
+					data-testid="sellos-reports-schedule-note"
+				>
+					{{ scheduleNote }}
+				</p>
+				<DataTable
+					title="Email schedules"
+					:columns="scheduleColumns"
+					:rows="schedules.schedules"
+					row-key="name"
+					:row-attrs="(row) => ({ 'data-schedule': row.name })"
+					empty-title="No schedule yet"
+					empty-text="Schedule this report to be emailed to the people you choose."
+					empty-icon="lucide-calendar-clock"
+					testid="sellos-reports-schedules"
+					row-testid="sellos-reports-schedule"
+					empty-testid="sellos-reports-schedules-empty"
+				>
+					<template #cell-when="{ row }">{{ whenLabel(row) }}</template>
+					<template #cell-next_run="{ row }">{{
+						row.next_run ? formatDateTime(row.next_run) : "Off"
+					}}</template>
+					<template #cell-last_result="{ row }">
+						<span data-col="result">{{ row.last_result || "Not sent yet" }}</span>
+					</template>
+					<template #cell-actions="{ row }">
+						<div class="flex gap-ui-xs">
+							<AppButton
+								data-testid="sellos-reports-schedule-send"
+								@click="sendSchedule(row)"
+							>
+								Send now
+							</AppButton>
+							<AppButton
+								variant="danger"
+								data-testid="sellos-reports-schedule-delete"
+								@click="deleteSchedule(row)"
+							>
+								Delete
+							</AppButton>
+						</div>
+					</template>
+				</DataTable>
+			</div>
+		</div>
+
+		<!-- Saving a view is a drawer, not a form under the report. -->
+		<FormDrawer
+			:open="savingView"
+			title="Save this view"
+			text="The report and the dates you are looking at."
+			submit-label="Save view"
+			testid="sellos-reports-view-form"
+			submit-testid="sellos-reports-view-save"
+			cancel-testid="sellos-reports-view-cancel"
+			@close="savingView = false"
+			@submit="saveView"
+		>
+			<FormSection title="View">
+				<FormField
+					v-model="viewName"
+					label="Name for this view"
+					data-testid="sellos-reports-view-name"
+					class="md:col-span-2"
+				/>
+				<FormField
+					v-model="viewShared"
+					type="checkbox"
+					label="Share with everyone who may read this report"
+					data-testid="sellos-reports-view-shared"
+					class="md:col-span-2"
+				/>
+				<FormField
+					v-model="viewRelative"
+					type="checkbox"
+					label="Always the same number of days, ending today"
+					data-testid="sellos-reports-view-relative"
+					class="md:col-span-2"
+				/>
+			</FormSection>
+			<p
+				v-if="viewNote"
+				class="text-sm text-ink-muted"
+				data-testid="sellos-reports-view-note"
+			>
+				{{ viewNote }}
+			</p>
+		</FormDrawer>
+
+		<FormDrawer
+			v-if="canExport && schedules"
+			:open="scheduling"
+			title="Schedule this report"
+			text="Emailed to the people you choose, each with only the records they may see."
+			submit-label="Schedule this report"
+			testid="sellos-reports-schedule-form"
+			submit-testid="sellos-reports-schedule-save"
+			cancel-testid="sellos-reports-schedule-cancel"
+			@close="scheduling = false"
+			@submit="saveSchedule"
+		>
+			<FormSection title="When">
+				<FormField
+					v-model="plan.title"
+					label="Name of the schedule"
+					data-testid="sellos-reports-schedule-title"
+					class="md:col-span-2"
+				/>
+				<FormField
+					v-model="plan.frequency"
+					type="select"
+					label="How often"
+					:options="['Daily', 'Weekly', 'Monthly']"
+					data-testid="sellos-reports-schedule-frequency"
+				/>
+				<FormField
+					v-if="plan.frequency === 'Weekly'"
+					v-model="plan.weekday"
+					type="select"
+					label="Day of the week"
+					:options="WEEKDAYS"
+					data-testid="sellos-reports-schedule-weekday"
+				/>
+				<FormField
+					v-if="plan.frequency === 'Monthly'"
+					v-model="plan.day_of_month"
+					type="number"
+					label="Day of the month (1 to 28)"
+					data-testid="sellos-reports-schedule-day"
+				/>
+				<FormField
+					v-model="plan.send_hour"
+					type="number"
+					label="Hour of the day (0 to 23)"
+					data-testid="sellos-reports-schedule-hour"
+				/>
+				<FormField
+					v-model="plan.range_days"
+					type="number"
+					label="Days covered, ending yesterday"
+					data-testid="sellos-reports-schedule-days"
+				/>
+				<FormField
+					v-model="plan.file_format"
+					type="select"
+					label="Attachment"
+					:options="['PDF', 'CSV']"
+					data-testid="sellos-reports-schedule-format"
+				/>
+			</FormSection>
+			<FormSection title="Who gets it">
+				<FormField
+					v-for="person in schedules ? schedules.people : []"
+					:key="person.email"
+					type="checkbox"
+					:label="person.name"
+					:model-value="plan.recipients.includes(person.email)"
+					:value="person.email"
+					data-testid="sellos-reports-schedule-person"
+					@update:model-value="togglePerson(person.email, $event)"
+				/>
+			</FormSection>
+			<p
+				v-if="scheduleNote"
+				class="text-sm text-ink-muted"
+				data-testid="sellos-reports-schedule-note"
+			>
+				{{ scheduleNote }}
+			</p>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import AppButton from "../components/AppButton.vue";
+import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FilterBar from "../components/FilterBar.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import { serverMessage } from "../crm/crmApi";
+import { formatDateTime } from "../format";
 import { rupees, talkTime } from "../reports/callsApi";
 import { exportsApi, reportsApi, saveFile } from "../reports/engineApi";
 
@@ -412,6 +438,17 @@ const range = reactive({ from_date: "", to_date: "" });
 const result = ref(null);
 const drill = ref(null);
 const error = ref("");
+// The dates are the one filter here, so the panel that holds them starts open.
+const moreOpen = ref(true);
+const savingView = ref(false);
+const scheduling = ref(false);
+// The dates the report opened with, so Clear shows only when they have been changed.
+const defaults = reactive({ from_date: "", to_date: "" });
+const datesChanged = computed(
+	() =>
+		Boolean(defaults.from_date) &&
+		(range.from_date !== defaults.from_date || range.to_date !== defaults.to_date)
+);
 
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const views = ref([]);
@@ -466,6 +503,68 @@ const leadColumn = computed(
 	() => drill.value?.columns.find((c) => ["lead", "lead_title"].includes(c.field))?.field
 );
 
+const kpis = computed(() => {
+	const r = result.value;
+	const items = [
+		{
+			label: r.report.measure_label,
+			value: show(r.report.unit, grand.value),
+			caption: `${r.totals.count} records`,
+			icon: "lucide-sigma",
+			valueTestid: "sellos-reports-total",
+		},
+	];
+	if (isSum.value) {
+		items.push({
+			label: "Records",
+			value: r.totals.count,
+			caption: "In these dates",
+			icon: "lucide-file-search",
+		});
+	}
+	items.push({
+		label: r.report.group_label,
+		value: r.rows.length,
+		caption: "Rows below",
+		icon: "lucide-rows-3",
+	});
+	return items;
+});
+
+const groupColumns = computed(() => [
+	{ key: "label", label: result.value.report.group_label, primary: true },
+	{ key: "count", label: "Records", align: "right" },
+	...(isSum.value
+		? [{ key: "total", label: result.value.report.measure_label, align: "right" }]
+		: []),
+	{ key: "open", label: "" },
+]);
+
+// The records behind a figure: one column for each the server names.
+const drillKey = (at) => `c${at}`;
+const drillSlot = (at) => `cell-${drillKey(at)}`;
+const drillColumns = computed(() =>
+	drill.value.columns.map((c, at) => ({ key: drillKey(at), label: c.label, primary: at === 0 }))
+);
+const drillRows = computed(() =>
+	drill.value.records.map((record) => ({
+		name: record.name,
+		lead: record.lead,
+		...Object.fromEntries(
+			drill.value.columns.map((c, at) => [drillKey(at), cell(c.field, record.values[at])])
+		),
+	}))
+);
+
+const scheduleColumns = [
+	{ key: "title", label: "Name", primary: true },
+	{ key: "report_title", label: "Report" },
+	{ key: "when", label: "When" },
+	{ key: "next_run", label: "Next" },
+	{ key: "last_result", label: "Last result" },
+	{ key: "actions", label: "" },
+];
+
 function show(unit, value) {
 	if (unit === "rupees") return rupees(value);
 	if (unit === "seconds") return talkTime(value);
@@ -485,7 +584,7 @@ function cell(field, value) {
 	if (RUPEE_FIELDS.includes(field)) return rupees(value);
 	if (field === "duration") return talkTime(value);
 	if (typeof value === "string" && /^\d{4}-\d\d-\d\d \d\d:\d\d/.test(value))
-		return value.slice(0, 16);
+		return formatDateTime(value);
 	return value ?? "";
 }
 
@@ -507,8 +606,13 @@ async function load() {
 	drill.value = null;
 	try {
 		result.value = await reportsApi.run(key.value, { ...range });
+		const fresh = !range.from_date && !range.to_date;
 		range.from_date = result.value.from_date;
 		range.to_date = result.value.to_date;
+		if (fresh || !defaults.from_date) {
+			defaults.from_date = range.from_date;
+			defaults.to_date = range.to_date;
+		}
 	} catch (e) {
 		error.value = serverMessage(e, "The report could not be loaded.");
 	}
@@ -607,6 +711,7 @@ async function saveView() {
 		await loadViews();
 		viewKey.value = saved.name;
 		viewNote.value = `Saved the view ${saved.title}.`;
+		savingView.value = false;
 	} catch (e) {
 		viewNote.value = serverMessage(e, "The view could not be saved.");
 	}
@@ -644,7 +749,7 @@ function togglePerson(email, on) {
 	plan.recipients = on ? [...rest, email] : rest;
 }
 
-function whenText(item) {
+function whenLabel(item) {
 	const at = `${String(item.send_hour).padStart(2, "0")}:00`;
 	if (item.frequency === "Weekly") return `Every ${item.weekday} at ${at}`;
 	if (item.frequency === "Monthly") return `On day ${item.day_of_month} at ${at}`;
@@ -663,10 +768,10 @@ async function saveSchedule() {
 		});
 		Object.assign(plan, blankPlan());
 		await loadSchedules();
-		scheduleNote.value = `Scheduled ${saved.title}. Next delivery ${saved.next_run.slice(
-			0,
-			16
+		scheduleNote.value = `Scheduled ${saved.title}. Next delivery ${formatDateTime(
+			saved.next_run
 		)}.`;
+		scheduling.value = false;
 	} catch (e) {
 		scheduleNote.value = serverMessage(e, "The schedule could not be saved.");
 	}

@@ -1,75 +1,8 @@
 <template>
-	<div data-testid="sellos-visits-page">
-		<PageHeader title="Site visits" :text="scopeNote" icon="lucide-calendar-check" />
-		<LoadError
-			v-if="error"
-			class="mb-ui-md"
-			data-testid="sellos-visits-error"
-			:message="error"
-			@retry="retry"
-		/>
-
-		<div
-			class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4"
-			data-testid="sellos-visits-stats"
-		>
-			<StatCard
-				label="Tomorrow to confirm"
-				:value="tomorrow ? tomorrow.visits.length : 0"
-				icon="lucide-calendar-clock"
-				tone="warning"
-			/>
-			<StatCard label="In this view" :value="inView" icon="lucide-calendar-days" />
-		</div>
-
-		<ListCard title="Tomorrow's visits to confirm" class="mb-ui-md">
-			<p class="mb-ui-sm text-sm text-ink-muted" data-testid="sellos-visits-tomorrow-date">
-				{{ tomorrow ? dayLabel(tomorrow.date) : "" }}
-			</p>
-			<EmptyState
-				v-if="tomorrow && !tomorrow.visits.length"
-				title="No visits tomorrow."
-				text="Visits booked for tomorrow will be listed here to confirm."
-				icon="lucide-calendar-x"
-				data-testid="sellos-visits-tomorrow-empty"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-visits-tomorrow">
-				<li
-					v-for="v in tomorrow?.visits || []"
-					:key="v.name"
-					data-testid="sellos-visits-tomorrow-item"
-					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
-				>
-					<div class="flex flex-wrap items-center justify-between gap-ui-sm">
-						<span class="text-ink">
-							<router-link :to="`/crm/leads/${v.lead}`" class="ui-link">{{
-								v.lead_title
-							}}</router-link>
-							, {{ v.project_name }} at {{ timeOf(v.visit_datetime) }}
-							<span class="text-sm text-ink-muted">, {{ v.agent_name }}</span>
-						</span>
-						<StatusBadge
-							data-testid="sellos-visits-tomorrow-status"
-							:tone="confirmTone(v.confirmation_status)"
-							:label="v.confirmation_status"
-						/>
-					</div>
-					<VisitConfirm
-						class="mt-ui-sm"
-						:visit="v"
-						:confirmations="options.confirmations"
-						@changed="loadAll"
-					/>
-				</li>
-			</ul>
-		</ListCard>
-
-		<ListCard title="Calendar">
-			<div class="mb-ui-sm flex flex-wrap items-center justify-between gap-ui-sm">
-				<p class="text-sm text-ink-muted" data-testid="sellos-visits-range">
-					{{ calendar ? rangeLabel : "" }}
-				</p>
-				<div class="flex flex-wrap gap-ui-sm">
+	<PageTemplate data-testid="sellos-visits-page">
+		<template #header>
+			<PageHeader title="Site visits" :text="scopeNote" icon="lucide-calendar-check">
+				<div class="flex flex-wrap gap-ui-sm" role="group" aria-label="Calendar view">
 					<AppButton
 						v-for="v in ['day', 'week']"
 						:key="v"
@@ -81,6 +14,8 @@
 					>
 						{{ v === "day" ? "Day" : "Week" }}
 					</AppButton>
+				</div>
+				<div class="flex flex-wrap gap-ui-sm" role="group" aria-label="Move the calendar">
 					<AppButton type="button" data-testid="sellos-visits-prev" @click="step(-1)">
 						Previous
 					</AppButton>
@@ -91,7 +26,69 @@
 						Next
 					</AppButton>
 				</div>
-			</div>
+			</PageHeader>
+		</template>
+
+		<template #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-visits-stats" />
+		</template>
+
+		<LoadError
+			v-if="error"
+			class="mb-ui-md"
+			data-testid="sellos-visits-error"
+			:message="error"
+			@retry="retry"
+		/>
+
+		<p class="mb-ui-sm text-sm text-ink-muted" data-testid="sellos-visits-tomorrow-date">
+			{{ tomorrow ? dayLabel(tomorrow.date) : "" }}
+		</p>
+		<DataTable
+			class="mb-ui-md"
+			title="Tomorrow's visits to confirm"
+			caption="Tomorrow's visits to confirm"
+			:columns="tomorrowColumns"
+			:rows="tomorrow?.visits || []"
+			:loading="!tomorrow && !error"
+			loading-label="Loading tomorrow's visits."
+			:row-name="(v) => v.lead_title"
+			empty-title="No visits tomorrow."
+			empty-text="Visits booked for tomorrow will be listed here to confirm."
+			empty-icon="lucide-calendar-x"
+			testid="sellos-visits-tomorrow"
+			row-testid="sellos-visits-tomorrow-item"
+			empty-testid="sellos-visits-tomorrow-empty"
+		>
+			<template #cell-lead_title="{ row }">
+				<router-link :to="`/crm/leads/${row.lead}`" class="ui-link font-medium">{{
+					row.lead_title
+				}}</router-link>
+			</template>
+			<template #cell-visit_datetime="{ row }">{{
+				formatDateTime(row.visit_datetime)
+			}}</template>
+			<template #cell-confirmation_status="{ row }">
+				<StatusBadge
+					data-testid="sellos-visits-tomorrow-status"
+					:tone="confirmTone(row.confirmation_status)"
+					:label="row.confirmation_status"
+				/>
+			</template>
+			<template #cell-confirm="{ row }">
+				<VisitConfirm
+					compact
+					:visit="row"
+					:confirmations="options.confirmations"
+					@changed="loadAll"
+				/>
+			</template>
+		</DataTable>
+
+		<ListCard title="Calendar">
+			<p class="mb-ui-sm text-sm text-ink-muted" data-testid="sellos-visits-range">
+				{{ calendar ? rangeLabel : "" }}
+			</p>
 			<LoadingSkeleton v-if="!calendar && !error" :rows="3" />
 			<ul class="space-y-ui-sm" data-testid="sellos-visits-calendar">
 				<li
@@ -99,7 +96,7 @@
 					:key="d.date"
 					data-testid="sellos-visits-day"
 					:data-date="d.date"
-					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
+					class="rounded border border-line-soft bg-surface-faint p-ui-md"
 				>
 					<p class="text-sm font-medium text-ink">{{ dayLabel(d.date) }}</p>
 					<p v-if="!d.visits.length" class="text-sm text-ink-muted">No visits.</p>
@@ -128,22 +125,24 @@
 				</li>
 			</ul>
 		</ListCard>
-	</div>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import VisitConfirm from "../components/VisitConfirm.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
+import { formatDate, formatDateTime } from "../format";
 import { session } from "../session";
 
 // SOS-P1-25: the calendar of visits by day and week, and tomorrow's visits to confirm. The server
@@ -154,6 +153,15 @@ const calendar = ref(null);
 const tomorrow = ref(null);
 const options = ref({ confirmations: [] });
 const error = ref("");
+
+const tomorrowColumns = [
+	{ key: "lead_title", label: "Lead", primary: true },
+	{ key: "project_name", label: "Project" },
+	{ key: "visit_datetime", label: "When" },
+	{ key: "agent_name", label: "Agent" },
+	{ key: "confirmation_status", label: "Status" },
+	{ key: "confirm", label: "Confirm", wrap: true },
+];
 
 const scopeNote = computed(() => {
 	if (session.roles.includes("SellOS Company Admin")) return "Everyone's site visits.";
@@ -169,6 +177,21 @@ const rangeLabel = computed(() =>
 const inView = computed(() =>
 	(calendar.value?.days || []).reduce((total, day) => total + day.visits.length, 0)
 );
+const kpis = computed(() => [
+	{
+		label: "Tomorrow to confirm",
+		value: tomorrow.value ? tomorrow.value.visits.length : 0,
+		caption: "Visits waiting for a call",
+		icon: "lucide-calendar-clock",
+		tone: "warning",
+	},
+	{
+		label: "In this view",
+		value: inView.value,
+		caption: view.value === "day" ? "On the day shown" : "In the week shown",
+		icon: "lucide-calendar-days",
+	},
+]);
 
 // Status is a word and an icon in a tone, never colour alone.
 function confirmTone(status) {
@@ -184,14 +207,11 @@ function visitTone(visit) {
 	return "neutral";
 }
 
+// "Tue, 24 Nov 2026": the weekday from the date, the rest in the shared date format.
 function dayLabel(value) {
 	const day = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-	return day.toLocaleDateString("en-IN", {
-		weekday: "short",
-		day: "numeric",
-		month: "short",
-		year: "numeric",
-	});
+	const weekday = day.toLocaleDateString("en-IN", { weekday: "short" });
+	return `${weekday}, ${formatDate(String(value).slice(0, 10))}`;
 }
 
 function timeOf(value) {

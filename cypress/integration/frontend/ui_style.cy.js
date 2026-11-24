@@ -30,7 +30,7 @@ context("SOS-UI-2B: Pandya palette on the app shell", () => {
 			.parents("aside")
 			.should("have.css", "background-color", "rgb(255, 255, 255)");
 		cy.getByTestId("nav-home").should("have.css", "min-height", "44px");
-		cy.getByTestId("nav-home").should("have.css", "border-top-left-radius", "9999px");
+		cy.getByTestId("nav-home").should("have.css", "border-top-left-radius", "14px");
 		cy.getByTestId("nav-leads").should("have.css", "color", "rgb(63, 74, 92)");
 	});
 
@@ -82,7 +82,7 @@ context("SOS-UI-3A: Home, Call queue and Site visits follow the style", () => {
 				.should("have.css", "font-size", "24px")
 				.and("have.css", "font-weight", "600");
 			cy.getByTestId("app-shell")
-				.find(".ui-card, .rounded-card")
+				.find(".ui-card, .ui-table-card")
 				.first()
 				.should("have.css", "border-top-left-radius", "14px")
 				.and("have.css", "border-top-width", "1px")
@@ -150,7 +150,7 @@ context("SOS-UI-3B: Import leads, Board, Call lists and Assignment follow the st
 			path: "/sellos/company/assignment",
 			title: "sellos-page-title",
 			ready: "assignment-page",
-			primary: "assignment-add",
+			primary: "assignment-new",
 		},
 	];
 
@@ -174,7 +174,7 @@ context("SOS-UI-3B: Import leads, Board, Call lists and Assignment follow the st
 				.should("have.css", "font-size", "24px")
 				.and("have.css", "font-weight", "600");
 			cy.getByTestId("app-shell")
-				.find(".ui-card, .rounded-card")
+				.find(".ui-card, .ui-table-card")
 				.first()
 				.should("have.css", "border-top-left-radius", "14px")
 				.and("have.css", "border-top-width", "1px")
@@ -227,7 +227,7 @@ context("SOS-UI-3C: Users, Teams, Team report, Support and Telephony follow the 
 			name: "Teams",
 			role: "company_admin",
 			path: "/sellos/company/teams",
-			ready: "teams-form",
+			ready: "teams-list",
 		},
 		{
 			name: "Team report",
@@ -239,7 +239,7 @@ context("SOS-UI-3C: Users, Teams, Team report, Support and Telephony follow the 
 			name: "Support access",
 			role: "company_admin",
 			path: "/sellos/company/support",
-			ready: "support-form",
+			ready: "support-list",
 		},
 		{
 			name: "Telephony",
@@ -260,7 +260,7 @@ context("SOS-UI-3C: Users, Teams, Team report, Support and Telephony follow the 
 				.should("have.css", "font-size", "24px")
 				.and("have.css", "font-weight", "600");
 			cy.getByTestId("app-shell")
-				.find(".ui-card, .rounded-card")
+				.find(".ui-card, .ui-table-card")
 				.first()
 				.should("have.css", "border-top-left-radius", "14px")
 				.and("have.css", "border-top-width", "1px")
@@ -285,10 +285,10 @@ context("SOS-UI-3C: Users, Teams, Team report, Support and Telephony follow the 
 		});
 	});
 
-	it("Users: the invite button is solid button/bg with text/button", () => {
+	it("Users: the add user button is solid button/bg with text/button", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/company/users");
-		cy.getByTestId("users-invite")
+		cy.getByTestId("users-add")
 			.should("have.css", "background-color", "rgb(15, 76, 53)")
 			.and("have.css", "color", "rgb(255, 255, 255)");
 	});
@@ -296,7 +296,7 @@ context("SOS-UI-3C: Users, Teams, Team report, Support and Telephony follow the 
 	it("Teams: the add team button is solid button/bg with text/button", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/company/teams");
-		cy.getByTestId("teams-add")
+		cy.getByTestId("teams-new")
 			.should("have.css", "background-color", "rgb(15, 76, 53)")
 			.and("have.css", "color", "rgb(255, 255, 255)");
 	});
@@ -304,7 +304,7 @@ context("SOS-UI-3C: Users, Teams, Team report, Support and Telephony follow the 
 	it("Support access: the give access button is solid button/bg with text/button", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/company/support");
-		cy.getByTestId("support-grant")
+		cy.getByTestId("support-add")
 			.should("have.css", "background-color", "rgb(15, 76, 53)")
 			.and("have.css", "color", "rgb(255, 255, 255)");
 	});
@@ -326,7 +326,7 @@ context("SOS-UI-3D: Companies, setup wizard and sign in follow the style", () =>
 			role: "platform_admin",
 			path: "/sellos/control/tenants",
 			ready: "tenant-list",
-			primary: "tenant-create",
+			primary: "tenant-new",
 		},
 		{
 			name: "Setup wizard",
@@ -355,7 +355,7 @@ context("SOS-UI-3D: Companies, setup wizard and sign in follow the style", () =>
 				.should("have.css", "font-size", "24px")
 				.and("have.css", "font-weight", "600");
 			cy.getByTestId("app-shell")
-				.find(".ui-card, .rounded-card")
+				.find(".ui-card, .ui-table-card")
 				.first()
 				.should("have.css", "border-top-left-radius", "14px")
 				.and("have.css", "border-top-width", "1px")
@@ -436,7 +436,7 @@ context("SOS-UI-3D: Companies, setup wizard and sign in follow the style", () =>
 				.and("have.css", "border-top-color", "rgb(221, 226, 236)");
 			cy.getByTestId("enquiry-name")
 				.should("have.css", "min-height", "44px")
-				.and("have.css", "border-top-left-radius", "10px");
+				.and("have.css", "border-top-left-radius", "14px");
 			cy.getByTestId("enquiry-submit")
 				.should("have.css", "background-color", "rgb(15, 76, 53)")
 				.and("have.css", "color", "rgb(255, 255, 255)")

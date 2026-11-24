@@ -8,7 +8,9 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 	const noMobile = `gate_invited_${tag}b@example.com`;
 	let mobile;
 
-	const row = (email) => cy.get(`[data-testid="sellos-users-row"][data-email="${email}"]`);
+	// The table scrolls inside its card (sticky header), so a row further down is scrolled into view first.
+	const row = (email) =>
+		cy.get(`[data-testid="sellos-users-row"][data-email="${email}"]`).scrollIntoView();
 
 	before(() => {
 		cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads");
@@ -32,6 +34,7 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 
 	it("offers the three roles and never the Platform Admin", () => {
 		open();
+		cy.getByTestId("users-add").click();
 		cy.optionTexts("users-role").should("deep.eq", [
 			"Company Admin",
 			"Agent",
@@ -42,6 +45,8 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 	it("invites an agent with a mobile number and one without", () => {
 		open();
 		cy.intercept("POST", "**/sellos.access.users.invite_user*").as("invite");
+		// The invite form is a drawer, opened by Add user.
+		cy.getByTestId("users-add").click();
 		cy.getByTestId("users-email").type(agent);
 		cy.getByTestId("users-first-name").type("Gate Invited");
 		cy.getByTestId("users-mobile").type(mobile);
@@ -57,6 +62,7 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 				cy.getByTestId("users-role-label").should("contain", "Agent");
 			});
 
+		cy.getByTestId("users-add").click();
 		cy.getByTestId("users-email").type(noMobile);
 		cy.getByTestId("users-first-name").type("Gate No Mobile");
 		cy.getByTestId("users-invite").click();
@@ -114,28 +120,25 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 		row(agent).find('[data-testid="sellos-users-deactivate"]').click();
 		// SOS-P1-19: an agent with open work is asked where it goes, and nothing is deactivated yet.
 		cy.wait("@deactivate").its("response.statusCode").should("eq", 200);
-		row(agent)
-			.should("have.attr", "data-status", "Active") // the agent signed in above, and is still on
-			.within(() => {
-				cy.getByTestId("users-work-lead").should("have.length", 1);
-				cy.getByTestId("users-work-task")
-					.should("have.length", 1)
-					.and("contain", "Gate users task");
-			});
-		// The list of a frappe-ui select opens outside the row, so the choice is made outside `within`.
-		row(agent).find('[data-testid="sellos-users-handover-agent"]').select(noMobile);
-		row(agent).find('[data-testid="sellos-users-handover-confirm"]').click();
+		// The open work and the handover choice sit in a panel above the table, not inside the row.
+		row(agent).should("have.attr", "data-status", "Active"); // the agent signed in above, and is still on
+		cy.getByTestId("users-work-lead").should("have.length", 1);
+		cy.getByTestId("users-work-task")
+			.should("have.length", 1)
+			.and("contain", "Gate users task");
+		cy.getByTestId("users-handover-agent").select(noMobile);
+		cy.getByTestId("users-handover-confirm").click();
 		cy.wait("@deactivate").its("response.statusCode").should("eq", 200);
 		row(agent)
 			.should("have.attr", "data-status", "Deactivated")
 			.within(() => {
-				cy.getByTestId("users-work").should("be.visible");
-				cy.getByTestId("users-handed-over").should("contain", "1 leads");
-				cy.getByTestId("users-work-lead").should("not.exist");
-				cy.getByTestId("users-work-task").should("not.exist");
 				cy.getByTestId("users-deactivate").should("not.exist");
 				cy.getByTestId("users-reactivate").should("be.visible");
 			});
+		cy.getByTestId("users-work").should("be.visible");
+		cy.getByTestId("users-handed-over").should("contain", "1 leads");
+		cy.getByTestId("users-work-lead").should("not.exist");
+		cy.getByTestId("users-work-task").should("not.exist");
 		row(noMobile).within(() => {
 			cy.getByTestId("users-open-leads").should("contain", "1 open leads");
 		});

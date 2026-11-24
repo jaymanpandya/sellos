@@ -1,10 +1,17 @@
 <template>
-	<div class="max-w-3xl" data-testid="sellos-import-page">
-		<PageHeader
-			title="Import a bought lead list"
-			text="Choose a CSV file. Every lead comes in from the source Bought list with the consent status Unknown, or Registered DND when the file says the number is on the do not call list. A person already in SellOS, or twice in the file, is merged into one. Nothing here stops a call or a message: the warning shows on the lead."
-			icon="lucide-file-up"
-		/>
+	<PageTemplate data-testid="sellos-import-page">
+		<template #header>
+			<PageHeader
+				title="Import a bought lead list"
+				text="Choose a CSV file. Every lead comes in from the source Bought list with the consent status Unknown, or Registered DND when the file says the number is on the do not call list. A person already in SellOS, or twice in the file, is merged into one. Nothing here stops a call or a message: the warning shows on the lead."
+				icon="lucide-file-up"
+			/>
+		</template>
+
+		<template v-if="preview" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-import-kpis" />
+		</template>
+
 		<LoadError
 			v-if="error"
 			class="mb-ui-md"
@@ -31,28 +38,6 @@
 		</ListCard>
 
 		<div v-if="preview" data-testid="sellos-import-preview">
-			<div class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4">
-				<StatCard label="Rows" :value="preview.counts.rows" icon="lucide-rows-3" />
-				<StatCard
-					label="New leads"
-					:value="preview.counts.new_leads"
-					icon="lucide-user-plus"
-					tone="success"
-				/>
-				<StatCard
-					label="Merged"
-					:value="preview.counts.merged_with_existing + preview.counts.merged_in_file"
-					icon="lucide-merge"
-					tone="info"
-				/>
-				<StatCard
-					label="Skipped"
-					:value="preview.counts.skipped"
-					icon="lucide-circle-slash"
-					tone="warning"
-				/>
-			</div>
-
 			<ListCard title="Which column is which" class="mb-ui-md">
 				<div class="grid gap-ui-md sm:grid-cols-2">
 					<FormField
@@ -80,35 +65,21 @@
 				</p>
 			</ListCard>
 
-			<ListCard title="A sample of the rows" class="mb-ui-md">
-				<div class="overflow-x-auto">
-					<table class="ui-table" data-testid="sellos-import-sample">
-						<thead>
-							<tr class="text-left text-ink-muted">
-								<th>Rows</th>
-								<th>Name</th>
-								<th>Phone</th>
-								<th>Email</th>
-								<th>What happens</th>
-								<th>Do not call</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr
-								v-for="r in preview.sample"
-								:key="r.rows"
-								data-testid="sellos-import-sample-row"
-							>
-								<td>{{ r.rows }}</td>
-								<td>{{ r.name }}</td>
-								<td>{{ r.phone }}</td>
-								<td>{{ r.email }}</td>
-								<td>{{ actions[r.action] }}</td>
-								<td>{{ r.do_not_call }}</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
+			<DataTable
+				title="A sample of the rows"
+				caption="A sample of the rows"
+				class="mb-ui-md"
+				:columns="sampleColumns"
+				:rows="preview.sample"
+				row-key="rows"
+				:row-name="(r) => `row ${r.rows}`"
+				empty-title="No rows"
+				testid="sellos-import-sample"
+				row-testid="sellos-import-sample-row"
+			>
+				<template #cell-action="{ row }">{{ actions[row.action] }}</template>
+			</DataTable>
+			<ListCard title="Skipped rows and import" class="mb-ui-md">
 				<ul
 					v-if="preview.skipped.length"
 					class="mt-ui-sm text-sm text-ink-muted"
@@ -158,19 +129,21 @@
 				See the imported leads
 			</router-link>
 		</ListCard>
-	</div>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
+import DataTable from "../components/DataTable.vue";
 import FileField from "../components/FileField.vue";
 import FormField from "../components/FormField.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
 
 // The Company Admin's bought list import (SOS-P1-12). The file is read in the browser and sent as text.
@@ -188,6 +161,43 @@ const actions = {
 	"add lead": "New lead for a client already in SellOS",
 	merge: "Merged into the existing lead",
 };
+
+const kpis = computed(() => {
+	const c = preview.value?.counts;
+	if (!c) return [];
+	return [
+		{ label: "Rows", value: c.rows, caption: "in the file", icon: "lucide-rows-3" },
+		{
+			label: "New leads",
+			value: c.new_leads,
+			caption: "will be made",
+			icon: "lucide-user-plus",
+			tone: "success",
+		},
+		{
+			label: "Merged",
+			value: c.merged_with_existing + c.merged_in_file,
+			caption: "into one person each",
+			icon: "lucide-merge",
+			tone: "info",
+		},
+		{
+			label: "Skipped",
+			value: c.skipped,
+			caption: "left out",
+			icon: "lucide-circle-slash",
+			tone: "warning",
+		},
+	];
+});
+const sampleColumns = [
+	{ key: "rows", label: "Rows" },
+	{ key: "name", label: "Name", primary: true },
+	{ key: "phone", label: "Phone" },
+	{ key: "email", label: "Email" },
+	{ key: "action", label: "What happens", wrap: true },
+	{ key: "do_not_call", label: "Do not call" },
+];
 
 const canImport = computed(
 	() => preview.value && preview.value.counts.rows > preview.value.counts.skipped

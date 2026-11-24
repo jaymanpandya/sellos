@@ -34,7 +34,7 @@ context("SOS-P1-06A: lead detail", () => {
 		cy.intercept("**/api/method/sellos.crm.api.add_activity*", { body: { message: {} } }).as(
 			"addActivity"
 		);
-		cy.visit("/sellos/crm/leads/LD-1");
+		cy.visit("/sellos/crm/leads/LD-1?tab=activity");
 		cy.getByTestId("lead-phone").should("contain", "*********345");
 		cy.getByTestId("lead-timeline-empty").should("contain", "Nothing logged yet");
 		cy.getByTestId("lead-activity-notes").type("intro");
@@ -65,7 +65,7 @@ context("SOS-P1-06A: lead detail", () => {
 				},
 			]),
 		});
-		cy.visit("/sellos/crm/leads/LD-1");
+		cy.visit("/sellos/crm/leads/LD-1?tab=activity");
 		cy.getByTestId("lead-timeline-overdue").should("contain", "Overdue");
 	});
 
@@ -76,7 +76,7 @@ context("SOS-P1-06A: lead detail", () => {
 				{ kind: "activity", name: "A1", title: "Call", when: "2026-11-04 10:00:00" },
 			]),
 		});
-		cy.visit("/sellos/partner/leads/LD-1");
+		cy.visit("/sellos/partner/leads/LD-1?tab=activity");
 		cy.getByTestId("lead-timeline-item").should("contain", "Call");
 		cy.getByTestId("lead-activity-form").should("not.exist");
 		cy.getByTestId("lead-archive").should("not.exist");

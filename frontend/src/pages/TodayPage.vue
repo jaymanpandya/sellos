@@ -13,102 +13,183 @@
 		<LoadingSkeleton v-else-if="!view" />
 
 		<template v-if="view">
-			<div
-				class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4"
-				data-testid="sellos-today-counts"
-			>
-				<StatCard
-					v-for="s in SECTIONS"
-					:key="s.key"
-					:label="s.label"
-					:value="view.counts[s.key]"
-					:icon="s.icon"
-					:tone="s.tone"
-					:value-testid="`sellos-today-count-${s.key}`"
-				/>
-			</div>
+			<!-- The four counts as a row of chips: the dashboard above owns the page's one KPI strip. -->
+			<ul class="mb-ui-md flex flex-wrap gap-ui-sm" data-testid="sellos-today-counts">
+				<li v-for="s in SECTIONS" :key="s.key">
+					<StatusBadge :tone="s.tone">
+						{{ s.label }}
+						<b
+							class="ml-1 tabular-nums"
+							:data-testid="`sellos-today-count-${s.key}`"
+							>{{ view.counts[s.key] }}</b
+						>
+					</StatusBadge>
+				</li>
+			</ul>
 
-			<ListCard
+			<section
 				v-for="s in SECTIONS"
 				:id="`today-${s.key}`"
 				:key="s.key"
-				:title="s.label"
 				class="mb-ui-md"
 				:data-testid="`sellos-today-section-${s.key}`"
 			>
+				<h3 class="ui-card-heading mb-ui-sm">{{ s.label }}</h3>
 				<EmptyState
 					v-if="!view[s.key].length"
 					:data-testid="`sellos-today-empty-${s.key}`"
 					:title="s.empty"
 					:icon="s.icon"
 				/>
-				<template v-if="team">
+				<template v-else-if="team">
 					<div
 						v-for="group in groups(s.key)"
 						:key="group.agent"
-						class="mt-ui-md"
+						class="mb-ui-md"
 						data-testid="sellos-today-agent"
 						:data-agent="group.agent"
 					>
-						<h3 class="text-sm font-medium text-ink">
+						<h4 class="mb-1 text-sm font-medium text-ink">
 							{{ group.agent_name }} ({{ group.rows.length }})
-						</h3>
-						<ul class="mt-1 space-y-ui-sm">
-							<TodayRow
-								v-for="row in group.rows"
-								:key="row.name || row.lead"
-								:row="row"
-								:section="s.key"
-								:outcomes="outcomes"
-								:full-numbers="Boolean(view.full_numbers)"
-								@logged="load"
-							>
+						</h4>
+						<DataTable
+							:caption="`${s.label}, ${group.agent_name}`"
+							:columns="columnsFor(s.key)"
+							:rows="group.rows"
+							row-key="_key"
+							v-bind="tableProps(s.key)"
+						>
+							<template #cell-lead_title="{ row }">
+								<router-link
+									:to="`/crm/leads/${row.lead}`"
+									class="ui-link font-medium"
+									data-testid="sellos-today-lead"
+									>{{ row.lead_title }}</router-link
+								>
+							</template>
+							<template #cell-detail="{ row }">{{
+								row.title || row.project_name
+							}}</template>
+							<template #cell-when="{ row }">{{ whenOf(row) }}</template>
+							<template #cell-status="{ row }"><TodayBadges :row="row" /></template>
+							<template #cell-confirm="{ row }">
 								<VisitConfirm
-									v-if="s.key === 'visits_tomorrow'"
-									class="mt-ui-sm"
+									compact
 									:visit="row"
 									:confirmations="confirmations"
 									@changed="load"
 								/>
-							</TodayRow>
-						</ul>
+							</template>
+							<template #cell-actions="{ row }">
+								<TodayRow
+									:row="row"
+									:full-numbers="Boolean(view.full_numbers)"
+									@log="startLog($event, s.key)"
+								/>
+							</template>
+						</DataTable>
 					</div>
 				</template>
-				<ul v-else class="space-y-ui-sm">
-					<TodayRow
-						v-for="row in view[s.key]"
-						:key="row.name || row.lead"
-						:row="row"
-						:section="s.key"
-						:outcomes="outcomes"
-						:full-numbers="Boolean(view.full_numbers)"
-						@logged="load"
-					>
+				<DataTable
+					v-else
+					:caption="s.label"
+					:columns="columnsFor(s.key)"
+					:rows="rowsOf(s.key)"
+					row-key="_key"
+					v-bind="tableProps(s.key)"
+				>
+					<template #cell-lead_title="{ row }">
+						<router-link
+							:to="`/crm/leads/${row.lead}`"
+							class="ui-link font-medium"
+							data-testid="sellos-today-lead"
+							>{{ row.lead_title }}</router-link
+						>
+					</template>
+					<template #cell-detail="{ row }">{{ row.title || row.project_name }}</template>
+					<template #cell-when="{ row }">{{ whenOf(row) }}</template>
+					<template #cell-status="{ row }"><TodayBadges :row="row" /></template>
+					<template #cell-confirm="{ row }">
 						<VisitConfirm
-							v-if="s.key === 'visits_tomorrow'"
-							class="mt-ui-sm"
+							compact
 							:visit="row"
 							:confirmations="confirmations"
 							@changed="load"
 						/>
-					</TodayRow>
-				</ul>
-			</ListCard>
+					</template>
+					<template #cell-actions="{ row }">
+						<TodayRow
+							:row="row"
+							:full-numbers="Boolean(view.full_numbers)"
+							@log="startLog($event, s.key)"
+						/>
+					</template>
+				</DataTable>
+			</section>
 		</template>
+
+		<!-- Log a call: a drawer, so no form sits open under a list. -->
+		<FormDrawer
+			:open="Boolean(logging)"
+			title="Log a call"
+			:text="logging ? logging.row.lead_title : ''"
+			submit-label="Save"
+			testid="sellos-today-log-form"
+			submit-testid="sellos-today-log-save"
+			@close="logging = null"
+			@submit="saveLog"
+		>
+			<FormSection title="The call">
+				<FormField
+					v-model="form.outcome"
+					type="select"
+					label="Outcome"
+					required
+					:options="outcomeOptions"
+					data-testid="sellos-today-log-outcome"
+				/>
+				<FormField
+					v-model="form.notes"
+					label="Notes"
+					data-testid="sellos-today-log-notes"
+				/>
+				<FormField
+					v-if="chosen?.needs_follow_up"
+					v-model="form.followUp"
+					required
+					type="datetime-local"
+					label="Follow up on"
+					class="md:col-span-2"
+					data-testid="sellos-today-log-follow-up"
+				/>
+			</FormSection>
+			<p
+				v-if="logError"
+				role="alert"
+				data-testid="sellos-today-log-error"
+				class="text-sm text-tone-danger"
+			>
+				{{ logError }}
+			</p>
+		</FormDrawer>
 	</div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, defineComponent, h, onMounted, reactive, ref } from "vue";
 
+import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
-import ListCard from "../components/ListCard.vue";
+import FormDrawer from "../components/FormDrawer.vue";
+import FormField from "../components/FormField.vue";
+import FormSection from "../components/FormSection.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
-import StatCard from "../components/StatCard.vue";
-import VisitConfirm from "../components/VisitConfirm.vue";
+import StatusBadge from "../components/StatusBadge.vue";
 import TodayRow from "../components/TodayRow.vue";
+import VisitConfirm from "../components/VisitConfirm.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
+import { formatWhen } from "../format";
 
 // The Today screen (SOS-P1-26): what to do now, in four lists. A Sales Manager sees the same lists for
 // the team, each grouped by agent. The counts come from the same answer as the lists.
@@ -143,10 +224,39 @@ const SECTIONS = [
 	},
 ];
 
+// The overdue and consent badges of one row.
+const TodayBadges = defineComponent({
+	props: { row: { type: Object, required: true } },
+	setup(props) {
+		return () =>
+			h("div", { class: "flex flex-wrap gap-1" }, [
+				props.row.state === "overdue"
+					? h(StatusBadge, {
+							tone: "danger",
+							label: "Overdue",
+							"data-testid": "sellos-today-overdue",
+					  })
+					: null,
+				props.row.consent_warning
+					? h(StatusBadge, {
+							tone: props.row.consent_warning === "red" ? "danger" : "warning",
+							label: props.row.consent_status,
+							"data-testid": "sellos-today-consent",
+							"data-level": props.row.consent_warning,
+							title: props.row.consent_message,
+					  })
+					: null,
+			]);
+	},
+});
+
 const view = ref(null);
 const outcomes = ref([]);
 const confirmations = ref([]);
 const error = ref("");
+const logging = ref(null); // { row, section } while the log drawer is open
+const logError = ref("");
+const form = reactive({ outcome: "", notes: "", followUp: "" });
 
 const team = computed(() => view.value?.scope === "team");
 const scopeNote = computed(() =>
@@ -157,16 +267,80 @@ const scopeNote = computed(() =>
 		: "Your day."
 );
 
+const outcomeOptions = computed(() => [
+	{ label: "Choose an outcome", value: "" },
+	...outcomes.value.map((o) => ({ label: o.name, value: o.name })),
+]);
+const chosen = computed(() => outcomes.value.find((o) => o.name === form.outcome));
+
+// A row's own key: a follow up or visit has a name, a new lead only its lead.
+const keyed = (rows) => rows.map((row) => ({ ...row, _key: row.name || row.lead }));
+const rowsOf = (key) => keyed(view.value[key]);
+
+function columnsFor(key) {
+	const second = key === "follow_ups" ? "Follow up" : key === "new_leads" ? "" : "Project";
+	return [
+		{ key: "lead_title", label: "Lead", primary: true },
+		...(second ? [{ key: "detail", label: second, wrap: true }] : []),
+		{ key: "when", label: key === "new_leads" ? "Added" : "When" },
+		...(team.value || view.value?.scope === "all"
+			? [{ key: "agent_name", label: "Agent" }]
+			: []),
+		{ key: "status", label: "Status", wrap: true },
+		...(key === "visits_tomorrow" ? [{ key: "confirm", label: "Confirm", wrap: true }] : []),
+		{ key: "actions", label: "Call", wrap: true },
+	];
+}
+
+// The row's attributes for specs and the table's own test ids.
+function tableProps(key) {
+	return {
+		testid: `sellos-today-table-${key}`,
+		rowTestid: "sellos-today-row",
+		rowName: (row) => row.lead_title,
+		rowAttrs: (row) => ({ "data-lead": row.lead, "data-section": key }),
+	};
+}
+
+function whenOf(row) {
+	return formatWhen(row.visit_datetime || row.due_at || row.due_date || row.creation || "");
+}
+
 // The rows of one list grouped by agent, in the order of the list, and every agent of the team listed
 // in name order (an agent with nothing has no group).
 function groups(key) {
 	const byAgent = new Map();
-	for (const row of view.value[key]) {
+	for (const row of keyed(view.value[key])) {
 		if (!byAgent.has(row.agent))
 			byAgent.set(row.agent, { agent: row.agent, agent_name: row.agent_name, rows: [] });
 		byAgent.get(row.agent).rows.push(row);
 	}
 	return [...byAgent.values()].sort((a, b) => a.agent_name.localeCompare(b.agent_name));
+}
+
+function startLog(row, section) {
+	logError.value = "";
+	Object.assign(form, { outcome: "", notes: "", followUp: "" });
+	logging.value = { row, section };
+}
+
+// On a follow up the call marks it done, on any other row it is logged on the lead.
+async function saveLog() {
+	logError.value = "";
+	const { row, section } = logging.value;
+	const values = {
+		outcome: form.outcome,
+		notes: form.notes,
+		follow_up_at: chosen.value?.needs_follow_up ? form.followUp : null,
+	};
+	try {
+		if (section === "follow_ups") await crmApi.completeFollowUp(row.name, values);
+		else await crmApi.logCall(row.lead, values);
+		logging.value = null;
+		await load();
+	} catch (e) {
+		logError.value = serverMessage(e, "The call could not be logged.");
+	}
 }
 
 async function load() {

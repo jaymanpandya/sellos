@@ -35,7 +35,11 @@ context("SOS-P0-10: app shell", () => {
 				.find("a")
 				.should("have.length", labels.length)
 				.then(($links) => {
-					expect([...$links].map((a) => a.innerText.trim())).to.deep.equal(labels);
+					// The sidebar groups the places (Work, Sales, ...), so the order is the groups', not the persona's:
+					// the same places, each once.
+					expect([...$links].map((a) => a.innerText.trim()).sort()).to.deep.equal(
+						[...labels].sort()
+					);
 				});
 			cy.getByTestId("nav-home").should("contain", "Home");
 			cy.getByTestId("brand-name").filter(":visible").should("contain", "Pandya Realtors");
@@ -54,7 +58,7 @@ context("SOS-P0-10: app shell", () => {
 		cy.getByTestId("page-body").find('[data-testid="sellos-no-access"]').should("exist");
 	});
 
-	it("shows the company name and the Home, Leads, Call queue, WhatsApp, Site visits, Inventory and Reports links for an agent", () => {
+	it("shows the company name and the Home, Leads, Call queue, WhatsApp, Site visits, Projects and listings and Reports links for an agent", () => {
 		cy.signInFresh("agent");
 		cy.bootOverride((boot) => {
 			boot.company.name = "Pandya Realtors";
@@ -69,9 +73,9 @@ context("SOS-P0-10: app shell", () => {
 				expect([...$links].map((a) => a.innerText.trim()).sort()).to.deep.equal([
 					"Call queue",
 					"Home",
-					"Inventory", // SOS-P4-01
 					"Leads",
 					"Mandates", // SOS-P4-05
+					"Projects and listings", // SOS-P4-01
 					"Reports", // SOS-P5-01
 					"Sellers", // SOS-P4-04
 					"Site visits",

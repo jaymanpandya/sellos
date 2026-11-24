@@ -38,6 +38,7 @@ context("SOS-P7-03: share projects, units and collateral with channel partners",
 		const [shared, other] = made.projects;
 		const [firstUnit, secondUnit] = made.units[shared];
 		openShares();
+		cy.getByTestId("shares-new").click();
 		cy.getByTestId("shares-project").select(shared);
 		cy.getByTestId("shares-all-units").uncheck();
 		cy.getByTestId(`shares-unit-${firstUnit}`).check();
@@ -70,6 +71,7 @@ context("SOS-P7-03: share projects, units and collateral with channel partners",
 	it("withdraws the share and it stops showing to the partner at once", () => {
 		const [shared] = made.projects;
 		openShares();
+		cy.getByTestId("shares-new").click();
 		cy.getByTestId("shares-project").select(shared);
 		cy.getByTestId(`shares-firm-${made.firm}`).check();
 		cy.intercept("POST", "**/sellos.inventory.partner_shares.share_project*").as("share");

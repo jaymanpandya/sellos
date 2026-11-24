@@ -1,7 +1,7 @@
 <template>
 	<div class="ui-empty" data-testid="sellos-empty-state">
 		<span
-			class="mb-1 inline-flex h-11 w-11 items-center justify-center rounded-badge bg-brand-soft text-brand"
+			class="mb-1 inline-flex h-11 w-11 items-center justify-center rounded bg-brand-soft text-brand"
 			aria-hidden="true"
 		>
 			<span :class="icon" class="icon-inherit size-5" />

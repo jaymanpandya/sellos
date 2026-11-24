@@ -1,15 +1,28 @@
 <template>
-	<div data-testid="sellos-partner-firm-page">
-		<PageHeader
-			title="Your firm"
-			text="Complete your firm's details. The company approves your firm before you can register leads."
-			icon="lucide-handshake"
-		/>
+	<PageTemplate data-testid="sellos-partner-firm-page">
+		<template #header>
+			<PageHeader
+				title="Your firm"
+				text="Complete your firm's details. The company approves your firm before you can register leads."
+				icon="lucide-handshake"
+			>
+				<AppButton
+					v-if="firm && firm.can_edit"
+					type="button"
+					variant="primary"
+					data-testid="sellos-partner-firm-edit"
+					@click="editing = true"
+				>
+					Edit firm details
+				</AppButton>
+			</PageHeader>
+		</template>
+
 		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-partner-firm-load-error">
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 		<p
-			v-if="error"
+			v-if="error && !editing"
 			role="alert"
 			data-testid="sellos-partner-firm-error"
 			class="mb-ui-md text-sm text-accent"
@@ -24,14 +37,17 @@
 			icon="lucide-handshake"
 		/>
 
-		<template v-if="firm">
+		<div v-if="firm" class="space-y-ui-md">
 			<div
-				class="ui-card mb-ui-md"
+				class="ui-card"
 				data-testid="sellos-partner-firm-state"
 				:data-status="firm.status"
 			>
 				<div class="flex flex-wrap items-center gap-3">
-					<h2 class="ui-card-heading" data-testid="sellos-partner-firm-name">
+					<h2
+						class="text-base font-medium text-ink"
+						data-testid="sellos-partner-firm-name"
+					>
 						{{ firm.firm_name }}
 					</h2>
 					<span class="text-sm text-ink-muted" data-testid="sellos-partner-firm-code">
@@ -43,80 +59,87 @@
 						data-testid="sellos-partner-firm-status"
 					/>
 				</div>
-				<p class="mt-ui-sm text-ink" data-testid="sellos-partner-firm-message">
+				<p class="mt-ui-sm text-base text-ink" data-testid="sellos-partner-firm-message">
 					{{ message }}
 				</p>
-			</div>
-
-			<form
-				v-if="firm.can_edit"
-				class="ui-card"
-				data-testid="sellos-partner-firm-form"
-				@submit.prevent="save"
-			>
-				<h2 class="ui-card-heading mb-ui-md">Firm details</h2>
-				<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
-					<FormField
-						v-model="form.firm_name"
-						label="Firm name"
-						required
-						data-testid="sellos-partner-firm-name-input"
-					/>
-					<FormField
-						v-model="form.contact_person"
-						label="Contact person"
-						required
-						data-testid="sellos-partner-firm-contact"
-					/>
-					<FormField
-						v-model="form.phone"
-						type="tel"
-						label="Phone"
-						:hint="firm.phone_masked ? `Saved: ${firm.phone_masked}` : ''"
-						data-testid="sellos-partner-firm-phone"
-					/>
-					<FormField
-						v-model="form.rera_number"
-						label="RERA agent registration number"
-						data-testid="sellos-partner-firm-rera"
-					/>
-					<FormField
-						v-model="form.pan"
-						label="PAN"
-						:hint="
-							firm.has_pan
-								? 'Saved. Only the company sees it.'
-								: 'Only the company sees it.'
-						"
-						data-testid="sellos-partner-firm-pan"
-					/>
-					<FileField
-						label="Signed agreement"
-						accept=".pdf,.png,.jpg,.jpeg"
-						:hint="
-							firm.has_agreement
-								? 'Uploaded. Choose a file to replace it.'
-								: 'A PDF, PNG or JPG file of up to 5 MB.'
-						"
-						data-testid="sellos-partner-firm-agreement"
-						@change="chooseFile"
-					/>
-				</div>
 				<p v-if="firm.missing.length" class="mt-ui-sm text-sm text-ink-muted">
 					Still needed: {{ firm.missing.join(", ") }}.
 				</p>
-				<div class="mt-ui-md">
-					<AppButton
-						type="submit"
-						variant="primary"
-						data-testid="sellos-partner-firm-save"
-					>
-						Save details
-					</AppButton>
-				</div>
-			</form>
-		</template>
-	</div>
+			</div>
+		</div>
+
+		<!-- The firm's details are a drawer opened from the header. -->
+		<FormDrawer
+			v-if="firm && firm.can_edit"
+			:open="editing"
+			title="Firm details"
+			text="The company sees these before it approves your firm."
+			submit-label="Save details"
+			testid="sellos-partner-firm-form"
+			submit-testid="sellos-partner-firm-save"
+			@close="editing = false"
+			@submit="save"
+		>
+			<FormSection title="Firm">
+				<FormField
+					v-model="form.firm_name"
+					label="Firm name"
+					required
+					data-testid="sellos-partner-firm-name-input"
+				/>
+				<FormField
+					v-model="form.contact_person"
+					label="Contact person"
+					required
+					data-testid="sellos-partner-firm-contact"
+				/>
+				<FormField
+					v-model="form.phone"
+					type="tel"
+					label="Phone"
+					:hint="firm.phone_masked ? `Saved: ${firm.phone_masked}` : ''"
+					data-testid="sellos-partner-firm-phone"
+				/>
+			</FormSection>
+			<FormSection title="Registration">
+				<FormField
+					v-model="form.rera_number"
+					label="RERA agent registration number"
+					data-testid="sellos-partner-firm-rera"
+				/>
+				<FormField
+					v-model="form.pan"
+					label="PAN"
+					:hint="
+						firm.has_pan
+							? 'Saved. Only the company sees it.'
+							: 'Only the company sees it.'
+					"
+					data-testid="sellos-partner-firm-pan"
+				/>
+				<FileField
+					label="Signed agreement"
+					accept=".pdf,.png,.jpg,.jpeg"
+					:hint="
+						firm.has_agreement
+							? 'Uploaded. Choose a file to replace it.'
+							: 'A PDF, PNG or JPG file of up to 5 MB.'
+					"
+					class="md:col-span-2"
+					data-testid="sellos-partner-firm-agreement"
+					@change="chooseFile"
+				/>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-partner-firm-error"
+				class="text-sm text-accent"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -125,9 +148,12 @@ import { computed, onMounted, reactive, ref } from "vue";
 import AppButton from "../components/AppButton.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FileField from "../components/FileField.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
+import FormSection from "../components/FormSection.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { partnersApi, readFileBase64 } from "../company/partnersApi";
 import { serverMessage } from "../crm/crmApi";
@@ -146,6 +172,7 @@ const firm = ref(null);
 const error = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+const editing = ref(false);
 const form = reactive({ firm_name: "", contact_person: "", phone: "", rera_number: "", pan: "" });
 let chosen = null;
 
@@ -203,6 +230,7 @@ async function save() {
 		}
 		form.pan = "";
 		form.phone = "";
+		editing.value = false;
 	} catch (e) {
 		error.value = serverMessage(e, "The details could not be saved.");
 	}

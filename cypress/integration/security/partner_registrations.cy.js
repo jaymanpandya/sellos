@@ -12,6 +12,7 @@ context("SOS-P7-02: register a lead as a channel partner", () => {
 		cy.bench("sellos.tests.ui_fixtures.remove_gate_partner_firms");
 	};
 	const fillBuyer = (name, phone) => {
+		cy.getByTestId("partner-register-new").click();
 		cy.getByTestId("partner-register-name").clear().type(name);
 		cy.getByTestId("partner-register-phone").clear().type(phone);
 	};
@@ -62,8 +63,8 @@ context("SOS-P7-02: register a lead as a channel partner", () => {
 
 	it("registers a new buyer: the confirmation wording is shown, the phone is masked and the registration waits", () => {
 		openRegister();
-		cy.getByTestId("partner-register-wording").should("contain", "has agreed that"); // the default Partner confirmation wording;
 		fillBuyer(newName, numbers.new_phone);
+		cy.getByTestId("partner-register-wording").should("contain", "has agreed that"); // the default Partner confirmation wording;
 		cy.getByTestId("partner-register-project").type("Gate Tower");
 		cy.get('textarea[data-testid="sellos-partner-register-note"]').type(
 			"Wants a three bedroom flat"

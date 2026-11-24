@@ -85,6 +85,8 @@ context("SOS-P1-19: bulk reassignment", () => {
 		cy.visit("/sellos/company/assignment");
 		cy.wait("@rules");
 		cy.getByTestId("assignment-page").should("be.visible");
+		// The rule form is a drawer, opened by Add rule.
+		cy.getByTestId("assignment-new").click();
 		cy.getByTestId("assignment-name").type("Gate Assign Rule");
 		cy.getByTestId("assignment-type").select("Locality");
 		cy.getByTestId("assignment-locality").type("Gate Assign Locality");

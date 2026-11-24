@@ -1,12 +1,31 @@
 <template>
-	<div class="max-w-3xl" data-testid="sellos-assignment-page">
-		<PageHeader
-			title="Lead assignment"
-			text="Every new lead goes to an agent at once. Rules are tried from the lowest order up. A rule names a team, and the team's active agents take the leads in turn. A lead no rule matches goes to the default team."
-			icon="lucide-shuffle"
-		/>
+	<PageTemplate data-testid="sellos-assignment-page">
+		<template #header>
+			<PageHeader
+				title="Lead assignment"
+				text="Every new lead goes to an agent at once. Rules are tried from the lowest order up, and a lead no rule matches goes to the default team."
+				icon="lucide-shuffle"
+			>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-assignment-new"
+					@click="openAdd"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Add rule
+				</AppButton>
+			</PageHeader>
+		</template>
+
+		<template #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-assignment-stats" />
+		</template>
+
 		<LoadError
-			v-if="error"
+			v-if="error && !adding"
 			class="mb-ui-md"
 			data-testid="sellos-assignment-error"
 			:message="error"
@@ -24,100 +43,113 @@
 			/>
 		</ListCard>
 
-		<ListCard title="Rules" class="mb-ui-md">
-			<EmptyState
-				v-if="!rules.length"
-				title="No rules yet."
-				text="Every lead goes to the default team until a rule is added."
-				icon="lucide-shuffle"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-assignment-rules">
-				<li
-					v-for="r in rules"
-					:key="r.name"
-					data-testid="sellos-assignment-rule"
-					:data-name="r.name"
-					class="flex flex-wrap items-center gap-ui-md rounded-input border border-line-soft p-ui-sm"
+		<DataTable
+			title="Rules"
+			caption="Assignment rules"
+			:columns="columns"
+			:rows="rules"
+			:loading="loading"
+			loading-label="Loading rules."
+			empty-title="No rules yet."
+			empty-text="Every lead goes to the default team until a rule is added."
+			empty-icon="lucide-shuffle"
+			testid="sellos-assignment-rules"
+			row-testid="sellos-assignment-rule"
+		>
+			<template #cell-describe="{ row }">
+				<span class="text-ink-body">{{ describe(row) }}</span>
+			</template>
+			<template #cell-team="{ row }">
+				<span class="text-ink-body">{{ teamName(row.team) }}</span>
+			</template>
+			<template #cell-enabled="{ row }">
+				<AppCheckbox
+					:model-value="Boolean(row.enabled)"
+					label="Enabled"
+					data-testid="sellos-assignment-rule-enabled"
+					@update:model-value="save(row.name, { enabled: $event ? 1 : 0 })"
+				/>
+			</template>
+			<template #cell-actions="{ row }">
+				<AppButton
+					type="button"
+					data-testid="sellos-assignment-rule-remove"
+					@click="remove(row)"
 				>
-					<span class="font-medium text-ink">{{ r.rule_name }}</span>
-					<span class="text-sm text-ink-muted">
-						{{ describe(r) }} to {{ teamName(r.team) }}, order {{ r.priority }}
-					</span>
-					<AppCheckbox
-						:model-value="Boolean(r.enabled)"
-						label="Enabled"
-						data-testid="sellos-assignment-rule-enabled"
-						@update:model-value="save(r.name, { enabled: $event ? 1 : 0 })"
-					/>
-					<AppButton
-						type="button"
-						data-testid="sellos-assignment-rule-remove"
-						@click="remove(r)"
-					>
-						Remove
-					</AppButton>
-				</li>
-			</ul>
-		</ListCard>
+					Remove
+				</AppButton>
+			</template>
+		</DataTable>
 
-		<form data-testid="sellos-assignment-form" @submit.prevent="add">
-			<ListCard title="Add a rule">
-				<div class="grid gap-ui-md sm:grid-cols-2">
-					<FormField
-						v-model="form.rule_name"
-						label="Rule name"
-						required
-						placeholder="For example Pune website leads"
-						data-testid="sellos-assignment-name"
-					/>
-					<FormField
-						v-model="form.rule_type"
-						type="select"
-						label="Assign by"
-						:options="typeOptions"
-						data-testid="sellos-assignment-type"
-					/>
-					<FormField
-						v-if="form.rule_type === 'Source'"
-						v-model="form.source"
-						type="select"
-						label="Source"
-						required
-						:options="sourceOptions"
-						data-testid="sellos-assignment-source"
-					/>
-					<FormField
-						v-if="form.rule_type === 'Locality'"
-						v-model="form.locality"
-						label="Locality"
-						required
-						placeholder="For example Baner"
-						data-testid="sellos-assignment-locality"
-					/>
-					<FormField
-						v-model="form.team"
-						type="select"
-						label="Team"
-						required
-						:options="teamOptions"
-						data-testid="sellos-assignment-team"
-					/>
-					<FormField
-						v-model="form.priority"
-						type="number"
-						min="0"
-						label="Order"
-						data-testid="sellos-assignment-priority"
-					/>
-				</div>
-				<div class="mt-ui-md">
-					<AppButton variant="primary" type="submit" data-testid="sellos-assignment-add">
-						Add rule
-					</AppButton>
-				</div>
-			</ListCard>
-		</form>
-	</div>
+		<FormDrawer
+			:open="adding"
+			title="Add a rule"
+			text="A rule names a team, and the team's active agents take the leads in turn."
+			submit-label="Add rule"
+			testid="sellos-assignment-form"
+			submit-testid="sellos-assignment-add"
+			@close="adding = false"
+			@submit="add"
+		>
+			<FormSection title="Rule">
+				<FormField
+					v-model="form.rule_name"
+					label="Rule name"
+					required
+					placeholder="For example Pune website leads"
+					class="md:col-span-2"
+					data-testid="sellos-assignment-name"
+				/>
+				<FormField
+					v-model="form.rule_type"
+					type="select"
+					label="Assign by"
+					:options="typeOptions"
+					data-testid="sellos-assignment-type"
+				/>
+				<FormField
+					v-if="form.rule_type === 'Source'"
+					v-model="form.source"
+					type="select"
+					label="Source"
+					required
+					:options="sourceOptions"
+					data-testid="sellos-assignment-source"
+				/>
+				<FormField
+					v-if="form.rule_type === 'Locality'"
+					v-model="form.locality"
+					label="Locality"
+					required
+					placeholder="For example Baner"
+					data-testid="sellos-assignment-locality"
+				/>
+				<FormField
+					v-model="form.team"
+					type="select"
+					label="Team"
+					required
+					:options="teamOptions"
+					data-testid="sellos-assignment-team"
+				/>
+				<FormField
+					v-model="form.priority"
+					type="number"
+					min="0"
+					label="Order"
+					data-testid="sellos-assignment-priority"
+				/>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				class="text-sm text-danger"
+				data-testid="sellos-assignment-form-error"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -125,11 +157,15 @@ import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import AppCheckbox from "../components/AppCheckbox.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
 
 // The Company Admin's assignment rules and default team (SOS-P1-19). Every change is saved on the
@@ -140,6 +176,37 @@ const sources = ref([]);
 const ruleTypes = ref(["Round robin", "Source", "Locality"]);
 const defaultTeam = ref("");
 const error = ref("");
+const loading = ref(true);
+const adding = ref(false);
+const kpis = computed(() => [
+	{
+		label: "Rules",
+		value: rules.value.length,
+		caption: "tried from the lowest order up",
+		icon: "lucide-shuffle",
+	},
+	{
+		label: "Switched on",
+		value: rules.value.filter((r) => r.enabled).length,
+		caption: "rules in use",
+		icon: "lucide-circle-check",
+		tone: "success",
+	},
+	{
+		label: "Teams",
+		value: teams.value.length,
+		caption: "that can take leads",
+		icon: "lucide-users-round",
+	},
+]);
+const columns = [
+	{ key: "rule_name", label: "Rule", primary: true, sortable: true },
+	{ key: "describe", label: "Assigns", sortValue: (r) => describe(r) },
+	{ key: "team", label: "Team", sortable: true, sortValue: (r) => teamName(r.team) },
+	{ key: "priority", label: "Order", sortable: true, align: "right" },
+	{ key: "enabled", label: "Enabled" },
+	{ key: "actions", label: "Actions" },
+];
 const blank = () => ({
 	rule_name: "",
 	rule_type: "Round robin",
@@ -179,7 +246,14 @@ async function load() {
 		defaultTeam.value = data.default_team || "";
 	} catch (e) {
 		error.value = serverMessage(e, "The rules could not be loaded.");
+	} finally {
+		loading.value = false;
 	}
+}
+
+function openAdd() {
+	error.value = "";
+	adding.value = true;
 }
 
 async function run(action, fallback) {
@@ -216,7 +290,10 @@ async function add() {
 		() => crmApi.saveAssignmentRule({ ...form, priority: Number(form.priority) }),
 		"The rule could not be added."
 	);
-	if (!error.value) Object.assign(form, blank());
+	if (!error.value) {
+		Object.assign(form, blank());
+		adding.value = false;
+	}
 }
 
 onMounted(load);

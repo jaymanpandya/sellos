@@ -1,13 +1,23 @@
 <template>
-	<div data-testid="sellos-partner-earnings-page">
-		<PageHeader
-			title="Your deals and earnings"
-			text="Your own deals, what you have earned so far, what you may still earn, and your QR code to share."
-			icon="lucide-badge-indian-rupee"
+	<PageTemplate data-testid="sellos-partner-earnings-page">
+		<template #header>
+			<PageHeader
+				title="Your deals and earnings"
+				text="Your own deals, what you have earned, what you may still earn, and your QR code to share."
+				icon="lucide-badge-indian-rupee"
+			/>
+		</template>
+
+		<template v-if="result && result.firm" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-partner-earnings-stats" />
+		</template>
+
+		<LoadError
+			v-if="error"
+			:message="error"
+			data-testid="sellos-partner-earnings-error"
+			@retry="load"
 		/>
-		<div v-if="error" data-testid="sellos-partner-earnings-error">
-			<LoadError :message="error" @retry="load" />
-		</div>
 		<LoadingSkeleton v-else-if="!result" />
 		<EmptyState
 			v-else-if="!result.firm"
@@ -16,22 +26,51 @@
 			icon="lucide-badge-indian-rupee"
 		/>
 		<template v-else>
-			<div class="mb-ui-md grid grid-cols-2 gap-ui-md">
-				<StatCard
-					label="Earned so far"
-					:value="rupees(result.earned)"
-					note="Commission already paid to you"
-					value-testid="sellos-partner-earnings-earned"
-				/>
-				<StatCard
-					label="Potential earnings"
-					:value="rupees(result.potential)"
-					note="Commission due, approved or on hold"
-					value-testid="sellos-partner-earnings-potential"
-				/>
-			</div>
+			<DataTable
+				title="Your deals"
+				caption="Your deals"
+				:columns="columns"
+				:rows="result.deals"
+				:row-name="(row) => row.target"
+				:row-attrs="rowAttrs"
+				empty-title="No deals yet"
+				empty-text="A deal appears here once the company records one with a share for your firm."
+				empty-icon="lucide-badge-indian-rupee"
+				testid="sellos-partner-earnings-deals"
+				row-testid="sellos-partner-earnings-deal"
+				loading-testid="sellos-partner-earnings-loading"
+				empty-testid="sellos-partner-earnings-empty"
+			>
+				<template #cell-approval_status="{ row }">
+					<span class="flex flex-wrap items-center gap-ui-sm">
+						<StatusBadge
+							:tone="row.approval_status === 'Approved' ? 'success' : 'warning'"
+							:label="row.approval_status"
+						/>
+						<StatusBadge
+							v-if="row.payout_status"
+							:tone="TONES[row.payout_status] || 'neutral'"
+							:label="`Commission ${row.payout_status}`"
+						/>
+					</span>
+				</template>
+				<template #cell-deal_date="{ row }">
+					<span class="text-ink-body">{{ formatDate(row.deal_date) }}</span>
+				</template>
+				<template #cell-percent="{ row }">
+					<span class="tabular-nums">{{ row.percent }}%</span>
+				</template>
+				<template #cell-commission_due="{ row }">
+					<span
+						v-if="row.commission_due !== null"
+						class="tabular-nums"
+						data-testid="sellos-partner-earnings-deal-amount"
+						>{{ formatMoney(row.commission_due, 2) }}</span
+					>
+				</template>
+			</DataTable>
 
-			<ListCard title="Your QR code" class="mb-ui-md">
+			<ListCard title="Your QR code" class="mt-ui-md">
 				<div class="flex flex-wrap items-center gap-ui-md">
 					<img
 						:src="result.qr"
@@ -52,73 +91,73 @@
 					</div>
 				</div>
 			</ListCard>
-
-			<ListCard title="Your deals">
-				<EmptyState
-					v-if="!result.deals.length"
-					title="No deals yet"
-					text="A deal appears here once the company records one with a share for your firm."
-					icon="lucide-badge-indian-rupee"
-				/>
-				<ul v-else class="space-y-ui-sm" data-testid="sellos-partner-earnings-deals">
-					<li
-						v-for="d in result.deals"
-						:key="d.name"
-						data-testid="sellos-partner-earnings-deal"
-						:data-deal="d.name"
-						:data-status="d.payout_status || d.approval_status"
-						class="rounded-input border border-line-soft p-ui-md"
-					>
-						<div class="flex flex-wrap items-center gap-3">
-							<span class="font-medium text-ink">{{ d.target }}</span>
-							<StatusBadge
-								:tone="d.approval_status === 'Approved' ? 'success' : 'warning'"
-								:label="d.approval_status"
-							/>
-							<StatusBadge
-								v-if="d.payout_status"
-								:tone="TONES[d.payout_status] || 'neutral'"
-								:label="`Commission ${d.payout_status}`"
-							/>
-						</div>
-						<p class="mt-1 text-sm text-ink-muted">
-							Booked {{ d.deal_date }}, your share {{ d.percent }}%<span
-								v-if="d.commission_due !== null"
-								data-testid="sellos-partner-earnings-deal-amount"
-							>
-								, {{ rupees(d.commission_due) }}</span
-							>.
-						</p>
-					</li>
-				</ul>
-			</ListCard>
 		</template>
-	</div>
+	</PageTemplate>
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
+import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { partnerViewsApi } from "../crm/partnerViewsApi";
+import { formatDate, formatMoney } from "../format";
 
 // SOS-P5-06: a partner's own deals, earnings and QR code. The server reads only this firm's records.
 const TONES = { Due: "warning", Approved: "info", Paid: "success", "On hold": "danger" };
 const result = ref(null);
 const error = ref("");
 
-const rupees = (n) =>
-	`Rs ${new Intl.NumberFormat("en-IN", {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	}).format(Number(n || 0))}`;
+const kpis = computed(() => [
+	{
+		label: "Earned so far",
+		value: formatMoney(result.value?.earned || 0, 2),
+		caption: "Commission already paid to you",
+		icon: "lucide-wallet",
+		tone: "success",
+		valueTestid: "sellos-partner-earnings-earned",
+	},
+	{
+		label: "Potential earnings",
+		value: formatMoney(result.value?.potential || 0, 2),
+		caption: "Commission due, approved or on hold",
+		icon: "lucide-hourglass",
+		tone: "warning",
+		valueTestid: "sellos-partner-earnings-potential",
+	},
+]);
+
+const columns = [
+	{ key: "target", label: "Deal", primary: true, sortable: true, wrap: true },
+	{ key: "approval_status", label: "Status", sortable: true },
+	{ key: "deal_date", label: "Booked", sortable: true },
+	{
+		key: "percent",
+		label: "Your share",
+		sortable: true,
+		align: "right",
+		sortValue: (d) => Number(d.percent || 0),
+	},
+	{
+		key: "commission_due",
+		label: "Commission",
+		sortable: true,
+		align: "right",
+		sortValue: (d) => (d.commission_due === null ? null : Number(d.commission_due)),
+	},
+];
+const rowAttrs = (d) => ({
+	"data-deal": d.name,
+	"data-status": d.payout_status || d.approval_status,
+});
 
 async function load() {
 	error.value = "";

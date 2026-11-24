@@ -1,10 +1,12 @@
 <template>
-	<div class="max-w-3xl" data-testid="sellos-inventory-import-page">
-		<PageHeader
-			title="Import inventory"
-			text="Bring in your developers, projects, units, properties, listings and mandates from a spreadsheet. Import them in that order, one file for each. A dry run shows what would happen and writes nothing. A record that is already in SellOS is updated, never doubled, so the same file can be imported again safely."
-			icon="lucide-file-up"
-		/>
+	<PageTemplate data-testid="sellos-inventory-import-page">
+		<template #header>
+			<PageHeader
+				title="Import inventory"
+				text="Bring in your developers, projects, units, properties, listings and mandates from a spreadsheet. Import them in that order, one file for each. A dry run shows what would happen and writes nothing. A record that is already in SellOS is updated, never doubled, so the same file can be imported again safely."
+				icon="lucide-file-up"
+			/>
+		</template>
 		<LoadError
 			v-if="error"
 			class="mb-ui-md"
@@ -99,7 +101,7 @@
 				Download the reconciliation report
 			</a>
 		</ListCard>
-	</div>
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -110,6 +112,7 @@ import FileField from "../components/FileField.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import { serverMessage } from "../crm/crmApi";
 import { importApi } from "../inventory/inventoryApi";
 import CountCards from "../inventory/ImportCountCards.vue";

@@ -21,6 +21,7 @@ context("SOS-P4-04: seller pipeline", () => {
 			cy.getByTestId("seller-stage-count").should("have.length", 10);
 
 			cy.intercept("POST", "**/sellos.crm.api.save_lead*").as("save");
+			cy.getByTestId("seller-new").click();
 			cy.getByTestId("seller-client").select(name);
 			cy.getByTestId("seller-source").select("Website");
 			cy.getByTestId("seller-save").click();

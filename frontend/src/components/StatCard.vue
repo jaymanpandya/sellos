@@ -1,13 +1,13 @@
 <template>
 	<div
-		class="rounded-card border border-line bg-surface p-ui-md shadow-card"
+		class="rounded border border-line bg-surface p-ui-md shadow-card"
 		:data-tone="tone || 'neutral'"
 	>
 		<div class="flex items-start justify-between gap-ui-sm">
 			<span class="block text-xs font-medium text-ink-muted">{{ label }}</span>
 			<span
 				v-if="icon"
-				class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-badge"
+				class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded"
 				:style="chipStyle"
 				aria-hidden="true"
 			>

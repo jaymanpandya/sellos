@@ -8,7 +8,7 @@
 			<div
 				v-for="toast in toasts"
 				:key="toast.id"
-				class="pointer-events-auto flex min-h-touch w-full max-w-sm items-center gap-ui-md rounded-card border bg-surface py-2 pl-3 pr-1 text-sm shadow-lift"
+				class="pointer-events-auto flex min-h-touch w-full max-w-sm items-center gap-ui-md rounded border bg-surface py-2 pl-3 pr-1 text-sm shadow-lift"
 				:class="TONE_CLASSES[toast.tone] || TONE_CLASSES.success"
 				role="status"
 				data-testid="sellos-toast"
@@ -21,7 +21,7 @@
 				<span class="flex-1 text-ink">{{ toast.text }}</span>
 				<button
 					type="button"
-					class="flex min-h-touch min-w-touch items-center justify-center rounded-input text-ink-muted hover:bg-brand-soft"
+					class="flex min-h-touch min-w-touch items-center justify-center rounded text-ink-muted hover:bg-brand-soft"
 					aria-label="Close message"
 					@click="dismissToast(toast.id)"
 				>

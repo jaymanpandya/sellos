@@ -1,15 +1,34 @@
 <template>
-	<div data-testid="sellos-sellers-page">
-		<PageHeader
-			title="Sellers"
-			text="An owner who wants to sell is a lead on the seller pipeline, linked to a client. Move each one along the stages to a signed mandate and a sale."
-			icon="lucide-home"
-		/>
+	<PageTemplate data-testid="sellos-sellers-page">
+		<template #header>
+			<PageHeader
+				title="Sellers"
+				text="Owners who want to sell, moved along the seller pipeline to a signed mandate and a sale."
+				icon="lucide-home"
+			>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-seller-new"
+					@click="openForm"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Add seller
+				</AppButton>
+			</PageHeader>
+		</template>
+
+		<template v-if="!loadError" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-seller-stats" />
+		</template>
+
 		<p
-			v-if="error"
+			v-if="error && !creating"
 			role="alert"
 			data-testid="sellos-seller-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md text-sm text-danger"
 		>
 			{{ error }}
 		</p>
@@ -21,109 +40,121 @@
 		>
 			{{ notice }}
 		</p>
-		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-seller-load-error">
-			<LoadError :message="loadError" @retry="load" />
-		</div>
+		<LoadError
+			v-if="loadError"
+			:message="loadError"
+			class="mb-ui-md"
+			data-testid="sellos-seller-load-error"
+			@retry="load"
+		/>
 
-		<ListCard title="Seller pipeline">
-			<div
-				class="mb-ui-md flex flex-wrap gap-ui-sm"
-				data-testid="sellos-seller-stage-counts"
-			>
+		<section v-if="stages.length" class="ui-card mb-ui-md">
+			<h2 class="ui-card-heading mb-ui-sm">Sellers by stage</h2>
+			<div class="flex flex-wrap gap-ui-sm" data-testid="sellos-seller-stage-counts">
 				<StatusBadge
 					v-for="s in stages"
 					:key="s.name"
-					:tone="
-						s.stage_type === 'Won'
-							? 'success'
-							: s.stage_type === 'Lost'
-							? 'danger'
-							: 'neutral'
-					"
+					:tone="stageTone(s)"
 					:label="`${s.label}: ${counts[s.name] || 0}`"
 					data-testid="sellos-seller-stage-count"
 					:data-stage="s.label"
 				/>
 			</div>
-			<EmptyState
-				v-if="loaded && !loadError && !sellers.length"
-				title="No sellers yet"
-				text="Add the first seller below."
-				icon="lucide-home"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-seller-list">
-				<li
-					v-for="l in sellers"
-					:key="l.name"
-					data-testid="sellos-seller-row"
-					:data-name="l.name"
-					:data-title="l.lead_title"
-					:data-stage="labelOf(l.stage)"
-					class="rounded-input border border-line-soft p-ui-md"
-				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink" data-testid="sellos-seller-title">{{
-							l.lead_title
-						}}</span>
-						<StatusBadge
-							tone="info"
-							:label="labelOf(l.stage)"
-							data-testid="sellos-seller-stage"
-						/>
-					</div>
-					<div class="mt-ui-sm grid gap-ui-sm md:grid-cols-3">
-						<FormField
-							v-model="target[l.name]"
-							type="select"
-							label="Move to"
-							:options="stageOptions"
-							data-testid="sellos-seller-move-to"
-						/>
-						<FormField
-							v-if="kindOf(target[l.name]) === 'Lost'"
-							v-model="reason[l.name]"
-							type="select"
-							label="Lost reason"
-							:options="reasonOptions"
-							required
-							data-testid="sellos-seller-lost-reason"
-						/>
-					</div>
-					<div class="mt-ui-sm flex flex-wrap gap-ui-sm">
+		</section>
+
+		<DataTable
+			v-if="!loadError"
+			title="Seller pipeline"
+			caption="Sellers"
+			:columns="columns"
+			:rows="sellers"
+			:loading="!loaded"
+			loading-label="Loading sellers."
+			:row-name="(row) => row.lead_title"
+			:row-attrs="rowAttrs"
+			empty-title="No sellers yet"
+			empty-text="Add the first seller to start the pipeline."
+			empty-icon="lucide-home"
+			testid="sellos-seller-list"
+			row-testid="sellos-seller-row"
+			loading-testid="sellos-seller-loading"
+			empty-testid="sellos-seller-empty"
+		>
+			<template #cell-lead_title="{ row }">
+				<span class="block" data-testid="sellos-seller-title">{{ row.lead_title }}</span>
+			</template>
+			<template #cell-stage="{ row }">
+				<StatusBadge
+					tone="info"
+					:label="labelOf(row.stage)"
+					data-testid="sellos-seller-stage"
+				/>
+			</template>
+			<template #cell-move="{ row }">
+				<div class="grid gap-ui-sm">
+					<FormField
+						v-model="target[row.name]"
+						type="select"
+						label="Move to"
+						:options="stageOptions"
+						data-testid="sellos-seller-move-to"
+					/>
+					<FormField
+						v-if="kindOf(target[row.name]) === 'Lost'"
+						v-model="reason[row.name]"
+						type="select"
+						label="Lost reason"
+						:options="reasonOptions"
+						required
+						data-testid="sellos-seller-lost-reason"
+					/>
+					<div>
 						<AppButton
 							type="button"
 							variant="primary"
 							data-testid="sellos-seller-move"
-							@click="move(l)"
+							@click="move(row)"
 						>
 							Move
 						</AppButton>
-						<AppButton
-							type="button"
-							:active="shownLog === l.name"
-							data-testid="sellos-seller-log-toggle"
-							@click="toggleLog(l)"
-						>
-							Stage history
-						</AppButton>
 					</div>
-					<ul
-						v-if="shownLog === l.name"
-						class="mt-ui-sm space-y-1 text-sm text-ink-muted"
-						data-testid="sellos-seller-log"
-					>
-						<li v-if="!log.length">No stage changes yet.</li>
-						<li v-for="(c, i) in log" :key="i" data-testid="sellos-seller-log-row">
-							{{ c.changed_on }}: {{ c.changed_by }} moved it from
-							{{ labelOf(c.from_stage) }} to {{ labelOf(c.to_stage) }}.
-						</li>
-					</ul>
-				</li>
-			</ul>
-		</ListCard>
+				</div>
+			</template>
+			<template #cell-history="{ row }">
+				<AppButton
+					type="button"
+					:active="shownLog === row.name"
+					data-testid="sellos-seller-log-toggle"
+					@click="toggleLog(row)"
+				>
+					Stage history
+				</AppButton>
+				<ul
+					v-if="shownLog === row.name"
+					class="mt-ui-sm space-y-1 text-sm text-ink-muted"
+					data-testid="sellos-seller-log"
+				>
+					<li v-if="!log.length">No stage changes yet.</li>
+					<li v-for="(c, i) in log" :key="i" data-testid="sellos-seller-log-row">
+						{{ formatWhen(c.changed_on) }}: {{ c.changed_by }} moved it from
+						{{ labelOf(c.from_stage) }} to {{ labelOf(c.to_stage) }}.
+					</li>
+				</ul>
+			</template>
+		</DataTable>
 
-		<ListCard title="Add a seller" class="mt-ui-lg">
-			<div class="grid gap-ui-md md:grid-cols-2">
+		<!-- Adding a seller is a drawer: nothing is an open form under the list. -->
+		<FormDrawer
+			:open="creating"
+			title="Add a seller"
+			text="An owner who wants to sell, as a lead on the seller pipeline."
+			submit-label="Add seller"
+			testid="sellos-seller-form"
+			submit-testid="sellos-seller-save"
+			@close="closeForm"
+			@submit="add"
+		>
+			<FormSection title="Seller">
 				<FormField
 					v-model="form.client"
 					type="select"
@@ -140,32 +171,34 @@
 					required
 					data-testid="sellos-seller-source"
 				/>
-			</div>
-			<div class="mt-ui-md">
-				<AppButton
-					type="button"
-					variant="primary"
-					data-testid="sellos-seller-save"
-					@click="add"
-				>
-					Add seller
-				</AppButton>
-			</div>
-		</ListCard>
-	</div>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-seller-error"
+				class="text-sm text-danger"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
+import { formatWhen } from "../format";
 
 // The seller pipeline (SOS-P4-04). Every move is made on the server and the list read back, so what is shown
 // is what is saved. A move to Closed lost asks for a reason.
@@ -183,6 +216,7 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+const creating = ref(false);
 
 const stageOptions = computed(() => stages.value.map((s) => ({ label: s.label, value: s.name })));
 const clientOptions = computed(() => [
@@ -202,6 +236,69 @@ const counts = computed(() => {
 	for (const l of sellers.value) out[l.stage] = (out[l.stage] || 0) + 1;
 	return out;
 });
+const stageTone = (s) =>
+	s.stage_type === "Won" ? "success" : s.stage_type === "Lost" ? "danger" : "neutral";
+
+// The strip counts the sellers by the kind of stage they stand on.
+const kpis = computed(() => {
+	const kind = (l) => stages.value.find((s) => s.name === l.stage)?.stage_type || "";
+	const rows = sellers.value;
+	return [
+		{
+			label: "Sellers",
+			value: rows.length,
+			caption: "on the seller pipeline",
+			icon: "lucide-home",
+		},
+		{
+			label: "In progress",
+			value: rows.filter((l) => kind(l) !== "Won" && kind(l) !== "Lost").length,
+			caption: "still moving along the stages",
+			icon: "lucide-loader",
+		},
+		{
+			label: "Won",
+			value: rows.filter((l) => kind(l) === "Won").length,
+			caption: "sold",
+			icon: "lucide-trophy",
+			tone: "success",
+		},
+		{
+			label: "Lost",
+			value: rows.filter((l) => kind(l) === "Lost").length,
+			caption: "closed without a sale",
+			icon: "lucide-ban",
+			tone: "danger",
+		},
+	];
+});
+
+// The table: the title opens nothing, so every control sits in its own cell.
+const columns = [
+	{ key: "lead_title", label: "Seller", primary: true, sortable: true },
+	{
+		key: "stage",
+		label: "Stage",
+		sortable: true,
+		sortValue: (l) => labelOf(l.stage),
+	},
+	{ key: "move", label: "Move to", wrap: true, class: "min-w-[14rem]" },
+	{ key: "history", label: "History", wrap: true, class: "min-w-[12rem]" },
+];
+const rowAttrs = (l) => ({
+	"data-title": l.lead_title,
+	"data-stage": labelOf(l.stage),
+});
+
+function openForm() {
+	error.value = "";
+	creating.value = true;
+}
+function closeForm() {
+	error.value = "";
+	creating.value = false;
+}
+
 const labelOf = (name) => stages.value.find((s) => s.name === name)?.label || name || "";
 const kindOf = (name) => stages.value.find((s) => s.name === name)?.stage_type || "";
 
@@ -273,6 +370,7 @@ async function add() {
 	try {
 		await crmApi.saveLead({ client: form.client, source: form.source, pipeline: "Seller" });
 		notice.value = "The seller is added on the first stage.";
+		creating.value = false;
 		form.client = "";
 		form.source = "";
 		await load();

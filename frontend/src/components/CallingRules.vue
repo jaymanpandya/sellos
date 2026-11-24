@@ -1,97 +1,102 @@
 <template>
-	<section v-if="loaded" class="mt-6 space-y-6" data-testid="sellos-calling-rules">
-		<form
-			class="space-y-3 rounded-input border border-line bg-surface p-4"
-			data-testid="sellos-calling-hours-form"
-			@submit.prevent="saveHours"
-		>
-			<h2 class="text-lg font-semibold text-ink">Calling hours</h2>
-			<p class="text-sm text-ink-muted">
-				Calls to Indian numbers are placed only inside these hours, in India time. A call
-				outside them is refused and the message shows the hours.
-			</p>
-			<FormField
-				v-model="hours.enabled"
-				type="checkbox"
-				label="Limit calls to these hours"
-				data-testid="sellos-calling-hours-enabled"
-			/>
-			<FormField
-				v-model="hours.start"
-				type="time"
-				label="Calls may start at"
-				data-testid="sellos-calling-hours-start"
-			/>
-			<FormField
-				v-model="hours.end"
-				type="time"
-				label="Calls must end by"
-				data-testid="sellos-calling-hours-end"
-			/>
-			<div class="flex flex-wrap gap-x-4">
+	<!-- Two settings cards, each a headed section, inside the Telephony page. -->
+	<div v-if="loaded" class="mt-ui-md space-y-ui-md" data-testid="sellos-calling-rules">
+		<form class="ui-card" data-testid="sellos-calling-hours-form" @submit.prevent="saveHours">
+			<FormSection title="Calling hours">
+				<p class="text-sm text-ink-muted md:col-span-2">
+					Calls to Indian numbers are placed only inside these hours, in India time. A
+					call outside them is refused and the message shows the hours.
+				</p>
 				<FormField
-					v-for="day in days"
-					:key="day"
-					:model-value="hours.days.includes(day)"
+					v-model="hours.enabled"
 					type="checkbox"
-					:label="day"
-					:data-testid="`sellos-calling-day-${day}`"
-					@update:model-value="toggleDay(day, $event)"
+					label="Limit calls to these hours"
+					class="md:col-span-2"
+					data-testid="sellos-calling-hours-enabled"
 				/>
+				<FormField
+					v-model="hours.start"
+					type="time"
+					label="Calls may start at"
+					data-testid="sellos-calling-hours-start"
+				/>
+				<FormField
+					v-model="hours.end"
+					type="time"
+					label="Calls must end by"
+					data-testid="sellos-calling-hours-end"
+				/>
+				<div class="flex flex-wrap gap-x-4 md:col-span-2">
+					<FormField
+						v-for="day in days"
+						:key="day"
+						:model-value="hours.days.includes(day)"
+						type="checkbox"
+						:label="day"
+						:data-testid="`sellos-calling-day-${day}`"
+						@update:model-value="toggleDay(day, $event)"
+					/>
+				</div>
+			</FormSection>
+			<div class="mt-ui-md space-y-ui-sm">
+				<p
+					v-if="hoursError"
+					role="alert"
+					class="text-sm text-danger"
+					data-testid="sellos-calling-hours-error"
+				>
+					{{ hoursError }}
+				</p>
+				<p
+					v-if="hoursSaved"
+					class="text-sm text-ink"
+					data-testid="sellos-calling-hours-saved"
+				>
+					Saved. {{ hoursText }}
+				</p>
+				<AppButton type="submit" variant="primary" data-testid="sellos-calling-hours-save">
+					Save calling hours
+				</AppButton>
 			</div>
-			<p
-				v-if="hoursError"
-				role="alert"
-				class="text-sm text-accent"
-				data-testid="sellos-calling-hours-error"
-			>
-				{{ hoursError }}
-			</p>
-			<p v-if="hoursSaved" class="text-sm text-ink" data-testid="sellos-calling-hours-saved">
-				Saved. {{ hoursText }}
-			</p>
-			<AppButton type="submit" variant="primary" data-testid="sellos-calling-hours-save">
-				Save calling hours
-			</AppButton>
 		</form>
 
-		<form
-			class="space-y-3 rounded-input border border-line bg-surface p-4"
-			data-testid="sellos-dnd-form"
-			@submit.prevent="importList"
-		>
-			<h2 class="text-lg font-semibold text-ink">Do not call list</h2>
-			<p class="text-sm text-ink-muted">
-				Paste the numbers, one on each line or as a CSV. A lead with a listed number is
-				marked Registered DND with an amber warning. The warning never stops a call.
-			</p>
-			<FormField
-				v-model="listText"
-				type="textarea"
-				label="Numbers"
-				data-testid="sellos-dnd-text"
-			/>
-			<p
-				v-if="listError"
-				role="alert"
-				class="text-sm text-accent"
-				data-testid="sellos-dnd-error"
-			>
-				{{ listError }}
-			</p>
-			<p v-if="result" class="text-sm text-ink" data-testid="sellos-dnd-result">
-				{{ result.added }} added, {{ result.already_listed }} already listed,
-				{{ result.skipped }} skipped. {{ result.leads_flagged }} leads marked Registered
-				DND.
-			</p>
-			<p class="text-sm text-ink-muted" data-testid="sellos-dnd-total">
-				Numbers on the list: {{ total }}
-			</p>
-			<AppButton type="submit" variant="primary" data-testid="sellos-dnd-import">
-				Import list
-			</AppButton>
+		<form class="ui-card" data-testid="sellos-dnd-form" @submit.prevent="importList">
+			<FormSection title="Do not call list">
+				<p class="text-sm text-ink-muted md:col-span-2">
+					Paste the numbers, one on each line or as a CSV. A lead with a listed number is
+					marked Registered DND with an amber warning. The warning never stops a call.
+				</p>
+				<FormField
+					v-model="listText"
+					type="textarea"
+					label="Numbers"
+					class="md:col-span-2"
+					data-testid="sellos-dnd-text"
+				/>
+			</FormSection>
+			<div class="mt-ui-md space-y-ui-sm">
+				<p
+					v-if="listError"
+					role="alert"
+					class="text-sm text-danger"
+					data-testid="sellos-dnd-error"
+				>
+					{{ listError }}
+				</p>
+				<p v-if="result" class="text-sm text-ink" data-testid="sellos-dnd-result">
+					{{ result.added }} added, {{ result.already_listed }} already listed,
+					{{ result.skipped }} skipped. {{ result.leads_flagged }} leads marked
+					Registered DND.
+				</p>
+				<p class="text-sm text-ink-muted" data-testid="sellos-dnd-total">
+					Numbers on the list: {{ total }}
+				</p>
+				<AppButton type="submit" variant="primary" data-testid="sellos-dnd-import">
+					Import list
+				</AppButton>
+			</div>
 		</form>
-	</section>
+	</div>
 </template>
 
 <script setup>
@@ -103,6 +108,7 @@ import { serverMessage } from "../crm/crmApi";
 import { callingRulesApi } from "../telephony/telephonyApi";
 import AppButton from "./AppButton.vue";
 import FormField from "./FormField.vue";
+import FormSection from "./FormSection.vue";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const hours = reactive({ enabled: false, start: "09:00", end: "21:00", days: [] });

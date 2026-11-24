@@ -1,166 +1,182 @@
 <template>
-	<div class="max-w-3xl" data-testid="sellos-support-page">
-		<PageHeader
-			title="Support access"
-			text="Let SellOS support read your company's records for a limited time. Support can look and change nothing. Access ends by itself, after 4 hours at most, and every action is logged below."
-			icon="lucide-life-buoy"
-		/>
-
-		<div class="mb-ui-md grid grid-cols-2 gap-ui-md" data-testid="sellos-support-stats">
-			<StatCard
-				label="Access now"
-				:value="activeCount"
-				icon="lucide-shield-check"
-				:tone="activeCount ? 'warning' : 'success'"
-			/>
-			<StatCard label="Times given" :value="grants.length" icon="lucide-history" />
-		</div>
-
-		<form
-			class="ui-card space-y-ui-md"
-			data-testid="sellos-support-form"
-			@submit.prevent="grant"
-		>
-			<h2 class="ui-card-heading">Give access</h2>
-			<p
-				v-if="!loading && !users.length"
-				data-testid="sellos-support-no-users"
-				class="text-ink-muted"
+	<PageTemplate data-testid="sellos-support-page">
+		<template #header>
+			<PageHeader
+				title="Support access"
+				text="Let SellOS support read your company's records for a limited time. Access ends by itself, after 4 hours at most, and every action is logged."
+				icon="lucide-life-buoy"
 			>
-				No support user is set up for this company yet.
-			</p>
-			<FormField
-				v-model="form.user"
-				type="select"
-				label="Support user"
-				required
-				:options="userOptions"
-				data-testid="sellos-support-user"
-			/>
-			<FormField
-				v-model="form.minutes"
-				type="select"
-				label="How long"
-				:options="durationOptions"
-				data-testid="sellos-support-duration"
-			/>
-			<FormField
-				v-model="form.reason"
-				label="What do you need help with?"
-				hint="Optional."
-				data-testid="sellos-support-reason"
-			/>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-support-add"
+					@click="openGrant"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Give access
+				</AppButton>
+			</PageHeader>
+		</template>
+
+		<template #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-support-stats" />
+		</template>
+
+		<FormDrawer
+			:open="granting"
+			title="Give access"
+			text="Support can look and change nothing. You can end it at any time."
+			submit-label="Give access"
+			:busy="!users.length"
+			testid="sellos-support-form"
+			submit-testid="sellos-support-grant"
+			@close="granting = false"
+			@submit="grant"
+		>
+			<FormSection title="Who and how long">
+				<p
+					v-if="!loading && !users.length"
+					data-testid="sellos-support-no-users"
+					class="text-ink-muted md:col-span-2"
+				>
+					No support user is set up for this company yet.
+				</p>
+				<FormField
+					v-model="form.user"
+					type="select"
+					label="Support user"
+					required
+					:options="userOptions"
+					data-testid="sellos-support-user"
+				/>
+				<FormField
+					v-model="form.minutes"
+					type="select"
+					label="How long"
+					:options="durationOptions"
+					data-testid="sellos-support-duration"
+				/>
+				<FormField
+					v-model="form.reason"
+					label="What do you need help with?"
+					hint="Optional."
+					class="md:col-span-2"
+					data-testid="sellos-support-reason"
+				/>
+			</FormSection>
 			<p
 				v-if="error"
 				data-testid="sellos-support-error"
 				role="alert"
-				class="text-sm text-accent"
+				class="text-sm text-danger"
 			>
 				{{ error }}
 			</p>
-			<AppButton
-				type="submit"
-				variant="primary"
-				data-testid="sellos-support-grant"
-				:disabled="!users.length"
-			>
-				Give access
-			</AppButton>
-		</form>
+		</FormDrawer>
 
-		<div class="mt-ui-md">
-			<div v-if="loadError" data-testid="sellos-support-load-error">
-				<LoadError :message="loadError" @retry="load" />
-			</div>
-			<LoadingSkeleton v-else-if="loading" />
-			<div v-else-if="!grants.length" data-testid="sellos-support-empty">
-				<EmptyState
-					title="Support has no access"
-					text="Support has no access, and has never been given any."
-					icon="lucide-shield"
-				/>
-			</div>
-			<ListCard v-else title="Access given">
-				<ul class="divide-y divide-line-soft">
-					<li
-						v-for="g in grants"
-						:key="g.name"
-						data-testid="sellos-support-grant-row"
-						class="py-ui-sm"
-					>
-						<div class="flex flex-wrap items-center justify-between gap-3">
-							<span>
-								<span class="block font-medium text-ink">{{
-									g.support_user_name
-								}}</span>
-								<span class="block text-sm text-ink-muted">
-									{{ g.starts_at.slice(0, 16) }} to
-									{{ g.expires_at.slice(0, 16) }}
-									<span v-if="g.reason"> · {{ g.reason }}</span>
-								</span>
-							</span>
-							<span class="flex flex-wrap items-center gap-2">
-								<StatusBadge
-									:tone="STATUS_TONE[g.status] || 'neutral'"
-									:label="g.status"
-									data-testid="sellos-support-status"
-								/>
-								<AppButton
-									v-if="g.status === 'Active'"
-									type="button"
-									data-testid="sellos-support-revoke"
-									@click="revoke(g)"
-								>
-									End now
-								</AppButton>
-								<AppButton
-									type="button"
-									data-testid="sellos-support-show-log"
-									@click="toggleLog(g)"
-								>
-									{{ open === g.name ? "Hide log" : "Show log" }}
-								</AppButton>
-							</span>
-						</div>
-						<ul
-							v-if="open === g.name"
-							class="mt-3 space-y-1 text-sm"
-							data-testid="sellos-support-log"
-						>
-							<li
-								v-for="(line, i) in log"
-								:key="i"
-								data-testid="sellos-support-log-row"
-								class="text-ink-muted"
-							>
-								{{ line.timestamp.slice(0, 19) }} · {{ line.user }} ·
-								{{ line.action }}
-								<span v-if="line.path">
-									· {{ line.http_method }} {{ line.path }}</span
-								>
-							</li>
-						</ul>
-					</li>
-				</ul>
-			</ListCard>
+		<p
+			v-if="error && !granting"
+			data-testid="sellos-support-error"
+			role="alert"
+			class="mb-ui-md text-sm text-danger"
+		>
+			{{ error }}
+		</p>
+		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-support-load-error">
+			<LoadError :message="loadError" @retry="load" />
 		</div>
-	</div>
+
+		<DataTable
+			v-else
+			title="Access given"
+			caption="Support access grants"
+			:columns="columns"
+			:rows="grants"
+			:loading="loading"
+			loading-label="Loading support access."
+			empty-title="Support has no access"
+			empty-text="Support has no access, and has never been given any."
+			empty-icon="lucide-shield"
+			testid="sellos-support-list"
+			row-testid="sellos-support-grant-row"
+			empty-testid="sellos-support-empty"
+		>
+			<template #cell-support_user_name="{ row }">
+				<span class="block font-medium text-ink">{{ row.support_user_name }}</span>
+			</template>
+			<template #cell-period="{ row }">
+				<span class="text-ink-body"
+					>{{ formatDateTime(row.starts_at) }} to
+					{{ formatDateTime(row.expires_at) }}</span
+				>
+			</template>
+			<template #cell-reason="{ row }">
+				<span class="text-ink-body">{{ row.reason }}</span>
+			</template>
+			<template #cell-status="{ row }">
+				<StatusBadge
+					:tone="STATUS_TONE[row.status] || 'neutral'"
+					:label="row.status"
+					data-testid="sellos-support-status"
+				/>
+			</template>
+			<template #cell-actions="{ row }">
+				<div class="flex flex-wrap items-center gap-ui-sm">
+					<AppButton
+						v-if="row.status === 'Active'"
+						type="button"
+						data-testid="sellos-support-revoke"
+						@click="revoke(row)"
+					>
+						End now
+					</AppButton>
+					<AppButton
+						type="button"
+						data-testid="sellos-support-show-log"
+						@click="toggleLog(row)"
+					>
+						{{ open === row.name ? "Hide log" : "Show log" }}
+					</AppButton>
+				</div>
+			</template>
+		</DataTable>
+
+		<!-- The log of the grant that was opened: who did what, and when. -->
+		<ListCard v-if="open" title="Log" class="mt-ui-md">
+			<ul class="space-y-1 text-sm" data-testid="sellos-support-log">
+				<li
+					v-for="(line, i) in log"
+					:key="i"
+					data-testid="sellos-support-log-row"
+					class="text-ink-muted"
+				>
+					{{ line.timestamp.slice(0, 19) }} · {{ line.user }} · {{ line.action }}
+					<span v-if="line.path"> · {{ line.http_method }} {{ line.path }}</span>
+				</li>
+			</ul>
+		</ListCard>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
-import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { logBackgroundError } from "../api";
+import { formatDateTime } from "../format";
 import { DURATIONS, supportApi } from "../support/supportApi";
 
 const users = ref([]);
@@ -170,6 +186,7 @@ const open = ref(null);
 const loading = ref(true);
 const loadError = ref("");
 const error = ref("");
+const granting = ref(false);
 const form = reactive({ user: "", minutes: 60, reason: "" });
 
 const userOptions = computed(() =>
@@ -178,6 +195,28 @@ const userOptions = computed(() =>
 const durationOptions = DURATIONS.map((d) => ({ label: d.label, value: d.minutes }));
 const STATUS_TONE = { Active: "success", Expired: "neutral", Revoked: "danger" };
 const activeCount = computed(() => grants.value.filter((g) => g.status === "Active").length);
+const kpis = computed(() => [
+	{
+		label: "Access now",
+		value: activeCount.value,
+		caption: activeCount.value ? "support can read your records" : "support has no access",
+		icon: "lucide-shield-check",
+		tone: activeCount.value ? "warning" : "success",
+	},
+	{
+		label: "Times given",
+		value: grants.value.length,
+		caption: "grants so far",
+		icon: "lucide-history",
+	},
+]);
+const columns = [
+	{ key: "support_user_name", label: "Support user", primary: true },
+	{ key: "period", label: "Period" },
+	{ key: "reason", label: "Reason", wrap: true },
+	{ key: "status", label: "Status" },
+	{ key: "actions", label: "Actions" },
+];
 
 async function load() {
 	loadError.value = "";
@@ -192,11 +231,17 @@ async function load() {
 	}
 }
 
+function openGrant() {
+	error.value = "";
+	granting.value = true;
+}
+
 async function grant() {
 	error.value = "";
 	try {
 		await supportApi.grant(form.user, form.minutes, form.reason);
 		form.reason = "";
+		granting.value = false;
 		await load();
 	} catch (e) {
 		error.value = serverMessage(e, "Access could not be given.");

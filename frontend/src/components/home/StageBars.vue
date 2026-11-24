@@ -8,9 +8,9 @@
 			:data-stage="column.stage"
 		>
 			<span class="truncate text-ink-body">{{ column.label }}</span>
-			<span class="h-2.5 overflow-hidden rounded-badge bg-surface-subtle" aria-hidden="true">
+			<span class="h-2.5 overflow-hidden rounded bg-surface-subtle" aria-hidden="true">
 				<span
-					class="block h-full rounded-badge bg-brand"
+					class="block h-full rounded bg-brand"
 					:style="{ width: width(column.count) }"
 				/>
 			</span>

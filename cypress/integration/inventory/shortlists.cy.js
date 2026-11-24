@@ -27,7 +27,7 @@ context("SOS-P7-09: shortlists and sharing with buyers", () => {
 		cy.intercept("POST", "**/sellos.inventory.shortlists.share_shortlist*").as("share");
 		cy.intercept("POST", "**/sellos.inventory.shortlists.reorder_shortlist*").as("reorder");
 		cy.intercept("POST", "**/sellos.inventory.shortlists.save_item_note*").as("note");
-		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.agent_lead)}`);
+		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.agent_lead)}?tab=requirements`);
 		cy.getByTestId("lead-matches-load").click();
 		cy.wait("@matches").its("response.statusCode").should("eq", 200);
 		cy.get('[data-testid="sellos-lead-match"][data-title$="unit M101"]')
@@ -101,7 +101,7 @@ context("SOS-P7-09: shortlists and sharing with buyers", () => {
 		cy.getByTestId("client-shortlist-detail").should("be.visible");
 
 		cy.signInFresh("agent");
-		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.agent_lead)}`);
+		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.agent_lead)}?tab=requirements`);
 		cy.getByTestId("shortlist-open").click();
 		item("unit M101")
 			.find('[data-testid="sellos-shortlist-opened"]')
@@ -122,7 +122,7 @@ context("SOS-P7-09: shortlists and sharing with buyers", () => {
 			published: 0,
 		});
 		cy.signInFresh("agent");
-		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.agent_lead)}`);
+		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.agent_lead)}?tab=requirements`);
 		cy.getByTestId("shortlist-open").click();
 		item("unit M101").should("have.attr", "data-unavailable", "true");
 		item("unit M101")
@@ -140,7 +140,7 @@ context("SOS-P7-09: shortlists and sharing with buyers", () => {
 
 	it("keeps a client out of the agent's screens", () => {
 		cy.signInFresh("client");
-		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.agent_lead)}`);
+		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.agent_lead)}?tab=requirements`);
 		cy.getByTestId("no-access").should("exist");
 	});
 });

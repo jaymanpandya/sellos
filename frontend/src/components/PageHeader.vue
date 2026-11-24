@@ -1,9 +1,9 @@
 <template>
-	<div class="mb-ui-lg flex flex-wrap items-start justify-between gap-ui-md">
-		<div class="flex min-w-0 items-start gap-ui-md">
+	<header class="ui-card mb-ui-md flex flex-wrap items-center justify-between gap-ui-md">
+		<div class="flex min-w-0 items-center gap-ui-md">
 			<span
 				v-if="icon"
-				class="mt-0.5 hidden h-11 w-11 shrink-0 items-center justify-center rounded-badge bg-brand-soft text-brand sm:inline-flex"
+				class="hidden h-11 w-11 shrink-0 items-center justify-center rounded bg-brand-soft text-brand sm:inline-flex"
 				aria-hidden="true"
 			>
 				<span :class="icon" class="icon-inherit size-5" />
@@ -13,15 +13,17 @@
 				<p v-if="text" class="ui-page-lead">{{ text }}</p>
 			</div>
 		</div>
+		<!-- Secondary actions first, the one primary action last, on the right. -->
 		<div v-if="$slots.default" class="flex flex-wrap items-center gap-ui-sm">
 			<slot />
 		</div>
-	</div>
+	</header>
 </template>
 
 <script setup>
-// PAMAA's ListHeader (SOS-UI-2B): title 24px/600, one line of text, the actions on the right. The
-// area chip takes an icon class such as lucide-users; the main action is an AppButton variant="primary".
+// The page header card (docs/UI_STANDARD.md): icon, title, one line of purpose, and the actions on the
+// right. Put secondary actions first in the slot and the one primary AppButton last. The area chip takes
+// an icon class such as lucide-users.
 defineProps({
 	title: { type: String, required: true },
 	text: { type: String, default: "" },

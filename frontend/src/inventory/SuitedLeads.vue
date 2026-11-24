@@ -29,7 +29,7 @@
 				<li
 					v-for="l in result.leads"
 					:key="l.name"
-					class="rounded-input border border-line-soft p-ui-md"
+					class="rounded border border-line-soft p-ui-md"
 					data-testid="sellos-suited-lead"
 					:data-lead="l.name"
 					:data-score="l.score"

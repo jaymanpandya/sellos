@@ -1,5 +1,5 @@
 <template>
-	<div class="mt-ui-sm rounded-input border border-line-soft p-ui-md" data-testid="sellos-media">
+	<div class="mt-ui-sm rounded border border-line-soft p-ui-md" data-testid="sellos-media">
 		<p
 			v-if="error"
 			role="alert"
@@ -39,7 +39,7 @@
 					v-if="m.media_type === 'Photo'"
 					:src="m.file_url"
 					:alt="m.title"
-					class="h-16 w-24 rounded-input object-cover"
+					class="h-16 w-24 rounded object-cover"
 					data-testid="sellos-media-picture"
 				/>
 				<video
@@ -47,7 +47,7 @@
 					:src="m.file_url"
 					controls
 					preload="metadata"
-					class="h-16 w-24 rounded-input"
+					class="h-16 w-24 rounded"
 					data-testid="sellos-media-video"
 				/>
 				<div class="min-w-0 flex-1">

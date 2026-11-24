@@ -1,10 +1,32 @@
 <template>
-	<div data-testid="sellos-client-shortlist-page">
-		<PageHeader
-			:title="view ? view.title : 'Shortlist'"
-			:text="view && view.note ? view.note : ''"
-			icon="lucide-list-checks"
-		/>
+	<PageTemplate data-testid="sellos-client-shortlist-page">
+		<template #header>
+			<PageHeader
+				:title="view ? view.title : 'Shortlist'"
+				:text="view && view.note ? view.note : ''"
+				icon="lucide-list-checks"
+			/>
+		</template>
+		<template v-if="view" #kpis>
+			<KpiStrip
+				:items="[
+					{
+						label: 'Homes',
+						value: view.items.length,
+						caption: 'On this shortlist',
+						icon: 'lucide-house',
+					},
+					{
+						label: 'No longer available',
+						value: view.items.filter((i) => i.unavailable).length,
+						caption: 'Ask your agent for others',
+						icon: 'lucide-circle-slash',
+						tone: 'warning',
+					},
+				]"
+				data-testid="sellos-client-shortlist-stats"
+			/>
+		</template>
 		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-client-shortlist-error">
 			<LoadError :message="loadError" @retry="load" />
 		</div>
@@ -29,7 +51,7 @@
 					<li
 						v-for="item in view.items"
 						:key="item.name"
-						class="rounded-input border border-line-soft p-ui-md"
+						class="rounded border border-line-soft p-ui-md"
 						data-testid="sellos-client-shortlist-item"
 						:data-title="item.title"
 						:data-unavailable="item.unavailable"
@@ -39,7 +61,7 @@
 								{{ item.position }}. {{ item.title }}
 							</span>
 							<span class="text-sm text-ink-muted">
-								{{ item.price ? rupees(item.price) : "Price on request" }}
+								{{ item.price ? formatMoney(item.price) : "Price on request" }}
 							</span>
 							<StatusBadge
 								v-if="item.unavailable"
@@ -78,7 +100,7 @@
 									:key="url"
 									:src="url"
 									alt="Photo of the home"
-									class="h-32 rounded-input"
+									class="h-32 rounded"
 								/>
 							</div>
 						</div>
@@ -86,7 +108,7 @@
 				</ol>
 			</ListCard>
 		</template>
-	</div>
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -96,10 +118,13 @@ import { useRoute } from "vue-router";
 import AppButton from "../components/AppButton.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
-import { rupees, shortlistApi } from "../inventory/inventoryApi";
+import { formatMoney } from "../format";
+import { shortlistApi } from "../inventory/inventoryApi";
 
 // One of the client's shortlists. Opening a home tells the agent which one and when (SOS-P7-09).
 const route = useRoute();

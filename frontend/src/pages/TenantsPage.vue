@@ -1,82 +1,40 @@
 <template>
-	<div data-testid="sellos-tenants-page">
-		<PageHeader
-			title="Companies"
-			text="Every company has its own site. A new company starts as Requested, then moves to Provisioning, then Active, or Failed. A failed company can be tried again."
-			icon="lucide-building-2"
-		/>
-
-		<div
-			class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4"
-			data-testid="sellos-tenant-stats"
-		>
-			<StatCard label="Requested" :value="countOf('Requested')" icon="lucide-inbox" />
-			<StatCard
-				label="Provisioning"
-				:value="countOf('Provisioning')"
-				icon="lucide-loader"
-				tone="warning"
-			/>
-			<StatCard label="Active" :value="countOf('Active')" icon="lucide-circle-check" />
-			<StatCard
-				label="Failed"
-				:value="countOf('Failed')"
-				icon="lucide-circle-alert"
-				tone="warning"
-			/>
-		</div>
-
-		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-tenant-load-error">
-			<LoadError :message="loadError" @retry="load" />
-		</div>
-		<LoadingSkeleton v-else-if="loading" />
-		<ListCard v-else title="Companies" data-testid="sellos-tenant-list">
-			<EmptyState
-				v-if="!tenants.length"
-				title="No company has been requested yet"
-				text="Add the first company below."
+	<PageTemplate data-testid="sellos-tenants-page">
+		<template #header>
+			<PageHeader
+				title="Companies"
+				text="Every company has its own site. A new company starts as Requested, then moves to Provisioning, then Active, or Failed. A failed company can be tried again."
 				icon="lucide-building-2"
-				data-testid="sellos-tenant-empty"
-			/>
-			<ul class="space-y-ui-sm">
-				<li
-					v-for="t in tenants"
-					:key="t.name"
-					data-testid="sellos-tenant-row"
-					class="flex flex-wrap items-center justify-between gap-3 rounded-input border border-line-soft p-ui-md"
+			>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-tenant-new"
+					@click="openCreate"
 				>
-					<span>
-						<span class="block font-medium text-ink" data-testid="sellos-tenant-name">
-							{{ t.company_name }}
-						</span>
-						<span class="block text-sm text-ink-muted">
-							{{ t.site_name }} · {{ t.admin_email
-							}}<span v-if="t.plan"> · {{ t.plan }}</span>
-						</span>
-					</span>
-					<span class="flex flex-wrap items-center gap-2">
-						<StatusBadge
-							:label="t.status"
-							:tone="STATUS_TONE[t.status] || 'neutral'"
-							data-testid="sellos-tenant-status"
-						/>
-						<AppButton
-							v-for="next in NEXT_STATUSES[t.status] || []"
-							:key="next"
-							type="button"
-							:data-testid="`sellos-tenant-to-${next.toLowerCase()}`"
-							@click="move(t, next)"
-						>
-							Move to {{ next }}
-						</AppButton>
-					</span>
-				</li>
-			</ul>
-		</ListCard>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Add company
+				</AppButton>
+			</PageHeader>
+		</template>
 
-		<form class="ui-card mt-ui-md" data-testid="sellos-tenant-form" @submit.prevent="create">
-			<h2 class="ui-card-heading mb-ui-md">Add a company</h2>
-			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+		<template #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-tenant-stats" />
+		</template>
+
+		<FormDrawer
+			:open="creating"
+			title="Add a company"
+			text="The company gets its own site and its own database."
+			submit-label="Create company"
+			testid="sellos-tenant-form"
+			submit-testid="sellos-tenant-create"
+			@close="creating = false"
+			@submit="create"
+		>
+			<FormSection title="Company">
 				<FormField
 					v-model="form.tenant_id"
 					label="Tenant ID"
@@ -105,35 +63,84 @@
 					:options="planOptions"
 					data-testid="sellos-tenant-plan"
 				/>
-			</div>
+			</FormSection>
 			<p
 				v-if="error"
 				data-testid="sellos-tenant-error"
 				role="alert"
-				class="mt-ui-md text-sm text-accent"
+				class="text-sm text-danger"
 			>
 				{{ error }}
 			</p>
-			<div class="mt-ui-md">
-				<AppButton type="submit" variant="primary" data-testid="sellos-tenant-create">
-					Create company
-				</AppButton>
-			</div>
-		</form>
-	</div>
+		</FormDrawer>
+
+		<p
+			v-if="error && !creating"
+			data-testid="sellos-tenant-error"
+			role="alert"
+			class="mb-ui-md text-sm text-danger"
+		>
+			{{ error }}
+		</p>
+		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-tenant-load-error">
+			<LoadError :message="loadError" @retry="load" />
+		</div>
+		<DataTable
+			v-else
+			title="Companies"
+			caption="Companies"
+			:columns="columns"
+			:rows="tenants"
+			:loading="loading"
+			loading-label="Loading companies."
+			empty-title="No company has been requested yet"
+			empty-text="Add the first company with Add company."
+			empty-icon="lucide-building-2"
+			testid="sellos-tenant-list"
+			row-testid="sellos-tenant-row"
+			empty-testid="sellos-tenant-empty"
+		>
+			<template #cell-company_name="{ row }">
+				<span class="block font-medium text-ink" data-testid="sellos-tenant-name">{{
+					row.company_name
+				}}</span>
+			</template>
+			<template #cell-status="{ row }">
+				<StatusBadge
+					:label="row.status"
+					:tone="STATUS_TONE[row.status] || 'neutral'"
+					data-testid="sellos-tenant-status"
+				/>
+			</template>
+			<template #cell-actions="{ row }">
+				<div class="flex flex-wrap items-center gap-ui-sm">
+					<AppButton
+						v-for="next in NEXT_STATUSES[row.status] || []"
+						:key="next"
+						type="button"
+						:data-testid="`sellos-tenant-to-${next.toLowerCase()}`"
+						@click="move(row, next)"
+					>
+						Move to {{ next }}
+					</AppButton>
+				</div>
+			</template>
+		</DataTable>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
-import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 
 import { serverMessage } from "../crm/crmApi";
@@ -145,6 +152,7 @@ const plans = ref([]);
 const loading = ref(true);
 const loadError = ref("");
 const error = ref("");
+const creating = ref(false);
 const STATUS_TONE = {
 	Requested: "info",
 	Provisioning: "warning",
@@ -156,6 +164,48 @@ const planOptions = computed(() => [
 	...plans.value.map((p) => ({ label: p.name, value: p.name })),
 ]);
 const countOf = (status) => tenants.value.filter((t) => t.status === status).length;
+const kpis = computed(() => [
+	{
+		label: "Requested",
+		value: countOf("Requested"),
+		caption: "waiting to be set up",
+		icon: "lucide-inbox",
+		tone: "info",
+	},
+	{
+		label: "Provisioning",
+		value: countOf("Provisioning"),
+		caption: "being built",
+		icon: "lucide-loader",
+		tone: "warning",
+	},
+	{
+		label: "Active",
+		value: countOf("Active"),
+		caption: "live companies",
+		icon: "lucide-circle-check",
+		tone: "success",
+	},
+	{
+		label: "Failed",
+		value: countOf("Failed"),
+		caption: "can be tried again",
+		icon: "lucide-circle-alert",
+		tone: "danger",
+	},
+]);
+const columns = [
+	{ key: "company_name", label: "Company", primary: true, sortable: true },
+	{ key: "site_name", label: "Site", sortable: true },
+	{ key: "admin_email", label: "Admin email", sortable: true },
+	{ key: "plan", label: "Plan", sortable: true },
+	{ key: "status", label: "Status", sortable: true },
+	{ key: "actions", label: "Actions" },
+];
+function openCreate() {
+	error.value = "";
+	creating.value = true;
+}
 const form = reactive({ tenant_id: "", company_name: "", admin_email: "", plan: "" });
 
 async function load() {
@@ -180,6 +230,7 @@ async function create() {
 		if (!values.plan) delete values.plan;
 		await controlApi.createTenant(values);
 		Object.assign(form, { tenant_id: "", company_name: "", admin_email: "", plan: "" });
+		creating.value = false;
 		await load();
 	} catch (e) {
 		error.value = serverMessage(e, "The company could not be created.");

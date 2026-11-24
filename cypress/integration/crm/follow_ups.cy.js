@@ -17,7 +17,8 @@ context("SOS-P1-22: completing a follow up", () => {
 
 	const openLead = (key = "agent_a") => {
 		cy.signInFresh("agent");
-		cy.visit(`/sellos/crm/leads/${seed.leads[key]}`);
+		// The follow up form and the timeline are under the Activity tab; the next follow up is in the header.
+		cy.visit(`/sellos/crm/leads/${seed.leads[key]}?tab=activity`);
 		cy.getByTestId("lead-next-follow-up").should("be.visible");
 	};
 

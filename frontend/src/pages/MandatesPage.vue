@@ -1,15 +1,34 @@
 <template>
-	<div data-testid="sellos-mandates-page">
-		<PageHeader
-			title="Mandates"
-			text="A mandate is the owner's signed agreement that we sell the property. The Private Sale Dossier is shared only once the mandate is signed, and every time it is opened is recorded."
-			icon="lucide-file-signature"
-		/>
+	<PageTemplate data-testid="sellos-mandates-page">
+		<template #header>
+			<PageHeader
+				title="Mandates"
+				text="The owner's signed agreement that we sell the property. Its Private Sale Dossier opens only once it is signed."
+				icon="lucide-file-signature"
+			>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-mandate-new"
+					@click="openForm"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Record mandate
+				</AppButton>
+			</PageHeader>
+		</template>
+
+		<template v-if="!loadError" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-mandate-stats" />
+		</template>
+
 		<p
-			v-if="error"
+			v-if="error && !creating"
 			role="alert"
 			data-testid="sellos-mandate-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md text-sm text-danger"
 		>
 			{{ error }}
 		</p>
@@ -21,162 +40,173 @@
 		>
 			{{ notice }}
 		</p>
-		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-mandate-load-error">
-			<LoadError :message="loadError" @retry="load" />
-		</div>
+		<LoadError
+			v-if="loadError"
+			:message="loadError"
+			class="mb-ui-md"
+			data-testid="sellos-mandate-load-error"
+			@retry="load"
+		/>
 
-		<ListCard title="Mandates">
-			<EmptyState
-				v-if="loaded && !loadError && !mandates.length"
-				title="No mandates yet"
-				text="Record the first mandate below."
-				icon="lucide-file-signature"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-mandate-list">
-				<li
-					v-for="m in mandates"
-					:key="m.name"
-					data-testid="sellos-mandate-row"
-					:data-name="m.name"
-					:data-title="m.lead_title"
-					:data-status="m.status"
-					class="rounded-input border border-line-soft p-ui-md"
-				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink" data-testid="sellos-mandate-title">{{
-							m.lead_title
-						}}</span>
-						<StatusBadge
-							:tone="m.status === 'Signed' ? 'success' : 'warning'"
-							:label="m.status"
-							data-testid="sellos-mandate-status"
-						/>
-						<span class="text-sm text-ink-muted" data-testid="sellos-mandate-terms">
-							{{ m.mandate_type }}, {{ m.term_months }} months from
-							{{ m.start_date }}, fee {{ m.fee_percent }}%
-						</span>
-					</div>
-
-					<div v-if="m.status !== 'Signed'" class="mt-ui-sm">
-						<p class="text-sm text-ink-muted">
-							Upload the signed document to sign this mandate. It is required.
-						</p>
-						<FileField
-							label="Signed document"
-							accept=".pdf,.png,.jpg,.jpeg"
-							required
-							:hint="`A ${fileTypes} file of up to ${fileLimit} MB.`"
-							data-testid="sellos-mandate-sign-file"
-							@change="(e) => sign(m, e)"
-						/>
-					</div>
-					<p
-						v-else
-						class="mt-ui-sm text-sm text-ink-muted"
-						data-testid="sellos-mandate-signed"
-					>
-						Signed on {{ m.signed_on }} (recorded by {{ m.signed_by_name }}). Its terms
-						are kept.
+		<DataTable
+			v-if="!loadError"
+			title="All mandates"
+			caption="Mandates"
+			:columns="columns"
+			:rows="mandates"
+			:loading="!loaded"
+			loading-label="Loading mandates."
+			:row-name="(row) => row.lead_title"
+			:row-attrs="rowAttrs"
+			empty-title="No mandates yet"
+			empty-text="Record the first mandate to start a Dossier."
+			empty-icon="lucide-file-signature"
+			testid="sellos-mandate-list"
+			row-testid="sellos-mandate-row"
+			loading-testid="sellos-mandate-loading"
+			empty-testid="sellos-mandate-empty"
+		>
+			<template #cell-lead_title="{ row }">
+				<span class="block" data-testid="sellos-mandate-title">{{ row.lead_title }}</span>
+			</template>
+			<template #cell-status="{ row }">
+				<StatusBadge
+					:tone="row.status === 'Signed' ? 'success' : 'warning'"
+					:label="row.status"
+					data-testid="sellos-mandate-status"
+				/>
+			</template>
+			<template #cell-terms="{ row }">
+				<span class="text-ink-body" data-testid="sellos-mandate-terms">
+					{{ row.mandate_type }}, {{ row.term_months }} months from
+					{{ formatDate(row.start_date) }}, fee {{ row.fee_percent }}%
+				</span>
+			</template>
+			<template #cell-signing="{ row }">
+				<div v-if="row.status !== 'Signed'">
+					<p class="mb-ui-sm text-sm text-ink-muted">
+						Upload the signed document to sign this mandate. It is required.
 					</p>
-
-					<div class="mt-ui-sm rounded-input bg-subtle p-ui-md">
-						<h3 class="font-medium text-ink">Private Sale Dossier</h3>
-						<p
-							v-if="!m.dossier_released"
-							class="mt-1 text-sm text-ink-muted"
-							data-testid="sellos-mandate-dossier-locked"
+					<FileField
+						label="Signed document"
+						accept=".pdf,.png,.jpg,.jpeg"
+						required
+						:hint="`A ${fileTypes} file of up to ${fileLimit} MB.`"
+						data-testid="sellos-mandate-sign-file"
+						@change="(e) => sign(row, e)"
+					/>
+				</div>
+				<p v-else class="text-sm text-ink-muted" data-testid="sellos-mandate-signed">
+					Signed on {{ formatWhen(row.signed_on) }} (recorded by
+					{{ row.signed_by_name }}). Its terms are kept.
+				</p>
+			</template>
+			<template #cell-dossier="{ row }">
+				<p
+					v-if="!row.dossier_released"
+					class="text-sm text-ink-muted"
+					data-testid="sellos-mandate-dossier-locked"
+				>
+					The Dossier is hidden until the mandate is signed. Notes and files you add now
+					are kept and released with the signature.
+				</p>
+				<div v-else>
+					<AppButton
+						type="button"
+						data-testid="sellos-mandate-dossier-open"
+						@click="open(row)"
+					>
+						Open the Dossier ({{ row.dossier_count }})
+					</AppButton>
+				</div>
+				<div
+					v-if="dossier[row.name]"
+					class="mt-ui-sm space-y-ui-sm"
+					data-testid="sellos-mandate-dossier"
+				>
+					<ul class="space-y-1">
+						<li v-if="!dossier[row.name].items.length">The Dossier is empty.</li>
+						<li
+							v-for="(i, n) in dossier[row.name].items"
+							:key="n"
+							data-testid="sellos-mandate-dossier-item"
+							:data-title="i.title"
+							class="text-sm text-ink"
 						>
-							The Dossier is hidden until the mandate is signed. Notes and files you
-							add now are kept and released with the signature.
-						</p>
-						<div v-else class="mt-1">
-							<AppButton
-								type="button"
-								data-testid="sellos-mandate-dossier-open"
-								@click="open(m)"
+							<span class="font-medium">{{ i.title }}</span>
+							<span v-if="i.kind === 'Note'">: {{ i.note }}</span>
+							<a
+								v-else
+								:href="i.file"
+								target="_blank"
+								rel="noopener"
+								class="underline"
 							>
-								Open the Dossier ({{ m.dossier_count }})
-							</AppButton>
-						</div>
-						<div
-							v-if="dossier[m.name]"
-							class="mt-ui-sm space-y-ui-sm"
-							data-testid="sellos-mandate-dossier"
+								(file)
+							</a>
+							<span class="text-ink-muted">
+								, added by {{ i.added_by_name }} on
+								{{ formatWhen(i.added_on) }}</span
+							>
+						</li>
+					</ul>
+					<p class="text-sm font-medium text-ink">Who has opened it</p>
+					<ul
+						class="space-y-1 text-sm text-ink-muted"
+						data-testid="sellos-mandate-views"
+					>
+						<li
+							v-for="(v, n) in dossier[row.name].views"
+							:key="n"
+							data-testid="sellos-mandate-view"
 						>
-							<ul class="space-y-1">
-								<li v-if="!dossier[m.name].items.length">The Dossier is empty.</li>
-								<li
-									v-for="(i, n) in dossier[m.name].items"
-									:key="n"
-									data-testid="sellos-mandate-dossier-item"
-									:data-title="i.title"
-									class="text-sm text-ink"
-								>
-									<span class="font-medium">{{ i.title }}</span>
-									<span v-if="i.kind === 'Note'">: {{ i.note }}</span>
-									<a
-										v-else
-										:href="i.file"
-										target="_blank"
-										rel="noopener"
-										class="underline"
-									>
-										(file)
-									</a>
-									<span class="text-ink-muted">
-										, added by {{ i.added_by_name }} on {{ i.added_on }}</span
-									>
-								</li>
-							</ul>
-							<p class="text-sm font-medium text-ink">Who has opened it</p>
-							<ul
-								class="space-y-1 text-sm text-ink-muted"
-								data-testid="sellos-mandate-views"
-							>
-								<li
-									v-for="(v, n) in dossier[m.name].views"
-									:key="n"
-									data-testid="sellos-mandate-view"
-								>
-									{{ v.viewed_by_name }}, {{ v.viewed_on }}
-								</li>
-							</ul>
-						</div>
-						<div class="mt-ui-sm grid gap-ui-sm md:grid-cols-2">
-							<FormField
-								v-model="noteTitle[m.name]"
-								label="Note title"
-								data-testid="sellos-mandate-note-title"
-							/>
-							<FormField
-								v-model="noteText[m.name]"
-								type="textarea"
-								label="Note"
-								data-testid="sellos-mandate-note-text"
-							/>
-						</div>
-						<div class="mt-ui-sm flex flex-wrap items-end gap-ui-sm">
-							<AppButton
-								type="button"
-								data-testid="sellos-mandate-note-add"
-								@click="addNote(m)"
-							>
-								Add note
-							</AppButton>
-							<FileField
-								label="Add a file to the Dossier"
-								accept=".pdf,.png,.jpg,.jpeg"
-								data-testid="sellos-mandate-dossier-file"
-								@change="(e) => addFile(m, e)"
-							/>
-						</div>
+							{{ v.viewed_by_name }}, {{ formatWhen(v.viewed_on) }}
+						</li>
+					</ul>
+				</div>
+				<div class="mt-ui-md grid gap-ui-sm">
+					<FormField
+						v-model="noteTitle[row.name]"
+						label="Note title"
+						data-testid="sellos-mandate-note-title"
+					/>
+					<FormField
+						v-model="noteText[row.name]"
+						type="textarea"
+						label="Note"
+						data-testid="sellos-mandate-note-text"
+					/>
+					<div class="flex flex-wrap items-end gap-ui-sm">
+						<AppButton
+							type="button"
+							data-testid="sellos-mandate-note-add"
+							@click="addNote(row)"
+						>
+							Add note
+						</AppButton>
+						<FileField
+							label="Add a file to the Dossier"
+							accept=".pdf,.png,.jpg,.jpeg"
+							data-testid="sellos-mandate-dossier-file"
+							@change="(e) => addFile(row, e)"
+						/>
 					</div>
-				</li>
-			</ul>
-		</ListCard>
+				</div>
+			</template>
+		</DataTable>
 
-		<ListCard title="Record a mandate" class="mt-ui-lg">
-			<div class="grid gap-ui-md md:grid-cols-2">
+		<!-- Recording a mandate is a drawer: nothing is an open form under the list. -->
+		<FormDrawer
+			:open="creating"
+			title="Record a mandate"
+			text="It starts as a draft and is signed by uploading the signed document."
+			submit-label="Record mandate"
+			testid="sellos-mandate-form"
+			submit-testid="sellos-mandate-save"
+			@close="closeForm"
+			@submit="save"
+		>
+			<FormSection title="Mandate">
 				<FormField
 					v-model="form.lead"
 					type="select"
@@ -207,35 +237,37 @@
 					required
 					data-testid="sellos-mandate-fee"
 				/>
-			</div>
-			<div class="mt-ui-md">
-				<AppButton
-					type="button"
-					variant="primary"
-					data-testid="sellos-mandate-save"
-					@click="save"
-				>
-					Record mandate
-				</AppButton>
-			</div>
-		</ListCard>
-	</div>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-mandate-error"
+				class="text-sm text-danger"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
 import FileField from "../components/FileField.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { readFileBase64 } from "../company/partnersApi";
 import { serverMessage } from "../crm/crmApi";
 import { mandateApi } from "../crm/mandatesApi";
+import { formatDate, formatWhen } from "../format";
 
 // Mandates (SOS-P4-05). Every change is made on the server and the list read back, so what is shown is what is
 // saved. The server decides whether the Dossier is released: until the mandate is signed it sends no item of it.
@@ -252,6 +284,54 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+const creating = ref(false);
+
+const kpis = computed(() => {
+	const rows = mandates.value;
+	return [
+		{
+			label: "Mandates",
+			value: rows.length,
+			caption: "recorded so far",
+			icon: "lucide-file-signature",
+		},
+		{
+			label: "Signed",
+			value: rows.filter((m) => m.status === "Signed").length,
+			caption: "Dossier released",
+			icon: "lucide-badge-check",
+			tone: "success",
+		},
+		{
+			label: "Awaiting signature",
+			value: rows.filter((m) => m.status !== "Signed").length,
+			caption: "drafts waiting for the signed document",
+			icon: "lucide-clock",
+			tone: "warning",
+		},
+	];
+});
+
+const columns = [
+	{ key: "lead_title", label: "Seller", primary: true, sortable: true },
+	{ key: "status", label: "Status", sortable: true },
+	{ key: "terms", label: "Terms", wrap: true, class: "min-w-[12rem]" },
+	{ key: "signing", label: "Signature", wrap: true, class: "min-w-[16rem]" },
+	{ key: "dossier", label: "Private Sale Dossier", wrap: true, class: "min-w-[20rem]" },
+];
+const rowAttrs = (m) => ({
+	"data-title": m.lead_title,
+	"data-status": m.status,
+});
+
+function openForm() {
+	error.value = "";
+	creating.value = true;
+}
+function closeForm() {
+	error.value = "";
+	creating.value = false;
+}
 
 const sellerOptions = computed(() => [
 	{ label: "Choose a seller", value: "" },
@@ -298,6 +378,7 @@ const save = () => {
 			form.lead = "";
 			form.term_months = "";
 			form.fee_percent = "";
+			creating.value = false;
 		},
 		"The mandate is recorded as a draft. Upload the signed document to sign it.",
 		"The mandate could not be recorded."

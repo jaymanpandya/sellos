@@ -1,10 +1,26 @@
 <template>
-	<div class="max-w-3xl" data-testid="sellos-whatsapp-setup-page">
-		<PageHeader
-			title="WhatsApp setup"
-			text="Connect your company's own WhatsApp number and list its message templates. The keys are stored encrypted and are never shown again after you save them."
-			icon="lucide-message-circle"
-		/>
+	<!-- A settings page: the header card, a headed card for the number, and the templates as a table. -->
+	<PageTemplate data-testid="sellos-whatsapp-setup-page">
+		<template #header>
+			<PageHeader
+				title="WhatsApp setup"
+				text="Connect your company's own WhatsApp number and list its message templates. The keys are stored encrypted and never shown again."
+				icon="lucide-message-circle"
+			>
+				<AppButton
+					v-if="!loading && !loadError"
+					type="button"
+					data-testid="sellos-whatsapp-template-add"
+					@click="openTemplate"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Add template
+				</AppButton>
+			</PageHeader>
+		</template>
+
 		<div v-if="loadError" data-testid="sellos-whatsapp-setup-load-error">
 			<LoadError :message="loadError" @retry="load" />
 		</div>
@@ -12,114 +28,131 @@
 
 		<template v-else>
 			<form
-				class="ui-card space-y-ui-md"
+				class="ui-card mb-ui-md"
 				data-testid="sellos-whatsapp-setup-form"
 				@submit.prevent="save"
 			>
-				<h2 class="ui-card-heading">Your number</h2>
-				<FormField
-					v-model="form.accessToken"
-					type="password"
-					label="Access token"
-					autocomplete="off"
-					:placeholder="state.access_token_set ? 'Saved. Type to replace it.' : ''"
-					data-testid="sellos-whatsapp-setup-token"
-				/>
-				<FormField
-					v-model="form.appSecret"
-					type="password"
-					label="Webhook signing secret"
-					autocomplete="off"
-					:placeholder="state.app_secret_set ? 'Saved. Type to replace it.' : ''"
-					data-testid="sellos-whatsapp-setup-secret"
-				/>
-				<FormField
-					v-model="form.phoneNumberId"
-					label="Number ID"
-					inputmode="numeric"
-					data-testid="sellos-whatsapp-setup-number-id"
-				/>
-				<FormField
-					v-model="form.displayNumber"
-					type="tel"
-					label="WhatsApp number"
-					inputmode="tel"
-					data-testid="sellos-whatsapp-setup-number"
-				/>
-				<p class="text-sm text-ink-muted" data-testid="sellos-whatsapp-setup-status">
-					{{ statusText }}
-				</p>
-				<p
-					v-if="error"
-					role="alert"
-					class="text-sm text-accent"
-					data-testid="sellos-whatsapp-setup-error"
-				>
-					{{ error }}
-				</p>
-				<p v-if="saved" class="text-sm text-ink" data-testid="sellos-whatsapp-setup-saved">
-					Saved.
-				</p>
-				<div class="flex flex-wrap items-center gap-ui-sm">
-					<AppButton
-						type="submit"
-						variant="primary"
-						data-testid="sellos-whatsapp-setup-save"
+				<FormSection title="Your number">
+					<FormField
+						v-model="form.accessToken"
+						type="password"
+						label="Access token"
+						autocomplete="off"
+						:placeholder="state.access_token_set ? 'Saved. Type to replace it.' : ''"
+						data-testid="sellos-whatsapp-setup-token"
+					/>
+					<FormField
+						v-model="form.appSecret"
+						type="password"
+						label="Webhook signing secret"
+						autocomplete="off"
+						:placeholder="state.app_secret_set ? 'Saved. Type to replace it.' : ''"
+						data-testid="sellos-whatsapp-setup-secret"
+					/>
+					<FormField
+						v-model="form.phoneNumberId"
+						label="Number ID"
+						inputmode="numeric"
+						data-testid="sellos-whatsapp-setup-number-id"
+					/>
+					<FormField
+						v-model="form.displayNumber"
+						type="tel"
+						label="WhatsApp number"
+						inputmode="tel"
+						data-testid="sellos-whatsapp-setup-number"
+					/>
+				</FormSection>
+				<div class="mt-ui-md space-y-ui-sm">
+					<p class="text-sm text-ink-muted" data-testid="sellos-whatsapp-setup-status">
+						{{ statusText }}
+					</p>
+					<p
+						v-if="error"
+						role="alert"
+						class="text-sm text-danger"
+						data-testid="sellos-whatsapp-setup-error"
 					>
-						Save
-					</AppButton>
-					<AppButton
-						type="button"
-						data-testid="sellos-whatsapp-setup-test"
-						:disabled="testing"
-						@click="test"
+						{{ error }}
+					</p>
+					<p
+						v-if="saved"
+						class="text-sm text-ink"
+						data-testid="sellos-whatsapp-setup-saved"
 					>
-						Test connection
-					</AppButton>
+						Saved.
+					</p>
+					<p
+						v-if="result"
+						:data-testid="
+							result.ok
+								? 'sellos-whatsapp-setup-test-ok'
+								: 'sellos-whatsapp-setup-test-error'
+						"
+						:role="result.ok ? 'status' : 'alert'"
+						:class="result.ok ? 'text-sm text-ink' : 'text-sm text-danger'"
+					>
+						{{ result.message }}
+					</p>
+					<div class="flex flex-wrap items-center gap-ui-sm">
+						<AppButton
+							type="button"
+							data-testid="sellos-whatsapp-setup-test"
+							:disabled="testing"
+							@click="test"
+						>
+							Test connection
+						</AppButton>
+						<AppButton
+							type="submit"
+							variant="primary"
+							data-testid="sellos-whatsapp-setup-save"
+						>
+							Save
+						</AppButton>
+					</div>
 				</div>
-				<p
-					v-if="result"
-					:data-testid="
-						result.ok
-							? 'sellos-whatsapp-setup-test-ok'
-							: 'sellos-whatsapp-setup-test-error'
-					"
-					:role="result.ok ? 'status' : 'alert'"
-					:class="result.ok ? 'text-sm text-ink' : 'text-sm text-accent'"
-				>
-					{{ result.message }}
-				</p>
 			</form>
 
-			<form
-				class="ui-card mt-ui-md space-y-ui-md"
-				data-testid="sellos-whatsapp-template-form"
-				@submit.prevent="saveTemplate"
+			<DataTable
+				title="Message templates"
+				caption="Message templates"
+				:columns="templateColumns"
+				:rows="templates"
+				empty-title="No templates yet"
+				empty-text="Add the first message template with Add template."
+				empty-icon="lucide-message-square"
+				testid="sellos-whatsapp-template-list"
+				row-testid="sellos-whatsapp-template-row"
 			>
-				<h2 class="ui-card-heading">Message templates</h2>
-				<ul class="space-y-1" data-testid="sellos-whatsapp-template-list">
-					<li
-						v-for="t in templates"
-						:key="t.name"
-						class="text-sm text-ink"
-						data-testid="sellos-whatsapp-template-row"
-						:data-name="t.name"
-					>
-						{{ t.name }} · {{ t.status }}{{ t.enabled ? "" : " · off" }}
-					</li>
-				</ul>
+				<template #cell-status="{ row }">
+					<StatusBadge
+						:label="row.status"
+						:tone="TEMPLATE_TONE[row.status] || 'neutral'"
+					/>
+				</template>
+				<template #cell-enabled="{ row }">
+					<span class="text-ink-body">{{ row.enabled ? "On" : "Off" }}</span>
+				</template>
+			</DataTable>
+		</template>
+
+		<FormDrawer
+			:open="addingTemplate"
+			title="Add a message template"
+			text="Templates are approved by the provider before they can start a conversation."
+			submit-label="Save template"
+			testid="sellos-whatsapp-template-form"
+			submit-testid="sellos-whatsapp-template-save"
+			@close="addingTemplate = false"
+			@submit="saveTemplate"
+		>
+			<FormSection title="Template">
 				<FormField
 					v-model="tpl.name"
 					label="Template name"
 					hint="Lower case letters, digits and underscores."
 					data-testid="sellos-whatsapp-template-name"
-				/>
-				<FormField
-					v-model="tpl.body"
-					type="textarea"
-					label="Message"
-					hint="Use {{1}}, {{2}} for the parts that change."
-					data-testid="sellos-whatsapp-template-body"
 				/>
 				<FormField
 					v-model="tpl.status"
@@ -128,20 +161,25 @@
 					:options="['Pending', 'Approved', 'Rejected']"
 					data-testid="sellos-whatsapp-template-status"
 				/>
-				<p
-					v-if="templateError"
-					role="alert"
-					class="text-sm text-accent"
-					data-testid="sellos-whatsapp-template-error"
-				>
-					{{ templateError }}
-				</p>
-				<AppButton type="submit" data-testid="sellos-whatsapp-template-save">
-					Save template
-				</AppButton>
-			</form>
-		</template>
-	</div>
+				<FormField
+					v-model="tpl.body"
+					type="textarea"
+					label="Message"
+					hint="Use {{1}}, {{2}} for the parts that change."
+					class="md:col-span-2"
+					data-testid="sellos-whatsapp-template-body"
+				/>
+			</FormSection>
+			<p
+				v-if="templateError"
+				role="alert"
+				class="text-sm text-danger"
+				data-testid="sellos-whatsapp-template-error"
+			>
+				{{ templateError }}
+			</p>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -149,10 +187,15 @@ import { computed, onMounted, reactive, ref } from "vue";
 
 import { logRequestError } from "../api";
 import AppButton from "../components/AppButton.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
+import FormSection from "../components/FormSection.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
+import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { whatsappApi, whatsappSetupApi } from "../whatsapp/whatsappApi";
 
@@ -166,6 +209,13 @@ const error = ref("");
 const templateError = ref("");
 const saved = ref(false);
 const testing = ref(false);
+const addingTemplate = ref(false);
+const TEMPLATE_TONE = { Approved: "success", Pending: "warning", Rejected: "danger" };
+const templateColumns = [
+	{ key: "name", label: "Template", primary: true },
+	{ key: "status", label: "Provider approval" },
+	{ key: "enabled", label: "Sending" },
+];
 const result = ref(null);
 
 const statusText = computed(() => {
@@ -226,6 +276,11 @@ async function test() {
 	}
 }
 
+function openTemplate() {
+	templateError.value = "";
+	addingTemplate.value = true;
+}
+
 async function saveTemplate() {
 	templateError.value = "";
 	try {
@@ -238,6 +293,7 @@ async function saveTemplate() {
 		templates.value = await whatsappApi.templates(1);
 		tpl.name = "";
 		tpl.body = "";
+		addingTemplate.value = false;
 	} catch (e) {
 		templateError.value = serverMessage(e, "The template could not be saved.");
 	}

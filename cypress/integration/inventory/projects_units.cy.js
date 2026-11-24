@@ -22,6 +22,7 @@ context("SOS-P4-01: developers, projects, units and properties", () => {
 		cy.getByTestId("inventory-page").should("be.visible");
 
 		cy.intercept("POST", "**/sellos.inventory.api.save_developer*").as("saveDeveloper");
+		cy.getByTestId("inventory-add-developer").click();
 		cy.getByTestId("inventory-developer-name").type(developer);
 		cy.getByTestId("inventory-developer-save").click();
 		cy.wait("@saveDeveloper").its("response.statusCode").should("eq", 200);
@@ -29,6 +30,7 @@ context("SOS-P4-01: developers, projects, units and properties", () => {
 
 		// A RERA number that can not be one is refused by the server and nothing is made.
 		cy.intercept("POST", "**/sellos.inventory.api.save_project*").as("saveProject");
+		cy.getByTestId("inventory-add-project").click();
 		cy.getByTestId("inventory-project-name").type(projectName);
 		cy.getByTestId("inventory-project-developer").select(developer);
 		cy.getByTestId("inventory-project-city").type("Mumbai");
@@ -51,6 +53,7 @@ context("SOS-P4-01: developers, projects, units and properties", () => {
 		cy.getByTestId("project-page").should("be.visible");
 		cy.getByTestId("project-rera").should("have.text", rera);
 		cy.intercept("POST", "**/sellos.inventory.api.save_unit*").as("saveUnit");
+		cy.getByTestId("unit-add").click();
 		cy.getByTestId("unit-number-input").type("1201");
 		cy.getByTestId("unit-configuration").select("2 BHK");
 		cy.getByTestId("unit-area").type("640");
@@ -58,11 +61,13 @@ context("SOS-P4-01: developers, projects, units and properties", () => {
 		cy.getByTestId("unit-parking").type("2");
 		cy.getByTestId("unit-save").click();
 		cy.wait("@saveUnit").its("response.statusCode").should("eq", 200);
+		cy.getByTestId("unit-add").click();
 		cy.getByTestId("unit-number-input").type("1202");
 		cy.getByTestId("unit-area").type("655");
 		cy.getByTestId("unit-save").click();
 		cy.wait("@saveUnit").its("response.statusCode").should("eq", 200);
 		// The same unit number twice in one project is refused.
+		cy.getByTestId("unit-add").click();
 		cy.getByTestId("unit-number-input").type("1202");
 		cy.getByTestId("unit-area").type("655");
 		cy.getByTestId("unit-save").click();

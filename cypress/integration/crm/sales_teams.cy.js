@@ -80,6 +80,8 @@ context("SOS-P1-18: sales teams and the Sales Manager", () => {
 		cy.wait("@listTeams");
 		cy.getByTestId("teams-team").contains(seed.team_a).should("be.visible");
 		cy.getByTestId("teams-team").contains(seed.team_b).should("be.visible");
+		// The team form is a drawer, opened by Add team.
+		cy.getByTestId("teams-new").click();
 		cy.get(`[data-testid="sellos-teams-agent"]`).filter(":disabled").should("have.length", 2);
 
 		cy.getByTestId("teams-name").type(teamName);
@@ -99,6 +101,7 @@ context("SOS-P1-18: sales teams and the Sales Manager", () => {
 				cy.getByTestId("teams-manager").should("contain", seed.other_manager_name);
 				cy.getByTestId("teams-members").should("contain", seed.spare_name);
 			});
+		cy.getByTestId("teams-new").click();
 		cy.get(`[data-testid="sellos-teams-agent"]`).filter(":disabled").should("have.length", 3);
 	});
 

@@ -1,78 +1,220 @@
 <template>
-	<div data-testid="sellos-leads-page" :data-view="view">
-		<PageHeader
-			title="Leads"
-			text="Everyone who has asked about a property, and where each enquiry stands."
-			icon="lucide-users"
-		>
-			<div class="flex gap-ui-sm" role="group" aria-label="View">
-				<AppButton
-					type="button"
-					:aria-pressed="view === 'list'"
-					:active="view === 'list'"
-					data-testid="sellos-leads-view-list"
-					@click="setView('list')"
-				>
-					List
-				</AppButton>
-				<AppButton
-					type="button"
-					:aria-pressed="view === 'board'"
-					:active="view === 'board'"
-					data-testid="sellos-leads-view-board"
-					@click="setView('board')"
-				>
-					Board
-				</AppButton>
-			</div>
-			<AppButton
-				v-if="canCreate"
-				type="button"
-				variant="primary"
-				data-testid="sellos-leads-new"
-				@click="creating = !creating"
+	<PageTemplate data-testid="sellos-leads-page" :data-view="view">
+		<template #header>
+			<PageHeader
+				title="Leads"
+				text="Everyone who has asked about a property, and where each enquiry stands."
+				icon="lucide-users"
 			>
-				<template #prefix
-					><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
-				/></template>
-				{{ creating ? "Cancel" : "New lead" }}
-			</AppButton>
-		</PageHeader>
+				<div class="flex gap-ui-sm" role="group" aria-label="View">
+					<AppButton
+						type="button"
+						:aria-pressed="view === 'list'"
+						:active="view === 'list'"
+						data-testid="sellos-leads-view-list"
+						@click="setView('list')"
+					>
+						List
+					</AppButton>
+					<AppButton
+						type="button"
+						:aria-pressed="view === 'board'"
+						:active="view === 'board'"
+						data-testid="sellos-leads-view-board"
+						@click="setView('board')"
+					>
+						Board
+					</AppButton>
+				</div>
+				<AppButton
+					v-if="canCreate"
+					type="button"
+					variant="primary"
+					data-testid="sellos-leads-new"
+					@click="creating = true"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					New lead
+				</AppButton>
+			</PageHeader>
+		</template>
 
-		<div
-			v-if="view === 'list' && !loadError"
-			class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4"
-			data-testid="sellos-leads-stats"
-		>
-			<StatCard label="Total leads" :value="stats.total" icon="lucide-users" />
-			<StatCard
-				label="New this week"
-				:value="stats.newThisWeek"
-				icon="lucide-calendar-plus"
-				tone="success"
-			/>
-			<StatCard
-				label="Overdue follow ups"
-				:value="stats.overdue"
-				icon="lucide-clock-alert"
-				tone="danger"
-			/>
-			<StatCard
-				label="Untouched"
-				:value="stats.untouched"
-				icon="lucide-hourglass"
-				tone="warning"
-			/>
-		</div>
+		<template v-if="view === 'list' && !loadError" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-leads-stats" />
+		</template>
 
-		<form
-			v-if="creating"
-			class="ui-card mb-ui-md"
-			data-testid="sellos-lead-form"
-			@submit.prevent="create(false)"
+		<template #filters>
+			<FilterBar
+				v-model:search="search"
+				v-model:open="moreOpen"
+				search-label="Search leads"
+				search-placeholder="Search by name, source or campaign"
+				search-testid="sellos-leads-search"
+				more-testid="sellos-leads-filters-toggle"
+				clear-testid="sellos-leads-filter-clear"
+				apply-testid="sellos-leads-filter-apply"
+				:more-count="moreActive"
+				:active="filtersOn"
+				data-testid="sellos-leads-filters"
+				@update:search="load"
+				@apply="load"
+				@clear="clearFilters"
+			>
+				<FormField
+					compact
+					:model-value="filters.stage"
+					type="select"
+					label="Stage"
+					:options="
+						withAny(
+							'Any stage',
+							stages.map((st) => st.name)
+						)
+					"
+					data-testid="sellos-leads-filter-stage"
+					@update:model-value="setFilter('stage', $event)"
+				/>
+				<FormField
+					compact
+					:model-value="filters.assigned_to"
+					type="select"
+					label="Agent"
+					:options="
+						withAny(
+							'Any agent',
+							options.agents.map((a) => ({ value: a.name, label: a.full_name }))
+						)
+					"
+					data-testid="sellos-leads-filter-agent"
+					@update:model-value="setFilter('assigned_to', $event)"
+				/>
+				<FormField
+					compact
+					:model-value="filters.source"
+					type="select"
+					label="Source"
+					:options="
+						withAny(
+							'Any source',
+							filterSources.map((so) => so.name)
+						)
+					"
+					data-testid="sellos-leads-filter-source"
+					@update:model-value="setFilter('source', $event)"
+				/>
+				<template #more>
+					<MoneyField
+						v-model="filters.budget_min"
+						label="Budget from (Rs)"
+						data-testid="sellos-leads-filter-budget-min"
+					/>
+					<MoneyField
+						v-model="filters.budget_max"
+						label="Budget to (Rs)"
+						data-testid="sellos-leads-filter-budget-max"
+					/>
+					<FormField
+						v-model="filters.configuration"
+						type="select"
+						label="Configuration"
+						:options="withAny('Any configuration', CONFIGURATIONS)"
+						data-testid="sellos-leads-filter-configuration"
+					/>
+					<FormField
+						v-model="filters.locality"
+						label="Locality"
+						data-testid="sellos-leads-filter-locality"
+					/>
+					<FormField
+						v-model="filters.timeline"
+						type="select"
+						label="Timeline"
+						:options="withAny('Any timeline', TIMELINES)"
+						data-testid="sellos-leads-filter-timeline"
+					/>
+					<FormField
+						v-if="options.teams.length"
+						:model-value="filters.team"
+						type="select"
+						label="Team"
+						:options="
+							withAny(
+								'Any team',
+								options.teams.map((t) => ({ value: t.name, label: t.team_name }))
+							)
+						"
+						data-testid="sellos-leads-filter-team"
+						@update:model-value="setFilter('team', $event)"
+					/>
+					<FormField
+						:model-value="filters.consent_status"
+						type="select"
+						label="Consent status"
+						:options="withAny('Any consent status', options.consent_statuses)"
+						data-testid="sellos-leads-filter-consent"
+						@update:model-value="setFilter('consent_status', $event)"
+					/>
+					<FormField
+						:model-value="filters.last_contacted_from"
+						type="date"
+						label="Last contacted from"
+						data-testid="sellos-leads-filter-contacted-from"
+						@update:model-value="setFilter('last_contacted_from', $event)"
+					/>
+					<FormField
+						:model-value="filters.last_contacted_to"
+						type="date"
+						label="Last contacted to"
+						data-testid="sellos-leads-filter-contacted-to"
+						@update:model-value="setFilter('last_contacted_to', $event)"
+					/>
+					<FormField
+						:model-value="filters.follow_up"
+						type="select"
+						label="Follow up"
+						:options="followUpOptions"
+						data-testid="sellos-leads-filter-follow-up"
+						@update:model-value="setFilter('follow_up', $event)"
+					/>
+					<FormField
+						:model-value="filters.sort"
+						type="select"
+						label="Sort"
+						:options="sortOptions"
+						data-testid="sellos-leads-sort"
+						@update:model-value="setFilter('sort', $event)"
+					/>
+					<FormField
+						:model-value="untouchedOnly"
+						type="checkbox"
+						:label="`No activity for ${untouchedDays} days`"
+						data-testid="sellos-leads-filter-untouched"
+						@update:model-value="
+							(v) => {
+								untouchedOnly = v;
+								load();
+							}
+						"
+					/>
+				</template>
+			</FilterBar>
+		</template>
+
+		<!-- The new lead form is a drawer: nothing is an open form under the list. -->
+		<FormDrawer
+			v-if="canCreate"
+			:open="creating"
+			title="New lead"
+			text="A person who has asked about a property."
+			submit-label="Save lead"
+			testid="sellos-lead-form"
+			submit-testid="sellos-lead-form-save"
+			@close="creating = false"
+			@submit="create(false)"
 		>
-			<h2 class="ui-card-heading mb-ui-md">New lead</h2>
-			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+			<FormSection title="Client">
 				<FormField
 					v-model="form.client_name"
 					label="Client name"
@@ -107,6 +249,8 @@
 					v-model="form.country_of_residence"
 					label="Country of residence (optional)"
 				/>
+			</FormSection>
+			<FormSection title="Enquiry">
 				<FormField
 					v-model="form.source"
 					type="select"
@@ -140,12 +284,12 @@
 						Add source
 					</AppButton>
 				</div>
-			</div>
+			</FormSection>
 			<section
 				v-if="duplicates.length"
 				role="alert"
 				data-testid="sellos-duplicate-warning"
-				class="mt-ui-md space-y-ui-md rounded-card border border-tone-warning-line bg-tone-warning-bg p-ui-md text-sm text-tone-warning"
+				class="space-y-ui-md rounded border border-tone-warning-line bg-tone-warning-bg p-ui-md text-sm text-tone-warning"
 			>
 				<p class="font-medium">
 					This person is already in SellOS. Add the enquiry to them instead of making a
@@ -156,7 +300,7 @@
 					:key="match.name"
 					data-testid="sellos-duplicate-match"
 					:data-visible="match.visible ? 'yes' : 'no'"
-					class="rounded-card border border-line bg-surface p-ui-md text-ink"
+					class="rounded border border-line bg-surface p-ui-md text-ink"
 				>
 					<p data-testid="sellos-duplicate-name" class="font-medium">
 						{{ match.visible ? match.client_name : "A client of another agent" }}
@@ -191,250 +335,10 @@
 					Save as a new client anyway
 				</AppButton>
 			</section>
-			<p
-				v-if="error"
-				data-testid="sellos-lead-form-error"
-				class="mt-ui-md text-sm text-danger"
-			>
+			<p v-if="error" data-testid="sellos-lead-form-error" class="text-sm text-danger">
 				{{ error }}
 			</p>
-			<div class="mt-ui-md">
-				<AppButton type="submit" variant="primary" data-testid="sellos-lead-form-save">
-					Save lead
-				</AppButton>
-			</div>
-		</form>
-
-		<FilterBar
-			:open="moreOpen"
-			data-testid="sellos-leads-filters"
-			@apply="load"
-			@clear="clearFilters"
-		>
-			<FormField
-				:model-value="search"
-				label="Search leads"
-				data-testid="sellos-leads-search"
-				@update:model-value="
-					(v) => {
-						search = v;
-						load();
-					}
-				"
-			/>
-			<FormField
-				:model-value="filters.stage"
-				type="select"
-				label="Stage"
-				:options="
-					withAny(
-						'Any stage',
-						stages.map((st) => st.name)
-					)
-				"
-				data-testid="sellos-leads-filter-stage"
-				@update:model-value="
-					(v) => {
-						filters.stage = v;
-						load();
-					}
-				"
-			/>
-			<FormField
-				:model-value="filters.assigned_to"
-				type="select"
-				label="Agent"
-				:options="
-					withAny(
-						'Any agent',
-						options.agents.map((a) => ({ value: a.name, label: a.full_name }))
-					)
-				"
-				data-testid="sellos-leads-filter-agent"
-				@update:model-value="
-					(v) => {
-						filters.assigned_to = v;
-						load();
-					}
-				"
-			/>
-			<FormField
-				:model-value="filters.source"
-				type="select"
-				label="Source"
-				:options="
-					withAny(
-						'Any source',
-						filterSources.map((so) => so.name)
-					)
-				"
-				data-testid="sellos-leads-filter-source"
-				@update:model-value="
-					(v) => {
-						filters.source = v;
-						load();
-					}
-				"
-			/>
-			<template #more>
-				<MoneyField
-					v-model="filters.budget_min"
-					label="Budget from (₹)"
-					data-testid="sellos-leads-filter-budget-min"
-				/>
-				<MoneyField
-					v-model="filters.budget_max"
-					label="Budget to (₹)"
-					data-testid="sellos-leads-filter-budget-max"
-				/>
-				<FormField
-					v-model="filters.configuration"
-					type="select"
-					label="Configuration"
-					:options="withAny('Any configuration', CONFIGURATIONS)"
-					data-testid="sellos-leads-filter-configuration"
-				/>
-				<FormField
-					v-model="filters.locality"
-					label="Locality"
-					data-testid="sellos-leads-filter-locality"
-				/>
-				<FormField
-					v-model="filters.timeline"
-					type="select"
-					label="Timeline"
-					:options="withAny('Any timeline', TIMELINES)"
-					data-testid="sellos-leads-filter-timeline"
-				/>
-				<FormField
-					v-if="options.teams.length"
-					:model-value="filters.team"
-					type="select"
-					label="Team"
-					:options="
-						withAny(
-							'Any team',
-							options.teams.map((t) => ({ value: t.name, label: t.team_name }))
-						)
-					"
-					data-testid="sellos-leads-filter-team"
-					@update:model-value="
-						(v) => {
-							filters.team = v;
-							load();
-						}
-					"
-				/>
-				<FormField
-					:model-value="filters.consent_status"
-					type="select"
-					label="Consent status"
-					:options="withAny('Any consent status', options.consent_statuses)"
-					data-testid="sellos-leads-filter-consent"
-					@update:model-value="
-						(v) => {
-							filters.consent_status = v;
-							load();
-						}
-					"
-				/>
-				<FormField
-					:model-value="filters.last_contacted_from"
-					type="date"
-					label="Last contacted from"
-					data-testid="sellos-leads-filter-contacted-from"
-					@update:model-value="
-						(v) => {
-							filters.last_contacted_from = v;
-							load();
-						}
-					"
-				/>
-				<FormField
-					:model-value="filters.last_contacted_to"
-					type="date"
-					label="Last contacted to"
-					data-testid="sellos-leads-filter-contacted-to"
-					@update:model-value="
-						(v) => {
-							filters.last_contacted_to = v;
-							load();
-						}
-					"
-				/>
-				<FormField
-					:model-value="filters.follow_up"
-					type="select"
-					label="Follow up"
-					:options="followUpOptions"
-					data-testid="sellos-leads-filter-follow-up"
-					@update:model-value="
-						(v) => {
-							filters.follow_up = v;
-							load();
-						}
-					"
-				/>
-				<FormField
-					:model-value="filters.sort"
-					type="select"
-					label="Sort"
-					:options="sortOptions"
-					data-testid="sellos-leads-sort"
-					@update:model-value="
-						(v) => {
-							filters.sort = v;
-							load();
-						}
-					"
-				/>
-				<FormField
-					:model-value="untouchedOnly"
-					type="checkbox"
-					:label="`No activity for ${untouchedDays} days`"
-					data-testid="sellos-leads-filter-untouched"
-					@update:model-value="
-						(v) => {
-							untouchedOnly = v;
-							load();
-						}
-					"
-				/>
-			</template>
-			<template #actions>
-				<AppButton type="submit" variant="primary" data-testid="sellos-leads-filter-apply">
-					Filter
-				</AppButton>
-				<AppButton
-					type="button"
-					:aria-expanded="moreOpen ? 'true' : 'false'"
-					data-testid="sellos-leads-filters-toggle"
-					@click="moreOpen = !moreOpen"
-				>
-					<template #prefix>
-						<span
-							:class="moreOpen ? 'lucide-chevron-up' : 'lucide-chevron-down'"
-							class="icon-inherit size-4"
-							aria-hidden="true"
-						/>
-					</template>
-					{{ moreOpen ? "Fewer filters" : "More filters" }}
-					<span
-						v-if="moreActive && !moreOpen"
-						class="ml-1 rounded-badge bg-brand px-1.5 text-xs text-on-brand-accent"
-						data-testid="sellos-leads-filters-more-count"
-						>{{ moreActive }}</span
-					>
-				</AppButton>
-				<AppButton
-					type="button"
-					data-testid="sellos-leads-filter-clear"
-					@click="clearFilters"
-				>
-					Clear filters
-				</AppButton>
-			</template>
-		</FilterBar>
+		</FormDrawer>
 
 		<LoadError
 			v-if="loadError"
@@ -442,16 +346,6 @@
 			class="mb-ui-md"
 			data-testid="sellos-leads-error"
 			@retry="load"
-		/>
-		<ListCard v-else-if="loading" class="mb-ui-md">
-			<LoadingSkeleton :rows="4" label="Loading leads." data-testid="sellos-leads-loading" />
-		</ListCard>
-		<EmptyState
-			v-else-if="view === 'list' && !leads.length"
-			title="No leads yet"
-			text="Leads you may see will be listed here. Try clearing the filters, or add a lead."
-			icon="lucide-users"
-			data-testid="sellos-leads-empty"
 		/>
 		<LeadBoard
 			v-if="view === 'board' && !loadError"
@@ -461,158 +355,155 @@
 			:untouched-days="untouchedDays"
 			@moved="load"
 		/>
-		<form
-			v-if="view === 'list' && canReassign && leads.length"
-			class="ui-card mb-ui-md flex flex-wrap items-end gap-ui-md"
-			data-testid="sellos-bulk"
-			@submit.prevent="bulkReassign"
+
+		<!-- The result of the last bulk move. It stays after the selection is gone. -->
+		<p
+			v-if="bulkNotice"
+			role="status"
+			class="mb-ui-md text-sm text-ink"
+			data-testid="sellos-bulk-result"
 		>
-			<FormField
-				type="checkbox"
-				:model-value="allSelected"
-				:label="`Select all ${leads.length} shown`"
-				data-testid="sellos-bulk-select-all"
-				@update:model-value="toggleAll"
-			/>
-			<span class="pb-3 text-sm text-ink-muted" data-testid="sellos-bulk-count">
-				{{ selected.length }} selected
-			</span>
-			<FormField
-				v-model="bulkAgent"
-				type="select"
-				label="Give the selected leads to"
-				required
-				:options="reassignAgents.map((a) => ({ value: a.name, label: a.full_name }))"
-				class="min-w-[14rem]"
-				data-testid="sellos-bulk-agent"
-			/>
-			<AppButton
-				type="submit"
-				variant="primary"
-				:disabled="!selected.length"
-				data-testid="sellos-bulk-reassign"
-			>
-				Reassign selected
-			</AppButton>
-			<p
-				v-if="bulkNotice"
-				role="status"
-				class="w-full text-sm text-ink"
-				data-testid="sellos-bulk-result"
-			>
-				{{ bulkNotice }}
-			</p>
-			<p
-				v-if="bulkError"
-				role="alert"
-				class="w-full text-sm text-danger"
-				data-testid="sellos-bulk-error"
-			>
-				{{ bulkError }}
-			</p>
-		</form>
-		<ListCard
-			v-if="view === 'list' && leads.length"
-			title="All leads"
-			data-testid="sellos-leads-list"
+			{{ bulkNotice }}
+		</p>
+		<p
+			v-if="bulkError"
+			role="alert"
+			class="mb-ui-md text-sm text-danger"
+			data-testid="sellos-bulk-error"
 		>
-			<div class="-mx-ui-md sm:-mx-ui-lg">
-				<div
-					class="hidden items-center gap-ui-md border-b border-line px-ui-md py-2 text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted sm:px-ui-lg md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,2fr)]"
-					:class="canReassign ? 'md:pl-[4.25rem]' : ''"
-					role="row"
+			{{ bulkError }}
+		</p>
+		<!-- The bulk bar exists only while rows are selected. -->
+		<BulkBar v-if="canReassign" :count="selected.length" @clear="selected = []">
+			<form class="flex flex-wrap items-end gap-ui-md" @submit.prevent="bulkReassign">
+				<FormField
+					v-model="bulkAgent"
+					type="select"
+					label="Give the selected leads to"
+					required
+					:options="reassignAgents.map((a) => ({ value: a.name, label: a.full_name }))"
+					class="min-w-[14rem]"
+					data-testid="sellos-bulk-agent"
+				/>
+				<AppButton
+					type="submit"
+					variant="primary"
+					:disabled="!selected.length"
+					data-testid="sellos-bulk-reassign"
 				>
-					<span>Name</span>
-					<span>Source</span>
-					<span>Stage</span>
-					<span>Next follow up</span>
-					<span>Flags</span>
-				</div>
-				<ul>
-					<li
-						v-for="lead in leads"
-						:key="lead.name"
-						data-testid="sellos-lead-row"
-						class="flex items-center border-b border-line-soft last:border-b-0"
+					Reassign selected
+				</AppButton>
+			</form>
+		</BulkBar>
+
+		<DataTable
+			v-if="view === 'list' && !loadError"
+			v-model:selected="selected"
+			title="All leads"
+			caption="Leads"
+			:columns="columns"
+			:rows="leads"
+			:loading="loading"
+			loading-label="Loading leads."
+			:selectable="canReassign"
+			:row-to="rowTo"
+			:row-name="(row) => row.client_name"
+			:actions="rowActions"
+			empty-title="No leads yet"
+			empty-text="Leads you may see will be listed here. Try clearing the filters, or add a lead."
+			empty-icon="lucide-users"
+			testid="sellos-leads-list"
+			row-testid="sellos-lead-row"
+			select-testid="sellos-lead-select"
+			select-all-testid="sellos-bulk-select-all"
+			loading-testid="sellos-leads-loading"
+			empty-testid="sellos-leads-empty"
+		>
+			<template #cell-client_name="{ row }">
+				<span class="block">{{ row.client_name }}</span>
+				<span v-if="row.phone" class="block text-sm font-normal text-ink-muted">{{
+					row.phone
+				}}</span>
+			</template>
+			<template #cell-project="{ row }">
+				<span class="text-ink-body">{{ projectInterest(row) }}</span>
+			</template>
+			<template #cell-source="{ row }">
+				<span class="text-ink-body" data-testid="sellos-lead-source">{{
+					row.campaign ? `${row.source} · ${row.campaign}` : row.source
+				}}</span>
+			</template>
+			<template #cell-stage="{ row }">
+				<StatusBadge
+					v-if="row.stage"
+					:label="row.stage"
+					tone="neutral"
+					data-testid="sellos-lead-row-stage"
+				/>
+			</template>
+			<template #cell-assigned_to="{ row }">
+				<span class="text-ink-body">{{ agentName(row.assigned_to) }}</span>
+			</template>
+			<template #cell-budget="{ row }">
+				<span class="tabular-nums">{{ formatMoney(row.budget || "") }}</span>
+			</template>
+			<template #cell-consent_status="{ row }">
+				<StatusBadge
+					v-if="row.consent_status"
+					:label="row.consent_status"
+					:tone="consentTone(row)"
+					data-testid="sellos-lead-row-consent"
+				/>
+			</template>
+			<template #cell-last_contacted="{ row }">
+				<span class="text-ink-body">{{
+					row.last_contacted ? formatWhen(row.last_contacted) : "Never"
+				}}</span>
+			</template>
+			<template #cell-next_follow_up="{ row }">
+				<span
+					v-if="row.next_follow_up"
+					class="text-ink-body"
+					data-testid="sellos-lead-next-follow-up"
+					:data-state="row.follow_up_state"
+				>
+					{{ formatWhen(row.next_follow_up) }}
+				</span>
+			</template>
+			<template #cell-flags="{ row }">
+				<span class="flex flex-wrap items-center gap-ui-sm">
+					<StatusBadge
+						v-if="row.untouched"
+						tone="warning"
+						data-testid="sellos-untouched"
 					>
-						<AppCheckbox
-							v-if="canReassign"
-							:model-value="selected.includes(lead.name)"
-							:value="lead.name"
-							:aria-label="`Select ${lead.client_name}`"
-							class="ml-ui-sm"
-							data-testid="sellos-lead-select"
-							@update:model-value="toggleSelected(lead.name, $event)"
-						/>
-						<router-link
-							:to="{ path: `${basePath}/${lead.name}`, query: $route.query }"
-							class="grid flex-1 grid-cols-1 items-center gap-x-ui-md gap-y-1 px-ui-md py-ui-md hover:bg-brand-soft sm:px-ui-lg md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,2fr)]"
-						>
-							<span class="truncate font-medium text-ink">{{
-								lead.client_name
-							}}</span>
-							<span
-								class="truncate text-sm text-ink-muted"
-								data-testid="sellos-lead-source"
-								>{{
-									lead.campaign
-										? `${lead.source} · ${lead.campaign}`
-										: lead.source
-								}}</span
-							>
-							<span>
-								<StatusBadge
-									v-if="lead.stage"
-									:label="lead.stage"
-									tone="neutral"
-									data-testid="sellos-lead-row-stage"
-								/>
-							</span>
-							<span class="text-sm text-ink-muted">
-								<span
-									v-if="lead.next_follow_up"
-									data-testid="sellos-lead-next-follow-up"
-									:data-state="lead.follow_up_state"
-								>
-									Next follow up {{ shortWhen(lead.next_follow_up) }}
-								</span>
-							</span>
-							<span class="flex flex-wrap items-center gap-ui-sm">
-								<StatusBadge
-									v-if="lead.untouched"
-									tone="warning"
-									data-testid="sellos-untouched"
-								>
-									No activity for {{ untouchedDays }} days
-								</StatusBadge>
-								<StatusBadge
-									v-if="lead.follow_up_state === 'overdue'"
-									tone="danger"
-									data-testid="sellos-follow-up-overdue"
-								>
-									Follow up overdue
-								</StatusBadge>
-								<StatusBadge
-									v-if="lead.follow_up_untouched"
-									tone="warning"
-									data-testid="sellos-follow-up-untouched"
-								>
-									Untouched, no follow up for {{ followUpDays }} days
-								</StatusBadge>
-								<StatusBadge
-									v-if="lead.overdue_tasks"
-									tone="danger"
-									data-testid="sellos-lead-overdue"
-								>
-									{{ lead.overdue_tasks }} overdue
-								</StatusBadge>
-							</span>
-						</router-link>
-					</li>
-				</ul>
-			</div>
-		</ListCard>
-	</div>
+						No activity for {{ untouchedDays }} days
+					</StatusBadge>
+					<StatusBadge
+						v-if="row.follow_up_state === 'overdue'"
+						tone="danger"
+						data-testid="sellos-follow-up-overdue"
+					>
+						Follow up overdue
+					</StatusBadge>
+					<StatusBadge
+						v-if="row.follow_up_untouched"
+						tone="warning"
+						data-testid="sellos-follow-up-untouched"
+					>
+						Untouched, no follow up for {{ followUpDays }} days
+					</StatusBadge>
+					<StatusBadge
+						v-if="row.overdue_tasks"
+						tone="danger"
+						data-testid="sellos-lead-overdue"
+					>
+						{{ row.overdue_tasks }} overdue
+					</StatusBadge>
+				</span>
+			</template>
+		</DataTable>
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -622,17 +513,20 @@ import { useRoute, useRouter } from "vue-router";
 import { CLIENT_TYPES, CONFIGURATIONS, TIMELINES, crmApi, serverMessage } from "../crm/crmApi";
 import { logBackgroundError } from "../api";
 import AppButton from "../components/AppButton.vue";
-import AppCheckbox from "../components/AppCheckbox.vue";
-import EmptyState from "../components/EmptyState.vue";
+import BulkBar from "../components/BulkBar.vue";
+import DataTable from "../components/DataTable.vue";
 import FilterBar from "../components/FilterBar.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import MoneyField from "../components/MoneyField.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LeadBoard from "../components/LeadBoard.vue";
-import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
-import LoadingSkeleton from "../components/LoadingSkeleton.vue";
-import StatCard from "../components/StatCard.vue";
+import MoneyField from "../components/MoneyField.vue";
+import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
+import { formatMoney, formatWhen } from "../format";
 import { session } from "../session";
 import { shell } from "../shell";
 
@@ -694,18 +588,99 @@ const moreActive = computed(
 		(untouchedOnly.value ? 1 : 0)
 );
 
-// The numbers above the list count the leads in view, so they follow the filters (the list holds up to 100).
-const stats = computed(() => {
+// The KPI strip counts the leads in view, so it follows the filters (the list holds up to 100).
+const kpis = computed(() => {
 	const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
-	return {
-		total: leads.value.length,
-		newThisWeek: leads.value.filter(
-			(l) => new Date(String(l.creation).replace(" ", "T")).getTime() >= weekAgo
-		).length,
-		overdue: leads.value.filter((l) => l.follow_up_state === "overdue").length,
-		untouched: leads.value.filter((l) => l.untouched).length,
-	};
+	const rows = leads.value;
+	return [
+		{
+			label: "Total leads",
+			value: rows.length,
+			caption: "in this view",
+			icon: "lucide-users",
+		},
+		{
+			label: "New this week",
+			value: rows.filter(
+				(l) => new Date(String(l.creation).replace(" ", "T")).getTime() >= weekAgo
+			).length,
+			caption: "made in the last 7 days",
+			icon: "lucide-calendar-plus",
+			tone: "success",
+		},
+		{
+			label: "Overdue follow ups",
+			value: rows.filter((l) => l.follow_up_state === "overdue").length,
+			caption: "past their date",
+			icon: "lucide-clock-alert",
+			tone: "danger",
+		},
+		{
+			label: "Untouched",
+			value: rows.filter((l) => l.untouched).length,
+			caption: `no activity for ${untouchedDays.value} days`,
+			icon: "lucide-hourglass",
+			tone: "warning",
+		},
+	];
 });
+
+// The table (docs/UI_STANDARD.md, "Tables"). The phone number sits under the name once the list carries
+// it; the list call does not return phone numbers today, so no cell is invented.
+const agentName = (email) =>
+	options.agents.find((a) => a.name === email)?.full_name || email || "Unassigned";
+const columns = [
+	{ key: "client_name", label: "Name", primary: true, sortable: true, wrap: true },
+	{ key: "project", label: "Project interest", wrap: true, class: "min-w-[7rem]" },
+	{ key: "source", wrap: true, label: "Source", sortable: true },
+	{ key: "stage", label: "Stage", sortable: true },
+	{
+		key: "assigned_to",
+		wrap: true,
+		label: "Assigned agent",
+		sortable: true,
+		sortValue: (l) => agentName(l.assigned_to),
+	},
+	{
+		key: "budget",
+		label: "Budget",
+		sortable: true,
+		align: "right",
+		sortValue: (l) => Number(l.budget || 0),
+	},
+	{ key: "consent_status", label: "Consent", sortable: true },
+	{ key: "last_contacted", wrap: true, label: "Last activity", sortable: true },
+	{ key: "next_follow_up", wrap: true, label: "Next follow up", sortable: true },
+	{ key: "flags", wrap: true, label: "Flags" },
+];
+const consentTone = (lead) =>
+	lead.consent_warning === "red"
+		? "danger"
+		: lead.consent_warning === "amber"
+		? "warning"
+		: "success";
+const projectInterest = (lead) => {
+	const r = lead.requirements || {};
+	return [...(r.configuration || []), ...(r.preferred_localities || [])].join(", ");
+};
+const rowTo = (lead) => ({ path: `${basePath.value}/${lead.name}`, query: route.query });
+const rowActions = (lead) => [
+	{ label: "Open lead", onClick: () => router.push(rowTo(lead)) },
+	{
+		label: "Log a call or note",
+		onClick: () =>
+			router.push({ path: `${basePath.value}/${lead.name}`, query: { tab: "activity" } }),
+	},
+];
+
+// Whether any filter, the search or the untouched box is on: Clear shows.
+const filtersOn = computed(
+	() => Object.keys(activeFilters()).length > 0 || Boolean(search.value) || untouchedOnly.value
+);
+function setFilter(key, value) {
+	filters[key] = value;
+	load();
+}
 
 // A select's first choice is "Any ..." with an empty value, so the filter is off until a choice is made.
 const withAny = (label, items) => [{ label, value: "" }, ...items];
@@ -779,19 +754,6 @@ const reassignAgents = ref([]);
 const bulkAgent = ref("");
 const bulkNotice = ref("");
 const bulkError = ref("");
-const allSelected = computed(
-	() => leads.value.length > 0 && selected.value.length === leads.value.length
-);
-
-function toggleSelected(name, on) {
-	selected.value = on
-		? [...selected.value.filter((n) => n !== name), name]
-		: selected.value.filter((n) => n !== name);
-}
-
-function toggleAll(on) {
-	selected.value = on ? leads.value.map((lead) => lead.name) : [];
-}
 
 async function loadReassignAgents() {
 	if (!canReassign.value) return;
@@ -901,16 +863,6 @@ async function load() {
 	} finally {
 		if (seq === loadSeq) loading.value = false;
 	}
-}
-
-// A follow up's day, and its time when it has one: "2030-03-04 10:30" shows as "4 Mar, 10:30".
-function shortWhen(value) {
-	const text = String(value || "");
-	const [day, time] = text.split(/[ T]/);
-	const date = new Date(`${day}T00:00:00`);
-	if (Number.isNaN(date.getTime())) return text;
-	const label = date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-	return time && time !== "00:00:00" ? `${label}, ${time.slice(0, 5)}` : label;
 }
 
 const duplicates = ref([]);

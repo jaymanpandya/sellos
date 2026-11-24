@@ -1,5 +1,11 @@
 <template>
-	<Badge :theme="BADGE_THEME[tone] || 'gray'" variant="subtle" size="lg" v-bind="$attrs">
+	<Badge
+		:theme="BADGE_THEME[tone] || 'gray'"
+		variant="subtle"
+		size="lg"
+		class="!rounded-pill"
+		v-bind="$attrs"
+	>
 		<template #prefix>
 			<span
 				:class="toneIcon(tone)"

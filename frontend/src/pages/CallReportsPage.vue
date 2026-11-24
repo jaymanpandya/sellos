@@ -1,35 +1,52 @@
 <template>
-	<div data-testid="sellos-callreports-page">
-		<PageHeader
-			title="Call reports"
-			text="What calling costs and how it performs, by agent and by purpose, for the dates you choose. Every figure opens the calls behind it."
-			icon="lucide-phone-call"
-		/>
-		<FilterBar
-			apply-label="Show report"
-			clear-label="Last 30 days"
-			@apply="load"
-			@clear="reset"
-		>
-			<FormField
-				v-model="range.from_date"
-				type="date"
-				label="From"
-				data-testid="sellos-callreports-from"
+	<PageTemplate data-testid="sellos-callreports-page">
+		<template #header>
+			<PageHeader
+				title="Call reports"
+				text="What calling costs and how it performs, by agent and by purpose, for the dates you choose. Every figure opens the calls behind it."
+				icon="lucide-phone-call"
 			/>
-			<FormField
-				v-model="range.to_date"
-				type="date"
-				label="To"
-				data-testid="sellos-callreports-to"
-			/>
-		</FilterBar>
+		</template>
+
+		<template v-if="report && !error && report.totals.calls" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-callreports-stats" />
+		</template>
+
+		<template #filters>
+			<FilterBar
+				v-model:open="moreOpen"
+				hide-search
+				apply-label="Show report"
+				clear-label="Last 30 days"
+				more-testid="sellos-callreports-filters-toggle"
+				:active="datesChanged"
+				data-testid="sellos-callreports-filters"
+				@apply="load"
+				@clear="reset"
+			>
+				<template #more>
+					<FormField
+						v-model="range.from_date"
+						type="date"
+						label="From"
+						data-testid="sellos-callreports-from"
+					/>
+					<FormField
+						v-model="range.to_date"
+						type="date"
+						label="To"
+						data-testid="sellos-callreports-to"
+					/>
+				</template>
+			</FilterBar>
+		</template>
+
 		<div v-if="error" data-testid="sellos-callreports-error">
 			<LoadError :message="error" @retry="load" />
 		</div>
 		<LoadingSkeleton v-else-if="!report" />
-		<template v-else>
-			<p class="mb-ui-md text-sm text-ink-muted" data-testid="sellos-callreports-range">
+		<div v-else class="space-y-ui-md">
+			<p class="text-sm text-ink-muted" data-testid="sellos-callreports-range">
 				Calls from {{ report.from_date }} to {{ report.to_date }}.
 			</p>
 			<EmptyState
@@ -38,249 +55,252 @@
 				text="No call was placed between these dates. Choose other dates."
 				icon="lucide-phone-off"
 			/>
-			<template v-else>
-				<div class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-5">
-					<div v-for="card in cards" :key="card.key">
-						<StatCard
-							:label="card.label"
-							:value="card.value"
-							:note="card.note"
-							:icon="card.icon"
-							:value-testid="`sellos-callreports-total-${card.key}`"
-						/>
+			<!-- The figure behind each card opens the calls it counts. -->
+			<section v-else class="ui-card flex flex-wrap items-center gap-ui-sm">
+				<h2 class="ui-card-heading mr-ui-sm">See the calls behind</h2>
+				<AppButton
+					v-for="card in cards"
+					:key="card.key"
+					:data-testid="`sellos-callreports-open-${card.key}`"
+					@click="open(card.label, card.figure)"
+				>
+					{{ card.label }}
+				</AppButton>
+			</section>
+
+			<div
+				v-if="drill"
+				data-testid="sellos-callreports-drill"
+				:data-count="drill.calls.length"
+			>
+				<p
+					class="mb-ui-sm text-sm text-ink-muted"
+					data-testid="sellos-callreports-drill-total"
+				>
+					{{ drill.calls.length }} calls, {{ talkTime(drill.totals.talk_seconds) }} talk
+					time,
+					{{ rupees(drill.totals.cost) }}
+				</p>
+				<DataTable
+					:title="drill.title"
+					:columns="drillColumns"
+					:rows="drill.calls"
+					:page-size="200"
+					empty-title="No calls"
+					empty-text="No call matches this figure."
+					empty-icon="lucide-phone-off"
+					:row-attrs="(row) => ({ 'data-call': row.name })"
+					testid="sellos-callreports-drill-table"
+					row-testid="sellos-callreports-call"
+					empty-testid="sellos-callreports-drill-empty"
+				>
+					<template #cell-started_on="{ row }">{{
+						formatDateTime(row.started_on)
+					}}</template>
+					<template #cell-lead="{ row }">
+						<router-link class="text-brand underline" :to="`/crm/leads/${row.lead}`">
+							{{ row.lead }}
+						</router-link>
+					</template>
+					<template #cell-duration="{ row }">{{ talkTime(row.duration) }}</template>
+					<template #cell-cost="{ row }">{{ rupees(row.cost) }}</template>
+				</DataTable>
+			</div>
+
+			<template v-if="report.totals.calls">
+				<DataTable
+					title="By agent"
+					:columns="agentColumns"
+					:rows="report.by_agent"
+					row-key="agent"
+					:row-attrs="(row) => ({ 'data-agent': row.agent })"
+					:page-size="200"
+					empty-title="No agents"
+					testid="sellos-callreports-agents"
+					row-testid="sellos-callreports-agent"
+					empty-testid="sellos-callreports-agents-empty"
+				>
+					<template #cell-calls="{ row }">
+						<span class="tabular-nums" data-col="calls">{{ row.calls }}</span>
+					</template>
+					<template #cell-connected="{ row }">
+						<span class="tabular-nums" data-col="connected">{{ row.connected }}</span>
+					</template>
+					<template #cell-connect_rate="{ row }">
+						<span class="tabular-nums" data-col="rate">{{ row.connect_rate }}%</span>
+					</template>
+					<template #cell-talk_seconds="{ row }">
+						<span class="tabular-nums" data-col="talk">{{
+							talkTime(row.talk_seconds)
+						}}</span>
+					</template>
+					<template #cell-cost="{ row }">
+						<span class="tabular-nums" data-col="cost">{{ rupees(row.cost) }}</span>
+					</template>
+					<template #cell-open="{ row }">
 						<AppButton
-							class="mt-ui-sm w-full"
-							:data-testid="`sellos-callreports-open-${card.key}`"
-							@click="open(card.label, card.figure)"
+							data-testid="sellos-callreports-agent-open"
+							@click="open(`Calls by ${row.agent_name}`, { agent: row.agent })"
 						>
-							See calls
+							Calls
 						</AppButton>
-					</div>
-				</div>
-				<ListCard title="By agent" class="mb-ui-md">
-					<table
-						class="w-full text-left text-sm"
-						data-testid="sellos-callreports-agents"
-					>
-						<thead class="text-xs text-ink-muted">
-							<tr>
-								<th scope="col" class="py-ui-sm">Agent</th>
-								<th scope="col">Calls</th>
-								<th scope="col">Connected</th>
-								<th scope="col">Connect rate</th>
-								<th scope="col">Talk time</th>
-								<th scope="col">Cost</th>
-								<th scope="col"><span class="sr-only">Calls</span></th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-line-soft">
-							<tr
-								v-for="row in report.by_agent"
-								:key="row.agent"
-								data-testid="sellos-callreports-agent"
-								:data-agent="row.agent"
-								class="text-ink"
-							>
-								<td class="py-ui-sm">{{ row.agent_name }}</td>
-								<td class="tabular-nums" data-col="calls">{{ row.calls }}</td>
-								<td class="tabular-nums" data-col="connected">
-									{{ row.connected }}
-								</td>
-								<td class="tabular-nums" data-col="rate">
-									{{ row.connect_rate }}%
-								</td>
-								<td class="tabular-nums" data-col="talk">
-									{{ talkTime(row.talk_seconds) }}
-								</td>
-								<td class="tabular-nums" data-col="cost">
-									{{ rupees(row.cost) }}
-								</td>
-								<td>
-									<AppButton
-										data-testid="sellos-callreports-agent-open"
-										@click="
-											open(`Calls by ${row.agent_name}`, {
-												agent: row.agent,
-											})
-										"
-									>
-										Calls
-									</AppButton>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-				</ListCard>
-				<ListCard title="By purpose" class="mb-ui-md">
-					<table
-						class="w-full text-left text-sm"
-						data-testid="sellos-callreports-purposes"
-					>
-						<thead class="text-xs text-ink-muted">
-							<tr>
-								<th scope="col" class="py-ui-sm">Purpose</th>
-								<th scope="col">Calls</th>
-								<th scope="col">Connected</th>
-								<th scope="col">Connect rate</th>
-								<th scope="col">Talk time</th>
-								<th scope="col">Cost</th>
-								<th scope="col"><span class="sr-only">Calls</span></th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-line-soft">
-							<tr
-								v-for="row in report.by_purpose"
-								:key="row.purpose"
-								data-testid="sellos-callreports-purpose"
-								:data-purpose="row.purpose"
-								class="text-ink"
-							>
-								<td class="py-ui-sm">{{ row.purpose }}</td>
-								<td class="tabular-nums" data-col="calls">{{ row.calls }}</td>
-								<td class="tabular-nums" data-col="connected">
-									{{ row.connected }}
-								</td>
-								<td class="tabular-nums" data-col="rate">
-									{{ row.connect_rate }}%
-								</td>
-								<td class="tabular-nums" data-col="talk">
-									{{ talkTime(row.talk_seconds) }}
-								</td>
-								<td class="tabular-nums" data-col="cost">
-									{{ rupees(row.cost) }}
-								</td>
-								<td>
-									<AppButton
-										data-testid="sellos-callreports-purpose-open"
-										@click="
-											open(`${row.purpose} calls`, { purpose: row.purpose })
-										"
-									>
-										Calls
-									</AppButton>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-				</ListCard>
-				<ListCard title="Consent coverage" class="mb-ui-md">
-					<p class="mb-ui-sm text-sm text-ink-muted">
-						The consent status of each lead when it was called. A call is never stopped
-						by it.
-					</p>
-					<ul
-						class="divide-y divide-line-soft"
-						data-testid="sellos-callreports-consents"
-					>
-						<li
-							v-for="row in report.consent"
-							:key="row.status"
-							data-testid="sellos-callreports-consent"
-							:data-status="row.status"
-							class="flex items-center justify-between gap-ui-sm py-ui-sm text-sm text-ink"
+					</template>
+				</DataTable>
+
+				<DataTable
+					title="By purpose"
+					:columns="purposeColumns"
+					:rows="report.by_purpose"
+					row-key="purpose"
+					:row-attrs="(row) => ({ 'data-purpose': row.purpose })"
+					:page-size="200"
+					empty-title="No purposes"
+					testid="sellos-callreports-purposes"
+					row-testid="sellos-callreports-purpose"
+					empty-testid="sellos-callreports-purposes-empty"
+				>
+					<template #cell-calls="{ row }">
+						<span class="tabular-nums" data-col="calls">{{ row.calls }}</span>
+					</template>
+					<template #cell-connected="{ row }">
+						<span class="tabular-nums" data-col="connected">{{ row.connected }}</span>
+					</template>
+					<template #cell-connect_rate="{ row }">
+						<span class="tabular-nums" data-col="rate">{{ row.connect_rate }}%</span>
+					</template>
+					<template #cell-talk_seconds="{ row }">
+						<span class="tabular-nums" data-col="talk">{{
+							talkTime(row.talk_seconds)
+						}}</span>
+					</template>
+					<template #cell-cost="{ row }">
+						<span class="tabular-nums" data-col="cost">{{ rupees(row.cost) }}</span>
+					</template>
+					<template #cell-open="{ row }">
+						<AppButton
+							data-testid="sellos-callreports-purpose-open"
+							@click="open(`${row.purpose} calls`, { purpose: row.purpose })"
 						>
-							<span>{{ row.status }}</span>
-							<span class="tabular-nums" data-col="calls">
-								{{ row.calls }} ({{ row.share }}%)
-							</span>
-							<AppButton
-								data-testid="sellos-callreports-consent-open"
-								@click="
-									open(`${row.status} calls`, { consent_status: row.status })
-								"
-							>
-								Calls
-							</AppButton>
-						</li>
-					</ul>
-				</ListCard>
+							Calls
+						</AppButton>
+					</template>
+				</DataTable>
+
+				<p class="text-sm text-ink-muted">
+					Consent coverage: the consent status of each lead when it was called. A call is
+					never stopped by it.
+				</p>
+				<DataTable
+					:title="`Consent coverage, ${report.totals.consent_coverage}% of calls to Consented leads`"
+					:columns="consentColumns"
+					:rows="report.consent"
+					row-key="status"
+					:row-attrs="(row) => ({ 'data-status': row.status })"
+					:page-size="200"
+					empty-title="No calls"
+					testid="sellos-callreports-consents"
+					row-testid="sellos-callreports-consent"
+					empty-testid="sellos-callreports-consents-empty"
+				>
+					<template #cell-calls="{ row }">
+						<span class="tabular-nums" data-col="calls"
+							>{{ row.calls }} ({{ row.share }}%)</span
+						>
+					</template>
+					<template #cell-open="{ row }">
+						<AppButton
+							data-testid="sellos-callreports-consent-open"
+							@click="open(`${row.status} calls`, { consent_status: row.status })"
+						>
+							Calls
+						</AppButton>
+					</template>
+				</DataTable>
 			</template>
-			<ListCard v-if="drill" :title="drill.title" class="mb-ui-md">
-				<div data-testid="sellos-callreports-drill" :data-count="drill.calls.length">
-					<p
-						class="mb-ui-sm text-sm text-ink-muted"
-						data-testid="sellos-callreports-drill-total"
-					>
-						{{ drill.calls.length }} calls,
-						{{ talkTime(drill.totals.talk_seconds) }} talk time,
-						{{ rupees(drill.totals.cost) }}
-					</p>
-					<EmptyState
-						v-if="!drill.calls.length"
-						title="No calls"
-						text="No call matches this figure."
-						icon="lucide-phone-off"
-					/>
-					<table v-else class="w-full text-left text-sm">
-						<thead class="text-xs text-ink-muted">
-							<tr>
-								<th scope="col" class="py-ui-sm">Started</th>
-								<th scope="col">Lead</th>
-								<th scope="col">Agent</th>
-								<th scope="col">Purpose</th>
-								<th scope="col">State</th>
-								<th scope="col">Talk time</th>
-								<th scope="col">Cost</th>
-								<th scope="col">Consent</th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-line-soft">
-							<tr
-								v-for="row in drill.calls"
-								:key="row.name"
-								data-testid="sellos-callreports-call"
-								:data-call="row.name"
-								class="text-ink"
-							>
-								<td class="py-ui-sm">{{ row.started_on.slice(0, 16) }}</td>
-								<td>
-									<router-link
-										class="text-brand underline"
-										:to="`/crm/leads/${row.lead}`"
-									>
-										{{ row.lead }}
-									</router-link>
-								</td>
-								<td>{{ row.agent_name }}</td>
-								<td>{{ row.purpose }}</td>
-								<td>{{ row.state }}</td>
-								<td class="tabular-nums">{{ talkTime(row.duration) }}</td>
-								<td class="tabular-nums">{{ rupees(row.cost) }}</td>
-								<td>{{ row.consent_status }}</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-			</ListCard>
-		</template>
-	</div>
+		</div>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
+import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FilterBar from "../components/FilterBar.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import { serverMessage } from "../crm/crmApi";
+import { formatDateTime } from "../format";
 import { callsApi, rupees, talkTime } from "../reports/callsApi";
 
 const range = reactive({ from_date: "", to_date: "" });
 const report = ref(null);
 const drill = ref(null);
 const error = ref("");
+// The dates are the one filter here, so the panel that holds them starts open.
+const moreOpen = ref(true);
+// The dates the page opened with, so Clear shows only when they have been changed.
+const defaults = reactive({ from_date: "", to_date: "" });
+const datesChanged = computed(
+	() =>
+		Boolean(defaults.from_date) &&
+		(range.from_date !== defaults.from_date || range.to_date !== defaults.to_date)
+);
+
+// Call costs are rupees and paise, so they keep the two decimals of callsApi.rupees.
+const kpis = computed(() =>
+	cards.value.slice(0, 4).map((card) => ({
+		label: card.label,
+		value: card.value,
+		caption: card.note,
+		icon: card.icon,
+		valueTestid: `sellos-callreports-total-${card.key}`,
+	}))
+);
+
+const rateColumns = [
+	{ key: "calls", label: "Calls", align: "right" },
+	{ key: "connected", label: "Connected", align: "right" },
+	{ key: "connect_rate", label: "Connect rate", align: "right" },
+	{ key: "talk_seconds", label: "Talk time", align: "right" },
+	{ key: "cost", label: "Cost", align: "right" },
+	{ key: "open", label: "" },
+];
+const agentColumns = [{ key: "agent_name", label: "Agent", primary: true }, ...rateColumns];
+const purposeColumns = [{ key: "purpose", label: "Purpose", primary: true }, ...rateColumns];
+const consentColumns = [
+	{ key: "status", label: "Consent status", primary: true },
+	{ key: "calls", label: "Calls", align: "right" },
+	{ key: "open", label: "" },
+];
+const drillColumns = [
+	{ key: "started_on", label: "Started" },
+	{ key: "lead", label: "Lead" },
+	{ key: "agent_name", label: "Agent" },
+	{ key: "purpose", label: "Purpose" },
+	{ key: "state", label: "State" },
+	{ key: "duration", label: "Talk time", align: "right" },
+	{ key: "cost", label: "Cost", align: "right" },
+	{ key: "consent_status", label: "Consent" },
+];
 
 // The cards, each with the filter that lists its calls. Cost and talk time list every call in the dates.
 const cards = computed(() => {
 	const t = report.value.totals;
 	return [
-		{ key: "calls", label: "Calls", value: t.calls, icon: "lucide-phone", figure: {} },
+		{
+			key: "calls",
+			label: "Calls",
+			value: t.calls,
+			note: "Placed in these dates",
+			icon: "lucide-phone",
+			figure: {},
+		},
 		{
 			key: "connect-rate",
 			label: "Connect rate",
@@ -293,6 +313,7 @@ const cards = computed(() => {
 			key: "talk-time",
 			label: "Talk time",
 			value: talkTime(t.talk_seconds),
+			note: "Across all calls",
 			icon: "lucide-timer",
 			figure: {},
 		},
@@ -300,6 +321,7 @@ const cards = computed(() => {
 			key: "cost",
 			label: "Cost",
 			value: rupees(t.cost),
+			note: "What the calls cost",
 			icon: "lucide-indian-rupee",
 			figure: {},
 		},
@@ -319,8 +341,13 @@ async function load() {
 	drill.value = null;
 	try {
 		report.value = await callsApi.report({ ...range });
+		const fresh = !range.from_date && !range.to_date;
 		range.from_date = report.value.from_date;
 		range.to_date = report.value.to_date;
+		if (fresh || !defaults.from_date) {
+			defaults.from_date = range.from_date;
+			defaults.to_date = range.to_date;
+		}
 	} catch (e) {
 		error.value = serverMessage(e, "The report could not be loaded.");
 	}

@@ -28,7 +28,7 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 		});
 	});
 
-	it("puts Assigned agent, Consent and Timeline in the side column of the lead page, with a solid main button", () => {
+	it("puts Assigned agent and Consent in the right rail of the lead page, with the timeline under Activity and a solid main button", () => {
 		cy.bench("sellos.tests.ui_fixtures.seed_agent_leads").then(({ own }) => {
 			cy.signInFresh("company_admin");
 			cy.visit("/sellos/crm/leads");
@@ -38,14 +38,22 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 				.within(() => {
 					cy.getByTestId("reassign").should("exist");
 					cy.getByTestId("lead-consent").should("exist");
-					cy.getByTestId("lead-timeline").should("exist");
 				});
+			// The history is under the Activity tab, in the main column, not in the rail.
+			cy.getByTestId("tab-activity").click();
+			cy.getByTestId("lead-page")
+				.find("aside")
+				.find('[data-testid="sellos-lead-timeline"]')
+				.should("not.exist");
+			cy.getByTestId("lead-timeline").should("exist");
+			cy.getByTestId("tab-requirements").click();
 			cy.getByTestId("lead-requirements").parents("aside").should("have.length", 0);
-			cy.getByTestId("lead-call").parents("aside").should("have.length", 0);
 			// The main action of a card is the solid accent with white text.
 			cy.getByTestId("lead-req-save")
 				.should("have.css", "background-color", "rgb(15, 76, 53)")
 				.and("have.css", "color", "rgb(255, 255, 255)");
+			cy.getByTestId("tab-calls").click();
+			cy.getByTestId("lead-call").parents("aside").should("have.length", 0);
 			// A secondary action is white with the secondary edge.
 			cy.getByTestId("lead-optout").should(
 				"have.css",
@@ -61,6 +69,7 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 			cy.intercept("**/api/method/sellos.crm.api.save_lead*").as("save");
 			cy.visit("/sellos/crm/leads");
 			cy.getByTestId("lead-row").contains(own).click();
+			cy.getByTestId("tab-requirements").click();
 			cy.getByTestId("lead-req-budget-from").clear().type("7500000");
 			cy.getByTestId("lead-req-budget-from").should("have.value", "75,00,000");
 			cy.getByTestId("lead-req-budget-to").clear().type("12000000");
@@ -85,7 +94,9 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 		cy.getByTestId("leads-filters-toggle").should("contain", "More filters").click();
 		cy.getByTestId("leads-filter-budget-min").should("be.visible");
 		cy.getByTestId("leads-filter-contacted-from").should("be.visible");
-		cy.getByTestId("leads-filters-toggle").should("contain", "Fewer filters").click();
+		cy.getByTestId("leads-filters-toggle")
+			.should("have.attr", "aria-expanded", "true")
+			.click();
 		cy.getByTestId("leads-filter-budget-min").should("not.be.visible");
 		// A bookmarked view that uses a hidden filter opens the panel by itself.
 		cy.visit("/sellos/crm/leads?budget_min=5000000");
@@ -101,12 +112,27 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 		);
 	});
 
-	it("shows a disabled button differently from a ghost button", () => {
-		cy.signInFresh("company_admin");
-		cy.visit("/sellos/crm/leads");
-		cy.getByTestId("bulk-reassign")
-			.should("be.disabled")
-			.and("have.css", "border-top-style", "dashed");
-		cy.getByTestId("leads-filter-clear").should("have.css", "border-top-style", "solid");
+	it("shows a disabled button differently from a ghost button, and the bulk bar only with a selection", () => {
+		cy.bench("sellos.tests.ui_fixtures.seed_agent_leads").then(() => {
+			cy.signInFresh("company_admin");
+			cy.visit("/sellos/crm/leads");
+			cy.getByTestId("lead-row").should("have.length.greaterThan", 0);
+			// No row is selected: no bulk bar, and no Clear button while no filter is on.
+			cy.getByTestId("bulk").should("not.exist");
+			cy.getByTestId("leads-filter-clear").should("not.exist");
+			cy.getByTestId("lead-select").first().check();
+			cy.getByTestId("bulk").should("be.visible");
+			cy.getByTestId("bulk-agent").select("Gate Agent");
+			cy.getByTestId("bulk-reassign").should("not.be.disabled");
+			cy.getByTestId("bulk-clear").click();
+			cy.getByTestId("bulk").should("not.exist");
+			cy.getByTestId("leads-search").type("Gate");
+			cy.getByTestId("leads-filter-clear").should("have.css", "border-top-style", "solid");
+			// A disabled button is dashed (the merge button waits for a duplicate client to be chosen).
+			cy.getByTestId("lead-row").first().click();
+			cy.getByTestId("merge-save")
+				.should("be.disabled")
+				.and("have.css", "border-top-style", "dashed");
+		});
 	});
 });

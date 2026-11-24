@@ -10,20 +10,9 @@
 		<LoadingSkeleton v-else-if="!loaded" variant="cards" :rows="4" />
 
 		<template v-if="loaded">
-			<div class="grid grid-cols-2 gap-ui-md lg:grid-cols-4" data-testid="sellos-dash-kpis">
-				<StatCard
-					v-for="kpi in kpis"
-					:key="kpi.key"
-					:label="kpi.label"
-					:value="kpi.value"
-					:note="kpi.note"
-					:icon="kpi.icon"
-					:tone="kpi.tone"
-					:value-testid="`sellos-dash-kpi-${kpi.key}`"
-				/>
-			</div>
+			<KpiStrip :items="kpis" data-testid="sellos-dash-kpis" />
 
-			<div class="mt-ui-md grid grid-cols-1 gap-ui-md lg:grid-cols-2">
+			<div class="grid grid-cols-1 gap-ui-md lg:grid-cols-2">
 				<ListCard title="Leads by stage" data-testid="sellos-dash-stages">
 					<EmptyState
 						v-if="!board.total"
@@ -93,7 +82,7 @@
 								>{{ row.lead_title }}</router-link
 							>
 							<span class="shrink-0 text-sm text-ink-muted">{{
-								when(row.due_at || row.due_date)
+								formatWhen(row.due_at || row.due_date)
 							}}</span>
 						</li>
 					</ul>
@@ -119,7 +108,7 @@
 								>{{ row.lead_title }}</router-link
 							>
 							<span class="shrink-0 text-sm text-ink-muted">{{
-								time(row.visit_datetime)
+								formatDateTime(row.visit_datetime)
 							}}</span>
 						</li>
 					</ul>
@@ -139,10 +128,11 @@ import EmptyState from "../EmptyState.vue";
 import ListCard from "../ListCard.vue";
 import LoadError from "../LoadError.vue";
 import LoadingSkeleton from "../LoadingSkeleton.vue";
-import StatCard from "../StatCard.vue";
+import KpiStrip from "../KpiStrip.vue";
 import StatusBadge from "../StatusBadge.vue";
 import StageBars from "./StageBars.vue";
 import { crmApi, serverMessage } from "../../crm/crmApi";
+import { formatDateTime, formatWhen } from "../../format";
 
 const loaded = ref(false);
 const error = ref("");
@@ -155,50 +145,45 @@ const warned = computed(() => queue.value.leads.filter((row) => row.consent_warn
 const kpis = computed(() => [
 	{
 		key: "leads",
+		testid: "sellos-dash-kpi-leads",
+		valueTestid: "sellos-dash-kpi-leads",
 		label: "Leads",
 		value: board.value.total,
-		note: "In the pipeline",
+		caption: "In the pipeline",
 		icon: "lucide-users",
 		tone: "",
 	},
 	{
 		key: "new",
+		testid: "sellos-dash-kpi-new",
+		valueTestid: "sellos-dash-kpi-new",
 		label: "New leads",
 		value: today.value.counts.new_leads || 0,
-		note: "Waiting for a first call",
+		caption: "Waiting for a first call",
 		icon: "lucide-user-plus",
 		tone: "success",
 	},
 	{
 		key: "overdue",
+		testid: "sellos-dash-kpi-overdue",
+		valueTestid: "sellos-dash-kpi-overdue",
 		label: "Follow ups overdue",
 		value: overdue.value.length,
-		note: `${today.value.counts.follow_ups || 0} due today or earlier`,
+		caption: `${today.value.counts.follow_ups || 0} due today or earlier`,
 		icon: "lucide-clock-alert",
 		tone: "danger",
 	},
 	{
 		key: "visits",
+		testid: "sellos-dash-kpi-visits",
+		valueTestid: "sellos-dash-kpi-visits",
 		label: "Site visits today",
 		value: today.value.counts.visits_today || 0,
-		note: `${today.value.counts.visits_tomorrow || 0} tomorrow`,
+		caption: `${today.value.counts.visits_tomorrow || 0} tomorrow`,
 		icon: "lucide-calendar-check",
 		tone: "info",
 	},
 ]);
-
-function when(value) {
-	const date = new Date(String(value).replace(" ", "T"));
-	return Number.isNaN(date.getTime())
-		? ""
-		: date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-}
-function time(value) {
-	const date = new Date(String(value).replace(" ", "T"));
-	return Number.isNaN(date.getTime())
-		? ""
-		: date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
-}
 
 async function load() {
 	error.value = "";

@@ -8,10 +8,11 @@
 	/>
 	<FormControl
 		v-else
-		v-bind="{ ...$attrs, ...selectAttrs }"
+		v-bind="{ ...$attrs, ...selectAttrs, ...(compact ? { 'aria-label': label } : {}) }"
+		:class="compact ? 'min-w-[9rem] flex-[0_1_12rem]' : ''"
 		:model-value="modelValue"
 		:type="type"
-		:label="label"
+		:label="compact ? undefined : label"
 		:required="required"
 		:description="hint"
 		:options="selectOptions"
@@ -24,7 +25,7 @@
 
 <script setup>
 // PAMAA's AccessField (SOS-UI-2B) on frappe-ui's FormControl: label above the field with a red *
-// when required, a 44px field with the 8px radius, a hint under it. Every field has a label: a
+// when required, a 44px field with the one radius, a hint under it. Every field has a label: a
 // visually hidden one is not allowed, so the screen reader and the person see the same name.
 // type: text, number, email, date, tel, textarea, select, checkbox. For a select, `options` is a list of
 // strings or { label, value }. data-testid and other attributes land on the real input (or the select's
@@ -42,6 +43,9 @@ const props = defineProps({
 	required: { type: Boolean, default: false },
 	hint: { type: String, default: "" },
 	options: { type: Array, default: () => [] },
+	// A compact field has no label above it: the name is its aria-label and, for a select, its first choice
+	// ("Any stage"). Used by the filter row only.
+	compact: { type: Boolean, default: false },
 });
 const emit = defineEmits(["update:modelValue"]);
 

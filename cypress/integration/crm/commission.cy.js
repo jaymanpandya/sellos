@@ -25,6 +25,7 @@ context("SOS-P7-04: commission rates and payouts", () => {
 				cy.getByTestId("commission-waiting").should("contain", made.deal);
 				cy.getByTestId("commission-payout").should("not.exist");
 
+				cy.getByTestId("commission-rate-new").click();
 				cy.getByTestId("commission-project").select(made.project);
 				cy.getByTestId("commission-value").type("2");
 				cy.getByTestId("commission-start").type("2026-01-01");
@@ -60,7 +61,7 @@ context("SOS-P7-04: commission rates and payouts", () => {
 				cy.getByTestId("commission-payout").should("have.attr", "data-status", "Paid");
 				cy.getByTestId("commission-payout-paid")
 					.should("contain", "UTR-SPEC-1")
-					.and("contain", "2026-04-02");
+					.and("contain", "2 Apr 2026");
 				cy.getByTestId("commission-total-paid").should("contain", "32,000.00");
 				cy.getByTestId("commission-total-due").should("contain", "0.00");
 			}

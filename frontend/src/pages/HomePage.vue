@@ -1,11 +1,14 @@
 <template>
-	<div class="max-w-6xl" data-testid="sellos-home">
-		<PageHeader
-			:title="`Welcome${session.fullName ? ', ' + session.fullName : ''}`"
-			title-testid="sellos-home-welcome"
-			text="Your day at a glance."
-			icon="lucide-layout-dashboard"
-		/>
+	<PageTemplate data-testid="sellos-home">
+		<template #header>
+			<PageHeader
+				:title="`Welcome${session.fullName ? ', ' + session.fullName : ''}`"
+				title-testid="sellos-home-welcome"
+				text="Your day at a glance."
+				icon="lucide-layout-dashboard"
+			/>
+		</template>
+
 		<router-link
 			v-if="showSetup"
 			to="/company/setup"
@@ -27,11 +30,11 @@
 				<li v-for="item in quickLinks" :key="item.key">
 					<router-link
 						:to="item.to"
-						class="flex min-h-touch items-center gap-ui-md rounded-card border border-line-soft bg-surface-faint p-ui-md text-ink no-underline transition hover:border-line hover:bg-brand-soft"
+						class="flex min-h-touch items-center gap-ui-md rounded border border-line-soft bg-surface-faint p-ui-md text-ink no-underline transition hover:border-line hover:bg-brand-soft"
 						:data-testid="`sellos-home-link-${item.key}`"
 					>
 						<span
-							class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-badge bg-brand-soft text-brand"
+							class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded bg-brand-soft text-brand"
 							aria-hidden="true"
 						>
 							<span
@@ -44,7 +47,29 @@
 				</li>
 			</ul>
 		</ListCard>
-	</div>
+
+		<!-- The "Go to" rail, on the dashboard only: places the role may open (its own navigation). -->
+		<template v-if="showDashboard" #rail>
+			<ListCard title="Go to" data-testid="sellos-home-rail">
+				<ul class="space-y-1">
+					<li v-for="item in railLinks" :key="item.key">
+						<router-link
+							:to="item.to"
+							class="flex min-h-touch items-center gap-ui-sm rounded px-ui-sm text-ink no-underline hover:bg-brand-soft"
+							:data-testid="`sellos-home-rail-${item.key}`"
+						>
+							<span
+								:class="ICONS[item.key] || 'lucide-circle'"
+								class="icon-inherit size-4 text-ink-muted"
+								aria-hidden="true"
+							/>
+							<span>{{ item.label }}</span>
+						</router-link>
+					</li>
+				</ul>
+			</ListCard>
+		</template>
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -53,6 +78,7 @@ import { computed } from "vue";
 import CrmDashboard from "../components/home/CrmDashboard.vue";
 import ListCard from "../components/ListCard.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import { ICONS } from "../navIcons";
 import { navFor, personaFor } from "../personas";
 import { session } from "../session";
@@ -65,5 +91,8 @@ const showToday = computed(() => has("SellOS Agent") || has("SellOS Sales Manage
 const quickLinks = computed(() =>
 	navFor(personaFor(session.roles)).filter((item) => item.key !== "home")
 );
+// The rail keeps to the everyday places, and only those this role's navigation already holds.
+const RAIL_KEYS = ["leads", "queue", "whatsapp", "visits", "inventory", "reports"];
+const railLinks = computed(() => quickLinks.value.filter((item) => RAIL_KEYS.includes(item.key)));
 const showDashboard = computed(() => showToday.value || has("SellOS Company Admin"));
 </script>

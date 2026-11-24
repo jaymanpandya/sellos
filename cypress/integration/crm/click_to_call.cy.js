@@ -75,6 +75,7 @@ context("SOS-P2-07: click to call", () => {
 		cy.getByTestId("call-outcome-save").click();
 		cy.wait("@outcome").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("call-dialog").should("not.exist");
+		cy.getByTestId("tab-calls").click();
 		cy.getByTestId("lead-timeline-outcome")
 			.closest("[data-testid=sellos-lead-timeline-item]")
 			.should("contain", "Wrong number")

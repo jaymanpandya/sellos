@@ -1,10 +1,12 @@
 <template>
-	<div class="max-w-3xl" data-testid="sellos-response-alerts-page">
-		<PageHeader
-			title="Response time alerts"
-			text="Set how fast a new lead must get an agent and a first call or activity. A miss alerts the agent, and the Sales Manager if it is still missed after the same time again."
-			icon="lucide-timer"
-		/>
+	<PageTemplate data-testid="sellos-response-alerts-page">
+		<template #header>
+			<PageHeader
+				title="Response time alerts"
+				text="Set how fast a new lead must get an agent and a first call or activity. A miss alerts the agent, and the Sales Manager if it is still missed after the same time again."
+				icon="lucide-timer"
+			/>
+		</template>
 
 		<div v-if="loadError" data-testid="sellos-response-load-error">
 			<LoadError :message="loadError" @retry="load" />
@@ -13,7 +15,7 @@
 
 		<form
 			v-else
-			class="ui-card space-y-ui-md"
+			class="ui-card max-w-3xl space-y-ui-md"
 			data-testid="sellos-response-form"
 			@submit.prevent="save"
 		>
@@ -36,7 +38,7 @@
 				v-if="error"
 				data-testid="sellos-response-error"
 				role="alert"
-				class="text-sm text-accent"
+				class="text-sm text-tone-danger"
 			>
 				{{ error }}
 			</p>
@@ -52,7 +54,7 @@
 				Save
 			</AppButton>
 		</form>
-	</div>
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -64,6 +66,7 @@ import FormField from "../components/FormField.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import { serverMessage } from "../crm/crmApi";
 import { responseTimesApi } from "../crm/responseTimesApi";
 

@@ -33,6 +33,7 @@ context("SOS-P7-01: onboard and approve channel partners", () => {
 	it("invites a firm by email: it is Invited with a partner code, and the invitation is logged", () => {
 		openPartners();
 		cy.intercept("POST", "**/sellos.access.partner_firms.invite_partner_firm*").as("invite");
+		cy.getByTestId("partners-new").click();
 		cy.getByTestId("partners-firm").type(firmName);
 		cy.getByTestId("partners-contact").type("Gate Contact");
 		cy.getByTestId("partners-email").type(invitedEmail);

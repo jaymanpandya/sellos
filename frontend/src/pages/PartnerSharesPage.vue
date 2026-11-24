@@ -1,12 +1,31 @@
 <template>
-	<div data-testid="sellos-shares-page">
-		<PageHeader
-			title="Share with partners"
-			text="Choose what each channel partner firm may see: a project, all its units or chosen ones, its price list and brochures. A partner sees nothing else. A withdrawn share stops showing at once."
-			icon="lucide-share-2"
-		/>
+	<PageTemplate data-testid="sellos-shares-page">
+		<template #header>
+			<PageHeader
+				title="Share with partners"
+				text="Choose what each channel partner firm may see: a project, all its units or chosen ones, its price list and brochures. A partner sees nothing else. A withdrawn share stops showing at once."
+				icon="lucide-share-2"
+			>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-shares-new"
+					@click="sharing = true"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Share a project
+				</AppButton>
+			</PageHeader>
+		</template>
+
+		<template v-if="!loadError && loaded" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-shares-stats" />
+		</template>
+
 		<p
-			v-if="error"
+			v-if="error && !sharing"
 			role="alert"
 			data-testid="sellos-shares-error"
 			class="mb-ui-md text-sm text-accent"
@@ -25,157 +44,169 @@
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 
-		<form class="ui-card mb-ui-md" data-testid="sellos-shares-form" @submit.prevent="share">
-			<h2 class="ui-card-heading mb-ui-md">Share a project</h2>
-			<FormField
-				v-model="form.project"
-				type="select"
-				label="Project"
-				:options="projectOptions"
-				data-testid="sellos-shares-project"
-				@update:model-value="chooseProject"
-			/>
-
-			<template v-if="form.project">
-				<fieldset class="mt-ui-md" data-testid="sellos-shares-firms">
-					<legend class="text-sm font-medium text-ink">Share with</legend>
-					<AppCheckbox
-						v-model="form.every"
-						label="Every Approved firm"
-						data-testid="sellos-shares-every"
+		<DataTable
+			v-else
+			title="Shares"
+			:columns="columns"
+			:rows="shares"
+			:loading="!loaded"
+			:row-attrs="(s) => ({ 'data-status': s.status, 'data-project': s.project })"
+			empty-title="Nothing is shared yet"
+			empty-text="Share a project with the button above."
+			empty-icon="lucide-share-2"
+			testid="sellos-shares-list"
+			row-testid="sellos-shares-row"
+			empty-testid="sellos-shares-empty"
+		>
+			<template #cell-project_name="{ row: s }">
+				<span class="font-medium text-ink" data-testid="sellos-shares-row-project">
+					{{ s.project_name }}
+				</span>
+			</template>
+			<template #cell-firm_name="{ row: s }">
+				<span data-testid="sellos-shares-row-firm">with {{ s.firm_name }}</span>
+			</template>
+			<template #cell-status="{ row: s }">
+				<StatusBadge
+					:tone="s.status === 'Active' ? 'success' : 'neutral'"
+					:label="s.status"
+					data-testid="sellos-shares-row-status"
+				/>
+			</template>
+			<template #cell-what="{ row: s }">
+				<p class="text-sm text-ink-muted">
+					{{ s.all_units ? "All units" : `${s.units.length} chosen units` }};
+					{{ s.share_price_list ? "price list" : "no price list" }};
+					{{ s.brochures.length }} brochures.
+					<span v-if="s.withdrawn_reason">Withdrawn: {{ s.withdrawn_reason }}</span>
+				</p>
+				<details class="mt-1">
+					<summary class="cursor-pointer text-sm text-ink-muted">Log</summary>
+					<ul class="mt-1 space-y-1 text-sm text-ink-muted">
+						<li v-for="(l, i) in s.log" :key="i" data-testid="sellos-shares-log-row">
+							{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}, {{ l.action }}
+							<span v-if="l.detail">({{ l.detail }})</span>
+						</li>
+					</ul>
+				</details>
+			</template>
+			<template #cell-actions="{ row: s }">
+				<div v-if="s.status === 'Active'" class="flex flex-wrap items-center gap-ui-sm">
+					<FormField
+						v-model="reasons[s.name]"
+						compact
+						label="Reason for a withdrawal (optional)"
+						data-testid="sellos-shares-reason"
 					/>
-					<template v-if="!form.every">
-						<AppCheckbox
-							v-for="f in options.firms"
-							:key="f.name"
-							v-model="form.firms[f.name]"
-							:label="f.firm_name"
-							:data-testid="`sellos-shares-firm-${f.name}`"
-						/>
-						<p v-if="!options.firms.length" class="text-sm text-ink-muted">
-							No firm is Approved yet.
-						</p>
-					</template>
-				</fieldset>
-
-				<fieldset class="mt-ui-md" data-testid="sellos-shares-units">
-					<legend class="text-sm font-medium text-ink">Units</legend>
-					<AppCheckbox
-						v-model="form.allUnits"
-						label="All units of the project"
-						data-testid="sellos-shares-all-units"
-					/>
-					<template v-if="!form.allUnits">
-						<AppCheckbox
-							v-for="u in options.units"
-							:key="u.name"
-							v-model="form.units[u.name]"
-							:label="unitLabel(u)"
-							:data-testid="`sellos-shares-unit-${u.name}`"
-						/>
-					</template>
-				</fieldset>
-
-				<fieldset class="mt-ui-md">
-					<legend class="text-sm font-medium text-ink">Price list and brochures</legend>
-					<AppCheckbox
-						v-model="form.priceList"
-						:label="
-							options.price_list
-								? `The price list in force (${options.price_list.title})`
-								: 'The price list in force (this project has none yet)'
-						"
-						data-testid="sellos-shares-price-list"
-					/>
-					<AppCheckbox
-						v-for="m in options.brochures"
-						:key="m.name"
-						v-model="form.brochures[m.name]"
-						:label="`${m.title} (${m.media_type})`"
-						:data-testid="`sellos-shares-brochure-${m.name}`"
-					/>
-				</fieldset>
-
-				<div class="mt-ui-md">
-					<AppButton type="submit" variant="primary" data-testid="sellos-shares-submit">
-						Share
+					<AppButton
+						type="button"
+						variant="danger"
+						data-testid="sellos-shares-withdraw"
+						@click="withdraw(s)"
+					>
+						Withdraw
 					</AppButton>
 				</div>
 			</template>
-		</form>
+		</DataTable>
 
-		<ListCard title="Shares">
-			<EmptyState
-				v-if="loaded && !loadError && !shares.length"
-				title="Nothing is shared yet"
-				text="Share a project above."
-				icon="lucide-share-2"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-shares-list">
-				<li
-					v-for="s in shares"
-					:key="s.name"
-					data-testid="sellos-shares-row"
-					:data-name="s.name"
-					:data-status="s.status"
-					:data-project="s.project"
-					class="rounded-input border border-line-soft p-ui-md"
-				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink" data-testid="sellos-shares-row-project">
-							{{ s.project_name }}
-						</span>
-						<span class="text-sm text-ink-muted" data-testid="sellos-shares-row-firm">
-							with {{ s.firm_name }}
-						</span>
-						<StatusBadge
-							:tone="s.status === 'Active' ? 'success' : 'neutral'"
-							:label="s.status"
-							data-testid="sellos-shares-row-status"
+		<!-- Sharing a project is a drawer, not a form above the list. -->
+		<FormDrawer
+			:open="sharing"
+			title="Share a project"
+			text="What the chosen firms may see of it."
+			submit-label="Share"
+			:busy="!form.project"
+			testid="sellos-shares-form"
+			submit-testid="sellos-shares-submit"
+			@close="sharing = false"
+			@submit="share"
+		>
+			<FormSection title="Project">
+				<FormField
+					v-model="form.project"
+					type="select"
+					label="Project"
+					:options="projectOptions"
+					class="md:col-span-2"
+					data-testid="sellos-shares-project"
+					@update:model-value="chooseProject"
+				/>
+			</FormSection>
+
+			<template v-if="form.project">
+				<FormSection title="Share with">
+					<div class="space-y-ui-sm md:col-span-2" data-testid="sellos-shares-firms">
+						<AppCheckbox
+							v-model="form.every"
+							label="Every Approved firm"
+							data-testid="sellos-shares-every"
+						/>
+						<template v-if="!form.every">
+							<AppCheckbox
+								v-for="f in options.firms"
+								:key="f.name"
+								v-model="form.firms[f.name]"
+								:label="f.firm_name"
+								:data-testid="`sellos-shares-firm-${f.name}`"
+							/>
+							<p v-if="!options.firms.length" class="text-sm text-ink-muted">
+								No firm is Approved yet.
+							</p>
+						</template>
+					</div>
+				</FormSection>
+
+				<FormSection title="Units">
+					<div class="space-y-ui-sm md:col-span-2" data-testid="sellos-shares-units">
+						<AppCheckbox
+							v-model="form.allUnits"
+							label="All units of the project"
+							data-testid="sellos-shares-all-units"
+						/>
+						<template v-if="!form.allUnits">
+							<AppCheckbox
+								v-for="u in options.units"
+								:key="u.name"
+								v-model="form.units[u.name]"
+								:label="unitLabel(u)"
+								:data-testid="`sellos-shares-unit-${u.name}`"
+							/>
+						</template>
+					</div>
+				</FormSection>
+
+				<FormSection title="Price list and brochures">
+					<div class="space-y-ui-sm md:col-span-2">
+						<AppCheckbox
+							v-model="form.priceList"
+							:label="
+								options.price_list
+									? `The price list in force (${options.price_list.title})`
+									: 'The price list in force (this project has none yet)'
+							"
+							data-testid="sellos-shares-price-list"
+						/>
+						<AppCheckbox
+							v-for="m in options.brochures"
+							:key="m.name"
+							v-model="form.brochures[m.name]"
+							:label="`${m.title} (${m.media_type})`"
+							:data-testid="`sellos-shares-brochure-${m.name}`"
 						/>
 					</div>
-					<p class="mt-1 text-sm text-ink-muted">
-						{{ s.all_units ? "All units" : `${s.units.length} chosen units` }};
-						{{ s.share_price_list ? "price list" : "no price list" }};
-						{{ s.brochures.length }} brochures.
-						<span v-if="s.withdrawn_reason">Withdrawn: {{ s.withdrawn_reason }}</span>
-					</p>
-					<div
-						v-if="s.status === 'Active'"
-						class="mt-ui-sm flex flex-wrap items-end gap-ui-sm"
-					>
-						<FormField
-							v-model="reasons[s.name]"
-							label="Reason for a withdrawal (optional)"
-							class="w-72"
-							data-testid="sellos-shares-reason"
-						/>
-						<AppButton
-							type="button"
-							variant="danger"
-							data-testid="sellos-shares-withdraw"
-							@click="withdraw(s)"
-						>
-							Withdraw
-						</AppButton>
-					</div>
-					<details class="mt-ui-sm">
-						<summary class="cursor-pointer text-sm text-ink-muted">Log</summary>
-						<ul class="mt-1 space-y-1 text-sm text-ink-muted">
-							<li
-								v-for="(l, i) in s.log"
-								:key="i"
-								data-testid="sellos-shares-log-row"
-							>
-								{{ l.changed_on }}: {{ l.changed_by_name }}, {{ l.action }}
-								<span v-if="l.detail">({{ l.detail }})</span>
-							</li>
-						</ul>
-					</details>
-				</li>
-			</ul>
-		</ListCard>
-	</div>
+				</FormSection>
+			</template>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-shares-error"
+				class="text-sm text-accent"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -183,14 +214,18 @@ import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import AppCheckbox from "../components/AppCheckbox.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { partnerSharesApi } from "../company/partnerSharesApi";
 import { serverMessage } from "../crm/crmApi";
+import { formatWhen } from "../format";
 
 // The Company Admin's sharing of projects with channel partner firms (SOS-P7-03). Every change is made on the
 // server and the list read back, so what is shown is what is saved.
@@ -200,6 +235,7 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+const sharing = ref(false);
 const reasons = reactive({});
 const form = reactive({
 	project: "",
@@ -210,6 +246,36 @@ const form = reactive({
 	priceList: false,
 	brochures: {},
 });
+
+const columns = [
+	{ key: "project_name", label: "Project", primary: true, sortable: true },
+	{ key: "firm_name", label: "Firm", sortable: true },
+	{ key: "status", label: "Status", sortable: true },
+	{ key: "what", label: "What is shared", wrap: true },
+	{ key: "actions", label: "Actions", wrap: true },
+];
+
+const kpis = computed(() => [
+	{
+		label: "Active shares",
+		value: shares.value.filter((s) => s.status === "Active").length,
+		caption: "Showing to a firm now",
+		icon: "lucide-share-2",
+		tone: "success",
+	},
+	{
+		label: "Withdrawn",
+		value: shares.value.filter((s) => s.status !== "Active").length,
+		caption: "No longer showing",
+		icon: "lucide-circle-slash",
+	},
+	{
+		label: "Approved firms",
+		value: options.value.firms.length,
+		caption: "May be shared with",
+		icon: "lucide-handshake",
+	},
+]);
 
 const projectOptions = computed(() =>
 	options.value.projects.map((p) => ({ label: p.project_name, value: p.name }))
@@ -257,6 +323,7 @@ async function share() {
 		});
 		notice.value = "The project was shared.";
 		await chooseProject();
+		sharing.value = false;
 	} catch (e) {
 		error.value = serverMessage(e, "The project could not be shared.");
 	}

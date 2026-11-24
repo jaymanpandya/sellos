@@ -25,6 +25,8 @@ context("SOS-P1-13: support access grants", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/company/support");
 		cy.getByTestId("support-empty").should("be.visible");
+		// The grant form is a drawer, opened by Give access.
+		cy.getByTestId("support-add").click();
 		cy.getByTestId("support-duration").select("1 hour");
 		cy.getByTestId("support-reason").type("Help with the leads list");
 		cy.getByTestId("support-grant").click();
@@ -62,6 +64,7 @@ context("SOS-P1-13: support access grants", () => {
 	it("the company admin can end access early, and other roles have no such page", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/company/support");
+		cy.getByTestId("support-add").click();
 		cy.getByTestId("support-grant").click();
 		cy.getByTestId("support-revoke").click();
 		cy.getByTestId("support-status").first().should("contain.text", "Revoked");

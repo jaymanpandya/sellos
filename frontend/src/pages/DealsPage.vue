@@ -1,15 +1,34 @@
 <template>
-	<div data-testid="sellos-deals-page">
-		<PageHeader
-			title="Deals"
-			text="A deal links a client to a unit or a property at a price. The commission is split among the agent, the channel partner and the company, the shares add up to 100 percent, and a Company Admin approves the split."
-			icon="lucide-handshake"
-		/>
+	<PageTemplate data-testid="sellos-deals-page">
+		<template #header>
+			<PageHeader
+				title="Deals"
+				text="A client, a unit or a property and a price, with the commission split among agent, partner and company."
+				icon="lucide-handshake"
+			>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-deal-new"
+					@click="openForm"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Record a deal
+				</AppButton>
+			</PageHeader>
+		</template>
+
+		<template v-if="!loadError" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-deal-stats" />
+		</template>
+
 		<p
-			v-if="error"
+			v-if="error && !creating"
 			role="alert"
 			data-testid="sellos-deal-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md text-sm text-danger"
 		>
 			{{ error }}
 		</p>
@@ -21,89 +40,108 @@
 		>
 			{{ notice }}
 		</p>
-		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-deal-load-error">
-			<LoadError :message="loadError" @retry="load" />
-		</div>
+		<LoadError
+			v-if="loadError"
+			:message="loadError"
+			class="mb-ui-md"
+			data-testid="sellos-deal-load-error"
+			@retry="load"
+		/>
 
-		<ListCard title="Deals">
-			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
-			<EmptyState
-				v-if="loaded && !loadError && !deals.length"
-				title="No deals yet"
-				text="Record the first deal below."
-				icon="lucide-handshake"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-deal-list">
-				<li
-					v-for="d in deals"
-					:key="d.name"
-					data-testid="sellos-deal-row"
-					:data-name="d.name"
-					:data-client="d.client_name"
-					:data-status="d.approval_status"
-					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
+		<DataTable
+			v-if="!loadError"
+			title="All deals"
+			caption="Deals"
+			:columns="columns"
+			:rows="deals"
+			:loading="!loaded"
+			loading-label="Loading deals."
+			:row-name="(row) => row.client_name"
+			:row-attrs="rowAttrs"
+			empty-title="No deals yet"
+			empty-text="Record the first deal to split its commission."
+			empty-icon="lucide-handshake"
+			testid="sellos-deal-list"
+			row-testid="sellos-deal-row"
+			loading-testid="sellos-deal-loading"
+			empty-testid="sellos-deal-empty"
+		>
+			<template #cell-client_name="{ row }">
+				<span class="block" data-testid="sellos-deal-title"
+					>{{ row.client_name }}, {{ row.target }}</span
 				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink" data-testid="sellos-deal-title">
-							{{ d.client_name }}, {{ d.target }}
-						</span>
-						<StatusBadge
-							:tone="d.approval_status === 'Approved' ? 'success' : 'warning'"
-							:label="d.approval_status"
-							data-testid="sellos-deal-status"
-						/>
-						<span class="text-sm text-ink-muted" data-testid="sellos-deal-money">
-							Price {{ rupees(d.price) }}, commission
-							{{ rupees(d.commission_amount) }}
-						</span>
-					</div>
-					<ul class="mt-ui-sm space-y-1" data-testid="sellos-deal-splits">
-						<li
-							v-for="(s, n) in d.splits"
-							:key="n"
-							data-testid="sellos-deal-split"
-							:data-party="s.party_type"
-							class="text-sm text-ink"
-						>
-							{{ s.party_type }}: {{ s.party }}, {{ s.percent }}% ({{
-								rupees(s.amount)
-							}})
-						</li>
-					</ul>
-					<p
-						v-if="d.approval_status === 'Approved'"
-						class="mt-ui-sm text-sm text-ink-muted"
-						data-testid="sellos-deal-approved"
+			</template>
+			<template #cell-approval_status="{ row }">
+				<StatusBadge
+					:tone="row.approval_status === 'Approved' ? 'success' : 'warning'"
+					:label="row.approval_status"
+					data-testid="sellos-deal-status"
+				/>
+			</template>
+			<template #cell-price="{ row }">
+				<span class="tabular-nums" data-testid="sellos-deal-money">{{
+					formatMoney(row.price)
+				}}</span>
+			</template>
+			<template #cell-commission_amount="{ row }">
+				<span class="tabular-nums">{{ formatMoney(row.commission_amount) }}</span>
+			</template>
+			<template #cell-splits="{ row }">
+				<ul class="space-y-1" data-testid="sellos-deal-splits">
+					<li
+						v-for="(s, n) in row.splits"
+						:key="n"
+						data-testid="sellos-deal-split"
+						:data-party="s.party_type"
+						class="text-sm text-ink"
 					>
-						Approved by {{ d.approved_by_name }} on
-						{{ formatDateTime(d.approved_on) }}. The split is kept unless it is
-						reopened.
-					</p>
-					<div class="mt-ui-sm">
-						<AppButton
-							v-if="d.approval_status !== 'Approved'"
-							type="button"
-							variant="primary"
-							data-testid="sellos-deal-approve"
-							@click="approve(d)"
-						>
-							Approve the split
-						</AppButton>
-						<AppButton
-							v-else
-							type="button"
-							data-testid="sellos-deal-reopen"
-							@click="reopen(d)"
-						>
-							Reopen the split
-						</AppButton>
-					</div>
-				</li>
-			</ul>
-		</ListCard>
+						{{ s.party_type }}: {{ s.party }}, {{ s.percent }}% ({{
+							formatMoney(s.amount)
+						}})
+					</li>
+				</ul>
+			</template>
+			<template #cell-approval="{ row }">
+				<p
+					v-if="row.approval_status === 'Approved'"
+					class="mb-ui-sm text-sm text-ink-muted"
+					data-testid="sellos-deal-approved"
+				>
+					Approved by {{ row.approved_by_name }} on
+					{{ formatDateTime(row.approved_on) }}. The split is kept unless it is reopened.
+				</p>
+				<AppButton
+					v-if="row.approval_status !== 'Approved'"
+					type="button"
+					variant="primary"
+					data-testid="sellos-deal-approve"
+					@click="approve(row)"
+				>
+					Approve the split
+				</AppButton>
+				<AppButton
+					v-else
+					type="button"
+					data-testid="sellos-deal-reopen"
+					@click="reopen(row)"
+				>
+					Reopen the split
+				</AppButton>
+			</template>
+		</DataTable>
 
-		<ListCard title="Record a deal" class="mt-ui-lg">
-			<div class="grid gap-ui-md md:grid-cols-2">
+		<!-- Recording a deal is a drawer: nothing is an open form under the list. -->
+		<FormDrawer
+			:open="creating"
+			title="Record a deal"
+			text="The shares of the commission split must add up to 100 percent."
+			submit-label="Record deal"
+			testid="sellos-deal-form"
+			submit-testid="sellos-deal-save"
+			@close="closeForm"
+			@submit="save"
+		>
+			<FormSection title="Deal">
 				<FormField
 					v-model="form.client"
 					type="select"
@@ -138,13 +176,11 @@
 					label="Commission (Rs)"
 					data-testid="sellos-deal-commission"
 				/>
-			</div>
-
-			<h3 class="mt-ui-md font-medium text-ink">Commission split</h3>
-			<p class="text-sm text-ink-muted">
-				Leave a share empty to leave that party out. The shares must add up to 100.
-			</p>
-			<div class="mt-ui-sm grid gap-ui-md md:grid-cols-2">
+			</FormSection>
+			<FormSection title="Commission split">
+				<p class="text-sm text-ink-muted md:col-span-2">
+					Leave a share empty to leave that party out. The shares must add up to 100.
+				</p>
 				<FormField
 					v-model="form.agent"
 					type="select"
@@ -177,43 +213,43 @@
 					label="Company share (%)"
 					data-testid="sellos-deal-company-percent"
 				/>
-			</div>
-			<p
-				class="mt-ui-sm text-sm"
-				:class="total === 100 ? 'text-ink' : 'text-accent'"
-				data-testid="sellos-deal-total"
-			>
-				The split adds up to {{ total }} percent.
-			</p>
-			<div class="mt-ui-md">
-				<AppButton
-					type="button"
-					variant="primary"
-					data-testid="sellos-deal-save"
-					@click="save"
+				<p
+					class="text-sm md:col-span-2"
+					:class="total === 100 ? 'text-ink' : 'text-danger'"
+					data-testid="sellos-deal-total"
 				>
-					Record deal
-				</AppButton>
-			</div>
-		</ListCard>
-	</div>
+					The split adds up to {{ total }} percent.
+				</p>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-deal-error"
+				class="text-sm text-danger"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
-import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import MoneyField from "../components/MoneyField.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { dealApi } from "../crm/dealsApi";
-import { formatDateTime } from "../format";
+import { formatDateTime, formatMoney } from "../format";
 
 // Deals (SOS-P4-06). Every change is made on the server and the list read back. The server checks that the
 // shares add up to 100, so the total shown here only helps the person typing.
@@ -236,6 +272,70 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+const creating = ref(false);
+
+const kpis = computed(() => {
+	const rows = deals.value;
+	return [
+		{
+			label: "Deals",
+			value: rows.length,
+			caption: "recorded so far",
+			icon: "lucide-handshake",
+		},
+		{
+			label: "Pending approval",
+			value: rows.filter((d) => d.approval_status !== "Approved").length,
+			caption: "splits waiting for a Company Admin",
+			icon: "lucide-clock",
+			tone: "warning",
+		},
+		{
+			label: "Approved",
+			value: rows.filter((d) => d.approval_status === "Approved").length,
+			caption: "splits settled",
+			icon: "lucide-badge-check",
+			tone: "success",
+		},
+		{
+			label: "Commission",
+			value: formatMoney(rows.reduce((sum, d) => sum + Number(d.commission_amount || 0), 0)),
+			caption: "across these deals",
+			icon: "lucide-badge-indian-rupee",
+		},
+	];
+});
+
+const columns = [
+	{ key: "client_name", label: "Deal", primary: true, sortable: true, wrap: true },
+	{ key: "approval_status", label: "Status", sortable: true },
+	{
+		key: "price",
+		label: "Price",
+		sortable: true,
+		align: "right",
+		sortValue: (d) => Number(d.price || 0),
+	},
+	{
+		key: "commission_amount",
+		label: "Commission",
+		sortable: true,
+		align: "right",
+		sortValue: (d) => Number(d.commission_amount || 0),
+	},
+	{ key: "splits", label: "Commission split", wrap: true, class: "min-w-[14rem]" },
+	{ key: "approval", label: "Approval", wrap: true, class: "min-w-[14rem]" },
+];
+const rowAttrs = (d) => ({ "data-client": d.client_name, "data-status": d.approval_status });
+
+function openForm() {
+	error.value = "";
+	creating.value = true;
+}
+function closeForm() {
+	error.value = "";
+	creating.value = false;
+}
 
 const choose = (label, list) => [
 	{ label, value: "" },
@@ -247,7 +347,6 @@ const propertyOptions = computed(() => choose("No property", options.properties)
 const agentOptions = computed(() => choose("No agent", options.agents));
 const firmOptions = computed(() => choose("No channel partner", options.firms));
 
-const rupees = (n) => `Rs ${new Intl.NumberFormat("en-IN").format(Number(n || 0))}`;
 const share = (v) => (v === "" || v == null ? 0 : Number(v));
 const total = computed(
 	() =>
@@ -313,6 +412,7 @@ const save = () => {
 				splits: splits(),
 			});
 			Object.assign(form, blank());
+			creating.value = false;
 		},
 		"The deal is recorded. Approve its split to settle it.",
 		"The deal could not be recorded."

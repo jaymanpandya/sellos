@@ -1,134 +1,163 @@
 <template>
-	<div data-testid="sellos-partner-reports-page">
-		<PageHeader
-			title="Your results"
-			text="Your own leads, deals and commission statements. You see only what your firm registered."
-			icon="lucide-chart-column"
-		/>
+	<PageTemplate data-testid="sellos-partner-reports-page">
+		<template #header>
+			<PageHeader
+				title="Your results"
+				text="Your own leads, deals and commission statements. You see only what your firm registered."
+				icon="lucide-chart-column"
+			/>
+		</template>
+
+		<template v-if="result && !error" #kpis>
+			<KpiStrip
+				:items="[
+					{
+						label: 'Your leads',
+						value: result.leads.total,
+						caption: 'Created in these dates',
+						icon: 'lucide-users',
+						valueTestid: 'sellos-partner-reports-total',
+					},
+				]"
+				data-testid="sellos-partner-reports-stats"
+			/>
+		</template>
+
+		<template v-if="result && !error" #filters>
+			<FilterBar
+				v-model:open="moreOpen"
+				hide-search
+				apply-label="Show report"
+				clear-label="Last 30 days"
+				more-testid="sellos-partner-reports-filters-toggle"
+				:active="datesChanged"
+				data-testid="sellos-partner-reports-filters"
+				@apply="load"
+				@clear="reset"
+			>
+				<template #more>
+					<FormField
+						v-model="range.from_date"
+						type="date"
+						label="From"
+						data-testid="sellos-partner-reports-from"
+					/>
+					<FormField
+						v-model="range.to_date"
+						type="date"
+						label="To"
+						data-testid="sellos-partner-reports-to"
+					/>
+				</template>
+			</FilterBar>
+		</template>
+
 		<div v-if="error" data-testid="sellos-partner-reports-error">
 			<LoadError :message="error" @retry="load" />
 		</div>
 		<LoadingSkeleton v-else-if="!result" />
-		<template v-else>
-			<FilterBar
-				apply-label="Show report"
-				clear-label="Last 30 days"
-				@apply="load"
-				@clear="reset"
-			>
-				<FormField
-					v-model="range.from_date"
-					type="date"
-					label="From"
-					data-testid="sellos-partner-reports-from"
-				/>
-				<FormField
-					v-model="range.to_date"
-					type="date"
-					label="To"
-					data-testid="sellos-partner-reports-to"
-				/>
-			</FilterBar>
-			<p class="mb-ui-md text-sm text-ink-muted" data-testid="sellos-partner-reports-about">
+		<div v-else class="space-y-ui-md">
+			<p class="text-sm text-ink-muted" data-testid="sellos-partner-reports-about">
 				<span v-if="result.firm" data-testid="sellos-partner-reports-firm">
 					{{ result.firm.firm_name }}.
 				</span>
 				Leads created from {{ result.from_date }} to {{ result.to_date }}. Your own records
 				only.
 			</p>
-			<div class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-3">
-				<StatCard
-					label="Your leads"
-					:value="result.leads.total"
-					icon="lucide-users"
-					value-testid="sellos-partner-reports-total"
-				/>
-			</div>
-			<ListCard title="Leads by stage" class="mb-ui-md">
-				<EmptyState
-					v-if="!result.leads.by_stage.length"
-					title="Nothing in these dates"
-					text="None of your leads was created between these dates. Choose other dates."
-					icon="lucide-chart-column"
-				/>
-				<table
-					v-else
-					class="w-full text-left text-sm"
-					data-testid="sellos-partner-reports-stages"
-				>
-					<thead class="text-xs text-ink-muted">
-						<tr>
-							<th scope="col" class="py-ui-sm">Stage</th>
-							<th scope="col">Leads</th>
-						</tr>
-					</thead>
-					<tbody class="divide-y divide-line-soft">
-						<tr
-							v-for="row in result.leads.by_stage"
-							:key="row.stage"
-							data-testid="sellos-partner-reports-stage"
-							:data-stage="row.stage"
-							class="text-ink"
-						>
-							<td class="py-ui-sm">{{ row.label }}</td>
-							<td class="tabular-nums" data-col="count">{{ row.count }}</td>
-						</tr>
-					</tbody>
-				</table>
-			</ListCard>
-			<ListCard title="Your leads" class="mb-ui-md">
-				<p
-					class="mb-ui-sm text-sm text-ink-muted"
-					data-testid="sellos-partner-reports-shown"
-				>
-					{{ result.leads.shown }} of {{ result.leads.total }} leads are listed.
-				</p>
-				<ul
-					class="divide-y divide-line-soft text-sm"
-					data-testid="sellos-partner-reports-leads"
-				>
-					<li
-						v-for="lead in result.leads.records"
-						:key="lead.name"
-						data-testid="sellos-partner-reports-lead"
-						:data-lead="lead.name"
-						class="flex flex-wrap justify-between gap-ui-sm py-ui-sm text-ink"
-					>
-						<span>{{ lead.title }}</span>
-						<span class="text-ink-muted">{{ lead.stage }}, {{ lead.created }}</span>
-					</li>
-				</ul>
-			</ListCard>
+
+			<DataTable
+				title="Leads by stage"
+				:columns="stageColumns"
+				:rows="result.leads.by_stage"
+				row-key="stage"
+				:row-attrs="(row) => ({ 'data-stage': row.stage })"
+				:page-size="200"
+				empty-title="Nothing in these dates"
+				empty-text="None of your leads was created between these dates. Choose other dates."
+				empty-icon="lucide-chart-column"
+				testid="sellos-partner-reports-stages"
+				row-testid="sellos-partner-reports-stage"
+				empty-testid="sellos-partner-reports-stages-empty"
+			>
+				<template #cell-count="{ row }">
+					<span class="tabular-nums" data-col="count">{{ row.count }}</span>
+				</template>
+			</DataTable>
+
+			<p class="text-sm text-ink-muted" data-testid="sellos-partner-reports-shown">
+				{{ result.leads.shown }} of {{ result.leads.total }} leads are listed.
+			</p>
+			<DataTable
+				title="Your leads"
+				:columns="leadColumns"
+				:rows="result.leads.records"
+				:row-attrs="(row) => ({ 'data-lead': row.name })"
+				:page-size="200"
+				empty-title="No leads"
+				empty-text="None of your leads was created between these dates."
+				empty-icon="lucide-users"
+				testid="sellos-partner-reports-leads"
+				row-testid="sellos-partner-reports-lead"
+				empty-testid="sellos-partner-reports-leads-empty"
+			>
+				<template #cell-created="{ row }">{{ formatWhen(row.created) }}</template>
+			</DataTable>
+
 			<ReportPanels :panels="result.panels" first-label="Record" />
-		</template>
-	</div>
+		</div>
+	</PageTemplate>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
 import FilterBar from "../components/FilterBar.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import ReportPanels from "../components/ReportPanels.vue";
-import StatCard from "../components/StatCard.vue";
 import { serverMessage } from "../crm/crmApi";
+import { formatWhen } from "../format";
 import { partnerReportApi } from "../reports/portalApi";
 
 const range = reactive({ from_date: "", to_date: "" });
 const result = ref(null);
 const error = ref("");
+// The dates are the one filter here, so the panel that holds them starts open.
+const moreOpen = ref(true);
+// The dates the report opened with, so Clear shows only when they have been changed.
+const defaults = reactive({ from_date: "", to_date: "" });
+const datesChanged = computed(
+	() =>
+		Boolean(defaults.from_date) &&
+		(range.from_date !== defaults.from_date || range.to_date !== defaults.to_date)
+);
+
+const stageColumns = [
+	{ key: "label", label: "Stage", primary: true },
+	{ key: "count", label: "Leads", align: "right" },
+];
+const leadColumns = [
+	{ key: "title", label: "Lead", primary: true },
+	{ key: "stage", label: "Stage" },
+	{ key: "created", label: "Created" },
+];
 
 async function load() {
 	error.value = "";
 	try {
 		result.value = await partnerReportApi.run({ ...range });
+		const fresh = !range.from_date && !range.to_date;
 		range.from_date = result.value.from_date;
 		range.to_date = result.value.to_date;
+		if (fresh || !defaults.from_date) {
+			defaults.from_date = range.from_date;
+			defaults.to_date = range.to_date;
+		}
 	} catch (e) {
 		error.value = serverMessage(e, "Your report could not be loaded.");
 	}

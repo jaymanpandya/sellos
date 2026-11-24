@@ -1,15 +1,35 @@
 <template>
-	<div data-testid="sellos-listings-page">
-		<PageHeader
-			title="Listings"
-			text="A listing offers a unit or a property as Primary, Direct or Partner. The website shows it only once it is published."
-			icon="lucide-megaphone"
-		/>
+	<PageTemplate data-testid="sellos-listings-page">
+		<template #header>
+			<PageHeader
+				title="Listings"
+				text="A listing offers a unit or a property as Primary, Direct or Partner. The website shows it only once it is published."
+				icon="lucide-megaphone"
+			>
+				<AppButton
+					v-if="canEdit"
+					type="button"
+					variant="primary"
+					data-testid="sellos-listing-new"
+					@click="startNew"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Make a listing
+				</AppButton>
+			</PageHeader>
+		</template>
+
+		<template v-if="loaded && !loadError" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-listings-stats" />
+		</template>
+
 		<p
 			v-if="error"
 			role="alert"
 			data-testid="sellos-listing-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md text-sm text-danger"
 		>
 			{{ error }}
 		</p>
@@ -25,68 +45,82 @@
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 
-		<ListCard title="Listings">
-			<EmptyState
-				v-if="loaded && !loadError && !listings.length"
-				title="No listings yet"
-				text="Make the first listing below."
-				icon="lucide-megaphone"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-listing-list">
-				<li
-					v-for="l in listings"
-					:key="l.name"
-					data-testid="sellos-listing-row"
-					:data-name="l.name"
-					:data-title="l.title"
-					:data-published="l.published"
-					class="rounded-input border border-line-soft p-ui-md"
+		<DataTable
+			v-if="!loadError"
+			title="Listings"
+			caption="Listings"
+			:columns="columns"
+			:rows="listings"
+			:loading="!loaded"
+			loading-label="Loading listings."
+			:row-attrs="
+				(l) => ({
+					'data-title': l.title,
+					'data-published': l.published,
+				})
+			"
+			:row-name="(l) => l.title"
+			empty-title="No listings yet"
+			empty-text="Make the first listing."
+			empty-icon="lucide-megaphone"
+			testid="sellos-listing-list"
+			row-testid="sellos-listing-row"
+		>
+			<template #cell-title="{ row }">
+				<span class="font-medium">{{ row.title }}</span>
+			</template>
+			<template #cell-listing_type="{ row }">
+				<StatusBadge
+					tone="info"
+					:label="row.listing_type"
+					data-testid="sellos-listing-type"
+				/>
+			</template>
+			<template #cell-published="{ row }">
+				<StatusBadge
+					:tone="row.published ? 'success' : 'neutral'"
+					:label="row.published ? 'Published' : 'Draft'"
+					data-testid="sellos-listing-state"
+				/>
+			</template>
+			<template #cell-asking_price="{ row }">
+				<span data-testid="sellos-listing-price">
+					{{ row.asking_price ? formatMoney(row.asking_price) : "No price yet" }}
+				</span>
+			</template>
+			<template #cell-target="{ row }">
+				<p data-testid="sellos-listing-target">
+					{{ row.target_label || "Nothing chosen to offer yet" }}
+				</p>
+				<p
+					v-if="!row.published && row.missing.length"
+					class="text-sm text-ink-muted"
+					data-testid="sellos-listing-missing"
 				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink">{{ l.title }}</span>
-						<StatusBadge
-							tone="info"
-							:label="l.listing_type"
-							data-testid="sellos-listing-type"
-						/>
-						<StatusBadge
-							:tone="l.published ? 'success' : 'neutral'"
-							:label="l.published ? 'Published' : 'Draft'"
-							data-testid="sellos-listing-state"
-						/>
-						<span class="text-sm text-ink-muted" data-testid="sellos-listing-price">
-							{{ l.asking_price ? rupees(l.asking_price) : "No price yet" }}
-						</span>
-					</div>
-					<p class="text-sm text-ink-muted" data-testid="sellos-listing-target">
-						{{ l.target_label || "Nothing chosen to offer yet" }}
-					</p>
-					<p
-						v-if="!l.published && l.missing.length"
-						class="text-sm text-ink-muted"
-						data-testid="sellos-listing-missing"
+					Needs {{ row.missing.join(", ") }} before it can be published.
+				</p>
+			</template>
+			<template #cell-actions="{ row }">
+				<div class="flex flex-wrap gap-ui-sm">
+					<AppButton
+						type="button"
+						:active="shownMedia.has(row.name)"
+						data-testid="sellos-listing-media-toggle"
+						@click="toggleMedia(row.name)"
 					>
-						Needs {{ l.missing.join(", ") }} before it can be published.
-					</p>
-					<div class="mt-ui-sm flex flex-wrap gap-ui-sm">
+						Photos and videos ({{ row.media_count }})
+					</AppButton>
+					<template v-if="canEdit">
 						<AppButton
-							type="button"
-							:active="shownMedia.has(l.name)"
-							data-testid="sellos-listing-media-toggle"
-							@click="toggleMedia(l.name)"
-						>
-							Photos and videos ({{ l.media_count }})
-						</AppButton>
-					</div>
-					<SuitedLeads v-if="l.published" kind="listing" :name="l.name" />
-					<div v-if="canEdit" class="mt-ui-sm flex flex-wrap gap-ui-sm">
-						<AppButton
-							v-if="!l.published"
+							v-if="!row.published"
 							type="button"
 							variant="primary"
 							data-testid="sellos-listing-publish"
 							@click="
-								act(() => listingApi.publish(l.name), `${l.title} is published.`)
+								act(
+									() => listingApi.publish(row.name),
+									`${row.title} is published.`
+								)
 							"
 						>
 							Publish
@@ -96,7 +130,10 @@
 							type="button"
 							data-testid="sellos-listing-unpublish"
 							@click="
-								act(() => listingApi.unpublish(l.name), `${l.title} is withdrawn.`)
+								act(
+									() => listingApi.unpublish(row.name),
+									`${row.title} is withdrawn.`
+								)
 							"
 						>
 							Withdraw
@@ -104,7 +141,7 @@
 						<AppButton
 							type="button"
 							data-testid="sellos-listing-edit"
-							@click="edit(l)"
+							@click="edit(row)"
 						>
 							Edit
 						</AppButton>
@@ -114,49 +151,57 @@
 							data-testid="sellos-listing-archive"
 							@click="
 								act(
-									() => listingApi.setArchived(l.name, 1),
-									`${l.title} is archived.`
+									() => listingApi.setArchived(row.name, 1),
+									`${row.title} is archived.`
 								)
 							"
 						>
 							Archive
 						</AppButton>
-					</div>
-					<ListingMedia
-						v-if="shownMedia.has(l.name)"
-						:listing="l.name"
-						@changed="load"
-					/>
-					<details class="mt-ui-sm" data-testid="sellos-listing-history">
-						<summary class="cursor-pointer text-sm text-ink-muted">
-							Change history
-						</summary>
-						<ul class="mt-1 space-y-1 text-sm text-ink-muted">
-							<li
-								v-for="(c, i) in l.changes"
-								:key="i"
-								data-testid="sellos-listing-change"
-							>
-								{{ c.changed_on }}: {{ c.changed_by_name }} set
-								{{ c.what.toLowerCase() }}
-								<span v-if="c.old">from {{ c.old }}</span> to {{ c.new }}
-							</li>
-						</ul>
-					</details>
-				</li>
-			</ul>
+					</template>
+				</div>
+				<SuitedLeads v-if="row.published" kind="listing" :name="row.name" />
+				<details class="mt-ui-sm" data-testid="sellos-listing-history">
+					<summary class="cursor-pointer text-sm text-ink-muted">Change history</summary>
+					<ul class="mt-1 space-y-1 text-sm text-ink-muted">
+						<li
+							v-for="(c, i) in row.changes"
+							:key="i"
+							data-testid="sellos-listing-change"
+						>
+							{{ formatWhen(c.changed_on) }}: {{ c.changed_by_name }} set
+							{{ c.what.toLowerCase() }}
+							<span v-if="c.old">from {{ c.old }}</span> to {{ c.new }}
+						</li>
+					</ul>
+				</details>
+			</template>
+		</DataTable>
+
+		<!-- The photos and videos of a listing open under the table, full width, not inside a narrow cell. -->
+		<ListCard
+			v-for="name in [...shownMedia]"
+			:key="name"
+			:title="`Photos and videos: ${listingTitle(name)}`"
+			class="mt-ui-md"
+			data-testid="sellos-listing-media-panel"
+		>
+			<ListingMedia :listing="name" @changed="load" />
 		</ListCard>
 
-		<form
+		<FormDrawer
 			v-if="canEdit"
-			class="ui-card mt-ui-md"
-			data-testid="sellos-listing-form"
-			@submit.prevent="save"
+			:open="formOpen"
+			:title="editing ? 'Edit the listing' : 'Make a listing'"
+			submit-label="Save listing"
+			:busy="saving"
+			testid="sellos-listing-form"
+			submit-testid="sellos-listing-save"
+			cancel-testid="sellos-listing-cancel"
+			@close="reset"
+			@submit="save"
 		>
-			<h2 class="ui-card-heading mb-ui-md">
-				{{ editing ? "Edit the listing" : "Make a listing" }}
-			</h2>
-			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+			<FormSection title="Listing">
 				<FormField
 					v-model="form.title"
 					label="Title"
@@ -177,8 +222,11 @@
 					label="What is offered"
 					:options="targetOptions"
 					hint="A Primary listing offers a unit. Direct and Partner listings offer a unit or a property."
+					class="md:col-span-2"
 					data-testid="sellos-listing-target-field"
 				/>
+			</FormSection>
+			<FormSection title="Price and description">
 				<MoneyField
 					v-model="form.asking_price"
 					label="Asking price (Rs)"
@@ -187,41 +235,34 @@
 				<FormField
 					v-model="form.description"
 					label="Description"
+					class="md:col-span-2"
 					data-testid="sellos-listing-description"
 				/>
-			</div>
-			<div class="mt-ui-md flex flex-wrap gap-ui-sm">
-				<AppButton type="submit" variant="primary" data-testid="sellos-listing-save">
-					Save listing
-				</AppButton>
-				<AppButton
-					v-if="editing"
-					type="button"
-					data-testid="sellos-listing-cancel"
-					@click="reset"
-				>
-					Cancel
-				</AppButton>
-			</div>
-		</form>
-	</div>
+			</FormSection>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import MoneyField from "../components/MoneyField.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
+import { formatMoney, formatWhen } from "../format";
+import ListCard from "../components/ListCard.vue";
 import ListingMedia from "../inventory/ListingMedia.vue";
 import SuitedLeads from "../inventory/SuitedLeads.vue";
-import { listingApi, rupees } from "../inventory/inventoryApi";
+import { listingApi } from "../inventory/inventoryApi";
 
 // Listings (SOS-P4-02). Every change is made on the server and the list read back, so what is shown is what
 // is saved. Publishing is the server's decision: it names what a listing still needs.
@@ -236,8 +277,55 @@ const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
 const editing = ref("");
+const formOpen = ref(false);
+const saving = ref(false);
+
+const kpis = computed(() => {
+	const published = listings.value.filter((l) => l.published).length;
+	return [
+		{
+			label: "Listings",
+			value: listings.value.length,
+			caption: "all listings",
+			icon: "lucide-megaphone",
+		},
+		{
+			label: "Published",
+			value: published,
+			caption: "shown on the website",
+			icon: "lucide-globe",
+			tone: "success",
+		},
+		{
+			label: "Drafts",
+			value: listings.value.length - published,
+			caption: "not yet published",
+			icon: "lucide-file-pen",
+		},
+	];
+});
+const columns = [
+	{ key: "title", label: "Listing", primary: true, sortable: true },
+	{ key: "listing_type", label: "Type", sortable: true },
+	{ key: "published", label: "State", sortable: true, sortValue: (l) => (l.published ? 1 : 0) },
+	{
+		key: "asking_price",
+		label: "Asking price",
+		align: "right",
+		sortable: true,
+		sortValue: (l) => Number(l.asking_price || 0),
+	},
+	{ key: "target", label: "Offers", wrap: true, class: "min-w-[12rem]" },
+	{ key: "actions", label: "Actions", wrap: true, class: "min-w-[16rem]" },
+];
+function startNew() {
+	error.value = "";
+	reset();
+	formOpen.value = true;
+}
 // The listings whose photos and videos are open (SOS-P4-03).
 const shownMedia = ref(new Set());
+const listingTitle = (name) => listings.value.find((l) => l.name === name)?.title || name;
 function toggleMedia(name) {
 	const next = new Set(shownMedia.value);
 	if (!next.delete(name)) next.add(name);
@@ -298,6 +386,7 @@ async function load() {
 async function act(action, message) {
 	error.value = "";
 	notice.value = "";
+	saving.value = true;
 	try {
 		show(await action());
 		notice.value = message;
@@ -305,16 +394,21 @@ async function act(action, message) {
 	} catch (e) {
 		error.value = serverMessage(e, "The change could not be saved.");
 		return false;
+	} finally {
+		saving.value = false;
 	}
 }
 
 function reset() {
+	formOpen.value = false;
 	editing.value = "";
 	current.value = null;
 	Object.assign(form, blank());
 }
 
 function edit(l) {
+	error.value = "";
+	formOpen.value = true;
 	editing.value = l.name;
 	const value = l.unit ? `Unit|${l.unit}` : l.property ? `Property|${l.property}` : NONE;
 	current.value = value ? { label: l.target_label, value } : null;

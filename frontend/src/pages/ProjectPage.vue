@@ -1,15 +1,35 @@
 <template>
-	<div data-testid="sellos-project-page">
-		<PageHeader
-			:title="project ? project.project_name : 'Project'"
-			text="The project's RERA number and its units. Each unit has a configuration, carpet area, floor, parking and a status."
-			icon="lucide-building-2"
-		/>
+	<PageTemplate data-testid="sellos-project-page">
+		<template #header>
+			<PageHeader
+				:title="project ? project.project_name : 'Project'"
+				text="The project's RERA number and its units. Each unit has a configuration, carpet area, floor, parking and a status."
+				icon="lucide-building-2"
+			>
+				<AppButton
+					v-if="canEdit"
+					type="button"
+					variant="primary"
+					data-testid="sellos-unit-add"
+					@click="openUnitForm"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Add unit
+				</AppButton>
+			</PageHeader>
+		</template>
+
+		<template v-if="project" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-project-stats" />
+		</template>
+
 		<p
 			v-if="error"
 			role="alert"
 			data-testid="sellos-project-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md text-sm text-danger"
 		>
 			{{ error }}
 		</p>
@@ -39,7 +59,7 @@
 				{{ project.units.Sold }} sold, {{ project.units.Blocked }} blocked.
 			</p>
 			<p class="text-sm text-ink-muted" data-testid="sellos-project-possession">
-				Possession: {{ project.possession_date || "not set" }}.
+				Possession: {{ formatDate(project.possession_date) || "not set" }}.
 			</p>
 		</div>
 
@@ -63,88 +83,98 @@
 
 		<ProjectPricing v-if="project" class="mb-ui-md" :project="route.params.name" />
 
-		<ListCard title="Units">
-			<EmptyState
-				v-if="loaded && !loadError && !units.length"
-				title="No units yet"
-				text="Add the first unit below."
-				icon="lucide-door-open"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-project-units">
-				<li
-					v-for="u in units"
-					:key="u.name"
-					data-testid="sellos-unit-row"
-					:data-name="u.name"
-					:data-number="u.unit_number"
-					:data-status="u.status"
-					class="rounded-input border border-line-soft p-ui-md"
-				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink" data-testid="sellos-unit-number">
-							{{ u.unit_number }}
-						</span>
-						<StatusBadge
-							:tone="STATUS_TONE[u.status] || 'neutral'"
-							:label="u.status"
-							data-testid="sellos-unit-status"
-						/>
-						<span class="text-sm text-ink-muted">
-							{{ u.configuration || "No configuration" }}, {{ u.carpet_area }} sq ft
-							carpet, floor {{ u.floor ?? "-" }}, {{ u.parking }} parking
-						</span>
-					</div>
-					<p v-if="canEdit" class="mt-ui-sm">
-						<router-link
-							:to="{ name: 'cost-sheet', params: { unit: u.name } }"
-							class="ui-link text-sm font-medium"
-							data-testid="sellos-unit-cost-sheet"
-						>
-							Cost sheet
-						</router-link>
-					</p>
-					<div v-if="canEdit" class="mt-ui-sm flex flex-wrap items-end gap-ui-sm">
-						<FormField
-							v-model="reasons[u.name]"
-							label="Reason (optional)"
-							class="w-72"
-							data-testid="sellos-unit-reason"
-						/>
-						<AppButton
-							v-for="s in otherStatuses(u.status)"
-							:key="s"
-							type="button"
-							:data-testid="`sellos-unit-set-${s.toLowerCase()}`"
-							@click="changeStatus(u, s)"
-						>
-							Mark {{ s }}
-						</AppButton>
-					</div>
-					<details class="mt-ui-sm" data-testid="sellos-unit-log">
-						<summary class="cursor-pointer text-sm text-ink-muted">Status log</summary>
-						<ul class="mt-1 space-y-1 text-sm text-ink-muted">
-							<li v-for="(l, i) in u.log" :key="i" data-testid="sellos-unit-log-row">
-								{{ l.changed_on }}: {{ l.changed_by_name }}
-								<span v-if="l.from_status"
-									>moved it from {{ l.from_status }} to</span
-								>
-								<span v-else>set it</span>
-								{{ l.to_status }}<span v-if="l.reason"> ({{ l.reason }})</span>
-							</li>
-						</ul>
-					</details>
-				</li>
-			</ul>
-		</ListCard>
-
-		<form
-			v-if="canEdit"
-			class="ui-card mt-ui-md"
-			data-testid="sellos-unit-form"
-			@submit.prevent="addUnit"
+		<DataTable
+			title="Units"
+			caption="Units"
+			:columns="columns"
+			:rows="units"
+			:loading="!loaded && !loadError"
+			loading-label="Loading units."
+			:row-attrs="
+				(u) => ({
+					'data-number': u.unit_number,
+					'data-status': u.status,
+				})
+			"
+			:row-name="(u) => `unit ${u.unit_number}`"
+			empty-title="No units yet"
+			empty-text="Add the first unit."
+			empty-icon="lucide-door-open"
+			testid="sellos-project-units"
+			row-testid="sellos-unit-row"
 		>
-			<h2 class="ui-card-heading mb-ui-md">Add a unit</h2>
-			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+			<template #cell-unit_number="{ row }">
+				<span class="font-medium" data-testid="sellos-unit-number">{{
+					row.unit_number
+				}}</span>
+			</template>
+			<template #cell-status="{ row }">
+				<StatusBadge
+					:tone="STATUS_TONE[row.status] || 'neutral'"
+					:label="row.status"
+					data-testid="sellos-unit-status"
+				/>
+			</template>
+			<template #cell-configuration="{ row }">
+				{{ row.configuration || "No configuration" }}
+			</template>
+			<template #cell-carpet_area="{ row }">{{ row.carpet_area }} sq ft</template>
+			<template #cell-floor="{ row }">{{ row.floor ?? "-" }}</template>
+			<template #cell-cost_sheet="{ row }">
+				<router-link
+					:to="{ name: 'cost-sheet', params: { unit: row.name } }"
+					class="ui-link text-sm font-medium"
+					data-testid="sellos-unit-cost-sheet"
+				>
+					Cost sheet
+				</router-link>
+			</template>
+			<template #cell-change="{ row }">
+				<div class="flex flex-wrap items-end gap-ui-sm">
+					<FormField
+						v-model="reasons[row.name]"
+						label="Reason (optional)"
+						class="w-56"
+						data-testid="sellos-unit-reason"
+					/>
+					<AppButton
+						v-for="s in otherStatuses(row.status)"
+						:key="s"
+						type="button"
+						:data-testid="`sellos-unit-set-${s.toLowerCase()}`"
+						@click="changeStatus(row, s)"
+					>
+						Mark {{ s }}
+					</AppButton>
+				</div>
+			</template>
+			<template #cell-log="{ row }">
+				<details data-testid="sellos-unit-log">
+					<summary class="cursor-pointer text-sm text-ink-muted">Status log</summary>
+					<ul class="mt-1 space-y-1 text-sm text-ink-muted">
+						<li v-for="(l, i) in row.log" :key="i" data-testid="sellos-unit-log-row">
+							{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}
+							<span v-if="l.from_status">moved it from {{ l.from_status }} to</span>
+							<span v-else>set it</span>
+							{{ l.to_status }}<span v-if="l.reason"> ({{ l.reason }})</span>
+						</li>
+					</ul>
+				</details>
+			</template>
+		</DataTable>
+
+		<FormDrawer
+			v-if="canEdit"
+			:open="unitOpen"
+			title="Add a unit"
+			submit-label="Add unit"
+			:busy="saving"
+			testid="sellos-unit-form"
+			submit-testid="sellos-unit-save"
+			@close="unitOpen = false"
+			@submit="addUnit"
+		>
+			<FormSection title="Unit">
 				<FormField
 					v-model="unit.unit_number"
 					label="Unit number"
@@ -177,28 +207,35 @@
 					label="Parking slots"
 					data-testid="sellos-unit-parking"
 				/>
-			</div>
-			<div class="mt-ui-md">
-				<AppButton type="submit" variant="primary" data-testid="sellos-unit-save">
-					Add unit
-				</AppButton>
-			</div>
-		</form>
-	</div>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				class="text-sm text-danger"
+				data-testid="sellos-unit-form-error"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
+import { formatDate, formatWhen } from "../format";
 import { inventoryApi, STATUS_TONE } from "../inventory/inventoryApi";
 import ProjectPricing from "../inventory/ProjectPricing.vue";
 import ProjectStructure from "../inventory/ProjectStructure.vue";
@@ -216,6 +253,8 @@ const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
 const reasons = reactive({});
+const unitOpen = ref(false);
+const saving = ref(false);
 // SOS-P7-05: towers, floors, possession date, amenities and brochures.
 const structure = reactive({
 	towers: [],
@@ -233,6 +272,69 @@ const blankUnit = () => ({
 	parking: "",
 });
 const unit = reactive(blankUnit());
+
+const kpis = computed(() => {
+	const c = project.value?.units || {};
+	return [
+		{
+			label: "Units",
+			value: c.total ?? 0,
+			caption: "in this project",
+			icon: "lucide-layout-grid",
+		},
+		{
+			label: "Available",
+			value: c.Available ?? 0,
+			caption: "ready to sell",
+			icon: "lucide-door-open",
+			tone: "success",
+		},
+		{
+			label: "Held",
+			value: c.Held ?? 0,
+			caption: "on hold for a buyer",
+			icon: "lucide-clock",
+			tone: "warning",
+		},
+		{
+			label: "Sold",
+			value: c.Sold ?? 0,
+			caption: "no longer available",
+			icon: "lucide-badge-check",
+		},
+	];
+});
+const columns = computed(() => [
+	{ key: "unit_number", label: "Unit", primary: true, sortable: true },
+	{ key: "status", label: "Status", sortable: true },
+	{ key: "configuration", label: "Configuration", sortable: true },
+	{
+		key: "carpet_area",
+		label: "Carpet area",
+		align: "right",
+		sortable: true,
+		sortValue: (u) => Number(u.carpet_area || 0),
+	},
+	{
+		key: "floor",
+		label: "Floor",
+		align: "right",
+		sortable: true,
+		sortValue: (u) => Number(u.floor ?? -1),
+	},
+	{ key: "parking", label: "Parking", align: "right" },
+	...(canEdit.value
+		? [
+				{ key: "cost_sheet", label: "Cost sheet" },
+				{ key: "change", label: "Change status", wrap: true },
+		  ]
+		: []),
+	{ key: "log", label: "Log", wrap: true },
+]);
+function openUnitForm() {
+	error.value = "";
+	unitOpen.value = true;
+}
 
 const otherStatuses = (current) => statuses.value.filter((s) => s !== current);
 
@@ -259,6 +361,7 @@ async function load() {
 async function act(action, message, fallback = "The change could not be saved.") {
 	error.value = "";
 	notice.value = "";
+	saving.value = true;
 	try {
 		show(await action());
 		notice.value = message;
@@ -266,6 +369,8 @@ async function act(action, message, fallback = "The change could not be saved.")
 	} catch (e) {
 		error.value = serverMessage(e, fallback);
 		return false;
+	} finally {
+		saving.value = false;
 	}
 }
 
@@ -276,6 +381,7 @@ const addUnit = async () => {
 	const number = unit.unit_number;
 	if (await act(() => inventoryApi.saveUnit(values), `Unit ${number} was added.`)) {
 		Object.assign(unit, blankUnit());
+		unitOpen.value = false;
 	}
 };
 

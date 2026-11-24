@@ -31,11 +31,12 @@ context("SOS-P1-25: site visits", () => {
 	const openLead = (role, key) => {
 		cy.signInFresh(role);
 		cy.visit(`/sellos/crm/leads/${seed.leads[key]}`);
-		cy.getByTestId("lead-visit-form").should("be.visible");
+		cy.getByTestId("lead-summary-stage").should("be.visible");
 	};
 
 	const book = (project) => {
 		cy.intercept("POST", "**/api/method/sellos.crm.api.save_site_visit*").as("book");
+		cy.getByTestId("tab-visits").click();
 		cy.getByTestId("lead-visit-project").type(project);
 		tomorrowAt().then((when) => cy.getByTestId("lead-visit-when").type(when));
 		cy.getByTestId("lead-visit-save").click();
@@ -45,9 +46,13 @@ context("SOS-P1-25: site visits", () => {
 
 	it("books a visit from the lead, moves the lead to Site visit booked and names the agent", () => {
 		openLead("agent", "old");
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "New");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "New");
 		book("Gate Tower");
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Site visit booked");
+		cy.getByTestId("lead-summary-stage").should(
+			"have.attr",
+			"data-stage",
+			"Site visit booked"
+		);
 		cy.getByTestId("lead-visit-confirmation")
 			.should("contain", "Not confirmed")
 			.and("contain", "sos_test_agent");
@@ -56,9 +61,9 @@ context("SOS-P1-25: site visits", () => {
 	it("leaves a lead that is further on where it is", () => {
 		openLead("agent", "agent_a");
 		cy.getByTestId("lead-stage-select").select("Negotiation");
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Negotiation");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "Negotiation");
 		book("Gate Heights");
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Negotiation");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "Negotiation");
 	});
 
 	it("lists tomorrow's visits, and the agent confirms one and reschedules another", () => {
@@ -117,7 +122,7 @@ context("SOS-P1-25: site visits", () => {
 		openLead("agent", "old");
 		book("Gate Tower");
 		cy.signInFresh("company_admin");
-		cy.visit(`/sellos/crm/leads/${seed.leads.admin}`);
+		cy.visit(`/sellos/crm/leads/${seed.leads.admin}?tab=visits`);
 		cy.getByTestId("lead-visit-form").should("be.visible");
 		book("Gate Admin Park");
 		cy.visit("/sellos/crm/visits");
@@ -146,8 +151,12 @@ context("SOS-P1-25: site visits", () => {
 		cy.getByTestId("lead-visit-confirmation").should("contain", "outcome: Liked it");
 		// The stage is offered and not applied until the agent accepts it.
 		cy.getByTestId("lead-visit-offer").should("contain", "Negotiation");
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Site visit booked");
+		cy.getByTestId("lead-summary-stage").should(
+			"have.attr",
+			"data-stage",
+			"Site visit booked"
+		);
 		cy.getByTestId("lead-visit-offer-use").click();
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Negotiation");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "Negotiation");
 	});
 });

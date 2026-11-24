@@ -53,7 +53,11 @@ context("SOS-P1-20: the lead source picker", () => {
 
 	it("an agent picks from the list and cannot extend it", () => {
 		cy.signInFresh("agent");
+		cy.intercept("**/api/method/sellos.crm.api.list_lead_sources*").as("sources");
 		cy.visit("/sellos/crm/leads");
+		// The page asks for the source list twice (the filter and the form); read the list only once both are in.
+		cy.wait("@sources");
+		cy.wait("@sources");
 		cy.getByTestId("leads-new").click();
 		cy.optionTexts("lead-form-source").should("include", source).and("include", "Referral");
 		cy.getByTestId("lead-source-new").should("not.exist");

@@ -1,21 +1,36 @@
 <template>
-	<div class="grid grid-cols-2 gap-ui-md md:grid-cols-5">
-		<StatCard label="Rows" :value="counts.rows" icon="lucide-rows-3" />
-		<StatCard label="Created" :value="counts.created" icon="lucide-plus" tone="success" />
-		<StatCard label="Updated" :value="counts.updated" icon="lucide-pencil" tone="info" />
-		<StatCard label="Unchanged" :value="counts.unchanged" icon="lucide-equal" />
-		<StatCard
-			label="Failed"
-			:value="counts.failed"
-			icon="lucide-circle-slash"
-			tone="warning"
-		/>
-	</div>
+	<KpiStrip :items="items" />
 </template>
 
 <script setup>
-// The counts of an import, as cards (SOS-P4-10C).
-import StatCard from "../components/StatCard.vue";
+// The counts of an import, as a KPI strip of four cards (SOS-P4-10C).
+import { computed } from "vue";
 
-defineProps({ counts: { type: Object, required: true } });
+import KpiStrip from "../components/KpiStrip.vue";
+
+const props = defineProps({ counts: { type: Object, required: true } });
+const items = computed(() => [
+	{ label: "Rows", value: props.counts.rows, caption: "in the file", icon: "lucide-rows-3" },
+	{
+		label: "Created",
+		value: props.counts.created,
+		caption: "new records",
+		icon: "lucide-plus",
+		tone: "success",
+	},
+	{
+		label: "Updated",
+		value: props.counts.updated,
+		caption: `${props.counts.unchanged} unchanged`,
+		icon: "lucide-pencil",
+		tone: "info",
+	},
+	{
+		label: "Failed",
+		value: props.counts.failed,
+		caption: "left out",
+		icon: "lucide-circle-slash",
+		tone: "warning",
+	},
+]);
 </script>

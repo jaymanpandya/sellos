@@ -20,7 +20,7 @@ context("SOS-P7-10: book a unit from the pipeline", () => {
 		cy.expectApiStatus("sellos.inventory.bookings.book_unit", 417);
 		cy.expectApiStatus("sellos.inventory.bookings.cancel_booking", 417);
 		cy.intercept("POST", "**/sellos.inventory.bookings.booking_panel*").as("panel");
-		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.lead)}`);
+		cy.visit(`/sellos/crm/leads/${encodeURIComponent(made.lead)}?tab=deals`);
 		cy.wait("@panel");
 		cy.getByTestId("lead-booking").should("be.visible");
 
@@ -41,7 +41,7 @@ context("SOS-P7-10: book a unit from the pipeline", () => {
 		cy.getByTestId("booking-confirm").click();
 		cy.wait("@book").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("booking-row").should("have.length", 1);
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Booking");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "Booking");
 		cy.bench("sellos.tests.ui_fixtures.gate_booking_state", { lead: made.lead }).then(
 			(state) => {
 				expect(state.stage).to.eq("Booking");
@@ -64,7 +64,7 @@ context("SOS-P7-10: book a unit from the pipeline", () => {
 		cy.wait("@cancel").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("booking-cancelled").should("have.length", 1);
 		cy.getByTestId("booking-row").should("not.exist");
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Booking");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "Booking");
 		cy.bench("sellos.tests.ui_fixtures.gate_booking_state", { lead: made.lead }).then(
 			(state) => {
 				expect(state.stage).to.eq("Booking");

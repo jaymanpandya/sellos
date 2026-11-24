@@ -69,10 +69,20 @@ export const fontFamily = {
 	heading: uiFont.sans,
 };
 
+// One radius (--radius, 14px) for every size name, so frappe-ui's own rounded-md, rounded-lg and so on match.
+// Only a status badge (rounded-pill) and a frappe-ui avatar or spinner (rounded-full) are round.
+const one = "var(--radius)";
 export const radius = {
-	card: uiRadius.card,
-	input: uiRadius.control,
-	badge: uiRadius.pill,
+	none: "0",
+	sm: one,
+	DEFAULT: one,
+	md: one,
+	lg: one,
+	xl: one,
+	"2xl": one,
+	"3xl": one,
+	pill: uiRadius.pill,
+	full: uiRadius.pill,
 };
 
 export const boxShadow = shadows;

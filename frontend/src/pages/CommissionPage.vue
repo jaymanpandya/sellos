@@ -1,15 +1,41 @@
 <template>
-	<div data-testid="sellos-commission-page">
-		<PageHeader
-			title="Commission"
-			text="Set the commission rate of each project, and follow what each channel partner is owed from Due to Approved to Paid."
-			icon="lucide-badge-indian-rupee"
-		/>
+	<PageTemplate data-testid="sellos-commission-page">
+		<template #header>
+			<PageHeader
+				title="Commission"
+				text="Rates for each project, and what each channel partner is owed from Due to Paid."
+				icon="lucide-badge-indian-rupee"
+			>
+				<AppButton
+					type="button"
+					data-testid="sellos-commission-export-open"
+					@click="openForm('export')"
+				>
+					Export a statement
+				</AppButton>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-commission-rate-new"
+					@click="openForm('rate')"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Add rate
+				</AppButton>
+			</PageHeader>
+		</template>
+
+		<template v-if="!loadError" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-commission-stats" />
+		</template>
+
 		<p
-			v-if="error"
+			v-if="error && !drawer"
 			role="alert"
 			data-testid="sellos-commission-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md text-sm text-danger"
 		>
 			{{ error }}
 		</p>
@@ -21,199 +47,189 @@
 		>
 			{{ notice }}
 		</p>
-		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-commission-load-error">
-			<LoadError :message="loadError" @retry="load" />
-		</div>
+		<p
+			v-if="exported"
+			role="status"
+			class="mb-ui-md text-sm text-ink"
+			data-testid="sellos-commission-exported"
+		>
+			{{ exported }}
+		</p>
+		<LoadError
+			v-if="loadError"
+			:message="loadError"
+			class="mb-ui-md"
+			data-testid="sellos-commission-load-error"
+			@retry="load"
+		/>
 
-		<div class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4">
-			<StatCard
-				v-for="status in STATUSES"
-				:key="status"
-				:label="status"
-				:value="rupees(totals.by_status?.[status])"
-				:value-testid="`sellos-commission-total-${slug(status)}`"
-			/>
-		</div>
-
-		<ListCard title="Payouts">
-			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
-			<EmptyState
-				v-if="loaded && !loadError && !payouts.length"
-				title="No payouts yet"
-				text="A payout is made when a deal with a channel partner share is approved and a rate applies."
-				icon="lucide-badge-indian-rupee"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-commission-payouts">
-				<li
-					v-for="p in payouts"
-					:key="p.name"
-					data-testid="sellos-commission-payout"
-					:data-name="p.name"
-					:data-deal="p.deal"
-					:data-firm="p.firm_name"
-					:data-status="p.status"
-					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
-				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink">{{ p.firm_name }}, {{ p.target }}</span>
-						<StatusBadge
-							:tone="TONES[p.status]"
-							:label="p.status"
-							data-testid="sellos-commission-payout-status"
-						/>
-						<span class="text-sm text-ink" data-testid="sellos-commission-payout-due">
-							{{ rupees(p.commission_due) }}
-						</span>
-					</div>
-					<p class="mt-1 text-sm text-ink-muted">
-						Booked {{ p.booking_date }}, agreement value
-						{{ rupees(p.agreement_value) }}, {{ p.rate_basis }} is
-						{{ rupees(p.commission_total) }}, the firm's share is
-						{{ p.partner_percent }}%.
-					</p>
-					<p
-						v-if="p.status === 'Paid'"
-						class="mt-1 text-sm text-ink"
-						data-testid="sellos-commission-payout-paid"
-					>
-						Paid on {{ p.paid_on }}, reference {{ p.payment_reference }}.
-					</p>
-					<p
-						v-if="p.status === 'On hold'"
-						class="mt-1 text-sm text-ink"
-						data-testid="sellos-commission-payout-hold"
-					>
-						On hold: {{ p.hold_reason }}
-					</p>
-					<div v-if="p.status !== 'Paid'" class="mt-ui-sm flex flex-wrap gap-2">
-						<AppButton
-							v-if="p.status === 'Due'"
-							type="button"
-							variant="primary"
-							data-testid="sellos-commission-approve"
-							@click="move(p, 'Approved')"
-						>
-							Approve
-						</AppButton>
-						<AppButton
-							v-if="p.status === 'Approved'"
-							type="button"
-							variant="primary"
-							data-testid="sellos-commission-pay"
-							@click="open(p, 'pay')"
-						>
-							Record payment
-						</AppButton>
-						<AppButton
-							v-if="p.status !== 'On hold'"
-							type="button"
-							data-testid="sellos-commission-hold"
-							@click="open(p, 'hold')"
-						>
-							Put on hold
-						</AppButton>
-						<AppButton
-							v-else
-							type="button"
-							data-testid="sellos-commission-release"
-							@click="move(p, p.held_from || 'Due')"
-						>
-							Release the hold
-						</AppButton>
-					</div>
-					<div
-						v-if="active === p.name && mode === 'pay'"
-						class="mt-ui-sm grid gap-ui-md md:grid-cols-2"
-					>
-						<FormField
-							v-model="paying.reference"
-							type="text"
-							label="Payment reference"
-							required
-							data-testid="sellos-commission-reference"
-						/>
-						<FormField
-							v-model="paying.date"
-							type="date"
-							label="Paid on"
-							required
-							data-testid="sellos-commission-paid-on"
-						/>
-						<AppButton
-							type="button"
-							variant="primary"
-							data-testid="sellos-commission-pay-save"
-							@click="pay(p)"
-						>
-							Mark as paid
-						</AppButton>
-					</div>
-					<div v-if="active === p.name && mode === 'hold'" class="mt-ui-sm">
-						<FormField
-							v-model="holding.reason"
-							type="text"
-							label="Reason for the hold"
-							required
-							data-testid="sellos-commission-hold-reason"
-						/>
-						<AppButton
-							type="button"
-							variant="primary"
-							class="mt-ui-sm"
-							data-testid="sellos-commission-hold-save"
-							@click="hold(p)"
-						>
-							Put on hold
-						</AppButton>
-					</div>
-				</li>
-			</ul>
-		</ListCard>
-
-		<ListCard v-if="waiting.length" title="Deals waiting for a rate" class="mt-ui-lg">
+		<section v-if="waiting.length" class="ui-card mb-ui-md">
+			<h2 class="ui-card-heading mb-ui-sm">Deals waiting for a rate</h2>
 			<ul class="space-y-1 text-sm" data-testid="sellos-commission-waiting">
 				<li v-for="w in waiting" :key="w.deal + w.partner_firm" class="text-ink">
 					{{ w.deal }}, {{ w.firm_name }}: {{ w.reason }}
 				</li>
 			</ul>
-		</ListCard>
+		</section>
 
-		<ListCard title="Commission rates" class="mt-ui-lg">
-			<LoadingSkeleton v-if="!loaded && !loadError" :rows="3" />
-			<EmptyState
-				v-if="loaded && !loadError && !rates.length"
-				title="No rates yet"
-				text="Add the first rate below."
-				icon="lucide-badge-indian-rupee"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-commission-rates">
-				<li
-					v-for="r in rates"
-					:key="r.name"
-					data-testid="sellos-commission-rate"
-					:data-project="r.project_name"
-					:data-start="r.start_date"
-					class="flex flex-wrap items-center gap-3 rounded-card border border-line-soft bg-surface-faint p-ui-md text-sm text-ink"
+		<DataTable
+			v-if="!loadError"
+			title="Payouts"
+			caption="Payouts"
+			:columns="payoutColumns"
+			:rows="payouts"
+			:loading="!loaded"
+			loading-label="Loading payouts."
+			:row-name="(row) => row.firm_name"
+			:row-attrs="payoutAttrs"
+			empty-title="No payouts yet"
+			empty-text="A payout is made when a deal with a channel partner share is approved and a rate applies."
+			empty-icon="lucide-badge-indian-rupee"
+			testid="sellos-commission-payouts"
+			row-testid="sellos-commission-payout"
+			loading-testid="sellos-commission-payouts-loading"
+			empty-testid="sellos-commission-payouts-empty"
+		>
+			<template #cell-firm_name="{ row }">
+				<span class="block">{{ row.firm_name }}</span>
+				<span class="block text-sm font-normal text-ink-muted">{{ row.target }}</span>
+			</template>
+			<template #cell-status="{ row }">
+				<StatusBadge
+					:tone="TONES[row.status]"
+					:label="row.status"
+					data-testid="sellos-commission-payout-status"
+				/>
+			</template>
+			<template #cell-booking_date="{ row }">
+				<span class="text-ink-body">{{ formatDate(row.booking_date) }}</span>
+			</template>
+			<template #cell-agreement_value="{ row }">
+				<span class="tabular-nums">{{ formatMoney(row.agreement_value, 2) }}</span>
+			</template>
+			<template #cell-commission_total="{ row }">
+				<span class="block tabular-nums">{{ formatMoney(row.commission_total, 2) }}</span>
+				<span class="block text-sm text-ink-muted">
+					{{ row.rate_basis }}, firm's share {{ row.partner_percent }}%
+				</span>
+			</template>
+			<template #cell-commission_due="{ row }">
+				<span class="tabular-nums" data-testid="sellos-commission-payout-due">{{
+					formatMoney(row.commission_due, 2)
+				}}</span>
+			</template>
+			<template #cell-notes="{ row }">
+				<p
+					v-if="row.status === 'Paid'"
+					class="text-sm text-ink"
+					data-testid="sellos-commission-payout-paid"
 				>
-					<span class="font-medium">{{ r.project_name }}</span>
-					<span>{{ r.firm_name || "All partners" }}</span>
-					<span>{{
-						r.rate_type === "Percentage" ? `${r.value}%` : rupees(r.value)
+					Paid on {{ formatDate(row.paid_on) }}, reference {{ row.payment_reference }}.
+				</p>
+				<p
+					v-if="row.status === 'On hold'"
+					class="text-sm text-ink"
+					data-testid="sellos-commission-payout-hold"
+				>
+					On hold: {{ row.hold_reason }}
+				</p>
+			</template>
+			<template #cell-actions="{ row }">
+				<div v-if="row.status !== 'Paid'" class="flex flex-wrap gap-ui-sm">
+					<AppButton
+						v-if="row.status === 'Due'"
+						type="button"
+						variant="primary"
+						data-testid="sellos-commission-approve"
+						@click="move(row, 'Approved')"
+					>
+						Approve
+					</AppButton>
+					<AppButton
+						v-if="row.status === 'Approved'"
+						type="button"
+						variant="primary"
+						data-testid="sellos-commission-pay"
+						@click="openPayout(row, 'pay')"
+					>
+						Record payment
+					</AppButton>
+					<AppButton
+						v-if="row.status !== 'On hold'"
+						type="button"
+						data-testid="sellos-commission-hold"
+						@click="openPayout(row, 'hold')"
+					>
+						Put on hold
+					</AppButton>
+					<AppButton
+						v-else
+						type="button"
+						data-testid="sellos-commission-release"
+						@click="move(row, row.held_from || 'Due')"
+					>
+						Release the hold
+					</AppButton>
+				</div>
+			</template>
+		</DataTable>
+
+		<div class="mt-ui-md">
+			<DataTable
+				v-if="!loadError"
+				title="Commission rates"
+				caption="Commission rates"
+				:columns="rateColumns"
+				:rows="rates"
+				:loading="!loaded"
+				loading-label="Loading rates."
+				:row-name="(row) => row.project_name"
+				:row-attrs="rateAttrs"
+				empty-title="No rates yet"
+				empty-text="Add the first rate to start making payouts."
+				empty-icon="lucide-percent"
+				testid="sellos-commission-rates"
+				row-testid="sellos-commission-rate"
+				loading-testid="sellos-commission-rates-loading"
+				empty-testid="sellos-commission-rates-empty"
+			>
+				<template #cell-firm_name="{ row }">
+					<span class="text-ink-body">{{ row.firm_name || "All partners" }}</span>
+				</template>
+				<template #cell-value="{ row }">
+					<span class="tabular-nums">{{
+						row.rate_type === "Percentage"
+							? `${row.value}%`
+							: formatMoney(row.value, 2)
 					}}</span>
-					<span class="text-ink-muted">from {{ r.start_date }}</span>
+				</template>
+				<template #cell-start_date="{ row }">
+					<span class="text-ink-body">{{ formatDate(row.start_date) }}</span>
+				</template>
+				<template #cell-archive="{ row }">
 					<AppButton
 						type="button"
 						data-testid="sellos-commission-rate-archive"
-						@click="archive(r)"
+						@click="archive(row)"
 					>
 						Archive
 					</AppButton>
-				</li>
-			</ul>
-		</ListCard>
+				</template>
+			</DataTable>
+		</div>
 
-		<ListCard title="Add a rate" class="mt-ui-lg">
-			<div class="grid gap-ui-md md:grid-cols-2">
+		<!-- Add a rate. -->
+		<FormDrawer
+			:open="drawer === 'rate'"
+			title="Add a rate"
+			text="Earlier rates are kept. The rate in force on the booking date applies."
+			submit-label="Add the rate"
+			testid="sellos-commission-rate-form"
+			submit-testid="sellos-commission-save-rate"
+			@close="closeForm"
+			@submit="saveRate"
+		>
+			<FormSection title="Rate">
 				<FormField
 					v-model="form.project"
 					type="select"
@@ -252,26 +268,101 @@
 					required
 					data-testid="sellos-commission-start"
 				/>
-			</div>
-			<AppButton
-				type="button"
-				variant="primary"
-				class="mt-ui-md"
-				data-testid="sellos-commission-save-rate"
-				@click="saveRate"
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-commission-error"
+				class="text-sm text-danger"
 			>
-				Add the rate
-			</AppButton>
-		</ListCard>
+				{{ error }}
+			</p>
+		</FormDrawer>
 
-		<ListCard title="Export a partner's statement" class="mt-ui-lg">
-			<div class="grid gap-ui-md md:grid-cols-3">
+		<!-- Record a payment. The server checks the reference and the date. -->
+		<FormDrawer
+			:open="drawer === 'pay'"
+			title="Record a payment"
+			:text="activePayout ? `${activePayout.firm_name}, ${activePayout.target}` : ''"
+			submit-label="Mark as paid"
+			testid="sellos-commission-pay-form"
+			submit-testid="sellos-commission-pay-save"
+			@close="closeForm"
+			@submit="activePayout && pay(activePayout)"
+		>
+			<FormSection title="Payment">
+				<FormField
+					v-model="paying.reference"
+					type="text"
+					label="Payment reference (required)"
+					data-testid="sellos-commission-reference"
+				/>
+				<FormField
+					v-model="paying.date"
+					type="date"
+					label="Paid on (required)"
+					data-testid="sellos-commission-paid-on"
+				/>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-commission-error"
+				class="text-sm text-danger"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+
+		<!-- Put a payout on hold. -->
+		<FormDrawer
+			:open="drawer === 'hold'"
+			title="Put on hold"
+			:text="activePayout ? `${activePayout.firm_name}, ${activePayout.target}` : ''"
+			submit-label="Put on hold"
+			testid="sellos-commission-hold-form"
+			submit-testid="sellos-commission-hold-save"
+			@close="closeForm"
+			@submit="activePayout && hold(activePayout)"
+		>
+			<FormSection title="Hold">
+				<FormField
+					v-model="holding.reason"
+					type="text"
+					label="Reason for the hold (required)"
+					class="md:col-span-2"
+					data-testid="sellos-commission-hold-reason"
+				/>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-commission-error"
+				class="text-sm text-danger"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+
+		<!-- Export a partner's statement. -->
+		<FormDrawer
+			:open="drawer === 'export'"
+			title="Export a partner's statement"
+			text="A CSV of one firm's payouts. The export is logged."
+			submit-label="Export the statement"
+			testid="sellos-commission-export-form"
+			submit-testid="sellos-commission-export"
+			@close="closeForm"
+			@submit="exportStatement"
+		>
+			<FormSection title="Statement">
 				<FormField
 					v-model="exporting.firm"
 					type="select"
 					label="Partner firm"
 					:options="exportFirmOptions"
 					required
+					class="md:col-span-2"
 					data-testid="sellos-commission-export-firm"
 				/>
 				<FormField
@@ -286,41 +377,35 @@
 					label="To"
 					data-testid="sellos-commission-export-to"
 				/>
-			</div>
-			<AppButton
-				type="button"
-				variant="primary"
-				class="mt-ui-md"
-				data-testid="sellos-commission-export"
-				@click="exportStatement"
-			>
-				Export the statement
-			</AppButton>
+			</FormSection>
 			<p
-				v-if="exported"
-				class="mt-ui-sm text-sm text-ink"
-				data-testid="sellos-commission-exported"
+				v-if="error"
+				role="alert"
+				data-testid="sellos-commission-error"
+				class="text-sm text-danger"
 			>
-				{{ exported }}
+				{{ error }}
 			</p>
-		</ListCard>
-	</div>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
-import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { commissionApi } from "../crm/commissionApi";
 import { serverMessage } from "../crm/crmApi";
+import { formatDate, formatMoney } from "../format";
 
 // Commission rates and payouts (SOS-P7-04). Every change is made on the server and the lists read back. The
 // server works out each payout from the rate in force on the booking date; nothing here calculates money.
@@ -342,13 +427,15 @@ const form = reactive(blank());
 const exporting = reactive({ firm: "", from_date: "", to_date: "" });
 const exported = ref("");
 const active = ref("");
-const mode = ref("");
 const paying = reactive({ reference: "", date: "" });
 const holding = reactive({ reason: "" });
 const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+// Which drawer is open: "rate", "pay", "hold", "export", or "" for none.
+const drawer = ref("");
+const activePayout = computed(() => payouts.value.find((p) => p.name === active.value) || null);
 
 const choose = (label, list) => [
 	{ label, value: "" },
@@ -358,12 +445,93 @@ const projectOptions = computed(() => choose("Choose a project", options.project
 const firmOptions = computed(() => choose("All partners", options.firms));
 const exportFirmOptions = computed(() => choose("Choose a firm", options.firms));
 const rateTypes = computed(() => options.rate_types.map((t) => ({ label: t, value: t })));
-const rupees = (n) =>
-	`Rs ${new Intl.NumberFormat("en-IN", {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	}).format(Number(n || 0))}`;
 const slug = (s) => s.toLowerCase().replace(/ /g, "-");
+
+// The strip: one card per status, with what the server totals for it.
+const KPI_ICONS = {
+	Due: "lucide-clock",
+	Approved: "lucide-badge-check",
+	Paid: "lucide-wallet",
+	"On hold": "lucide-circle-slash",
+};
+const KPI_CAPTIONS = {
+	Due: "waiting for approval",
+	Approved: "approved, not yet paid",
+	Paid: "paid to partners",
+	"On hold": "held back for now",
+};
+const kpis = computed(() =>
+	STATUSES.map((status) => ({
+		label: status,
+		value: formatMoney(totals.value.by_status?.[status] || 0, 2),
+		caption: KPI_CAPTIONS[status],
+		icon: KPI_ICONS[status],
+		tone: TONES[status],
+		valueTestid: `sellos-commission-total-${slug(status)}`,
+	}))
+);
+
+const payoutColumns = [
+	{ key: "firm_name", label: "Firm and deal", primary: true, sortable: true, wrap: true },
+	{ key: "status", label: "Status", sortable: true },
+	{ key: "booking_date", label: "Booked", sortable: true },
+	{
+		key: "agreement_value",
+		label: "Agreement value",
+		sortable: true,
+		align: "right",
+		sortValue: (p) => Number(p.agreement_value || 0),
+	},
+	{
+		key: "commission_total",
+		label: "Commission",
+		sortable: true,
+		align: "right",
+		sortValue: (p) => Number(p.commission_total || 0),
+	},
+	{
+		key: "commission_due",
+		label: "Due to the firm",
+		sortable: true,
+		align: "right",
+		sortValue: (p) => Number(p.commission_due || 0),
+	},
+	{ key: "notes", label: "Notes", wrap: true, class: "min-w-[12rem]" },
+	{ key: "actions", label: "Actions", wrap: true, class: "min-w-[12rem]" },
+];
+const payoutAttrs = (p) => ({
+	"data-deal": p.deal,
+	"data-firm": p.firm_name,
+	"data-status": p.status,
+});
+const rateColumns = [
+	{ key: "project_name", label: "Project", primary: true, sortable: true },
+	{ key: "firm_name", label: "Partner firm", sortable: true },
+	{ key: "value", label: "Rate", align: "right" },
+	{ key: "start_date", label: "Starts", sortable: true },
+	{ key: "archive", label: "Archive" },
+];
+const rateAttrs = (r) => ({ "data-project": r.project_name, "data-start": r.start_date });
+
+function openForm(which) {
+	error.value = "";
+	exported.value = "";
+	drawer.value = which;
+}
+
+function closeForm() {
+	error.value = "";
+	drawer.value = "";
+	active.value = "";
+}
+
+function openPayout(p, which) {
+	active.value = p.name;
+	paying.reference = paying.date = holding.reason = "";
+	error.value = "";
+	notice.value = "";
+	drawer.value = which;
+}
 
 function show(result) {
 	rates.value = result.rates;
@@ -392,17 +560,12 @@ async function run(action, done, failed) {
 		show(result);
 		notice.value = done;
 		active.value = "";
+		if (drawer.value === "pay" || drawer.value === "hold") drawer.value = "";
 		return result;
 	} catch (e) {
 		error.value = serverMessage(e, failed);
 		return null;
 	}
-}
-
-function open(p, which) {
-	active.value = p.name;
-	mode.value = which;
-	paying.reference = paying.date = holding.reason = "";
 }
 
 const move = (p, to) =>
@@ -440,7 +603,10 @@ const saveRate = async () => {
 		"The rate is added. Earlier rates are kept.",
 		"The rate could not be added."
 	);
-	if (result) Object.assign(form, blank());
+	if (result) {
+		Object.assign(form, blank());
+		drawer.value = "";
+	}
 };
 
 const archive = (r) =>
@@ -467,9 +633,10 @@ async function exportStatement() {
 		link.download = data.filename;
 		link.click();
 		URL.revokeObjectURL(link.href);
+		drawer.value = "";
 		exported.value = `${data.firm_name}: ${data.totals.count} payouts from ${
 			data.from_date
-		} to ${data.to_date}, ${rupees(data.totals.total)} in all. The export is logged.`;
+		} to ${data.to_date}, ${formatMoney(data.totals.total, 2)} in all. The export is logged.`;
 	} catch (e) {
 		error.value = serverMessage(e, "The statement could not be exported.");
 	}

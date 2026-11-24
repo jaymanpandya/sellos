@@ -1,12 +1,28 @@
 <template>
-	<div data-testid="sellos-registrations-page">
-		<PageHeader
-			title="Partner registrations"
-			text="Approve or reject each buyer a channel partner registered. An approved registration is protected in the partner's name, which decides who is owed commission. It never stops a call, a message or an agent's work."
-			icon="lucide-user-check"
-		/>
+	<PageTemplate data-testid="sellos-registrations-page">
+		<template #header>
+			<PageHeader
+				title="Partner registrations"
+				text="Approve or reject each buyer a channel partner registered. An approved registration is protected in the partner's name, which decides who is owed commission. It never stops a call, a message or an agent's work."
+				icon="lucide-user-check"
+			>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-registrations-settings-open"
+					@click="editingSettings = true"
+				>
+					Partner settings
+				</AppButton>
+			</PageHeader>
+		</template>
+
+		<template v-if="!loadError" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-registrations-stats" />
+		</template>
+
 		<p
-			v-if="error"
+			v-if="error && !editingSettings"
 			role="alert"
 			data-testid="sellos-registrations-error"
 			class="mb-ui-md text-sm text-accent"
@@ -25,136 +41,121 @@
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 
-		<div
-			class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-3 lg:grid-cols-6"
-			data-testid="sellos-registrations-stats"
+		<DataTable
+			v-else
+			title="Registrations"
+			:columns="columns"
+			:rows="rows"
+			:loading="!loaded"
+			:row-attrs="(r) => ({ 'data-status': r.status })"
+			empty-title="No registrations yet"
+			empty-text="A partner's registration appears here."
+			empty-icon="lucide-user-check"
+			testid="sellos-registrations-list"
+			row-testid="sellos-registrations-row"
+			empty-testid="sellos-registrations-empty"
 		>
-			<StatCard
-				v-for="status in STATUSES"
-				:key="status"
-				:label="status"
-				:value="counts[status] || 0"
-				icon="lucide-user-check"
-			/>
-		</div>
-
-		<ListCard title="Registrations">
-			<EmptyState
-				v-if="loaded && !loadError && !rows.length"
-				title="No registrations yet"
-				text="A partner's registration appears here."
-				icon="lucide-user-check"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-registrations-list">
-				<li
-					v-for="r in rows"
-					:key="r.name"
-					data-testid="sellos-registrations-row"
-					:data-name="r.name"
-					:data-status="r.status"
-					class="rounded-input border border-line-soft p-ui-md"
+			<template #cell-buyer_name="{ row: r }">
+				<span class="font-medium text-ink" data-testid="sellos-registrations-buyer">
+					{{ r.buyer_name }}
+				</span>
+				<span
+					class="block text-xs text-ink-muted"
+					data-testid="sellos-registrations-phone"
 				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span
-							class="font-medium text-ink"
-							data-testid="sellos-registrations-buyer"
+					{{ r.phone }}
+				</span>
+			</template>
+			<template #cell-status="{ row: r }">
+				<StatusBadge
+					:tone="STATUS_TONE[r.status] || 'neutral'"
+					:label="r.status"
+					data-testid="sellos-registrations-status"
+				/>
+			</template>
+			<template #cell-firm_name="{ row: r }">
+				<p class="text-sm text-ink-muted">
+					Registered by {{ r.firm_name }} ({{ r.partner_user }}).
+					<span v-if="r.project_of_interest">Project: {{ r.project_of_interest }}.</span>
+					<span data-testid="sellos-registrations-consent">
+						Consent: {{ r.consent.status }}.
+					</span>
+				</p>
+				<p v-if="r.note" class="text-sm text-ink-muted">{{ r.note }}</p>
+				<p v-if="r.protected_until" class="text-sm text-ink-muted">
+					<span v-if="r.protected">Protected until</span>
+					<span v-else>Protection ended</span>
+					{{ formatDate(r.protected_until) }}.
+				</p>
+				<p
+					v-if="r.rejection_reason"
+					class="text-sm text-ink-muted"
+					data-testid="sellos-registrations-reason"
+				>
+					Rejected: {{ r.rejection_reason }}
+				</p>
+				<details class="mt-1" data-testid="sellos-registrations-log">
+					<summary class="cursor-pointer text-sm text-ink-muted">Log</summary>
+					<ul class="mt-1 space-y-1 text-sm text-ink-muted">
+						<li
+							v-for="(l, i) in r.log"
+							:key="i"
+							data-testid="sellos-registrations-log-row"
 						>
-							{{ r.buyer_name }}
-						</span>
-						<span
-							class="text-sm text-ink-muted"
-							data-testid="sellos-registrations-phone"
-						>
-							{{ r.phone }}
-						</span>
-						<StatusBadge
-							:tone="STATUS_TONE[r.status] || 'neutral'"
-							:label="r.status"
-							data-testid="sellos-registrations-status"
-						/>
-					</div>
-					<p class="mt-1 text-sm text-ink-muted">
-						Registered by {{ r.firm_name }} ({{ r.partner_user }}).
-						<span v-if="r.project_of_interest">
-							Project: {{ r.project_of_interest }}.
-						</span>
-						<span data-testid="sellos-registrations-consent">
-							Consent: {{ r.consent.status }}.
-						</span>
-					</p>
-					<p v-if="r.note" class="text-sm text-ink-muted">{{ r.note }}</p>
-					<p v-if="r.protected_until" class="text-sm text-ink-muted">
-						<span v-if="r.protected">Protected until</span>
-						<span v-else>Protection ended</span>
-						{{ r.protected_until }}.
-					</p>
-					<p
-						v-if="r.rejection_reason"
-						class="text-sm text-ink-muted"
-						data-testid="sellos-registrations-reason"
+							{{ formatWhen(l.changed_on) }}: {{ l.changed_by }}
+							<span v-if="l.from_status !== l.to_status">
+								moved it
+								<span v-if="l.from_status">from {{ l.from_status }}</span>
+								to {{ l.to_status }}
+							</span>
+							<span v-if="l.note"> ({{ l.note }})</span>
+						</li>
+					</ul>
+				</details>
+			</template>
+			<template #cell-actions="{ row: r }">
+				<div
+					v-if="r.status === 'Registered'"
+					class="flex flex-wrap items-center gap-ui-sm"
+				>
+					<AppButton
+						type="button"
+						variant="primary"
+						data-testid="sellos-registrations-approve"
+						@click="act(() => api.approve(r.name), `${r.buyer_name} was approved.`)"
 					>
-						Rejected: {{ r.rejection_reason }}
-					</p>
-
-					<div
-						v-if="r.status === 'Registered'"
-						class="mt-ui-sm flex flex-wrap items-end gap-ui-sm"
+						Approve
+					</AppButton>
+					<FormField
+						v-model="reasons[r.name]"
+						compact
+						label="Reason for a rejection"
+						data-testid="sellos-registrations-reason-input"
+					/>
+					<AppButton
+						type="button"
+						variant="danger"
+						data-testid="sellos-registrations-reject"
+						@click="reject(r)"
 					>
-						<AppButton
-							type="button"
-							variant="primary"
-							data-testid="sellos-registrations-approve"
-							@click="
-								act(() => api.approve(r.name), `${r.buyer_name} was approved.`)
-							"
-						>
-							Approve
-						</AppButton>
-						<FormField
-							v-model="reasons[r.name]"
-							label="Reason for a rejection"
-							class="w-72"
-							data-testid="sellos-registrations-reason-input"
-						/>
-						<AppButton
-							type="button"
-							variant="danger"
-							data-testid="sellos-registrations-reject"
-							@click="reject(r)"
-						>
-							Reject
-						</AppButton>
-					</div>
+						Reject
+					</AppButton>
+				</div>
+			</template>
+		</DataTable>
 
-					<details class="mt-ui-sm" data-testid="sellos-registrations-log">
-						<summary class="cursor-pointer text-sm text-ink-muted">Log</summary>
-						<ul class="mt-1 space-y-1 text-sm text-ink-muted">
-							<li
-								v-for="(l, i) in r.log"
-								:key="i"
-								data-testid="sellos-registrations-log-row"
-							>
-								{{ l.changed_on }}: {{ l.changed_by }}
-								<span v-if="l.from_status !== l.to_status">
-									moved it
-									<span v-if="l.from_status">from {{ l.from_status }}</span>
-									to {{ l.to_status }}
-								</span>
-								<span v-if="l.note"> ({{ l.note }})</span>
-							</li>
-						</ul>
-					</details>
-				</li>
-			</ul>
-		</ListCard>
-
-		<form
-			class="ui-card mt-ui-md"
-			data-testid="sellos-registrations-settings"
-			@submit.prevent="saveSettings"
+		<!-- The programme's settings are a drawer, not a form under the list. -->
+		<FormDrawer
+			:open="editingSettings"
+			title="Partner settings"
+			text="Limits and wording for the channel partner programme."
+			submit-label="Save settings"
+			testid="sellos-registrations-settings"
+			submit-testid="sellos-registrations-save-settings"
+			@close="editingSettings = false"
+			@submit="saveSettings"
 		>
-			<h2 class="ui-card-heading mb-ui-md">Partner settings</h2>
-			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+			<FormSection title="Limits">
 				<FormField
 					v-model="settings.partner_lead_limit"
 					type="number"
@@ -167,11 +168,14 @@
 					label="Partner protection days"
 					data-testid="sellos-registrations-days"
 				/>
+			</FormSection>
+			<FormSection title="Wording">
 				<FormField
 					v-model="settings.consent_wording"
 					type="textarea"
 					label="Consent wording"
 					hint="Shown to a buyer on the enquiry page and the website forms."
+					class="md:col-span-2"
 					data-testid="sellos-registrations-wording"
 				/>
 				<FormField
@@ -179,38 +183,40 @@
 					type="textarea"
 					label="Partner confirmation wording"
 					hint="Shown to the partner when they confirm the buyer agreed."
+					class="md:col-span-2"
 					data-testid="sellos-registrations-confirmation"
 				/>
-			</div>
-			<div class="mt-ui-md">
-				<AppButton
-					type="submit"
-					variant="primary"
-					data-testid="sellos-registrations-save-settings"
-				>
-					Save settings
-				</AppButton>
-			</div>
-		</form>
-	</div>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-registrations-error"
+				class="text-sm text-accent"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+	</PageTemplate>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { partnerRegistrationsApi as api } from "../company/partnerRegistrationsApi";
 import { serverMessage } from "../crm/crmApi";
+import { formatDate, formatWhen } from "../format";
 
 // The Company Admin decides each partner registration (SOS-P7-02) and sets the programme's company settings.
-const STATUSES = ["Registered", "Approved", "Visited", "Booked", "Expired", "Rejected"];
 const STATUS_TONE = {
 	Registered: "info",
 	Approved: "success",
@@ -226,6 +232,7 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+const editingSettings = ref(false);
 const reasons = reactive({});
 const settings = reactive({
 	partner_lead_limit: "",
@@ -233,6 +240,44 @@ const settings = reactive({
 	consent_wording: "",
 	partner_confirmation_wording: "",
 });
+
+const columns = [
+	{ key: "buyer_name", label: "Buyer", primary: true, sortable: true },
+	{ key: "status", label: "Status", sortable: true },
+	{ key: "firm_name", label: "Registered by", wrap: true },
+	{ key: "actions", label: "Decision", wrap: true },
+];
+
+// Four cards at most: the stages a registration passes through. Expired and Rejected stay in the table.
+const kpis = computed(() => [
+	{
+		label: "Registered",
+		value: counts.value["Registered"] || 0,
+		caption: "Waiting for you",
+		icon: "lucide-user-check",
+		tone: "warning",
+	},
+	{
+		label: "Approved",
+		value: counts.value["Approved"] || 0,
+		caption: "Protected in the partner's name",
+		icon: "lucide-badge-check",
+		tone: "success",
+	},
+	{
+		label: "Visited",
+		value: counts.value["Visited"] || 0,
+		caption: "Came to a site visit",
+		icon: "lucide-map-pin",
+	},
+	{
+		label: "Booked",
+		value: counts.value["Booked"] || 0,
+		caption: "Became a booking",
+		icon: "lucide-handshake",
+		tone: "success",
+	},
+]);
 
 function show(data) {
 	rows.value = data.registrations;
@@ -280,6 +325,7 @@ async function saveSettings() {
 	try {
 		Object.assign(settings, await api.saveSettings({ ...settings }));
 		notice.value = "The settings were saved.";
+		editingSettings.value = false;
 	} catch (e) {
 		error.value = serverMessage(e, "The settings could not be saved.");
 	}

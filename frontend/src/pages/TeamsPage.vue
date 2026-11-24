@@ -1,76 +1,40 @@
 <template>
-	<div data-testid="sellos-teams-page">
-		<PageHeader
-			title="Sales teams"
-			text="Group agents in teams and give each team a manager. A manager sees the leads of their own team and no other team's. An agent is in one team only."
-			icon="lucide-users-round"
-		/>
-		<p
-			v-if="error"
-			role="alert"
-			data-testid="sellos-teams-error"
-			class="mb-ui-md text-sm text-accent"
-		>
-			{{ error }}
-		</p>
-
-		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-teams-load-error">
-			<LoadError :message="loadError" @retry="load" />
-		</div>
-
-		<div
-			class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-3"
-			data-testid="sellos-teams-stats"
-		>
-			<StatCard label="Teams" :value="teams.length" icon="lucide-users-round" />
-			<StatCard label="Agents" :value="agents.length" icon="lucide-user" />
-			<StatCard
-				label="Agents in no team"
-				:value="freeAgents"
-				icon="lucide-user-x"
-				tone="warning"
-			/>
-		</div>
-
-		<ListCard title="Teams">
-			<EmptyState
-				v-if="loaded && !loadError && !teams.length"
-				title="No teams yet"
-				text="Add the first team below."
+	<PageTemplate data-testid="sellos-teams-page">
+		<template #header>
+			<PageHeader
+				title="Sales teams"
+				text="Group agents in teams and give each team a manager. A manager sees the leads of their own team and no other team's. An agent is in one team only."
 				icon="lucide-users-round"
-			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-teams-list">
-				<li
-					v-for="t in teams"
-					:key="t.name"
-					data-testid="sellos-teams-team"
-					:data-name="t.name"
-					class="rounded-input border border-line-soft p-ui-md"
+			>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-teams-new"
+					@click="openAdd"
 				>
-					<div class="flex items-center justify-between gap-3">
-						<h3 class="font-medium text-ink">{{ t.team_name }}</h3>
-						<AppButton
-							type="button"
-							data-testid="sellos-teams-remove"
-							@click="remove(t)"
-						>
-							Remove team
-						</AppButton>
-					</div>
-					<p class="text-sm text-ink-muted">
-						Manager:
-						<span data-testid="sellos-teams-manager">{{ t.manager_name }}</span>
-					</p>
-					<p class="text-sm text-ink-muted" data-testid="sellos-teams-members">
-						Agents: {{ t.members.map((m) => m.full_name).join(", ") || "None yet" }}
-					</p>
-				</li>
-			</ul>
-		</ListCard>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Add team
+				</AppButton>
+			</PageHeader>
+		</template>
 
-		<form class="ui-card mt-ui-md" data-testid="sellos-teams-form" @submit.prevent="add">
-			<h2 class="ui-card-heading mb-ui-md">Add a team</h2>
-			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+		<template #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-teams-stats" />
+		</template>
+
+		<FormDrawer
+			:open="adding"
+			title="Add a team"
+			text="Choose a manager and the agents who are not in a team yet."
+			submit-label="Add team"
+			testid="sellos-teams-form"
+			submit-testid="sellos-teams-add"
+			@close="adding = false"
+			@submit="add"
+		>
+			<FormSection title="Team">
 				<FormField
 					v-model="form.team_name"
 					label="Team name"
@@ -85,9 +49,11 @@
 					:options="managerOptions"
 					data-testid="sellos-teams-manager-select"
 				/>
-			</div>
-			<fieldset class="mt-ui-md" data-testid="sellos-teams-agents">
-				<legend class="mb-1 text-sm font-medium text-ink">Agents</legend>
+			</FormSection>
+			<fieldset data-testid="sellos-teams-agents">
+				<legend class="ui-card-heading mb-ui-md w-full border-b border-line-soft pb-ui-sm">
+					Agents
+				</legend>
 				<FormField
 					v-for="a in agents"
 					:key="a.name"
@@ -100,25 +66,72 @@
 					@update:model-value="toggleAgent(a.name, $event)"
 				/>
 			</fieldset>
-			<div class="mt-ui-md">
-				<AppButton type="submit" variant="primary" data-testid="sellos-teams-add">
-					Add team
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-teams-error"
+				class="text-sm text-danger"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+
+		<p
+			v-if="error && !adding"
+			role="alert"
+			data-testid="sellos-teams-error"
+			class="mb-ui-md text-sm text-danger"
+		>
+			{{ error }}
+		</p>
+		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-teams-load-error">
+			<LoadError :message="loadError" @retry="load" />
+		</div>
+
+		<DataTable
+			title="Teams"
+			caption="Sales teams"
+			:columns="columns"
+			:rows="teams"
+			:loading="!loaded"
+			loading-label="Loading teams."
+			empty-title="No teams yet"
+			empty-text="Add the first team with Add team."
+			empty-icon="lucide-users-round"
+			testid="sellos-teams-list"
+			row-testid="sellos-teams-team"
+		>
+			<template #cell-manager_name="{ row }">
+				<span class="text-ink-body" data-testid="sellos-teams-manager">{{
+					row.manager_name
+				}}</span>
+			</template>
+			<template #cell-members="{ row }">
+				<span class="text-ink-body" data-testid="sellos-teams-members">{{
+					row.members.map((m) => m.full_name).join(", ") || "None yet"
+				}}</span>
+			</template>
+			<template #cell-actions="{ row }">
+				<AppButton type="button" data-testid="sellos-teams-remove" @click="remove(row)">
+					Remove team
 				</AppButton>
-			</div>
-		</form>
-	</div>
+			</template>
+		</DataTable>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import EmptyState from "../components/EmptyState.vue";
+import DataTable from "../components/DataTable.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import { teamsApi } from "../company/teamsApi";
 import { serverMessage } from "../crm/crmApi";
 
@@ -131,6 +144,38 @@ const loadError = ref("");
 const form = reactive({ team_name: "", manager: "", members: [] });
 
 const loaded = ref(false);
+const adding = ref(false);
+const kpis = computed(() => [
+	{
+		label: "Teams",
+		value: teams.value.length,
+		caption: "in your company",
+		icon: "lucide-users-round",
+	},
+	{
+		label: "Agents",
+		value: agents.value.length,
+		caption: "who can be in a team",
+		icon: "lucide-user",
+	},
+	{
+		label: "Agents in no team",
+		value: freeAgents.value,
+		caption: "can join a new team",
+		icon: "lucide-user-x",
+		tone: "warning",
+	},
+]);
+const columns = [
+	{ key: "team_name", label: "Team", primary: true, sortable: true },
+	{ key: "manager_name", label: "Manager", sortable: true },
+	{ key: "members", label: "Agents", wrap: true, class: "min-w-[14rem]" },
+	{ key: "actions", label: "Actions" },
+];
+function openAdd() {
+	error.value = "";
+	adding.value = true;
+}
 const managerOptions = computed(() =>
 	managers.value.map((m) => ({ label: m.full_name, value: m.name }))
 );
@@ -167,6 +212,7 @@ const add = () =>
 	run(async () => {
 		await teamsApi.save({ ...form, members: [...form.members] });
 		Object.assign(form, { team_name: "", manager: "", members: [] });
+		adding.value = false;
 	}, "The team could not be saved.");
 
 const remove = (team) => run(() => teamsApi.remove(team.name), "The team could not be removed.");

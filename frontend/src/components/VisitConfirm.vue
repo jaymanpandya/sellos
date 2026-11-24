@@ -4,6 +4,7 @@
 			:model-value="visit.confirmation_status"
 			type="select"
 			label="Confirmation"
+			:compact="compact"
 			:options="confirmations"
 			data-testid="sellos-visit-confirm-status"
 			:disabled="visit.status === 'Done'"
@@ -56,6 +57,8 @@ import FormField from "./FormField.vue";
 const props = defineProps({
 	visit: { type: Object, required: true },
 	confirmations: { type: Array, default: () => [] },
+	// In a table cell: the select has no label above it (its name is its aria-label).
+	compact: { type: Boolean, default: false },
 });
 const emit = defineEmits(["changed"]);
 const rescheduling = ref(false);

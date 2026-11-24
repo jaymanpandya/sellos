@@ -1,5 +1,5 @@
 // SellOS UI tokens (SOS-UI-2B, restated by docs/UI_STANDARD.md). The system SellOS shares with BuildOS and
-// PAMAA: a neutral page, white cards with a soft shadow, Inter, a 10px control and 14px card radius, a pill
+// PAMAA: a neutral page, white cards with a soft shadow, Inter, one 14px radius, a pill
 // for the current menu item. Only the accent is SellOS's own: the approved brand green of docs/BRAND.md.
 // Pure data; tokens.js and tailwind.config.js read it, ui-tokens.css repeats it as CSS variables.
 
@@ -126,10 +126,10 @@ export const spacing = {
 	topbar: "61px",
 };
 
-// Radius: PAMAA's 14px card and 10px control (BuildOS's default is 10px), full for pills and badges.
+// Radius: one value for every card, panel, input, select, button, menu, drawer and modal (`--radius`, 14px).
+// Only a status badge is a full pill. Nothing else may set a radius (scripts/check-guards.sh, guard "radius").
 export const radius = {
-	card: "14px",
-	control: "10px",
+	DEFAULT: "14px",
 	pill: "9999px",
 };
 
@@ -162,7 +162,8 @@ export function uiCssVariables() {
 		vars[`--ui-${tone}-bg`] = v.bg;
 		vars[`--ui-${tone}-line`] = v.line;
 	}
-	for (const [k, v] of Object.entries(radius)) vars[`--ui-radius-${k}`] = v;
+	vars["--radius"] = radius.DEFAULT;
+	vars["--radius-pill"] = radius.pill;
 	for (const [k, v] of Object.entries(shadows)) vars[`--ui-shadow-${k}`] = v;
 	vars["--ui-ease"] = motion.ease;
 	return vars;

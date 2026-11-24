@@ -1,57 +1,62 @@
 <template>
-	<div data-testid="sellos-users-page">
-		<PageHeader
-			title="Users"
-			text="Invite the people who work in your company, set the mobile number that click to call rings first, and deactivate users who leave. A deactivated user can not sign in, and their open leads and tasks are listed so they can be handed to someone else."
-			icon="lucide-user-cog"
-		/>
-		<p
-			v-if="error"
-			role="alert"
-			data-testid="sellos-users-error"
-			class="mb-ui-md text-sm text-accent"
-		>
-			{{ error }}
-		</p>
-		<p
-			v-if="notice"
-			role="status"
-			data-testid="sellos-users-notice"
-			class="mb-ui-md text-sm text-ink"
-		>
-			{{ notice }}
-		</p>
-		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-users-load-error">
-			<LoadError :message="loadError" @retry="load" />
-		</div>
+	<PageTemplate data-testid="sellos-users-page">
+		<template #header>
+			<PageHeader
+				title="Users"
+				text="Invite the people who work in your company, set the mobile number that click to call rings first, and deactivate users who leave."
+				icon="lucide-user-cog"
+			>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-users-add"
+					@click="openInvite"
+				>
+					<template #prefix
+						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+					/></template>
+					Add user
+				</AppButton>
+			</PageHeader>
+		</template>
 
-		<div
-			class="mb-ui-md grid grid-cols-2 gap-ui-md md:grid-cols-4"
-			data-testid="sellos-users-stats"
-		>
-			<StatCard label="Users" :value="users.length" icon="lucide-users" />
-			<StatCard
-				label="Active"
-				:value="countOf('Active')"
-				icon="lucide-user-check"
-				tone="success"
-			/>
-			<StatCard label="Invited" :value="countOf('Invited')" icon="lucide-mail" tone="info" />
-			<StatCard
-				label="Deactivated"
-				:value="countOf('Deactivated')"
-				icon="lucide-user-x"
-				tone="warning"
-			/>
-		</div>
+		<template #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-users-stats" />
+		</template>
 
-		<form
-			class="ui-card mb-ui-md"
-			data-testid="sellos-users-invite-form"
-			@submit.prevent="invite"
+		<template #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search users"
+				search-placeholder="Search by name or email"
+				search-testid="sellos-users-search"
+				clear-testid="sellos-users-filter-clear"
+				:active="Boolean(search || statusFilter)"
+				data-testid="sellos-users-filters"
+				@clear="clearFilters"
+			>
+				<FormField
+					v-model="statusFilter"
+					compact
+					type="select"
+					label="Status"
+					:options="statusOptions"
+					data-testid="sellos-users-filter-status"
+				/>
+			</FilterBar>
+		</template>
+
+		<FormDrawer
+			:open="inviting"
+			title="Add user"
+			text="They get an email to set a password when your company can send email."
+			submit-label="Send invitation"
+			testid="sellos-users-invite-form"
+			submit-testid="sellos-users-invite"
+			@close="inviting = false"
+			@submit="invite"
 		>
-			<h2 class="ui-card-heading mb-ui-md">Invite a user</h2>
-			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+			<FormSection title="Person">
 				<FormField
 					v-model="form.email"
 					type="email"
@@ -85,14 +90,36 @@
 					class="md:col-span-2"
 					data-testid="sellos-users-mobile"
 				/>
-			</div>
-			<div class="mt-ui-md">
-				<AppButton type="submit" variant="primary" data-testid="sellos-users-invite">
-					Send invitation
-				</AppButton>
-			</div>
-		</form>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-users-error"
+				class="text-sm text-danger"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
 
+		<p
+			v-if="error && !inviting"
+			role="alert"
+			data-testid="sellos-users-error"
+			class="mb-ui-md text-sm text-danger"
+		>
+			{{ error }}
+		</p>
+		<p
+			v-if="notice"
+			role="status"
+			data-testid="sellos-users-notice"
+			class="mb-ui-md text-sm text-ink"
+		>
+			{{ notice }}
+		</p>
+		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-users-load-error">
+			<LoadError :message="loadError" @retry="load" />
+		</div>
 		<p
 			v-if="!mailReady"
 			data-testid="sellos-users-mail-note"
@@ -102,174 +129,203 @@
 			invitation again once email is set up.
 		</p>
 
-		<ListCard title="People">
-			<ul class="divide-y divide-line-soft" data-testid="sellos-users-list">
+		<!-- Deactivating a user: who takes their open work. A deactivated user can not sign in. -->
+		<section
+			v-if="work && workUser"
+			data-testid="sellos-users-work"
+			class="ui-card mb-ui-md space-y-ui-sm text-sm"
+		>
+			<p v-if="work.needs_handover" class="font-medium text-ink">
+				{{ leaving }} still has open work. Choose who takes it before you deactivate them:
+			</p>
+			<p v-else class="font-medium text-ink">
+				{{ leaving }} can no longer sign in.
+				<span v-if="handedOver" data-testid="sellos-users-handed-over">
+					{{ handedOver }}
+				</span>
+			</p>
+			<p v-if="!work.open_lead_count && !work.open_task_count" class="text-ink-muted">
+				No open leads or tasks.
+			</p>
+			<ul class="list-disc pl-5">
 				<li
-					v-for="u in users"
-					:key="u.email"
-					data-testid="sellos-users-row"
-					:data-email="u.email"
-					:data-status="u.status"
-					class="space-y-ui-sm py-ui-md first:pt-0 last:pb-0"
+					v-for="lead in work.open_leads"
+					:key="lead.name"
+					data-testid="sellos-users-work-lead"
 				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink" data-testid="sellos-users-name">
-							{{ u.full_name || u.email }}
-						</span>
-						<span class="text-sm text-ink-muted">{{ u.email }}</span>
-						<span class="text-sm text-ink-muted" data-testid="sellos-users-role-label">
-							{{ roleLabel(u.role) }}
-						</span>
-						<StatusBadge
-							:tone="STATUS_TONE[u.status] || 'neutral'"
-							:label="u.status"
-							data-testid="sellos-users-status"
-						/>
-					</div>
-					<div class="flex flex-wrap items-end gap-ui-sm">
-						<FormField
-							v-model="mobiles[u.email]"
-							type="tel"
-							label="Mobile number"
-							class="w-64"
-							data-testid="sellos-users-row-mobile"
-						/>
-						<AppButton
-							type="button"
-							data-testid="sellos-users-save-mobile"
-							@click="saveMobile(u)"
-						>
-							Save number
-						</AppButton>
-					</div>
-					<p
-						v-if="u.click_to_call_note"
-						data-testid="sellos-users-no-click-to-call"
-						class="text-sm text-accent"
-					>
-						{{ u.click_to_call_note }}
-					</p>
-					<p
-						v-else
-						class="text-sm text-ink-muted"
-						data-testid="sellos-users-click-to-call"
-					>
-						Click to call rings this number first.
-					</p>
-					<div class="flex flex-wrap items-center gap-3 text-sm text-ink-muted">
-						<span data-testid="sellos-users-open-leads"
-							>{{ u.open_leads }} open leads</span
-						>
-						<span data-testid="sellos-users-open-tasks"
-							>{{ u.open_tasks }} open tasks</span
-						>
-						<AppButton
-							v-if="u.status === 'Invited'"
-							type="button"
-							data-testid="sellos-users-resend"
-							@click="resend(u)"
-						>
-							Send invitation again
-						</AppButton>
-						<AppButton
-							v-if="u.enabled && u.email !== session.user"
-							type="button"
-							data-testid="sellos-users-deactivate"
-							@click="deactivate(u)"
-						>
-							Deactivate
-						</AppButton>
-						<AppButton
-							v-if="!u.enabled"
-							type="button"
-							data-testid="sellos-users-reactivate"
-							@click="reactivate(u)"
-						>
-							Turn back on
-						</AppButton>
-					</div>
-					<div
-						v-if="work && work.email === u.email"
-						data-testid="sellos-users-work"
-						class="rounded-input border border-line-soft p-ui-md text-sm"
-					>
-						<p v-if="work.needs_handover" class="font-medium text-ink">
-							{{ u.full_name || u.email }} still has open work. Choose who takes it
-							before you deactivate them:
-						</p>
-						<p v-else class="font-medium text-ink">
-							{{ u.full_name || u.email }} can no longer sign in.
-							<span v-if="handedOver" data-testid="sellos-users-handed-over">
-								{{ handedOver }}
-							</span>
-						</p>
-						<p
-							v-if="!work.open_lead_count && !work.open_task_count"
-							class="text-ink-muted"
-						>
-							No open leads or tasks.
-						</p>
-						<ul class="mt-1 list-disc pl-5">
-							<li
-								v-for="lead in work.open_leads"
-								:key="lead.name"
-								data-testid="sellos-users-work-lead"
-							>
-								Lead {{ lead.lead_title || lead.name }} ({{ lead.stage }})
-							</li>
-							<li
-								v-for="t in work.open_tasks"
-								:key="t.name"
-								data-testid="sellos-users-work-task"
-							>
-								Task {{ t.title }}, due {{ t.due_date }}
-							</li>
-						</ul>
-						<form
-							v-if="work.needs_handover"
-							class="mt-ui-sm flex flex-wrap items-end gap-ui-sm"
-							data-testid="sellos-users-handover"
-							@submit.prevent="handOver(u)"
-						>
-							<FormField
-								v-model="handoverTo"
-								type="select"
-								label="Who takes the leads"
-								required
-								:options="handoverOptions(work.agents)"
-								class="w-72"
-								data-testid="sellos-users-handover-agent"
-							/>
-							<AppButton type="submit" data-testid="sellos-users-handover-confirm">
-								Hand over and deactivate
-							</AppButton>
-							<AppButton
-								type="button"
-								data-testid="sellos-users-handover-cancel"
-								@click="work = null"
-							>
-								Cancel
-							</AppButton>
-						</form>
-					</div>
+					Lead {{ lead.lead_title || lead.name }} ({{ lead.stage }})
+				</li>
+				<li
+					v-for="t in work.open_tasks"
+					:key="t.name"
+					data-testid="sellos-users-work-task"
+				>
+					Task {{ t.title }}, due {{ formatDate(t.due_date) }}
 				</li>
 			</ul>
-		</ListCard>
-	</div>
+			<form
+				v-if="work.needs_handover"
+				class="flex flex-wrap items-end gap-ui-sm"
+				data-testid="sellos-users-handover"
+				@submit.prevent="handOver(workUser)"
+			>
+				<FormField
+					v-model="handoverTo"
+					type="select"
+					label="Who takes the leads"
+					required
+					:options="handoverOptions(work.agents)"
+					class="w-72"
+					data-testid="sellos-users-handover-agent"
+				/>
+				<AppButton
+					type="submit"
+					variant="primary"
+					data-testid="sellos-users-handover-confirm"
+				>
+					Hand over and deactivate
+				</AppButton>
+				<AppButton
+					type="button"
+					data-testid="sellos-users-handover-cancel"
+					@click="work = null"
+				>
+					Cancel
+				</AppButton>
+			</form>
+			<AppButton
+				v-else
+				type="button"
+				data-testid="sellos-users-work-close"
+				@click="work = null"
+			>
+				Close
+			</AppButton>
+		</section>
+
+		<DataTable
+			title="People"
+			caption="Users"
+			:columns="columns"
+			:rows="shown"
+			row-key="email"
+			:row-attrs="rowAttrs"
+			:row-name="(u) => u.full_name || u.email"
+			:loading="loading"
+			loading-label="Loading users."
+			empty-title="No users yet"
+			empty-text="Add the first person with Add user."
+			empty-icon="lucide-users"
+			testid="sellos-users-list"
+			row-testid="sellos-users-row"
+		>
+			<template #cell-full_name="{ row }">
+				<span class="block font-medium text-ink" data-testid="sellos-users-name">{{
+					row.full_name || row.email
+				}}</span>
+				<span class="block text-sm font-normal text-ink-muted">{{ row.email }}</span>
+			</template>
+			<template #cell-role="{ row }">
+				<span class="text-ink-body" data-testid="sellos-users-role-label">{{
+					roleLabel(row.role)
+				}}</span>
+			</template>
+			<template #cell-status="{ row }">
+				<StatusBadge
+					:tone="STATUS_TONE[row.status] || 'neutral'"
+					:label="row.status"
+					data-testid="sellos-users-status"
+				/>
+			</template>
+			<template #cell-mobile_no="{ row }">
+				<div class="flex flex-wrap items-end gap-ui-sm">
+					<FormField
+						v-model="mobiles[row.email]"
+						type="tel"
+						label="Mobile number"
+						class="w-52"
+						data-testid="sellos-users-row-mobile"
+					/>
+					<AppButton
+						type="button"
+						data-testid="sellos-users-save-mobile"
+						@click="saveMobile(row)"
+					>
+						Save number
+					</AppButton>
+				</div>
+				<p
+					v-if="row.click_to_call_note"
+					data-testid="sellos-users-no-click-to-call"
+					class="mt-1 text-sm text-danger"
+				>
+					{{ row.click_to_call_note }}
+				</p>
+				<p
+					v-else
+					class="mt-1 text-sm text-ink-muted"
+					data-testid="sellos-users-click-to-call"
+				>
+					Click to call rings this number first.
+				</p>
+			</template>
+			<template #cell-work="{ row }">
+				<span class="block text-sm text-ink-muted" data-testid="sellos-users-open-leads"
+					>{{ row.open_leads }} open leads</span
+				>
+				<span class="block text-sm text-ink-muted" data-testid="sellos-users-open-tasks"
+					>{{ row.open_tasks }} open tasks</span
+				>
+			</template>
+			<template #cell-actions="{ row }">
+				<div class="flex flex-wrap items-center gap-ui-sm">
+					<AppButton
+						v-if="row.status === 'Invited'"
+						type="button"
+						data-testid="sellos-users-resend"
+						@click="resend(row)"
+					>
+						Send invitation again
+					</AppButton>
+					<AppButton
+						v-if="row.enabled && row.email !== session.user"
+						type="button"
+						data-testid="sellos-users-deactivate"
+						@click="deactivate(row)"
+					>
+						Deactivate
+					</AppButton>
+					<AppButton
+						v-if="!row.enabled"
+						type="button"
+						data-testid="sellos-users-reactivate"
+						@click="reactivate(row)"
+					>
+						Turn back on
+					</AppButton>
+				</div>
+			</template>
+		</DataTable>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
+import DataTable from "../components/DataTable.vue";
+import FilterBar from "../components/FilterBar.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
-import StatCard from "../components/StatCard.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { usersApi } from "../company/usersApi";
 import { serverMessage } from "../crm/crmApi";
+import { formatDate } from "../format";
 import { session } from "../session";
 
 // Users, for the Company Admin (SOS-P1-17). Every change is saved at once and the list is read back.
@@ -278,8 +334,12 @@ const roles = ref([]);
 const mailReady = ref(true);
 const error = ref("");
 const loadError = ref("");
+const loading = ref(true);
 const notice = ref("");
 const work = ref(null);
+const inviting = ref(false);
+const search = ref("");
+const statusFilter = ref("");
 const mobiles = reactive({});
 const form = reactive({
 	email: "",
@@ -301,6 +361,74 @@ function take(state) {
 const roleOptions = computed(() => roles.value.map((r) => ({ label: roleLabel(r), value: r })));
 const STATUS_TONE = { Active: "success", Invited: "info", Deactivated: "neutral" };
 const countOf = (status) => users.value.filter((u) => u.status === status).length;
+const kpis = computed(() => [
+	{
+		label: "Users",
+		value: users.value.length,
+		caption: "in your company",
+		icon: "lucide-users",
+	},
+	{
+		label: "Active",
+		value: countOf("Active"),
+		caption: "can sign in",
+		icon: "lucide-user-check",
+		tone: "success",
+	},
+	{
+		label: "Invited",
+		value: countOf("Invited"),
+		caption: "have not signed in yet",
+		icon: "lucide-mail",
+		tone: "info",
+	},
+	{
+		label: "Deactivated",
+		value: countOf("Deactivated"),
+		caption: "can not sign in",
+		icon: "lucide-user-x",
+		tone: "warning",
+	},
+]);
+
+// The search and the status filter work on the users already loaded.
+const statusOptions = [
+	{ label: "Any status", value: "" },
+	{ label: "Active", value: "Active" },
+	{ label: "Invited", value: "Invited" },
+	{ label: "Deactivated", value: "Deactivated" },
+];
+const shown = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return users.value.filter(
+		(u) =>
+			(!statusFilter.value || u.status === statusFilter.value) &&
+			(!q || `${u.full_name || ""} ${u.email}`.toLowerCase().includes(q))
+	);
+});
+function clearFilters() {
+	search.value = "";
+	statusFilter.value = "";
+}
+
+const columns = [
+	{
+		key: "full_name",
+		label: "Name",
+		primary: true,
+		sortable: true,
+		sortValue: (u) => u.full_name || u.email,
+	},
+	{ key: "role", label: "Role", sortable: true, sortValue: (u) => roleLabel(u.role) },
+	{ key: "status", label: "Status", sortable: true },
+	{ key: "mobile_no", label: "Mobile number", wrap: true, class: "min-w-[16rem]" },
+	{ key: "work", label: "Open work" },
+	{ key: "actions", label: "Actions" },
+];
+const rowAttrs = (u) => ({ "data-email": u.email, "data-status": u.status });
+const workUser = computed(() => users.value.find((u) => u.email === work.value?.email) || null);
+const leaving = computed(() => workUser.value?.full_name || work.value?.email || "");
+
 const handoverOptions = (agents) => [
 	{ label: "Share among the team's active agents", value: "__team" },
 	...(agents || []).map((a) => ({ label: a.full_name, value: a.name })),
@@ -312,6 +440,8 @@ async function load() {
 		take(await usersApi.list());
 	} catch (e) {
 		loadError.value = serverMessage(e, "The users could not be loaded.");
+	} finally {
+		loading.value = false;
 	}
 }
 
@@ -326,6 +456,11 @@ async function run(action, fallback) {
 	}
 }
 
+function openInvite() {
+	error.value = "";
+	inviting.value = true;
+}
+
 async function invite() {
 	const result = await run(
 		() => usersApi.invite({ ...form }),
@@ -337,6 +472,7 @@ async function invite() {
 		? `Invitation sent to ${result.email}.`
 		: `${result.email} was added. The invitation was not sent because email is not set up yet.`;
 	Object.assign(form, { email: "", first_name: "", last_name: "", mobile_no: "" });
+	inviting.value = false;
 }
 
 async function resend(u) {

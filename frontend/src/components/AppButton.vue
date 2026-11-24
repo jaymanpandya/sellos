@@ -5,7 +5,7 @@
 		:theme="variant === 'danger' ? 'red' : 'gray'"
 		size="lg"
 		:class="[
-			'!min-h-touch !min-w-touch !rounded-input !px-[18px] !text-base !font-medium',
+			'!min-h-touch !min-w-touch !rounded !px-[18px] !text-base !font-medium',
 			// Disabled is flat and dashed on the quiet surface, so it reads as off, not as a ghost button.
 			'disabled:!cursor-not-allowed disabled:!border disabled:!border-dashed disabled:!border-line-field disabled:!bg-surface-subtle disabled:!text-ink-muted disabled:!opacity-70',
 			variant === 'secondary' && !active

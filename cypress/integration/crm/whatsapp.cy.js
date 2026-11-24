@@ -181,6 +181,8 @@ context("SOS-P6-11: WhatsApp", () => {
 				expect(text).not.to.contain(SECRET_TOKEN);
 				expect(text).not.to.contain(SECRET_SIGNING);
 			});
+		// The template form is a drawer, opened by Add template.
+		cy.getByTestId("whatsapp-template-add").click();
 		cy.getByTestId("whatsapp-template-name").type("gate_spec_template");
 		cy.get('textarea[data-testid="sellos-whatsapp-template-body"]').type("Hello {{}1}}.");
 		cy.getByTestId("whatsapp-template-save").click();

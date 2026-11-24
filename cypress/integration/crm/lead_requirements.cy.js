@@ -14,6 +14,7 @@ context("SOS-P1-15: what each buyer wants", () => {
 			cy.intercept("**/api/method/sellos.crm.api.list_leads*").as("list");
 			cy.visit("/sellos/crm/leads");
 			cy.getByTestId("lead-row").contains(own).click();
+			cy.getByTestId("tab-requirements").click();
 
 			cy.getByTestId("lead-requirements").should("be.visible");
 			cy.getByTestId("lead-req-budget-from").type("9000000");

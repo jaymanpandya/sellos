@@ -1,10 +1,38 @@
 <template>
-	<div data-testid="sellos-whatsapp-page">
-		<PageHeader
-			title="WhatsApp"
-			text="Conversations with your leads. A warning shows each lead's consent and never stops a message."
-			icon="lucide-message-circle"
-		/>
+	<PageTemplate data-testid="sellos-whatsapp-page">
+		<template #header>
+			<PageHeader
+				title="WhatsApp"
+				text="Conversations with your leads. A warning shows each lead's consent and never stops a message."
+				icon="lucide-message-circle"
+			/>
+		</template>
+
+		<template v-if="rows && rows.length" #kpis>
+			<KpiStrip :items="kpis" data-testid="sellos-whatsapp-stats" />
+		</template>
+
+		<template v-if="rows && rows.length" #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search conversations"
+				search-placeholder="Search by lead"
+				search-testid="sellos-whatsapp-search"
+				clear-testid="sellos-whatsapp-filter-clear"
+				:active="Boolean(search || stateFilter)"
+				@clear="clearFilters"
+			>
+				<FormField
+					v-model="stateFilter"
+					compact
+					type="select"
+					label="State"
+					:options="stateOptions"
+					data-testid="sellos-whatsapp-filter-state"
+				/>
+			</FilterBar>
+		</template>
+
 		<LoadError
 			v-if="error"
 			class="mb-ui-md"
@@ -12,45 +40,51 @@
 			:message="error"
 			@retry="load"
 		/>
-		<LoadingSkeleton v-else-if="!rows" />
 
-		<EmptyState
-			v-else-if="!rows.length"
-			title="No conversations yet."
-			text="A conversation starts when a customer writes to your WhatsApp number, or when you send a template to a lead."
-			icon="lucide-message-circle-off"
-			data-testid="sellos-whatsapp-empty"
-		/>
+		<div
+			v-else
+			class="grid grid-cols-1 gap-ui-md"
+			:class="rows && rows.length ? 'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]' : ''"
+		>
+			<DataTable
+				title="Conversations"
+				caption="Conversations"
+				:columns="columns"
+				:rows="shownRows"
+				:loading="!rows"
+				loading-label="Loading conversations."
+				row-clickable
+				:row-name="(row) => row.title"
+				:row-attrs="rowAttrs"
+				empty-title="No conversations yet."
+				empty-text="A conversation starts when a customer writes to your WhatsApp number, or when you send a template to a lead."
+				empty-icon="lucide-message-circle-off"
+				testid="sellos-whatsapp-list"
+				row-testid="sellos-whatsapp-conversation"
+				empty-testid="sellos-whatsapp-empty"
+				@row-click="(row) => open(row.name)"
+			>
+				<template #cell-title="{ row }">
+					<AppButton
+						type="button"
+						:active="selected === row.name"
+						:aria-pressed="selected === row.name"
+						@click="open(row.name)"
+					>
+						{{ row.title }}
+					</AppButton>
+				</template>
+				<template #cell-consent_status="{ row }">
+					<StatusBadge
+						:tone="toneOf(row.consent_warning)"
+						:label="row.consent_status"
+						data-testid="sellos-whatsapp-row-consent"
+						:data-level="row.consent_warning"
+					/>
+				</template>
+			</DataTable>
 
-		<div v-else class="grid grid-cols-1 gap-ui-md lg:grid-cols-3">
-			<ListCard title="Conversations">
-				<ul class="space-y-ui-sm" data-testid="sellos-whatsapp-list">
-					<li v-for="row in rows" :key="row.name">
-						<AppButton
-							type="button"
-							class="!w-full !justify-between"
-							:active="selected === row.name"
-							data-testid="sellos-whatsapp-conversation"
-							:data-lead="row.lead"
-							:data-state="row.state"
-							@click="open(row.name)"
-						>
-							{{ row.title }}
-						</AppButton>
-						<div class="mt-1 flex flex-wrap items-center gap-ui-sm">
-							<StatusBadge
-								:tone="toneOf(row.consent_warning)"
-								:label="row.consent_status"
-								data-testid="sellos-whatsapp-row-consent"
-								:data-level="row.consent_warning"
-							/>
-							<span class="text-sm text-ink-muted">{{ row.state }}</span>
-						</div>
-					</li>
-				</ul>
-			</ListCard>
-
-			<div class="lg:col-span-2">
+			<div v-if="rows && rows.length" class="min-w-0">
 				<EmptyState
 					v-if="!thread"
 					title="Choose a conversation."
@@ -103,7 +137,7 @@
 						<li
 							v-for="message in thread.messages"
 							:key="message.name"
-							class="rounded-input border border-line-soft p-ui-md"
+							class="rounded border border-line-soft p-ui-md"
 							data-testid="sellos-whatsapp-message"
 							:data-direction="message.direction"
 							:data-status="message.status"
@@ -226,19 +260,22 @@
 				</ListCard>
 			</div>
 		</div>
-	</div>
+	</PageTemplate>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
+import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
+import FilterBar from "../components/FilterBar.vue";
 import FormField from "../components/FormField.vue";
+import KpiStrip from "../components/KpiStrip.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
-import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { whatsappApi } from "../whatsapp/whatsappApi";
@@ -257,6 +294,58 @@ const parameters = ref("");
 const note = ref("");
 const result = ref(null);
 const sending = ref(false);
+
+const search = ref("");
+const stateFilter = ref("");
+
+const columns = [
+	{ key: "title", label: "Lead", primary: true, wrap: true },
+	{ key: "consent_status", label: "Consent" },
+	{ key: "state", label: "State" },
+];
+const stateOptions = computed(() => [
+	{ label: "Any state", value: "" },
+	...[...new Set((rows.value || []).map((r) => r.state))].map((s) => ({ label: s, value: s })),
+]);
+const shownRows = computed(() => {
+	const needle = search.value.trim().toLowerCase();
+	return (rows.value || []).filter(
+		(r) =>
+			(!stateFilter.value || r.state === stateFilter.value) &&
+			(!needle || String(r.title).toLowerCase().includes(needle))
+	);
+});
+const kpis = computed(() => {
+	const all = rows.value || [];
+	return [
+		{
+			label: "Conversations",
+			value: all.length,
+			caption: "Every lead you have written with",
+			icon: "lucide-message-circle",
+		},
+		{
+			label: "Waiting for a reply",
+			value: all.filter((r) => r.last_direction === "Inbound" && r.state !== "Closed")
+				.length,
+			caption: "The customer wrote last",
+			icon: "lucide-message-circle-warning",
+			tone: "warning",
+		},
+		{
+			label: "With a human",
+			value: all.filter((r) => r.state === "With a human").length,
+			caption: "Handed over by the bot",
+			icon: "lucide-user-round-check",
+			tone: "info",
+		},
+	];
+});
+const rowAttrs = (row) => ({ "data-lead": row.lead, "data-state": row.state });
+function clearFilters() {
+	search.value = "";
+	stateFilter.value = "";
+}
 
 const toneOf = (level) => (level === "red" ? "danger" : level === "amber" ? "warning" : "neutral");
 const templateOptions = computed(() => [

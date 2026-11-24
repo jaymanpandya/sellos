@@ -18,6 +18,7 @@ context("SOS-P4-06: deals and the commission split", () => {
 			cy.visit("/sellos/crm/deals");
 			cy.wait("@overview");
 
+			cy.getByTestId("deal-new").click();
 			cy.getByTestId("deal-client").select(made.client);
 			cy.getByTestId("deal-property").select(made.property);
 			cy.getByTestId("deal-price").type("8200000");

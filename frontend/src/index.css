@@ -28,7 +28,7 @@ h3 {
 
 	/* Cards: white, 14px radius, 1px line, soft card shadow. */
 	.ui-card {
-		@apply rounded-card border border-line bg-surface p-ui-md shadow-card sm:p-ui-lg;
+		@apply rounded border border-line bg-surface p-ui-md shadow-card sm:p-ui-lg;
 	}
 	.ui-card-heading {
 		@apply text-heading uppercase text-ink-muted;
@@ -37,7 +37,7 @@ h3 {
 	/* Buttons: 44px, 10px radius. Secondary (white, line) by default, solid brand for the one main action. */
 	.btn,
 	.ui-button {
-		@apply inline-flex min-h-touch min-w-touch items-center justify-center gap-2 rounded-input border border-ghost-border bg-ghost-bg px-[18px] text-base font-medium text-ink transition active:scale-[0.98] disabled:opacity-50;
+		@apply inline-flex min-h-touch min-w-touch items-center justify-center gap-2 rounded border border-ghost-border bg-ghost-bg px-[18px] text-base font-medium text-ink transition active:scale-[0.98] disabled:opacity-50;
 	}
 	.btn:hover,
 	.ui-button:hover {
@@ -63,7 +63,7 @@ h3 {
 	/* Fields: 44px, 10px radius, 1px line (3.8:1 on white), 16px text. */
 	.field,
 	.ui-field {
-		@apply block min-h-touch w-full rounded-input border border-line-field bg-surface px-3 text-base text-ink;
+		@apply block min-h-touch w-full rounded border border-line-field bg-surface px-3 text-base text-ink;
 	}
 	.ui-label {
 		@apply text-base text-ink-body;
@@ -83,24 +83,36 @@ h3 {
 		@apply text-link underline underline-offset-2;
 	}
 
-	/* Tables inside a card. */
+	/* The table card: a header band, row dividers, a sticky header (docs/UI_STANDARD.md, "Tables"). */
+	.ui-table-card {
+		@apply overflow-hidden rounded border border-line bg-surface shadow-card;
+	}
+	.ui-table-scroll {
+		@apply max-h-[70vh] overflow-auto;
+	}
 	.ui-table {
-		@apply w-full text-left text-base;
+		@apply w-full border-collapse text-left text-sm;
 	}
 	.ui-table th {
-		@apply border-b border-line bg-surface-faint px-2.5 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted;
+		@apply sticky top-0 z-10 border-b border-line bg-surface-faint px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted;
 	}
 	.ui-table td {
-		@apply border-b border-line-soft px-2.5 py-2;
+		@apply border-b border-line-soft px-3 py-2.5 align-middle;
+	}
+	.ui-table tbody tr:last-child td {
+		@apply border-b-0;
 	}
 	.ui-table tr[role="link"]:hover,
 	.ui-table tr.is-clickable:hover {
 		@apply bg-brand-soft;
 	}
+	.ui-overlay {
+		background-color: rgba(17, 24, 39, 0.4);
+	}
 
 	/* Status badges: pill, tone line, tone background, tone ink, word and icon. */
 	.ui-badge {
-		@apply inline-flex items-center gap-1 rounded-badge border px-2.5 py-0.5 text-xs font-medium;
+		@apply inline-flex items-center gap-1 rounded-pill border px-2.5 py-0.5 text-xs font-medium;
 	}
 	.ui-badge-success {
 		@apply border-tone-success-line bg-tone-success-bg text-tone-success;
@@ -120,15 +132,15 @@ h3 {
 
 	/* Empty state, load error, toast. */
 	.ui-empty {
-		@apply flex flex-col items-center gap-2 rounded-card border border-dashed px-4 py-8 text-center text-base text-ink-muted;
+		@apply flex flex-col items-center gap-2 rounded border border-dashed px-4 py-8 text-center text-base text-ink-muted;
 		border-color: var(--ui-dash);
 		background-image: var(--ui-grad-empty);
 	}
 	.ui-error-box {
-		@apply rounded-card border border-tone-warning-line bg-tone-warning-bg p-4 text-base text-tone-warning;
+		@apply rounded border border-tone-warning-line bg-tone-warning-bg p-4 text-base text-tone-warning;
 	}
 	.ui-toast {
-		@apply flex min-h-touch max-w-sm items-center gap-2 rounded-card border bg-surface px-3 text-base shadow-lift;
+		@apply flex min-h-touch max-w-sm items-center gap-2 rounded border bg-surface px-3 text-base shadow-lift;
 	}
 
 	/* The current menu item: a brand pill (the one place the accent fills a shell element). */
@@ -187,7 +199,7 @@ input[type="checkbox"] {
 	height: 1.125rem;
 	margin-top: 0;
 	border: 1px solid var(--ui-field);
-	border-radius: 4px;
+	border-radius: var(--radius);
 	background-color: var(--ui-white);
 	background-position: center;
 	background-repeat: no-repeat;
@@ -225,7 +237,7 @@ input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
 	cursor: pointer;
-	border-radius: 4px;
+	border-radius: var(--radius);
 	padding: 2px;
 	opacity: 0.8;
 	filter: brightness(0) saturate(100%) invert(22%) sepia(30%) saturate(1100%) hue-rotate(110deg) brightness(90%);

@@ -19,8 +19,8 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 
 	const open = (status) => {
 		cy.signInFresh("agent");
-		cy.visit(`/sellos/crm/leads/${leads[status]}`);
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "New");
+		cy.visit(`/sellos/crm/leads/${leads[status]}?tab=calls`);
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "New");
 	};
 
 	// Click Log call and wait until the form has taken the answer and cleared itself, so the next
@@ -71,9 +71,9 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 			cy.getByTestId("lead-timeline-item")
 				.contains("Follow up: Call back later")
 				.closest("[data-testid=sellos-lead-timeline-item]")
-				.should("contain", "2030-03-04 10:30");
+				.should("contain", "4 Mar 2030, 10:30");
 			// Logging a call never moves the lead for the agent.
-			cy.getByTestId("lead-stage").should("have.attr", "data-stage", "New");
+			cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "New");
 		});
 	});
 
@@ -96,19 +96,23 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 		cy.getByTestId("lead-call-stage").should("contain", "Keep the stage");
 		logCall();
 		// Offered, not forced: the lead is still on New.
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "New");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "New");
 
 		cy.getByTestId("lead-call-outcome").select("Site visit booked");
 		cy.getByTestId("lead-call-suggestion").click();
 		cy.getByTestId("lead-call-stage").should("contain", "Site visit booked");
 		logCall();
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Site visit booked");
+		cy.getByTestId("lead-summary-stage").should(
+			"have.attr",
+			"data-stage",
+			"Site visit booked"
+		);
 
 		// Any other stage may be picked instead of the suggestion.
 		cy.getByTestId("lead-call-outcome").select("Site visit booked");
 		cy.getByTestId("lead-call-stage").select("Negotiation");
 		logCall();
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Negotiation");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "Negotiation");
 	});
 
 	it("asks for a lost reason when a call moves the lead to Closed lost", () => {
@@ -123,7 +127,8 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 			.should("contain", "*");
 		cy.getByTestId("lead-call-lost-reason").select("Bought elsewhere");
 		logCall();
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Closed lost");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "Closed lost");
+		cy.getByTestId("tab-overview").click();
 		cy.getByTestId("lead-lost-reason-shown").should("contain", "Bought elsewhere");
 		cy.getByTestId("lead-stage-change-reason").first().should("contain", "Bought elsewhere");
 	});
@@ -131,9 +136,10 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 	it("asks for a lost reason when the stage box moves a lead to Closed lost", () => {
 		open("Unknown");
 		cy.intercept("POST", "**/api/method/sellos.crm.api.move_lead_stage*").as("move");
+		cy.getByTestId("tab-overview").click();
 		cy.getByTestId("lead-stage-select").select("Closed lost");
 		cy.getByTestId("lead-lost-form").should("be.visible");
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "New");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "New");
 		// Cancel puts the box back on the lead's own stage and moves nothing.
 		cy.getByTestId("lead-lost-cancel").click();
 		cy.getByTestId("lead-lost-form").should("not.exist");
@@ -144,7 +150,7 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 		cy.getByTestId("lead-lost-reason").select("Budget too low");
 		cy.getByTestId("lead-lost-save").click();
 		cy.wait("@move").its("response.statusCode").should("eq", 200);
-		cy.getByTestId("lead-stage").should("have.attr", "data-stage", "Closed lost");
+		cy.getByTestId("lead-summary-stage").should("have.attr", "data-stage", "Closed lost");
 		cy.getByTestId("lead-lost-reason-shown").should("contain", "Budget too low");
 	});
 
@@ -156,6 +162,8 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 		cy.getByTestId("calllists-outcome").should("have.length.at.least", 7);
 		cy.intercept("POST", "**/api/method/sellos.crm.api.save_call_outcome*").as("saveOutcome");
 		cy.intercept("POST", "**/api/method/sellos.crm.api.save_lost_reason*").as("saveReason");
+		// The add forms are drawers, opened from the page header.
+		cy.getByTestId("calllists-new-outcome-open").click();
 		cy.getByTestId("calllists-new-outcome").type(outcome);
 		cy.getByTestId("calllists-new-outcome-followup").check();
 		cy.getByTestId("calllists-new-outcome-stage").select("Contacted");
@@ -166,6 +174,7 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 			.should("have.length", 1)
 			.find("[data-testid=sellos-calllists-outcome-stage]")
 			.should("have.value", "Contacted");
+		cy.getByTestId("calllists-new-reason-open").click();
 		cy.getByTestId("calllists-new-reason").type(reason);
 		cy.getByTestId("calllists-add-reason").click();
 		cy.wait("@saveReason").its("response.statusCode").should("eq", 200);
@@ -174,11 +183,12 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 			.should("have.length", 1);
 
 		cy.signInFresh("agent");
-		cy.visit(`/sellos/crm/leads/${leads.Unknown}`);
+		cy.visit(`/sellos/crm/leads/${leads.Unknown}?tab=calls`);
 		cy.optionTexts("lead-call-outcome").should("include", outcome);
 		cy.getByTestId("lead-call-outcome").select(outcome);
 		cy.getByTestId("lead-call-follow-up").should("be.visible");
 		cy.getByTestId("lead-call-suggestion").should("contain", "Contacted");
+		cy.getByTestId("tab-overview").click();
 		cy.getByTestId("lead-stage-select").select("Closed lost");
 		cy.optionTexts("lead-lost-reason").should("include", reason);
 	});

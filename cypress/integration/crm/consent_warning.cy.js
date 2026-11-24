@@ -47,6 +47,7 @@ context("SOS-P1-08: consent warning on the lead screen", () => {
 		cy.getByTestId("lead-consent-warning")
 			.should("have.attr", "data-level", "red")
 			.and("contain", "WhatsApp");
+		cy.getByTestId("tab-activity").click();
 		cy.getByTestId("lead-activity-type").select("Call");
 		cy.getByTestId("lead-activity-notes").type("Called after the stop request");
 		cy.getByTestId("lead-activity-form").submit();
