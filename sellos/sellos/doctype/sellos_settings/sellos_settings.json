@@ -24,6 +24,7 @@
   "partner_lead_limit",
   "partner_protection_days",
   "consent_wording",
+  "partner_confirmation_wording",
   "enquiry_form_key",
   "listings_webhook_url",
   "listings_webhook_secret",
@@ -139,7 +140,14 @@
    "fieldtype": "Small Text",
    "label": "Consent wording",
    "default": "I agree that {company} and its agents may contact me about my enquiry by phone, SMS, WhatsApp and email. I can ask them to stop at any time.",
-   "description": "The words shown to a person on the enquiry page (SOS-P2-08), on the website forms (SOS-P1-09) and on campaign forms, and to a channel partner when they confirm that the buyer agreed to be contacted (SOS-P7-02). {company} is replaced with the company name (SOS-N22)."
+   "description": "The words shown to a person on the enquiry page (SOS-P2-08), on the website forms (SOS-P1-09) and on campaign forms. {company} is replaced with the company name (SOS-N22)."
+  },
+  {
+   "fieldname": "partner_confirmation_wording",
+   "fieldtype": "Small Text",
+   "label": "Partner confirmation wording",
+   "default": "I confirm my client has agreed that {company} and its agents may contact them about this enquiry.",
+   "description": "The words shown to a channel partner when they confirm that the buyer agreed to be contacted (SOS-P7-02). {company} is replaced with the company name. The buyer's own Consent wording is not used here."
   },
   {
    "fieldname": "enquiry_form_key",

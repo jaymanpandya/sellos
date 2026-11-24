@@ -72,10 +72,17 @@ def lead_context(lead: str) -> str:
 	return ". ".join(parts) + "."
 
 
+def require_disclosure(settings) -> None:
+	"""The agent never speaks, or places a live call, without its AI disclosure line (SOS-N21C)."""
+	if not settings.disclosure:
+		raise VoiceProviderError(_("The AI disclosure line is empty. Set it in the voice agent settings."))
+
+
 def start_agent_call(lead, purpose, answer_url="", status_url=""):
 	"""Place an AI call to the lead. Returns what place_logged_call returns, with the consent status and
 	warning read back from the Consent Check. Raises VoiceProviderError before any call is placed when
-	the agent is not set up."""
+	the agent is not set up or its AI disclosure line is empty (SOS-N21C)."""
+	require_disclosure(config.load())
 	config.build_adapters()  # a call is never placed for an agent that could not answer it
 	placed = call_log.place_logged_call(
 		lead, purpose, mode="AI", answer_url=answer_url, status_url=status_url
@@ -98,8 +105,7 @@ def open_call(call_id, send, clock=None, adapters=None) -> CallHandle:
 	settings = config.load()
 	clock = clock or time.monotonic
 	stt, llm, tts = adapters or config.build_adapters(settings, clock if hasattr(clock, "advance") else None)
-	if not settings.disclosure:
-		raise VoiceProviderError(_("The AI disclosure line is empty. Set it in the voice agent settings."))
+	require_disclosure(settings)
 	session = AgentSession(
 		stt=stt,
 		llm=llm,

@@ -120,7 +120,7 @@ class TestRegistering(PartnerRegistrationCase):
 		self.assertEqual(client.phone, normalise_phone(phone))
 		self.assertEqual(client.email, "p702@example.com")
 		self.assertEqual([row.to_status for row in reg.status_log], ["Registered"])
-		self.assertEqual(reg.consent_wording, pr.consent_wording())  # SOS-N22: {company} replaced
+		self.assertEqual(reg.consent_wording, pr.partner_confirmation_wording())  # {company} replaced
 
 	def test_the_partner_sees_the_phone_masked_never_in_full(self):
 		self.as_partner()
@@ -153,13 +153,17 @@ class TestRegistering(PartnerRegistrationCase):
 		self.assertIn(result["name"], record[0].evidence_link)
 		self.assertEqual(frappe.db.get_value(REG, result["name"], "buyer_agreed"), 1)
 
-	def test_the_consent_wording_shown_is_the_company_setting_and_is_kept(self):
+	def test_the_confirmation_wording_shown_is_its_own_setting_and_is_kept(self):
 		_as("company_admin")
-		pr.save_partner_settings(consent_wording="P702 I agree to be called.")
+		pr.save_partner_settings(
+			consent_wording="P702 I agree to be called.",
+			partner_confirmation_wording="P702 my client agreed.",
+		)
 		self.as_partner()
-		self.assertEqual(pr.partner_registration_form()["consent_wording"], "P702 I agree to be called.")
+		form = pr.partner_registration_form()
+		self.assertEqual(form["confirmation_wording"], "P702 my client agreed.")  # never the buyer's wording
 		name = self.buyer(buyer_agreed=1)["registration"]["name"]
-		self.assertEqual(frappe.db.get_value(REG, name, "consent_wording"), "P702 I agree to be called.")
+		self.assertEqual(frappe.db.get_value(REG, name, "consent_wording"), "P702 my client agreed.")
 
 	def test_consent_never_blocks_a_registration(self):
 		self.as_partner()

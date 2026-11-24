@@ -171,8 +171,15 @@
 					v-model="settings.consent_wording"
 					type="textarea"
 					label="Consent wording"
-					hint="Shown to the partner when they confirm the buyer agreed."
+					hint="Shown to a buyer on the enquiry page and the website forms."
 					data-testid="sellos-registrations-wording"
+				/>
+				<FormField
+					v-model="settings.partner_confirmation_wording"
+					type="textarea"
+					label="Partner confirmation wording"
+					hint="Shown to the partner when they confirm the buyer agreed."
+					data-testid="sellos-registrations-confirmation"
 				/>
 			</div>
 			<div class="mt-ui-md">
@@ -224,6 +231,7 @@ const settings = reactive({
 	partner_lead_limit: "",
 	partner_protection_days: "",
 	consent_wording: "",
+	partner_confirmation_wording: "",
 });
 
 function show(data) {

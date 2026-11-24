@@ -52,8 +52,8 @@
    "fieldname": "disclosure_line",
    "fieldtype": "Small Text",
    "label": "AI disclosure line",
-   "default": "Namaste, main ek real estate agency ki AI assistant bol rahi hoon, koi insaan nahin. Kya main aapse do minute baat kar sakti hoon?",
-   "description": "Spoken first on every call, in Roman Hinglish. Starts as the SOS-N21A draft; SOS-N21 writes the final line."
+   "default": "Namaste, main Nicole baat kar rahi hoon. Main {company} ka AI assistant hoon. Yeh call quality ke liye record ho rahi hai. Agar aap kisi insaan se baat karna chahein, toh bas bol dijiye.",
+   "description": "Spoken first on every call, in Roman Hinglish (SOS-N21C, Jayman, 24 November 2026). {company} is replaced with the company name; the persona name Nicole is part of the text. Counsel reviews it before launch. While it is empty the voice agent places no live call."
   },
   {
    "fieldname": "keyterms",

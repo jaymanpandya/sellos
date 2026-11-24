@@ -34,6 +34,10 @@ DISCLOSURE = (
 	"Namaste, main ek AI assistant bol rahi hoon, koi insaan nahin. Kya main do minute baat kar sakti hoon?"
 )
 OUTCOMES = ("Interested", "Call back later", "Not reachable")
+DEFAULT_DISCLOSURE = (
+	"Namaste, main Nicole baat kar rahi hoon. Main {company} ka AI assistant hoon. Yeh call quality ke "
+	"liye record ho rahi hai. Agar aap kisi insaan se baat karna chahein, toh bas bol dijiye."
+)
 ASK_HUMAN = "mujhe kisi insaan se baat karni hai"
 LONG_REPLY = " ".join(["Bilkul ji, main aapko saari jaankari abhi batati hoon"] * 2)
 
@@ -102,10 +106,10 @@ class TestAudioAndRules(IntegrationTestCase):
 		):
 			self.assertFalse(wants_human(text), text)
 
-	def test_default_keyterms_and_disclosure_start_from_the_bakeoff(self):
+	def test_default_keyterms_start_from_the_bakeoff_and_the_disclosure_line_from_n21c(self):
 		state = frappe.get_doc("Voice Agent Settings")
 		self.assertEqual(config.parse_keyterms(state.keyterms), list(data.KEYTERMS))
-		self.assertEqual(state.disclosure_line, data.REPLIES[0][2])
+		self.assertEqual(state.disclosure_line, DEFAULT_DISCLOSURE)  # SOS-N21C, Jayman, 24 November 2026
 		self.assertTrue(audio.is_roman(state.disclosure_line))
 
 
@@ -509,6 +513,20 @@ class TestSettings(VoiceCase):
 		self.assertEqual(config.load().keyterms, ["Powai", "Bandra West", "stamp duty"])
 		self.assertEqual(config.load().disclosure, "Namaste, main ek AI hoon.")
 
+	def test_the_disclosure_line_replaces_company_when_spoken_and_stays_raw_on_the_screen(self):
+		old_name = frappe.db.get_single_value("SellOS Settings", "company_name")
+		self.addCleanup(frappe.db.set_single_value, "SellOS Settings", "company_name", old_name)
+		frappe.db.set_single_value("SellOS Settings", "company_name", "N21C Realty")
+		frappe.clear_document_cache("SellOS Settings", "SellOS Settings")
+		self.addCleanup(frappe.clear_document_cache, "SellOS Settings", "SellOS Settings")
+		self.assertEqual(config.load().disclosure, DEFAULT_DISCLOSURE.replace("{company}", "N21C Realty"))
+		self.assertIn("main Nicole baat kar rahi hoon", config.load().disclosure)
+		self.assertEqual(settings.get_voice_agent_settings()["disclosure_line"], DEFAULT_DISCLOSURE)
+		frappe.db.set_single_value("SellOS Settings", "company_name", "")
+		frappe.clear_document_cache("SellOS Settings", "SellOS Settings")
+		self.assertIn("Main the company ka AI assistant hoon", config.load().disclosure)
+		self.assertNotIn("{company}", config.load().disclosure)
+
 	def test_bad_settings_are_refused(self):
 		for values in (
 			{"disclosure_line": "  "},
@@ -636,6 +654,16 @@ class TestCallLogWriteBack(VoiceCase):
 		settings.save_voice_agent_settings(stt_provider="")
 		with self.assertRaises(VoiceProviderError):
 			service.start_agent_call(self.lead, "Service")
+		self.assertEqual(frappe.db.count("Call Log", {"lead": self.lead}), 0)
+
+	def test_an_empty_disclosure_line_places_no_live_call(self):
+		"""SOS-N21C: the agent never places a live call while the AI disclosure line is empty."""
+		frappe.db.set_single_value("Voice Agent Settings", "disclosure_line", "")
+		frappe.clear_document_cache("Voice Agent Settings", "Voice Agent Settings")
+		self.assertEqual(config.load().disclosure, "")
+		with self.assertRaises(VoiceProviderError) as raised:
+			service.start_agent_call(self.lead, "Service")
+		self.assertIn("disclosure line is empty", str(raised.exception))
 		self.assertEqual(frappe.db.count("Call Log", {"lead": self.lead}), 0)
 
 	def test_a_stream_for_an_unknown_or_manual_call_is_refused(self):

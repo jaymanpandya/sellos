@@ -60,12 +60,9 @@ context("SOS-P7-02: register a lead as a channel partner", () => {
 		cy.bench("sellos.tests.ui_fixtures.remove_gate_users");
 	});
 
-	it("registers a new buyer: the consent wording is shown, the phone is masked and the registration waits", () => {
+	it("registers a new buyer: the confirmation wording is shown, the phone is masked and the registration waits", () => {
 		openRegister();
-		cy.getByTestId("partner-register-wording").should(
-			"contain",
-			"may contact me about my enquiry"
-		); // SOS-N22 default wording;
+		cy.getByTestId("partner-register-wording").should("contain", "has agreed that"); // the default Partner confirmation wording;
 		fillBuyer(newName, numbers.new_phone);
 		cy.getByTestId("partner-register-project").type("Gate Tower");
 		cy.get('textarea[data-testid="sellos-partner-register-note"]').type(

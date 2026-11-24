@@ -108,3 +108,44 @@ class TestWebsiteForm(WebsiteCase):
 		self.assertEqual(
 			json.loads(frappe.get_doc("File", {"file_url": url}).get_content())["wording"], wording
 		)
+
+
+PARTNER_DEFAULT = (
+	"I confirm my client has agreed that {company} and its agents may contact them about this enquiry."
+)
+
+
+class TestPartnerConfirmationWording(WordingCase):
+	"""SOS-P7-02 (Jayman, 24 November 2026): the partner confirms with its own setting, "Partner
+	confirmation wording", never the buyer's "Consent wording". {company} is replaced the same way."""
+
+	def setUp(self):
+		super().setUp()
+		old = frappe.db.get_single_value(SETTINGS, "partner_confirmation_wording")
+		self.addCleanup(frappe.db.set_single_value, SETTINGS, "partner_confirmation_wording", old)
+		frappe.db.set_single_value(SETTINGS, "partner_confirmation_wording", "")
+
+	def test_the_default_is_the_decided_text_and_the_default_of_the_setting(self):
+		self.assertEqual(pr.DEFAULT_PARTNER_CONFIRMATION, PARTNER_DEFAULT)
+		path = (
+			Path(pr.__file__).parents[1] / "sellos" / "doctype" / "sellos_settings" / "sellos_settings.json"
+		)
+		fields = {f["fieldname"]: f for f in json.loads(path.read_text(encoding="utf-8"))["fields"]}
+		self.assertEqual(fields["partner_confirmation_wording"]["default"], PARTNER_DEFAULT)
+
+	def test_company_is_replaced_and_an_empty_name_falls_back(self):
+		self.assertEqual(pr.partner_confirmation_wording(), PARTNER_DEFAULT.replace("{company}", COMPANY))
+		frappe.db.set_single_value(SETTINGS, "company_name", "")
+		frappe.clear_document_cache(SETTINGS, SETTINGS)
+		self.assertIn("agreed that the company and its agents", pr.partner_confirmation_wording())
+		self.assertNotIn("{company}", pr.partner_confirmation_wording())
+
+	def test_it_is_independent_of_the_consent_wording(self):
+		frappe.db.set_single_value(SETTINGS, "consent_wording", "N22 buyer wording {company}")
+		self.assertEqual(pr.partner_confirmation_wording(), PARTNER_DEFAULT.replace("{company}", COMPANY))
+		frappe.db.set_single_value(SETTINGS, "partner_confirmation_wording", "N22 partner: {company} {x}")
+		self.assertEqual(pr.partner_confirmation_wording(), f"N22 partner: {COMPANY} {{x}}")
+		self.assertEqual(pr.consent_wording(), f"N22 buyer wording {COMPANY}")
+
+	def test_the_settings_screen_gets_the_raw_text(self):
+		self.assertEqual(pr.get_partner_settings()["partner_confirmation_wording"], PARTNER_DEFAULT)

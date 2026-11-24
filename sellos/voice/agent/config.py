@@ -45,8 +45,9 @@ class VoiceSettings:
 	llm_provider: str
 	model: str
 	voice: str
-	disclosure: str
+	disclosure: str  # as spoken: {company} replaced with the company's display name (SOS-N21C)
 	keyterms: list
+	disclosure_raw: str = ""  # as saved, {company} still in it: what the settings screen edits
 
 
 def allowed_providers(kind: str) -> list[str]:
@@ -68,15 +69,19 @@ def parse_keyterms(value) -> list[str]:
 
 
 def load() -> VoiceSettings:
+	from sellos.access.partner_registrations import render_wording  # SOS-N21C: the shared {company} rule
+
 	doc = frappe.get_doc(DOCTYPE)
+	raw = (doc.disclosure_line or "").strip()
 	return VoiceSettings(
 		stt_provider=doc.stt_provider or "",
 		tts_provider=doc.tts_provider or "",
 		llm_provider=doc.llm_provider or "",
 		model=doc.voice_agent_model or "",
 		voice=doc.tts_voice or "",
-		disclosure=(doc.disclosure_line or "").strip(),
+		disclosure=render_wording(raw),
 		keyterms=parse_keyterms(doc.keyterms or ""),
+		disclosure_raw=raw,
 	)
 
 

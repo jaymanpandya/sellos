@@ -127,7 +127,7 @@ class TestRegisteringALead(CommissionCase):
 	def test_a_registered_lead_is_theirs_read_only_masked_and_nobody_elses(self):
 		self.as_partner(self.mail)
 		form = pr.partner_registration_form()
-		self.assertTrue(form["consent_wording"])
+		self.assertTrue(form["confirmation_wording"])
 		number = phones.in_mobile(5061)
 		done = pr.register_buyer("P506 Buyer", number, buyer_agreed=1)
 		lead = done["registration"]["lead"]

@@ -27,7 +27,7 @@ def _state() -> dict:
 		"llm_provider": settings.llm_provider,
 		"voice_agent_model": settings.model,
 		"tts_voice": settings.voice,
-		"disclosure_line": settings.disclosure,
+		"disclosure_line": settings.disclosure_raw,  # raw: saving never bakes the name in
 		"keyterms": settings.keyterms,
 		"keys_set": {
 			field: bool(doc.get_password(field, raise_exception=False)) for field in config.KEY_FIELDS

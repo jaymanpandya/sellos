@@ -146,7 +146,7 @@ import StatusBadge from "../components/StatusBadge.vue";
 import { partnerRegistrationsApi as api } from "../company/partnerRegistrationsApi";
 import { serverMessage } from "../crm/crmApi";
 
-// A partner registers a buyer (SOS-P7-02). The consent wording is the company's, shown as it will be kept.
+// A partner registers a buyer (SOS-P7-02). The confirmation wording is the company's, shown as it will be kept.
 // A buyer the company already has is answered with one sentence and nothing else.
 const STATUS_TONE = {
 	Registered: "info",
@@ -178,7 +178,7 @@ async function load() {
 	loadError.value = "";
 	try {
 		const [info, mine] = await Promise.all([api.form(), api.mine()]);
-		wording.value = info.consent_wording;
+		wording.value = info.confirmation_wording;
 		remaining.value = info.remaining;
 		rows.value = mine.registrations;
 	} catch (e) {

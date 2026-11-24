@@ -59,6 +59,11 @@ DEFAULT_WORDING = (
 	"I agree that {company} and its agents may contact me about my enquiry by phone, SMS, WhatsApp "
 	"and email. I can ask them to stop at any time."
 )
+# The default of the company setting "Partner confirmation wording" (Jayman, 24 November 2026): what a
+# channel partner confirms about their client, instead of the buyer's own "Consent wording" (SOS-P7-02).
+DEFAULT_PARTNER_CONFIRMATION = (
+	"I confirm my client has agreed that {company} and its agents may contact them about this enquiry."
+)
 COMPANY_PLACEHOLDER = "{company}"
 FALLBACK_COMPANY = "the company"
 
@@ -93,6 +98,17 @@ def consent_wording() -> str:
 	return render_wording(raw_consent_wording())
 
 
+def raw_partner_confirmation_wording() -> str:
+	"""The partner confirmation as the Company Admin saved it, {company} still in it."""
+	value = frappe.db.get_single_value(SETTINGS, "partner_confirmation_wording")
+	return (value or "").strip() or DEFAULT_PARTNER_CONFIRMATION
+
+
+def partner_confirmation_wording() -> str:
+	"""The words a partner sees and the registration keeps, with {company} replaced (SOS-P7-02)."""
+	return render_wording(raw_partner_confirmation_wording())
+
+
 def protection_days() -> int:
 	from sellos.sellos.doctype.partner_registration.partner_registration import protection_days as days
 
@@ -101,17 +117,24 @@ def protection_days() -> int:
 
 @sellos_api(COMPANY_ADMIN)
 def get_partner_settings():
-	"""The three company settings of the partner programme."""
+	"""The company settings of the partner programme."""
 	return {
 		"partner_lead_limit": lead_limit(),
 		"partner_protection_days": protection_days(),
 		"consent_wording": raw_consent_wording(),
+		"partner_confirmation_wording": raw_partner_confirmation_wording(),
 	}
 
 
 @sellos_api(COMPANY_ADMIN)
-def save_partner_settings(partner_lead_limit=None, partner_protection_days=None, consent_wording=None):
-	"""Change the partner lead limit (per partner per hour), the protection days and the consent wording."""
+def save_partner_settings(
+	partner_lead_limit=None,
+	partner_protection_days=None,
+	consent_wording=None,
+	partner_confirmation_wording=None,
+):
+	"""Change the partner lead limit (per partner per hour), the protection days, the consent wording and
+	the partner confirmation wording."""
 	for field, value, label in (
 		("partner_lead_limit", partner_lead_limit, _("Partner lead limit")),
 		("partner_protection_days", partner_protection_days, _("Partner protection days")),
@@ -123,6 +146,10 @@ def save_partner_settings(partner_lead_limit=None, partner_protection_days=None,
 		frappe.db.set_single_value(SETTINGS, field, cint(value))
 	if consent_wording is not None:
 		frappe.db.set_single_value(SETTINGS, "consent_wording", str(consent_wording).strip())
+	if partner_confirmation_wording is not None:
+		frappe.db.set_single_value(
+			SETTINGS, "partner_confirmation_wording", str(partner_confirmation_wording).strip()
+		)
 	return get_partner_settings()
 
 
@@ -182,7 +209,7 @@ def partner_registration_form():
 	now = now_datetime()
 	return {
 		"firm_name": frappe.db.get_value(FIRM, firm, "firm_name"),
-		"consent_wording": consent_wording(),
+		"confirmation_wording": partner_confirmation_wording(),
 		"limit": lead_limit(),
 		"remaining": max(lead_limit() - _attempts_in_the_last_hour(frappe.session.user, now), 0),
 	}
@@ -247,7 +274,7 @@ def register(buyer_name, phone, project_of_interest="", note="", buyer_agreed=0,
 			"project_of_interest": project,
 			"note": note,
 			"phone_masked": mask_phone(key),
-			"consent_wording": consent_wording(),
+			"consent_wording": partner_confirmation_wording(),  # the words shown, kept as the evidence
 			"buyer_agreed": agreed,
 			"registered_on": on,
 		}
