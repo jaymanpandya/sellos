@@ -23,7 +23,7 @@
 				/>
 			</div>
 
-			<div class="mt-ui-md grid gap-ui-md lg:grid-cols-2">
+			<div class="mt-ui-md grid grid-cols-1 gap-ui-md lg:grid-cols-2">
 				<ListCard title="Leads by stage" data-testid="sellos-dash-stages">
 					<EmptyState
 						v-if="!board.total"
@@ -60,7 +60,7 @@
 							>
 								<router-link
 									:to="`/crm/leads/${row.lead}`"
-									class="ui-link truncate"
+									class="ui-link min-w-0 truncate"
 									>{{ row.lead_title }}</router-link
 								>
 								<StatusBadge
@@ -87,9 +87,11 @@
 							class="flex items-center justify-between gap-ui-sm py-2"
 							data-testid="sellos-dash-overdue-row"
 						>
-							<router-link :to="`/crm/leads/${row.lead}`" class="ui-link truncate">{{
-								row.lead_title
-							}}</router-link>
+							<router-link
+								:to="`/crm/leads/${row.lead}`"
+								class="ui-link min-w-0 truncate"
+								>{{ row.lead_title }}</router-link
+							>
 							<span class="shrink-0 text-sm text-ink-muted">{{
 								when(row.due_at || row.due_date)
 							}}</span>
@@ -111,9 +113,11 @@
 							class="flex items-center justify-between gap-ui-sm py-2"
 							data-testid="sellos-dash-visit-row"
 						>
-							<router-link :to="`/crm/leads/${row.lead}`" class="ui-link truncate">{{
-								row.lead_title
-							}}</router-link>
+							<router-link
+								:to="`/crm/leads/${row.lead}`"
+								class="ui-link min-w-0 truncate"
+								>{{ row.lead_title }}</router-link
+							>
 							<span class="shrink-0 text-sm text-ink-muted">{{
 								time(row.visit_datetime)
 							}}</span>

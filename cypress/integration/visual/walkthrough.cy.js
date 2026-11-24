@@ -25,6 +25,15 @@ function pageDrawn() {
 	cy.getByTestId("no-access").should("not.exist");
 }
 
+// A phone page must not scroll sideways: its content is no wider than the page (a card that sticks out by a few
+// pixels is invisible in a screenshot and fails a customer's thumb).
+function noSidewaysScroll(what) {
+	cy.document().then((doc) => {
+		const root = doc.documentElement;
+		expect(root.scrollWidth, `${what}: page width`).to.be.at.most(root.clientWidth);
+	});
+}
+
 // The menu links of the signed in role: [{ href, label, icons }], read from the sidebar that is on screen.
 function menuLinks() {
 	return cy
@@ -84,6 +93,7 @@ ROLES.forEach(({ role, label }) => {
 			cy.signInFresh(role);
 			cy.visit("/sellos");
 			pageDrawn();
+			noSidewaysScroll("Home");
 			cy.screenshot(`${label}/phone-01-home`, { capture: "viewport", overwrite: true });
 			cy.getByTestId("phone-nav").should("be.visible");
 			cy.viewport(1400, 960);
@@ -93,6 +103,7 @@ ROLES.forEach(({ role, label }) => {
 				cy.viewport(375, 812);
 				cy.visit(leads.href);
 				pageDrawn();
+				noSidewaysScroll("Leads");
 				cy.screenshot(`${label}/phone-02-leads`, { capture: "viewport", overwrite: true });
 			});
 		});
