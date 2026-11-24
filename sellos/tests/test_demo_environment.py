@@ -119,15 +119,30 @@ class TestDemoData(unittest.TestCase):
 		self.assertIn("NOT-A-REAL-KEY", demo.DEMO_TELEPHONY_ID)
 
 	def test_the_seed_calls_the_production_seed_functions(self):
+		"""The demo's content (demo_data.py) is made by steps, each run on its own so one failure is named and
+		fails the seed (SOS-DEMO-2), and each step goes through the production methods, not around them."""
 		source = (REPO_ROOT / "sellos" / "testing" / "demo.py").read_text(encoding="utf-8")
-		for name in (
-			"_seed_inventory",
-			"_seed_partner_firms",
-			"_seed_partner_registrations",
-			"_seed_partner_shares",
-			"_seed_inbound_opt_in",
+		for label, name in (
+			("inventory", "_seed_demo_inventory"),
+			("partners", "_seed_demo_partners"),
+			("enquiries", "_seed_demo_enquiries"),
+			("sellers", "_seed_demo_sellers"),
+			("deals and commission", "_seed_demo_deals"),
+			("whatsapp", "_seed_demo_whatsapp"),
+			("visits and follow ups", "_seed_demo_visits_and_follow_ups"),
 		):
-			self.assertIn(f"fx.{name}(", source, name)
+			self.assertIn(f'_isolated("{label}", {name},', source, name)
+		for production in (
+			"fx._make_partner_firm(",  # the production firm methods, with mail off
+			"partner_registrations.register_buyer(",
+			"deals.save_deal(",
+			"deals.approve_splits(",
+			"intake.take(",  # the one lead intake
+			"conversations.receive(",  # the WhatsApp conversation methods, with the fake provider
+			"conversations.send(",
+			"conversations.hand_off(",
+		):
+			self.assertIn(production, source, production)
 
 
 class TestDemoServer(unittest.TestCase):
@@ -370,7 +385,8 @@ class TestDemoSeedAndReset(unittest.TestCase):
 		self.assertGreaterEqual(leads, len(demo.COMPANIES[0]["leads"]))  # and the inbound leads
 		clients = self.query(site, "select count(*) from `tabClient`")[0][0]
 		stages = {r[0] for r in self.query(site, "select distinct stage from `tabLead`")}
-		self.assertEqual(stages, set(STAGES))
+		# Every buyer stage, and the two seller stages the demo's sellers are in (demo_data.py).
+		self.assertEqual(stages, set(STAGES) | {"Seller Qualified", "Seller Valuation shared"})
 		consent = {r[0] for r in self.query(site, "select distinct consent_status from `tabLead`")}
 		self.assertGreaterEqual(consent, {"Unknown", "Consented", "Opted out", "Registered DND"})
 		grants = {r[0] for r in self.query(site, "select status from `tabSupport Grant`")}
