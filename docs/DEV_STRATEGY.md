@@ -338,8 +338,8 @@ are Not Needed, and their blocks are kept.
   a message the person sent. Enforcement lives in one function (SOS-P2-04) behind the company setting
   "Consent enforcement", which is Off by default. An explicit stop request is recorded as Opted out
   with a red warning, and does not block a call or an SMS. A WhatsApp STOP is the one exception (Jayman, 24 November 2026): it always suppresses everything the bot, campaigns and partner digests send unprompted, whatever "Consent enforcement" says. It sends one confirmation reply, creates a task for the assigned advisor and records the opt out in the consent log, and the person can still write to us and get replies. Calling hours
-  stay a configurable setting. Tests show that calls and messages proceed in every consent state and
-  that the warning is recorded. The earlier rules "the consent check has no override" and "the system
+  stay a configurable setting. Tests show that calls and SMS proceed in every consent state, that a WhatsApp
+  STOP stops what is sent unprompted, and that the warning is recorded. The earlier rules "the consent check has no override" and "the system
   refuses a promotional purpose" are withdrawn.
 * **Name.** The product is called SellOS everywhere, exactly as BuildOS is called BuildOS, with no
   company or suite brand.

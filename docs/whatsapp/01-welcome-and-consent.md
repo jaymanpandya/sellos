@@ -43,7 +43,7 @@ A WhatsApp STOP always suppresses all WhatsApp messages to that person at once: 
 * creates a task for the assigned advisor, so a person knows,
 * records the opt out in the consent log (a Consent Record, Opted out, with the message as evidence).
 
-After STOP the bot only replies to messages the person sends and sends nothing unprompted until they opt in again (for example by sending START, which records a new Consent Record). Calls and SMS are still never blocked by consent. See "Conflicts to settle" in `README.md`.
+After STOP the bot only replies to messages the person sends and sends nothing unprompted until they opt in again (for example by sending START, which records a new Consent Record). Calls and SMS are still never blocked by consent.
 
 ## Writes to SellOS
 
@@ -84,4 +84,4 @@ SellOS does not have these, and this task list does not add them:
 * **Source code parsing** of the first message, and the project item_id link.
 * **Two roles on one number.** A number belongs to one lead or client; the document's "owner, buyer or partner" question has nothing to store the answer in.
 * **Business hours, the duty advisor and the next working day task.** There is no business hours setting and no duty advisor.
-* **Suppressing all WhatsApp to a person after STOP** (bot, campaigns, partner digests). Today a send is never refused on consent while Consent enforcement is Off. See "Conflicts to settle" in `README.md`.
+* **Suppressing all WhatsApp to a person after STOP** (bot, campaigns, partner digests). The send function does not refuse an unprompted message after a STOP yet; SOS-P6-11 builds it (decision 7 in `CLAUDE.md`).

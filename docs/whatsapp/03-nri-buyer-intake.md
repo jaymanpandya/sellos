@@ -35,7 +35,7 @@ Visitors and clients who are NRIs. The identity rules of the source apply. An NR
 
 ## Consent
 
-Recorded and shown as a warning. It never stops a message while Consent enforcement is Off. After a STOP, flow 1's rule applies. Reminders at the client's local morning or evening are messages the person asked for; they are not sent unprompted after a STOP.
+Recorded and shown as a warning. It never stops a call or an SMS on consent. After a WhatsApp STOP, flow 1's rule applies. Reminders at the client's local morning or evening are messages the person asked for; they are not sent unprompted after a STOP.
 
 ## Handoff
 
