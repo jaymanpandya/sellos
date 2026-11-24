@@ -2,7 +2,7 @@
 
 Every workflow of `SOURCE_workflow_design.md` (175 in all) that is not one of the ten launch flows. The ten flows cover 20 workflow IDs, so 155 are listed here. **Nothing here is a task.** None of it is in `TASKS.md`, and it is not built until Jayman decides to add it. The phase is the document's own (its section "Build phases, metrics and open decisions"), 1 to 5, and a phase is a sequence, not a calendar.
 
-The document's phase lists leave 9 of these workflows without a phase. They are listed at the end, untagged, and not placed by anyone here.
+The document's phase lists leave 9 of these workflows without a phase. They are listed at the end under "Unphased", untagged (Jayman, 24 November 2026), and not placed by anyone here.
 
 ## Phase 1 (12)
 
@@ -175,7 +175,7 @@ The document's phase lists leave 9 of these workflows without a phase. They are 
 | X10 | Quality monitor | Automation and platform |
 | X12 | Language and glossary | Automation and platform |
 
-## No phase in the document (9)
+## Unphased (9)
 
 | ID | Workflow | Family |
 | --- | --- | --- |

@@ -29,7 +29,7 @@ Document IDs and group; the purpose; the trigger; who it is for; the steps; what
 
 ## Decisions (Jayman, 24 November 2026)
 
-1. **STOP.** A WhatsApp STOP always suppresses all WhatsApp messages to that person at once: the bot, campaigns and partner digests. The flow sends one confirmation reply, creates a task for the assigned advisor, and records the opt out in the consent log. After STOP the bot only replies to messages the person sends, and sends nothing unprompted until they opt in again. Calls and SMS are still never blocked by consent.
+1. **STOP.** A WhatsApp STOP always suppresses everything the bot, campaigns and partner digests send unprompted. The flow sends one confirmation reply, creates a task for the assigned advisor, and records the opt out in the consent log. The person can still write to us and get replies; nothing is sent unprompted until they opt in again. Calls and SMS are still never blocked by consent. `CLAUDE.md` decision 7 was restated to say so on 24 November 2026, and SOS-P6-11, SOS-P6-11L and SOS-P6-17 follow it.
 2. **The brain.** The WhatsApp brain is Claude. The voice agent stays Sarvam (SOS-N21).
 3. **Identity rules, handoff rules and guardrails** are used as the document writes them (`SOURCE_workflow_design.md`, "Surfaces, identity and roles", "Handoff rules", "Guardrails, compliance and escalation"), except where they conflict with a decision here.
 
@@ -45,7 +45,6 @@ Document IDs and group; the purpose; the trigger; who it is for; the steps; what
 
 These are not decided here and no code or task was changed for them.
 
-* **STOP and `CLAUDE.md`.** Decision 1 above suppresses unprompted WhatsApp after a STOP. `CLAUDE.md` (architecture decision 7, "Consent never blocks") says a lead's consent status never prevents a WhatsApp message, in code or in the screens, that an explicit stop request is recorded as Opted out with a red warning and does not block, and that enforcement lives in one function behind the company setting "Consent enforcement", off by default. SOS-P6-11 and SOS-P6-11L repeat "a stop request is recorded as Opted out and blocks nothing", and SOS-P6-17 repeats it for nurture. The flows are written to the 24 November decision. To build it, Jayman restates decision 7 (for example: unprompted WhatsApp after a WhatsApp STOP is refused, whatever Consent enforcement says) and those task texts follow.
 * **Protection at registration.** Flow 10: the document confirms protection in writing at registration; SOS-P7-02 protects from approval.
 
 ## Notes on how these files were made
