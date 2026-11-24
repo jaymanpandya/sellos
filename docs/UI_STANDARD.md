@@ -1,5 +1,7 @@
 # SellOS UI standard (UI_STANDARD)
 
+> **Superseded in part by `docs/DESIGN_SYSTEM.md` (25 November 2026).** The radius, button, sidebar, card padding and page margin rules below were replaced by the shared design system; `DESIGN_SYSTEM.md` section 5 lists exactly which. The contrast table, the public pages and the screenshots below still apply.
+
 The one visual system of SellOS, BuildOS and PAMAA. It replaces the cream page and dark green shell of SOS-UI-2B (`docs/UI_STYLE.md`
 keeps the component list and the screen checklist; this file owns every colour, size and shadow). Requested by Jayman on 24 November 2026.
 

@@ -30,7 +30,7 @@ context("SOS-UI-2B: Pandya palette on the app shell", () => {
 			.parents("aside")
 			.should("have.css", "background-color", "rgb(255, 255, 255)");
 		cy.getByTestId("nav-home").should("have.css", "min-height", "44px");
-		cy.getByTestId("nav-home").should("have.css", "border-top-left-radius", "14px");
+		cy.getByTestId("nav-home").should("have.css", "border-top-left-radius", "10px");
 		cy.getByTestId("nav-leads").should("have.css", "color", "rgb(63, 74, 92)");
 	});
 
@@ -436,7 +436,7 @@ context("SOS-UI-3D: Companies, setup wizard and sign in follow the style", () =>
 				.and("have.css", "border-top-color", "rgb(221, 226, 236)");
 			cy.getByTestId("enquiry-name")
 				.should("have.css", "min-height", "44px")
-				.and("have.css", "border-top-left-radius", "14px");
+				.and("have.css", "border-top-left-radius", "10px");
 			cy.getByTestId("enquiry-submit")
 				.should("have.css", "background-color", "rgb(15, 76, 53)")
 				.and("have.css", "color", "rgb(255, 255, 255)")

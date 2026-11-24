@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex items-start gap-ui-md rounded border border-tone-warning-line bg-tone-warning-bg p-ui-md text-sm text-tone-warning"
+		class="flex items-start gap-ui-md rounded-card border border-tone-warning-line bg-tone-warning-bg p-ui-md text-sm text-tone-warning"
 		role="alert"
 	>
 		<span

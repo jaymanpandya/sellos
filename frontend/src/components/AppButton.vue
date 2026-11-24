@@ -1,35 +1,42 @@
 <template>
-	<Button
+	<button
 		v-bind="$attrs"
-		:variant="variant === 'primary' || variant === 'danger' ? 'solid' : 'subtle'"
-		:theme="variant === 'danger' ? 'red' : 'gray'"
-		size="lg"
-		:class="[
-			'!min-h-touch !min-w-touch !rounded !px-[18px] !text-base !font-medium',
-			// Disabled is flat and dashed on the quiet surface, so it reads as off, not as a ghost button.
-			'disabled:!cursor-not-allowed disabled:!border disabled:!border-dashed disabled:!border-line-field disabled:!bg-surface-subtle disabled:!text-ink-muted disabled:!opacity-70',
-			variant === 'secondary' && !active
-				? '!border !border-ghost-border !bg-ghost-bg !text-ink'
-				: '',
-			variant === 'secondary' && active
-				? '!border !border-ghost-border !bg-brand !text-on-brand-accent'
-				: '',
-		]"
+		:type="$attrs.type || 'button'"
+		:class="classes"
+		:aria-label="variant === 'icon' ? label || $attrs['aria-label'] : $attrs['aria-label']"
+		:title="variant === 'icon' ? label : $attrs.title"
 	>
-		<template v-if="$slots.prefix" #prefix><slot name="prefix" /></template>
+		<slot name="prefix" />
 		<slot />
-	</Button>
+	</button>
 </template>
 
 <script setup>
-// PAMAA's .pamaa-button and .pamaa-button-solid on a frappe-ui Button (SOS-UI-2B).
-// primary: button/bg with text/button, one per screen. secondary: button/ghostBg and ghostBorder.
-// danger: the red solid button. Every other attribute (data-testid, type, @click) goes to the button.
-import { Button } from "frappe-ui";
+// The one button (docs/DESIGN_SYSTEM.md, section 4). 44px high, 18px side padding, 16px text, 10px radius.
+//   primary    solid: brand gradient, white text, button shadow. The main action of a screen or card.
+//   secondary  outline (the default): white, brand border at 35 percent, brand text, soft brand fill on hover.
+//   link       brand text, underlined with a soft line, 44px tap area. Back links, View all.
+//   danger     outline in red; add `confirm` for the solid red of the final confirming button.
+//   icon       a square 44px outline button with a tooltip (label) and an accessible name.
+// Every other attribute (data-testid, type, @click, disabled) goes to the button.
+import { computed } from "vue";
 
 defineOptions({ inheritAttrs: false });
-defineProps({
-	variant: { type: String, default: "secondary" }, // primary | secondary | danger
+const props = defineProps({
+	variant: { type: String, default: "secondary" }, // primary | secondary | link | danger | icon
 	active: { type: Boolean, default: false }, // a pressed toggle (List / Board)
+	confirm: { type: Boolean, default: false }, // danger only: the solid red confirming button
+	label: { type: String, default: "" }, // icon only: tooltip and accessible name
+});
+
+const classes = computed(() => {
+	if (props.variant === "link") return ["ui-link-button"];
+	const list = ["ui-button"];
+	if (props.variant === "primary") list.push("ui-button-solid");
+	if (props.variant === "danger")
+		list.push(props.confirm ? "ui-button-danger-solid" : "ui-button-danger");
+	if (props.variant === "icon") list.push("ui-button-icon");
+	if (props.active) list.push("ui-button-active");
+	return list;
 });
 </script>

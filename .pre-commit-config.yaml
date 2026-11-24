@@ -52,6 +52,16 @@ repos:
             )$
 
 
+  # docs/DESIGN_SYSTEM.md, rule 6: a page draws no button, card, heading, radius, padding, shadow, font size or colour
+  - repo: local
+    hooks:
+      - id: design-system
+        name: "Design system check"
+        entry: python3 scripts/check_design_system.py
+        language: system
+        files: '^(frontend/src/.*\.vue|docs/design-system-backlog\.txt)$'
+        pass_filenames: false
+
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v8.44.0
     hooks:

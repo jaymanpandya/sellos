@@ -15,7 +15,7 @@
 				:to="item.to"
 				:data-testid="`sellos-nav-${item.key}`"
 				exact-active-class="ui-pill-active"
-				class="ui-nav-item ui-pill-hover mb-ui-md flex min-h-touch items-center rounded px-3 text-base text-ink-body transition-colors duration-150"
+				class="ui-nav-item ui-pill-hover mb-ui-md flex min-h-touch items-center rounded-control px-3 text-base text-ink-body transition-colors duration-150"
 			>
 				<span
 					:class="ICONS[item.key] || 'lucide-circle'"
@@ -28,7 +28,7 @@
 			<div v-for="group in groups" :key="group.key" class="mb-ui-sm">
 				<button
 					type="button"
-					class="flex min-h-touch w-full items-center gap-2 rounded px-3 text-left text-heading uppercase text-ink-muted hover:bg-surface-faint"
+					class="flex min-h-touch w-full items-center gap-2 rounded-control px-3 text-left text-heading uppercase text-ink-muted hover:bg-surface-faint"
 					:aria-expanded="isOpen(group) ? 'true' : 'false'"
 					:aria-controls="`nav-group-${group.key}`"
 					:data-testid="`sellos-nav-group-${group.key}`"
@@ -54,7 +54,7 @@
 						:data-testid="`sellos-nav-${item.key}`"
 						active-class="ui-pill-active"
 						exact-active-class="ui-pill-active"
-						class="ui-nav-item ui-pill-hover mb-0.5 flex min-h-touch items-center rounded px-3 text-base text-ink-body transition-colors duration-150"
+						class="ui-nav-item ui-pill-hover mb-0.5 flex min-h-touch items-center rounded-control px-3 text-base text-ink-body transition-colors duration-150"
 					>
 						<span
 							:class="ICONS[item.key] || 'lucide-circle'"
@@ -64,7 +64,7 @@
 						<span class="flex-1">{{ item.label }}</span>
 						<span
 							v-if="countFor(item)"
-							class="ml-2 rounded-pill bg-brand px-2 text-xs font-semibold text-on-brand"
+							class="ml-2 rounded-round bg-brand px-2 text-xs font-semibold text-on-brand"
 							:data-testid="`sellos-nav-count-${item.key}`"
 							:aria-label="`${countFor(item)} waiting`"
 							>{{ countFor(item) }}</span
@@ -76,7 +76,7 @@
 		<div class="border-t border-line p-ui-md">
 			<button
 				type="button"
-				class="ui-pill-hover flex min-h-touch w-full items-center rounded px-3 text-left text-base text-ink-body"
+				class="ui-pill-hover flex min-h-touch w-full items-center rounded-control px-3 text-left text-base text-ink-body"
 				data-testid="sellos-signout"
 				@click="signOut()"
 			>

@@ -3,7 +3,7 @@
 		<template #default>
 			<button
 				type="button"
-				class="inline-flex min-h-touch min-w-touch items-center justify-center rounded text-ink-muted hover:bg-brand-soft"
+				class="inline-flex min-h-touch min-w-touch items-center justify-center rounded-control text-ink-muted hover:bg-brand-soft"
 				:aria-label="label"
 				aria-haspopup="menu"
 				data-testid="sellos-row-menu-button"

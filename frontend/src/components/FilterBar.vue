@@ -34,7 +34,7 @@
 				More filters
 				<span
 					v-if="moreCount && !open"
-					class="ml-1 rounded-pill bg-brand px-1.5 text-xs text-on-brand-accent"
+					class="ml-1 rounded-round bg-brand px-1.5 text-xs text-on-brand-accent"
 					:data-testid="moreTestid + '-count'"
 					>{{ moreCount }}</span
 				>

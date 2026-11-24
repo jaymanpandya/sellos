@@ -25,7 +25,7 @@
 			{{ tab.label }}
 			<span
 				v-if="tab.count !== undefined && tab.count !== ''"
-				class="ml-1 rounded-pill bg-surface-subtle px-2 text-xs text-ink-body"
+				class="ml-1 rounded-round bg-surface-subtle px-2 text-xs text-ink-body"
 				>{{ tab.count }}</span
 			>
 		</button>

@@ -156,7 +156,7 @@
 								data-testid="sellos-setup-color"
 							/>
 							<span
-								class="mb-7 inline-block h-11 w-11 shrink-0 rounded border border-line"
+								class="mb-7 inline-block h-11 w-11 shrink-0 rounded-round border border-line"
 								:style="{ backgroundColor: branding.brand_color }"
 								aria-hidden="true"
 								data-testid="sellos-setup-color-swatch"

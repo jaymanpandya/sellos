@@ -50,7 +50,7 @@ body .for-login .page-card-head::before {
 	justify-content: center;
 	width: 44px;
 	height: 44px;
-	border-radius: 14px;
+	border-radius: 10px;
 	background-color: #0f4c35;
 	color: #ffffff;
 	font-size: 22px;
@@ -68,7 +68,7 @@ body .for-login label {
 body .for-login .form-control {
 	min-height: 44px;
 	border: 1px solid #778399;
-	border-radius: 14px;
+	border-radius: 10px;
 	background-color: #ffffff;
 	color: #1d222b;
 }
@@ -79,7 +79,7 @@ body .for-login .form-control:focus {
 }
 body .for-login .es-button {
 	min-height: 44px;
-	border-radius: 14px;
+	border-radius: 10px;
 	font-weight: 500;
 }
 body .for-login .es-button[data-variant="solid"] {

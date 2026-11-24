@@ -25,7 +25,7 @@
 					</div>
 					<button
 						type="button"
-						class="inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center rounded text-ink-muted hover:bg-brand-soft"
+						class="inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center rounded-control text-ink-muted hover:bg-brand-soft"
 						aria-label="Close"
 						data-testid="sellos-drawer-close"
 						@click="emit('close')"

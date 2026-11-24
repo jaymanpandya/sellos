@@ -30,11 +30,11 @@
 				<li v-for="item in quickLinks" :key="item.key">
 					<router-link
 						:to="item.to"
-						class="flex min-h-touch items-center gap-ui-md rounded border border-line-soft bg-surface-faint p-ui-md text-ink no-underline transition hover:border-line hover:bg-brand-soft"
+						class="flex min-h-touch items-center gap-ui-md rounded-control border border-line-soft bg-surface-faint p-ui-md text-ink no-underline transition hover:border-line hover:bg-brand-soft"
 						:data-testid="`sellos-home-link-${item.key}`"
 					>
 						<span
-							class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded bg-brand-soft text-brand"
+							class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-round bg-brand-soft text-brand"
 							aria-hidden="true"
 						>
 							<span
@@ -55,7 +55,7 @@
 					<li v-for="item in railLinks" :key="item.key">
 						<router-link
 							:to="item.to"
-							class="flex min-h-touch items-center gap-ui-sm rounded px-ui-sm text-ink no-underline hover:bg-brand-soft"
+							class="flex min-h-touch items-center gap-ui-sm rounded-control px-ui-sm text-ink no-underline hover:bg-brand-soft"
 							:data-testid="`sellos-home-rail-${item.key}`"
 						>
 							<span

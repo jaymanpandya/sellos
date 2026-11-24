@@ -3,7 +3,7 @@
 		:theme="BADGE_THEME[tone] || 'gray'"
 		variant="subtle"
 		size="lg"
-		class="!rounded-pill"
+		class="!rounded-round"
 		v-bind="$attrs"
 	>
 		<template #prefix>

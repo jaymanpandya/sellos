@@ -168,7 +168,7 @@
 							role="alert"
 							data-testid="sellos-lead-stage-warning"
 							:data-level="stageWarning.level"
-							class="rounded border px-3 py-2 text-sm"
+							class="rounded-control border px-3 py-2 text-sm"
 							:class="
 								stageWarning.level === 'red'
 									? 'border-tone-danger-line bg-tone-danger-bg text-tone-danger'
@@ -838,7 +838,7 @@
 						role="alert"
 						data-testid="sellos-lead-consent-warning"
 						:data-level="detail.consent.warning"
-						class="rounded border px-3 py-2 text-sm"
+						class="rounded-control border px-3 py-2 text-sm"
 						:class="
 							detail.consent.warning === 'red'
 								? 'border-tone-danger-line bg-tone-danger-bg text-tone-danger'

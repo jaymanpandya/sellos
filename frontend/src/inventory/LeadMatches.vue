@@ -36,7 +36,7 @@
 				<li
 					v-for="m in result.matches"
 					:key="m.kind + m.name"
-					class="rounded border border-line-soft p-ui-md"
+					class="rounded-card border border-line-soft p-ui-md"
 					data-testid="sellos-lead-match"
 					:data-kind="m.kind"
 					:data-title="m.title"

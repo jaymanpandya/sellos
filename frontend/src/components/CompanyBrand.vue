@@ -12,7 +12,7 @@
 		/>
 		<span
 			v-else
-			class="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-brand text-sm font-bold text-on-brand"
+			class="flex h-8 w-8 shrink-0 items-center justify-center rounded-round bg-brand text-sm font-bold text-on-brand"
 			aria-hidden="true"
 			>{{ initial }}</span
 		>

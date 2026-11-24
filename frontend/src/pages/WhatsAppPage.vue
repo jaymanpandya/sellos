@@ -137,7 +137,7 @@
 						<li
 							v-for="message in thread.messages"
 							:key="message.name"
-							class="rounded border border-line-soft p-ui-md"
+							class="rounded-card border border-line-soft p-ui-md"
 							data-testid="sellos-whatsapp-message"
 							:data-direction="message.direction"
 							:data-status="message.status"

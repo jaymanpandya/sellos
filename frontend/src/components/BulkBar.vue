@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="count > 0"
-		class="mb-ui-md flex flex-wrap items-end gap-ui-md rounded border border-brand bg-brand-soft p-ui-md"
+		class="mb-ui-md flex flex-wrap items-end gap-ui-md rounded-card border border-brand bg-brand-soft p-ui-md"
 		role="region"
 		aria-label="Bulk actions"
 		data-testid="sellos-bulk"

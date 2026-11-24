@@ -5,7 +5,7 @@
 			role="status"
 			data-testid="sellos-board-notice"
 			:data-level="notice.level"
-			class="mb-ui-md flex items-start gap-ui-sm rounded border border-line bg-surface p-ui-md text-sm text-ink"
+			class="mb-ui-md flex items-start gap-ui-sm rounded-card border border-line bg-surface p-ui-md text-sm text-ink"
 		>
 			<StatusBadge
 				:tone="noticeTone(notice.level)"
@@ -43,7 +43,7 @@
 			<div
 				v-for="column in columns"
 				:key="column.stage"
-				class="w-64 shrink-0 rounded border border-line bg-surface shadow-card"
+				class="w-64 shrink-0 rounded-card border border-line bg-surface shadow-card"
 				data-testid="sellos-board-column"
 				:data-stage="column.stage"
 				:data-over="overStage === column.stage ? 'yes' : 'no'"
@@ -68,7 +68,7 @@
 					<li
 						v-for="lead in column.leads"
 						:key="lead.name"
-						class="rounded border border-line-soft bg-white p-ui-sm text-sm"
+						class="rounded-card border border-line-soft bg-white p-ui-sm text-sm"
 						data-testid="sellos-board-card"
 						:data-lead="lead.name"
 						:data-budget="lead.budget"

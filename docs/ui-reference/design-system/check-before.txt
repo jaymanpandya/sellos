@@ -1,0 +1,595 @@
+FAIL    frontend/src/inventory/ImportFailedRows.vue: 1 colour, 1 font size
+    frontend/src/inventory/ImportFailedRows.vue:2: colour: text-ink-muted
+    frontend/src/inventory/ImportFailedRows.vue:2: font size: text-sm
+FAIL    frontend/src/inventory/LeadBooking.vue: 7 colour, 5 font size, 1 font weight, 1 padding, 1 radius
+    frontend/src/inventory/LeadBooking.vue:7: colour: text-ink-muted
+    frontend/src/inventory/LeadBooking.vue:7: font size: text-sm
+    frontend/src/inventory/LeadBooking.vue:15: colour: text-accent
+    frontend/src/inventory/LeadBooking.vue:15: font size: text-sm
+    frontend/src/inventory/LeadBooking.vue:24: colour: border-line-soft
+    frontend/src/inventory/LeadBooking.vue:24: padding: p-ui-md
+    frontend/src/inventory/LeadBooking.vue:24: radius: rounded-card
+    frontend/src/inventory/LeadBooking.vue:30: colour: text-ink
+    frontend/src/inventory/LeadBooking.vue:30: font weight: font-medium
+    frontend/src/inventory/LeadBooking.vue:32: colour: text-ink-muted
+    frontend/src/inventory/LeadBooking.vue:32: font size: text-sm
+    frontend/src/inventory/LeadBooking.vue:69: colour: text-ink-muted
+FAIL    frontend/src/inventory/LeadMatches.vue: 7 colour, 5 font size, 1 font weight, 1 padding, 1 radius
+    frontend/src/inventory/LeadMatches.vue:10: colour: text-accent
+    frontend/src/inventory/LeadMatches.vue:10: font size: text-sm
+    frontend/src/inventory/LeadMatches.vue:17: colour: text-ink-muted
+    frontend/src/inventory/LeadMatches.vue:17: font size: text-sm
+    frontend/src/inventory/LeadMatches.vue:30: colour: text-ink-muted
+    frontend/src/inventory/LeadMatches.vue:30: font size: text-sm
+    frontend/src/inventory/LeadMatches.vue:39: colour: border-line-soft
+    frontend/src/inventory/LeadMatches.vue:39: padding: p-ui-md
+    frontend/src/inventory/LeadMatches.vue:39: radius: rounded-card
+    frontend/src/inventory/LeadMatches.vue:46: colour: text-ink
+    frontend/src/inventory/LeadMatches.vue:46: font weight: font-medium
+    frontend/src/inventory/LeadMatches.vue:53: colour: text-ink-muted
+FAIL    frontend/src/inventory/LeadShortlists.vue: 12 colour, 8 font size, 2 font weight, 2 padding, 2 radius
+    frontend/src/inventory/LeadShortlists.vue:3: colour: text-ink-muted
+    frontend/src/inventory/LeadShortlists.vue:3: font size: text-sm
+    frontend/src/inventory/LeadShortlists.vue:14: colour: text-accent
+    frontend/src/inventory/LeadShortlists.vue:14: font size: text-sm
+    frontend/src/inventory/LeadShortlists.vue:28: colour: border-line-soft
+    frontend/src/inventory/LeadShortlists.vue:28: padding: p-ui-md
+    frontend/src/inventory/LeadShortlists.vue:28: radius: rounded-card
+    frontend/src/inventory/LeadShortlists.vue:33: colour: text-ink
+    frontend/src/inventory/LeadShortlists.vue:33: font weight: font-medium
+    frontend/src/inventory/LeadShortlists.vue:38: colour: text-ink-muted
+    frontend/src/inventory/LeadShortlists.vue:38: font size: text-sm
+    frontend/src/inventory/LeadShortlists.vue:84: colour: border-line-soft
+FAIL    frontend/src/inventory/ListingMedia.vue: 6 colour, 4 font size, 1 font weight, 1 padding, 3 radius
+    frontend/src/inventory/ListingMedia.vue:2: colour: border-line-soft
+    frontend/src/inventory/ListingMedia.vue:2: padding: p-ui-md
+    frontend/src/inventory/ListingMedia.vue:2: radius: rounded-card
+    frontend/src/inventory/ListingMedia.vue:7: colour: text-accent
+    frontend/src/inventory/ListingMedia.vue:7: font size: text-sm
+    frontend/src/inventory/ListingMedia.vue:15: colour: text-ink
+    frontend/src/inventory/ListingMedia.vue:15: font size: text-sm
+    frontend/src/inventory/ListingMedia.vue:24: colour: text-ink-muted
+    frontend/src/inventory/ListingMedia.vue:24: font size: text-sm
+    frontend/src/inventory/ListingMedia.vue:42: radius: rounded-control
+    frontend/src/inventory/ListingMedia.vue:50: radius: rounded-control
+    frontend/src/inventory/ListingMedia.vue:54: colour: text-ink
+FAIL    frontend/src/inventory/MatchParts.vue: 2 colour, 1 font size
+    frontend/src/inventory/MatchParts.vue:2: colour: text-ink-muted
+    frontend/src/inventory/MatchParts.vue:2: font size: text-sm
+    frontend/src/inventory/MatchParts.vue:10: colour: text-ink
+FAIL    frontend/src/inventory/MatchWeights.vue: 3 colour, 3 font size, 2 own card, 1 own heading
+    frontend/src/inventory/MatchWeights.vue:2: own card: ui-card
+    frontend/src/inventory/MatchWeights.vue:3: own card: ui-card-heading
+    frontend/src/inventory/MatchWeights.vue:3: own heading: <h2>
+    frontend/src/inventory/MatchWeights.vue:4: colour: text-ink-muted
+    frontend/src/inventory/MatchWeights.vue:4: font size: text-sm
+    frontend/src/inventory/MatchWeights.vue:25: colour: text-accent
+    frontend/src/inventory/MatchWeights.vue:25: font size: text-sm
+    frontend/src/inventory/MatchWeights.vue:33: colour: text-ink
+    frontend/src/inventory/MatchWeights.vue:33: font size: text-sm
+FAIL    frontend/src/inventory/ProjectPricing.vue: 16 colour, 11 font size, 3 font weight, 6 own card, 4 own heading, 2 padding, 2 radius
+    frontend/src/inventory/ProjectPricing.vue:7: colour: text-accent
+    frontend/src/inventory/ProjectPricing.vue:7: font size: text-sm
+    frontend/src/inventory/ProjectPricing.vue:15: colour: text-ink
+    frontend/src/inventory/ProjectPricing.vue:15: font size: text-sm
+    frontend/src/inventory/ProjectPricing.vue:34: colour: border-line-soft
+    frontend/src/inventory/ProjectPricing.vue:34: padding: p-ui-md
+    frontend/src/inventory/ProjectPricing.vue:34: radius: rounded-card
+    frontend/src/inventory/ProjectPricing.vue:37: colour: text-ink
+    frontend/src/inventory/ProjectPricing.vue:37: font weight: font-medium
+    frontend/src/inventory/ProjectPricing.vue:45: colour: text-ink-muted
+    frontend/src/inventory/ProjectPricing.vue:45: font size: text-sm
+    frontend/src/inventory/ProjectPricing.vue:47: colour: text-ink-muted
+FAIL    frontend/src/inventory/ProjectStructure.vue: 11 colour, 8 font size, 2 font weight, 6 own card, 4 own heading, 1 padding, 1 radius
+    frontend/src/inventory/ProjectStructure.vue:7: colour: text-accent
+    frontend/src/inventory/ProjectStructure.vue:7: font size: text-sm
+    frontend/src/inventory/ProjectStructure.vue:15: colour: text-ink
+    frontend/src/inventory/ProjectStructure.vue:15: font size: text-sm
+    frontend/src/inventory/ProjectStructure.vue:34: colour: border-line-soft
+    frontend/src/inventory/ProjectStructure.vue:34: padding: p-ui-md
+    frontend/src/inventory/ProjectStructure.vue:34: radius: rounded-card
+    frontend/src/inventory/ProjectStructure.vue:37: colour: text-ink
+    frontend/src/inventory/ProjectStructure.vue:37: font weight: font-medium
+    frontend/src/inventory/ProjectStructure.vue:40: colour: text-ink-muted
+    frontend/src/inventory/ProjectStructure.vue:40: font size: text-sm
+    frontend/src/inventory/ProjectStructure.vue:58: colour: text-ink-muted
+FAIL    frontend/src/inventory/SuitedLeads.vue: 5 colour, 4 font size, 1 font weight, 1 padding, 1 radius
+    frontend/src/inventory/SuitedLeads.vue:10: colour: text-accent
+    frontend/src/inventory/SuitedLeads.vue:10: font size: text-sm
+    frontend/src/inventory/SuitedLeads.vue:17: colour: text-ink-muted
+    frontend/src/inventory/SuitedLeads.vue:17: font size: text-sm
+    frontend/src/inventory/SuitedLeads.vue:32: colour: border-line-soft
+    frontend/src/inventory/SuitedLeads.vue:32: padding: p-ui-md
+    frontend/src/inventory/SuitedLeads.vue:32: radius: rounded-card
+    frontend/src/inventory/SuitedLeads.vue:40: font weight: font-medium
+    frontend/src/inventory/SuitedLeads.vue:45: colour: text-ink-muted
+    frontend/src/inventory/SuitedLeads.vue:45: font size: text-sm
+    frontend/src/inventory/SuitedLeads.vue:48: colour: text-ink-muted
+    frontend/src/inventory/SuitedLeads.vue:48: font size: text-sm
+FAIL    frontend/src/inventory/UnitGrid.vue: 10 colour, 8 font size, 1 font weight, 4 own card, 3 own heading, 1 padding, 1 radius
+    frontend/src/inventory/UnitGrid.vue:7: colour: text-accent
+    frontend/src/inventory/UnitGrid.vue:7: font size: text-sm
+    frontend/src/inventory/UnitGrid.vue:15: colour: text-ink
+    frontend/src/inventory/UnitGrid.vue:15: font size: text-sm
+    frontend/src/inventory/UnitGrid.vue:60: colour: border-line-soft
+    frontend/src/inventory/UnitGrid.vue:60: padding: p-ui-md
+    frontend/src/inventory/UnitGrid.vue:60: radius: rounded-card
+    frontend/src/inventory/UnitGrid.vue:64: colour: text-ink
+    frontend/src/inventory/UnitGrid.vue:64: font weight: font-medium
+    frontend/src/inventory/UnitGrid.vue:64: own heading: <h3>
+    frontend/src/inventory/UnitGrid.vue:72: colour: text-ink
+    frontend/src/inventory/UnitGrid.vue:72: font size: text-sm
+FAIL    frontend/src/pages/AssignmentRulesPage.vue: 3 colour, 1 font size
+    frontend/src/pages/AssignmentRulesPage.vue:60: colour: text-ink-body
+    frontend/src/pages/AssignmentRulesPage.vue:63: colour: text-ink-body
+    frontend/src/pages/AssignmentRulesPage.vue:146: colour: text-danger
+    frontend/src/pages/AssignmentRulesPage.vue:146: font size: text-sm
+FAIL    frontend/src/pages/BusinessReportsPage.vue: 1 colour, 1 font size
+    frontend/src/pages/BusinessReportsPage.vue:49: colour: text-ink-muted
+    frontend/src/pages/BusinessReportsPage.vue:49: font size: text-sm
+FAIL    frontend/src/pages/CallListsPage.vue: 3 colour, 3 font size
+    frontend/src/pages/CallListsPage.vue:110: colour: text-ink-muted
+    frontend/src/pages/CallListsPage.vue:110: font size: text-sm
+    frontend/src/pages/CallListsPage.vue:179: colour: text-tone-danger
+    frontend/src/pages/CallListsPage.vue:179: font size: text-sm
+    frontend/src/pages/CallListsPage.vue:201: colour: text-tone-danger
+    frontend/src/pages/CallListsPage.vue:201: font size: text-sm
+FAIL    frontend/src/pages/CallQueuePage.vue: 7 colour, 3 font size
+    frontend/src/pages/CallQueuePage.vue:11: colour: text-ink-muted
+    frontend/src/pages/CallQueuePage.vue:11: font size: text-sm
+    frontend/src/pages/CallQueuePage.vue:44: colour: text-ink-muted
+    frontend/src/pages/CallQueuePage.vue:61: font size: text-xs
+    frontend/src/pages/CallQueuePage.vue:62: colour: text-ink-muted
+    frontend/src/pages/CallQueuePage.vue:62: colour: text-tone-danger
+    frontend/src/pages/CallQueuePage.vue:69: colour: text-ink
+    frontend/src/pages/CallQueuePage.vue:74: colour: text-ink-muted
+    frontend/src/pages/CallQueuePage.vue:94: colour: text-ink
+    frontend/src/pages/CallQueuePage.vue:94: font size: text-sm
+FAIL    frontend/src/pages/CallReportsPage.vue: 4 colour, 3 font size, 2 own card, 1 own heading
+    frontend/src/pages/CallReportsPage.vue:49: colour: text-ink-muted
+    frontend/src/pages/CallReportsPage.vue:49: font size: text-sm
+    frontend/src/pages/CallReportsPage.vue:59: own card: ui-card
+    frontend/src/pages/CallReportsPage.vue:60: own card: ui-card-heading
+    frontend/src/pages/CallReportsPage.vue:60: own heading: <h2>
+    frontend/src/pages/CallReportsPage.vue:77: colour: text-ink-muted
+    frontend/src/pages/CallReportsPage.vue:77: font size: text-sm
+    frontend/src/pages/CallReportsPage.vue:101: colour: text-brand
+    frontend/src/pages/CallReportsPage.vue:189: colour: text-ink-muted
+    frontend/src/pages/CallReportsPage.vue:189: font size: text-sm
+FAIL    frontend/src/pages/ClientOverviewPage.vue: 8 colour, 6 font size, 1 font weight, 1 own card, 1 own heading, 1 padding
+    frontend/src/pages/ClientOverviewPage.vue:23: colour: text-ink
+    frontend/src/pages/ClientOverviewPage.vue:23: font size: text-base
+    frontend/src/pages/ClientOverviewPage.vue:27: colour: text-ink-muted
+    frontend/src/pages/ClientOverviewPage.vue:93: colour: text-ink
+    frontend/src/pages/ClientOverviewPage.vue:93: font size: text-base
+    frontend/src/pages/ClientOverviewPage.vue:96: own card: ui-card-heading
+    frontend/src/pages/ClientOverviewPage.vue:96: own heading: <h3>
+    frontend/src/pages/ClientOverviewPage.vue:97: colour: text-ink-muted
+    frontend/src/pages/ClientOverviewPage.vue:97: font size: text-sm
+    frontend/src/pages/ClientOverviewPage.vue:105: colour: text-ink
+    frontend/src/pages/ClientOverviewPage.vue:105: font size: text-sm
+    frontend/src/pages/ClientOverviewPage.vue:119: colour: text-ink-muted
+FAIL    frontend/src/pages/ClientShortlistPage.vue: 7 colour, 6 font size, 1 font weight, 1 padding, 2 radius
+    frontend/src/pages/ClientShortlistPage.vue:35: colour: text-ink
+    frontend/src/pages/ClientShortlistPage.vue:35: font size: text-sm
+    frontend/src/pages/ClientShortlistPage.vue:40: font size: text-sm
+    frontend/src/pages/ClientShortlistPage.vue:54: colour: border-line-soft
+    frontend/src/pages/ClientShortlistPage.vue:54: padding: p-ui-md
+    frontend/src/pages/ClientShortlistPage.vue:54: radius: rounded-card
+    frontend/src/pages/ClientShortlistPage.vue:60: colour: text-ink
+    frontend/src/pages/ClientShortlistPage.vue:60: font weight: font-medium
+    frontend/src/pages/ClientShortlistPage.vue:63: colour: text-ink-muted
+    frontend/src/pages/ClientShortlistPage.vue:63: font size: text-sm
+    frontend/src/pages/ClientShortlistPage.vue:80: colour: text-ink
+    frontend/src/pages/ClientShortlistPage.vue:80: font size: text-sm
+FAIL    frontend/src/pages/ClientShortlistsPage.vue: 1 font weight
+    frontend/src/pages/ClientShortlistsPage.vue:47: font weight: font-medium
+FAIL    frontend/src/pages/CommissionPage.vue: 15 colour, 12 font size, 1 font weight, 2 own card, 1 own heading
+    frontend/src/pages/CommissionPage.vue:38: colour: text-danger
+    frontend/src/pages/CommissionPage.vue:38: font size: text-sm
+    frontend/src/pages/CommissionPage.vue:46: colour: text-ink
+    frontend/src/pages/CommissionPage.vue:46: font size: text-sm
+    frontend/src/pages/CommissionPage.vue:53: colour: text-ink
+    frontend/src/pages/CommissionPage.vue:53: font size: text-sm
+    frontend/src/pages/CommissionPage.vue:66: own card: ui-card
+    frontend/src/pages/CommissionPage.vue:67: own card: ui-card-heading
+    frontend/src/pages/CommissionPage.vue:67: own heading: <h2>
+    frontend/src/pages/CommissionPage.vue:68: font size: text-sm
+    frontend/src/pages/CommissionPage.vue:69: colour: text-ink
+    frontend/src/pages/CommissionPage.vue:95: colour: text-ink-muted
+FAIL    frontend/src/pages/CostSheetPage.vue: 11 colour, 9 font size, 5 font weight, 4 own card, 3 own heading, 2 padding
+    frontend/src/pages/CostSheetPage.vue:19: colour: text-danger
+    frontend/src/pages/CostSheetPage.vue:19: font size: text-sm
+    frontend/src/pages/CostSheetPage.vue:27: own card: ui-card
+    frontend/src/pages/CostSheetPage.vue:28: colour: text-ink
+    frontend/src/pages/CostSheetPage.vue:28: font size: text-sm
+    frontend/src/pages/CostSheetPage.vue:31: font weight: font-medium
+    frontend/src/pages/CostSheetPage.vue:43: colour: text-ink-muted
+    frontend/src/pages/CostSheetPage.vue:43: font size: text-sm
+    frontend/src/pages/CostSheetPage.vue:56: colour: text-danger
+    frontend/src/pages/CostSheetPage.vue:56: font size: text-sm
+    frontend/src/pages/CostSheetPage.vue:56: own card: ui-card
+    frontend/src/pages/CostSheetPage.vue:63: own card: ui-card
+FAIL    frontend/src/pages/DealsPage.vue: 8 colour, 7 font size
+    frontend/src/pages/DealsPage.vue:31: colour: text-danger
+    frontend/src/pages/DealsPage.vue:31: font size: text-sm
+    frontend/src/pages/DealsPage.vue:39: colour: text-ink
+    frontend/src/pages/DealsPage.vue:39: font size: text-sm
+    frontend/src/pages/DealsPage.vue:96: colour: text-ink
+    frontend/src/pages/DealsPage.vue:96: font size: text-sm
+    frontend/src/pages/DealsPage.vue:107: colour: text-ink-muted
+    frontend/src/pages/DealsPage.vue:107: font size: text-sm
+    frontend/src/pages/DealsPage.vue:181: colour: text-ink-muted
+    frontend/src/pages/DealsPage.vue:181: font size: text-sm
+    frontend/src/pages/DealsPage.vue:217: font size: text-sm
+    frontend/src/pages/DealsPage.vue:218: colour: text-danger
+FAIL    frontend/src/pages/HomePage.vue: 11 colour, 1 font weight, 2 own card, 1 own heading, 2 padding, 3 radius
+    frontend/src/pages/HomePage.vue:15: colour: text-ink
+    frontend/src/pages/HomePage.vue:15: own card: ui-card
+    frontend/src/pages/HomePage.vue:24: own card: ui-card-heading
+    frontend/src/pages/HomePage.vue:24: own heading: <h2>
+    frontend/src/pages/HomePage.vue:33: colour: bg-brand-soft
+    frontend/src/pages/HomePage.vue:33: colour: bg-surface-faint
+    frontend/src/pages/HomePage.vue:33: colour: border-line
+    frontend/src/pages/HomePage.vue:33: colour: border-line-soft
+    frontend/src/pages/HomePage.vue:33: colour: text-ink
+    frontend/src/pages/HomePage.vue:33: padding: p-ui-md
+    frontend/src/pages/HomePage.vue:33: radius: rounded-control
+    frontend/src/pages/HomePage.vue:37: colour: bg-brand-soft
+FAIL    frontend/src/pages/ImportInventoryPage.vue: 3 colour, 2 font size, 2 font weight
+    frontend/src/pages/ImportInventoryPage.vue:34: colour: text-ink-muted
+    frontend/src/pages/ImportInventoryPage.vue:34: font size: text-sm
+    frontend/src/pages/ImportInventoryPage.vue:63: colour: text-ink
+    frontend/src/pages/ImportInventoryPage.vue:63: font size: text-sm
+    frontend/src/pages/ImportInventoryPage.vue:89: colour: text-ink
+    frontend/src/pages/ImportInventoryPage.vue:89: font weight: font-medium
+    frontend/src/pages/ImportInventoryPage.vue:96: font weight: font-medium
+FAIL    frontend/src/pages/ImportLeadsPage.vue: 6 colour, 5 font size, 2 font weight
+    frontend/src/pages/ImportLeadsPage.vue:55: colour: text-ink
+    frontend/src/pages/ImportLeadsPage.vue:55: font size: text-sm
+    frontend/src/pages/ImportLeadsPage.vue:62: colour: text-ink-muted
+    frontend/src/pages/ImportLeadsPage.vue:62: font size: text-sm
+    frontend/src/pages/ImportLeadsPage.vue:85: colour: text-ink-muted
+    frontend/src/pages/ImportLeadsPage.vue:85: font size: text-sm
+    frontend/src/pages/ImportLeadsPage.vue:113: colour: text-ink
+    frontend/src/pages/ImportLeadsPage.vue:113: font weight: font-medium
+    frontend/src/pages/ImportLeadsPage.vue:117: colour: text-ink-muted
+    frontend/src/pages/ImportLeadsPage.vue:117: font size: text-sm
+    frontend/src/pages/ImportLeadsPage.vue:121: colour: text-ink-muted
+    frontend/src/pages/ImportLeadsPage.vue:121: font size: text-sm
+FAIL    frontend/src/pages/InventoryPage.vue: 7 colour, 6 font size, 1 font weight
+    frontend/src/pages/InventoryPage.vue:11: font weight: font-medium
+    frontend/src/pages/InventoryPage.vue:54: colour: text-danger
+    frontend/src/pages/InventoryPage.vue:54: font size: text-sm
+    frontend/src/pages/InventoryPage.vue:62: colour: text-ink
+    frontend/src/pages/InventoryPage.vue:62: font size: text-sm
+    frontend/src/pages/InventoryPage.vue:89: colour: text-ink
+    frontend/src/pages/InventoryPage.vue:167: colour: text-ink-muted
+    frontend/src/pages/InventoryPage.vue:167: font size: text-sm
+    frontend/src/pages/InventoryPage.vue:207: colour: text-danger
+    frontend/src/pages/InventoryPage.vue:207: font size: text-sm
+    frontend/src/pages/InventoryPage.vue:270: colour: text-danger
+    frontend/src/pages/InventoryPage.vue:270: font size: text-sm
+FAIL    frontend/src/pages/LeadPage.vue: 45 colour, 30 font size, 1 font weight, 4 own card, 5 own heading, 6 padding, 2 radius
+    frontend/src/pages/LeadPage.vue:3: font size: text-sm
+    frontend/src/pages/LeadPage.vue:8: own card: ui-card
+    frontend/src/pages/LeadPage.vue:12: own heading: <h1>
+    frontend/src/pages/LeadPage.vue:12: own heading: ui-page-title
+    frontend/src/pages/LeadPage.vue:29: own heading: ui-page-lead
+    frontend/src/pages/LeadPage.vue:65: colour: border-line-soft
+    frontend/src/pages/LeadPage.vue:65: padding: pt-ui-md
+    frontend/src/pages/LeadPage.vue:67: own card: ui-card-heading
+    frontend/src/pages/LeadPage.vue:67: own heading: <h2>
+    frontend/src/pages/LeadPage.vue:71: colour: text-ink
+    frontend/src/pages/LeadPage.vue:76: colour: text-ink-muted
+    frontend/src/pages/LeadPage.vue:162: colour: text-ink-muted
+FAIL    frontend/src/pages/LeadsPage.vue: 17 colour, 5 font size, 3 font weight, 2 padding, 2 radius
+    frontend/src/pages/LeadsPage.vue:292: colour: bg-tone-warning-bg
+    frontend/src/pages/LeadsPage.vue:292: colour: border-tone-warning-line
+    frontend/src/pages/LeadsPage.vue:292: colour: text-tone-warning
+    frontend/src/pages/LeadsPage.vue:292: font size: text-sm
+    frontend/src/pages/LeadsPage.vue:292: padding: p-ui-md
+    frontend/src/pages/LeadsPage.vue:292: radius: rounded-card
+    frontend/src/pages/LeadsPage.vue:294: font weight: font-medium
+    frontend/src/pages/LeadsPage.vue:303: colour: bg-surface
+    frontend/src/pages/LeadsPage.vue:303: colour: border-line
+    frontend/src/pages/LeadsPage.vue:303: colour: text-ink
+    frontend/src/pages/LeadsPage.vue:303: padding: p-ui-md
+    frontend/src/pages/LeadsPage.vue:303: radius: rounded-card
+FAIL    frontend/src/pages/ListingsPage.vue: 5 colour, 5 font size, 1 font weight
+    frontend/src/pages/ListingsPage.vue:32: colour: text-danger
+    frontend/src/pages/ListingsPage.vue:32: font size: text-sm
+    frontend/src/pages/ListingsPage.vue:40: colour: text-ink
+    frontend/src/pages/ListingsPage.vue:40: font size: text-sm
+    frontend/src/pages/ListingsPage.vue:70: font weight: font-medium
+    frontend/src/pages/ListingsPage.vue:97: colour: text-ink-muted
+    frontend/src/pages/ListingsPage.vue:97: font size: text-sm
+    frontend/src/pages/ListingsPage.vue:165: colour: text-ink-muted
+    frontend/src/pages/ListingsPage.vue:165: font size: text-sm
+    frontend/src/pages/ListingsPage.vue:166: colour: text-ink-muted
+    frontend/src/pages/ListingsPage.vue:166: font size: text-sm
+FAIL    frontend/src/pages/MandatesPage.vue: 11 colour, 9 font size, 2 font weight
+    frontend/src/pages/MandatesPage.vue:31: colour: text-danger
+    frontend/src/pages/MandatesPage.vue:31: font size: text-sm
+    frontend/src/pages/MandatesPage.vue:39: colour: text-ink
+    frontend/src/pages/MandatesPage.vue:39: font size: text-sm
+    frontend/src/pages/MandatesPage.vue:80: colour: text-ink-body
+    frontend/src/pages/MandatesPage.vue:87: colour: text-ink-muted
+    frontend/src/pages/MandatesPage.vue:87: font size: text-sm
+    frontend/src/pages/MandatesPage.vue:99: colour: text-ink-muted
+    frontend/src/pages/MandatesPage.vue:99: font size: text-sm
+    frontend/src/pages/MandatesPage.vue:107: colour: text-ink-muted
+    frontend/src/pages/MandatesPage.vue:107: font size: text-sm
+    frontend/src/pages/MandatesPage.vue:134: colour: text-ink
+FAIL    frontend/src/pages/PartnerCommissionPage.vue: 6 colour, 4 font size
+    frontend/src/pages/PartnerCommissionPage.vue:55: colour: text-ink-muted
+    frontend/src/pages/PartnerCommissionPage.vue:55: font size: text-sm
+    frontend/src/pages/PartnerCommissionPage.vue:60: colour: text-ink
+    frontend/src/pages/PartnerCommissionPage.vue:84: colour: text-ink-body
+    frontend/src/pages/PartnerCommissionPage.vue:91: colour: text-ink-muted
+    frontend/src/pages/PartnerCommissionPage.vue:91: font size: text-sm
+    frontend/src/pages/PartnerCommissionPage.vue:99: colour: text-ink
+    frontend/src/pages/PartnerCommissionPage.vue:99: font size: text-sm
+    frontend/src/pages/PartnerCommissionPage.vue:103: colour: text-ink
+    frontend/src/pages/PartnerCommissionPage.vue:103: font size: text-sm
+FAIL    frontend/src/pages/PartnerEarningsPage.vue: 4 colour, 1 font size
+    frontend/src/pages/PartnerEarningsPage.vue:58: colour: text-ink-body
+    frontend/src/pages/PartnerEarningsPage.vue:82: colour: text-ink
+    frontend/src/pages/PartnerEarningsPage.vue:82: font size: text-sm
+    frontend/src/pages/PartnerEarningsPage.vue:85: colour: text-ink-muted
+    frontend/src/pages/PartnerEarningsPage.vue:90: colour: text-ink-muted
+FAIL    frontend/src/pages/PartnerFirmPage.vue: 6 colour, 6 font size, 1 font weight, 1 own card, 1 own heading
+    frontend/src/pages/PartnerFirmPage.vue:28: colour: text-accent
+    frontend/src/pages/PartnerFirmPage.vue:28: font size: text-sm
+    frontend/src/pages/PartnerFirmPage.vue:42: own card: ui-card
+    frontend/src/pages/PartnerFirmPage.vue:47: own heading: <h2>
+    frontend/src/pages/PartnerFirmPage.vue:48: colour: text-ink
+    frontend/src/pages/PartnerFirmPage.vue:48: font size: text-base
+    frontend/src/pages/PartnerFirmPage.vue:48: font weight: font-medium
+    frontend/src/pages/PartnerFirmPage.vue:53: colour: text-ink-muted
+    frontend/src/pages/PartnerFirmPage.vue:53: font size: text-sm
+    frontend/src/pages/PartnerFirmPage.vue:62: colour: text-ink
+    frontend/src/pages/PartnerFirmPage.vue:62: font size: text-base
+    frontend/src/pages/PartnerFirmPage.vue:65: colour: text-ink-muted
+FAIL    frontend/src/pages/PartnerFirmsPage.vue: 13 colour, 10 font size, 1 font weight
+    frontend/src/pages/PartnerFirmsPage.vue:31: colour: text-accent
+    frontend/src/pages/PartnerFirmsPage.vue:31: font size: text-sm
+    frontend/src/pages/PartnerFirmsPage.vue:39: colour: text-ink
+    frontend/src/pages/PartnerFirmsPage.vue:39: font size: text-sm
+    frontend/src/pages/PartnerFirmsPage.vue:62: colour: text-ink
+    frontend/src/pages/PartnerFirmsPage.vue:62: font weight: font-medium
+    frontend/src/pages/PartnerFirmsPage.vue:65: colour: text-ink-muted
+    frontend/src/pages/PartnerFirmsPage.vue:65: font size: text-xs
+    frontend/src/pages/PartnerFirmsPage.vue:77: colour: text-ink
+    frontend/src/pages/PartnerFirmsPage.vue:78: colour: text-ink-muted
+    frontend/src/pages/PartnerFirmsPage.vue:78: font size: text-xs
+    frontend/src/pages/PartnerFirmsPage.vue:84: colour: text-ink-muted
+FAIL    frontend/src/pages/PartnerRegisterPage.vue: 8 colour, 8 font size
+    frontend/src/pages/PartnerRegisterPage.vue:34: colour: text-accent
+    frontend/src/pages/PartnerRegisterPage.vue:34: font size: text-sm
+    frontend/src/pages/PartnerRegisterPage.vue:42: colour: text-ink
+    frontend/src/pages/PartnerRegisterPage.vue:42: font size: text-sm
+    frontend/src/pages/PartnerRegisterPage.vue:69: colour: text-ink-muted
+    frontend/src/pages/PartnerRegisterPage.vue:69: font size: text-sm
+    frontend/src/pages/PartnerRegisterPage.vue:74: colour: text-ink-muted
+    frontend/src/pages/PartnerRegisterPage.vue:74: font size: text-sm
+    frontend/src/pages/PartnerRegisterPage.vue:127: colour: text-ink
+    frontend/src/pages/PartnerRegisterPage.vue:127: font size: text-sm
+    frontend/src/pages/PartnerRegisterPage.vue:136: colour: text-ink-muted
+    frontend/src/pages/PartnerRegisterPage.vue:136: font size: text-sm
+FAIL    frontend/src/pages/PartnerRegistrationsPage.vue: 11 colour, 10 font size, 1 font weight
+    frontend/src/pages/PartnerRegistrationsPage.vue:28: colour: text-accent
+    frontend/src/pages/PartnerRegistrationsPage.vue:28: font size: text-sm
+    frontend/src/pages/PartnerRegistrationsPage.vue:36: colour: text-ink
+    frontend/src/pages/PartnerRegistrationsPage.vue:36: font size: text-sm
+    frontend/src/pages/PartnerRegistrationsPage.vue:59: colour: text-ink
+    frontend/src/pages/PartnerRegistrationsPage.vue:59: font weight: font-medium
+    frontend/src/pages/PartnerRegistrationsPage.vue:63: colour: text-ink-muted
+    frontend/src/pages/PartnerRegistrationsPage.vue:63: font size: text-xs
+    frontend/src/pages/PartnerRegistrationsPage.vue:77: colour: text-ink-muted
+    frontend/src/pages/PartnerRegistrationsPage.vue:77: font size: text-sm
+    frontend/src/pages/PartnerRegistrationsPage.vue:84: colour: text-ink-muted
+    frontend/src/pages/PartnerRegistrationsPage.vue:84: font size: text-sm
+FAIL    frontend/src/pages/PartnerReportsPage.vue: 2 colour, 2 font size
+    frontend/src/pages/PartnerReportsPage.vue:60: colour: text-ink-muted
+    frontend/src/pages/PartnerReportsPage.vue:60: font size: text-sm
+    frontend/src/pages/PartnerReportsPage.vue:87: colour: text-ink-muted
+    frontend/src/pages/PartnerReportsPage.vue:87: font size: text-sm
+FAIL    frontend/src/pages/PartnerSharedPage.vue: 4 colour, 4 font size, 1 font weight, 2 own card, 2 own heading
+    frontend/src/pages/PartnerSharedPage.vue:49: colour: text-ink
+    frontend/src/pages/PartnerSharedPage.vue:49: font weight: font-medium
+    frontend/src/pages/PartnerSharedPage.vue:71: colour: text-ink-muted
+    frontend/src/pages/PartnerSharedPage.vue:71: font size: text-sm
+    frontend/src/pages/PartnerSharedPage.vue:77: own card: ui-card-heading
+    frontend/src/pages/PartnerSharedPage.vue:77: own heading: <h3>
+    frontend/src/pages/PartnerSharedPage.vue:79: font size: text-base
+    frontend/src/pages/PartnerSharedPage.vue:87: colour: text-ink-muted
+    frontend/src/pages/PartnerSharedPage.vue:87: font size: text-sm
+    frontend/src/pages/PartnerSharedPage.vue:94: own card: ui-card-heading
+    frontend/src/pages/PartnerSharedPage.vue:94: own heading: <h3>
+    frontend/src/pages/PartnerSharedPage.vue:95: font size: text-sm
+FAIL    frontend/src/pages/PartnerSharesPage.vue: 8 colour, 7 font size, 1 font weight
+    frontend/src/pages/PartnerSharesPage.vue:31: colour: text-accent
+    frontend/src/pages/PartnerSharesPage.vue:31: font size: text-sm
+    frontend/src/pages/PartnerSharesPage.vue:39: colour: text-ink
+    frontend/src/pages/PartnerSharesPage.vue:39: font size: text-sm
+    frontend/src/pages/PartnerSharesPage.vue:62: colour: text-ink
+    frontend/src/pages/PartnerSharesPage.vue:62: font weight: font-medium
+    frontend/src/pages/PartnerSharesPage.vue:77: colour: text-ink-muted
+    frontend/src/pages/PartnerSharesPage.vue:77: font size: text-sm
+    frontend/src/pages/PartnerSharesPage.vue:84: colour: text-ink-muted
+    frontend/src/pages/PartnerSharesPage.vue:84: font size: text-sm
+    frontend/src/pages/PartnerSharesPage.vue:85: colour: text-ink-muted
+    frontend/src/pages/PartnerSharesPage.vue:85: font size: text-sm
+FAIL    frontend/src/pages/PlatformReportsPage.vue: 1 colour, 1 font size
+    frontend/src/pages/PlatformReportsPage.vue:57: colour: text-ink-muted
+    frontend/src/pages/PlatformReportsPage.vue:57: font size: text-sm
+FAIL    frontend/src/pages/ProjectPage.vue: 8 colour, 9 font size, 3 font weight, 1 own card
+    frontend/src/pages/ProjectPage.vue:32: colour: text-danger
+    frontend/src/pages/ProjectPage.vue:32: font size: text-sm
+    frontend/src/pages/ProjectPage.vue:40: colour: text-ink
+    frontend/src/pages/ProjectPage.vue:40: font size: text-sm
+    frontend/src/pages/ProjectPage.vue:48: own card: ui-card
+    frontend/src/pages/ProjectPage.vue:49: colour: text-ink
+    frontend/src/pages/ProjectPage.vue:49: font size: text-sm
+    frontend/src/pages/ProjectPage.vue:50: font weight: font-medium
+    frontend/src/pages/ProjectPage.vue:56: colour: text-ink-muted
+    frontend/src/pages/ProjectPage.vue:56: font size: text-sm
+    frontend/src/pages/ProjectPage.vue:61: colour: text-ink-muted
+    frontend/src/pages/ProjectPage.vue:61: font size: text-sm
+FAIL    frontend/src/pages/ReportsPage.vue: 9 colour, 8 font size, 1 own card
+    frontend/src/pages/ReportsPage.vue:114: colour: text-ink-muted
+    frontend/src/pages/ReportsPage.vue:114: font size: text-sm
+    frontend/src/pages/ReportsPage.vue:121: colour: text-ink-muted
+    frontend/src/pages/ReportsPage.vue:121: font size: text-sm
+    frontend/src/pages/ReportsPage.vue:128: own card: ui-card
+    frontend/src/pages/ReportsPage.vue:129: colour: text-ink-muted
+    frontend/src/pages/ReportsPage.vue:129: font size: text-sm
+    frontend/src/pages/ReportsPage.vue:196: colour: text-ink-muted
+    frontend/src/pages/ReportsPage.vue:196: font size: text-sm
+    frontend/src/pages/ReportsPage.vue:224: colour: text-brand
+    frontend/src/pages/ReportsPage.vue:236: colour: text-ink-muted
+    frontend/src/pages/ReportsPage.vue:236: font size: text-sm
+FAIL    frontend/src/pages/ResponseAlertsPage.vue: 2 colour, 2 font size, 2 own card, 1 own heading
+    frontend/src/pages/ResponseAlertsPage.vue:18: own card: ui-card
+    frontend/src/pages/ResponseAlertsPage.vue:22: own card: ui-card-heading
+    frontend/src/pages/ResponseAlertsPage.vue:22: own heading: <h2>
+    frontend/src/pages/ResponseAlertsPage.vue:41: colour: text-tone-danger
+    frontend/src/pages/ResponseAlertsPage.vue:41: font size: text-sm
+    frontend/src/pages/ResponseAlertsPage.vue:49: colour: text-ink
+    frontend/src/pages/ResponseAlertsPage.vue:49: font size: text-sm
+FAIL    frontend/src/pages/SellersPage.vue: 4 colour, 4 font size, 2 own card, 1 own heading
+    frontend/src/pages/SellersPage.vue:31: colour: text-danger
+    frontend/src/pages/SellersPage.vue:31: font size: text-sm
+    frontend/src/pages/SellersPage.vue:39: colour: text-ink
+    frontend/src/pages/SellersPage.vue:39: font size: text-sm
+    frontend/src/pages/SellersPage.vue:51: own card: ui-card
+    frontend/src/pages/SellersPage.vue:52: own card: ui-card-heading
+    frontend/src/pages/SellersPage.vue:52: own heading: <h2>
+    frontend/src/pages/SellersPage.vue:134: colour: text-ink-muted
+    frontend/src/pages/SellersPage.vue:134: font size: text-sm
+    frontend/src/pages/SellersPage.vue:179: colour: text-danger
+    frontend/src/pages/SellersPage.vue:179: font size: text-sm
+FAIL    frontend/src/pages/SetupWizardPage.vue: 12 colour, 5 font size, 2 font weight, 1 inline style, 5 own card, 1 radius
+    frontend/src/pages/SetupWizardPage.vue:17: own card: ui-card
+    frontend/src/pages/SetupWizardPage.vue:20: colour: text-ink
+    frontend/src/pages/SetupWizardPage.vue:20: font weight: font-medium
+    frontend/src/pages/SetupWizardPage.vue:22: colour: text-ink-muted
+    frontend/src/pages/SetupWizardPage.vue:46: colour: text-ink-muted
+    frontend/src/pages/SetupWizardPage.vue:68: own card: ui-card
+    frontend/src/pages/SetupWizardPage.vue:118: own card: ui-card
+    frontend/src/pages/SetupWizardPage.vue:131: colour: text-ink-muted
+    frontend/src/pages/SetupWizardPage.vue:131: font size: text-sm
+    frontend/src/pages/SetupWizardPage.vue:153: colour: #0f4c35
+    frontend/src/pages/SetupWizardPage.vue:159: colour: border-line
+    frontend/src/pages/SetupWizardPage.vue:159: radius: rounded-round
+FAIL    frontend/src/pages/SiteVisitsPage.vue: 7 colour, 5 font size, 2 font weight, 1 padding, 1 radius
+    frontend/src/pages/SiteVisitsPage.vue:44: colour: text-ink-muted
+    frontend/src/pages/SiteVisitsPage.vue:44: font size: text-sm
+    frontend/src/pages/SiteVisitsPage.vue:64: font weight: font-medium
+    frontend/src/pages/SiteVisitsPage.vue:89: colour: text-ink-muted
+    frontend/src/pages/SiteVisitsPage.vue:89: font size: text-sm
+    frontend/src/pages/SiteVisitsPage.vue:99: colour: bg-surface-faint
+    frontend/src/pages/SiteVisitsPage.vue:99: colour: border-line-soft
+    frontend/src/pages/SiteVisitsPage.vue:99: padding: p-ui-md
+    frontend/src/pages/SiteVisitsPage.vue:99: radius: rounded-card
+    frontend/src/pages/SiteVisitsPage.vue:101: colour: text-ink
+    frontend/src/pages/SiteVisitsPage.vue:101: font size: text-sm
+    frontend/src/pages/SiteVisitsPage.vue:101: font weight: font-medium
+FAIL    frontend/src/pages/SupportPage.vue: 7 colour, 3 font size, 1 font weight
+    frontend/src/pages/SupportPage.vue:42: colour: text-ink-muted
+    frontend/src/pages/SupportPage.vue:73: colour: text-danger
+    frontend/src/pages/SupportPage.vue:73: font size: text-sm
+    frontend/src/pages/SupportPage.vue:83: colour: text-danger
+    frontend/src/pages/SupportPage.vue:83: font size: text-sm
+    frontend/src/pages/SupportPage.vue:107: colour: text-ink
+    frontend/src/pages/SupportPage.vue:107: font weight: font-medium
+    frontend/src/pages/SupportPage.vue:110: colour: text-ink-body
+    frontend/src/pages/SupportPage.vue:116: colour: text-ink-body
+    frontend/src/pages/SupportPage.vue:148: font size: text-sm
+    frontend/src/pages/SupportPage.vue:153: colour: text-ink-muted
+FAIL    frontend/src/pages/TeamReportPage.vue: 2 colour, 1 font size
+    frontend/src/pages/TeamReportPage.vue:21: colour: text-ink
+    frontend/src/pages/TeamReportPage.vue:24: colour: text-ink-muted
+    frontend/src/pages/TeamReportPage.vue:24: font size: text-sm
+FAIL    frontend/src/pages/TeamsPage.vue: 5 colour, 2 font size, 1 own card, 1 padding
+    frontend/src/pages/TeamsPage.vue:54: colour: border-line-soft
+    frontend/src/pages/TeamsPage.vue:54: own card: ui-card-heading
+    frontend/src/pages/TeamsPage.vue:54: padding: pb-ui-sm
+    frontend/src/pages/TeamsPage.vue:73: colour: text-danger
+    frontend/src/pages/TeamsPage.vue:73: font size: text-sm
+    frontend/src/pages/TeamsPage.vue:83: colour: text-danger
+    frontend/src/pages/TeamsPage.vue:83: font size: text-sm
+    frontend/src/pages/TeamsPage.vue:105: colour: text-ink-body
+    frontend/src/pages/TeamsPage.vue:110: colour: text-ink-body
+FAIL    frontend/src/pages/TelephonyPage.vue: 5 colour, 4 font size, 1 own card
+    frontend/src/pages/TelephonyPage.vue:22: own card: ui-card
+    frontend/src/pages/TelephonyPage.vue:51: colour: text-ink-muted
+    frontend/src/pages/TelephonyPage.vue:51: font size: text-sm
+    frontend/src/pages/TelephonyPage.vue:58: colour: text-danger
+    frontend/src/pages/TelephonyPage.vue:58: font size: text-sm
+    frontend/src/pages/TelephonyPage.vue:62: colour: text-ink
+    frontend/src/pages/TelephonyPage.vue:62: font size: text-sm
+    frontend/src/pages/TelephonyPage.vue:71: colour: text-danger
+    frontend/src/pages/TelephonyPage.vue:71: colour: text-ink
+    frontend/src/pages/TelephonyPage.vue:71: font size: text-sm
+FAIL    frontend/src/pages/TenantsPage.vue: 3 colour, 2 font size, 1 font weight
+    frontend/src/pages/TenantsPage.vue:71: colour: text-danger
+    frontend/src/pages/TenantsPage.vue:71: font size: text-sm
+    frontend/src/pages/TenantsPage.vue:81: colour: text-danger
+    frontend/src/pages/TenantsPage.vue:81: font size: text-sm
+    frontend/src/pages/TenantsPage.vue:104: colour: text-ink
+    frontend/src/pages/TenantsPage.vue:104: font weight: font-medium
+FAIL    frontend/src/pages/TodayPage.vue: 3 colour, 3 font size, 3 font weight, 1 own card, 2 own heading
+    frontend/src/pages/TodayPage.vue:3: colour: text-ink-muted
+    frontend/src/pages/TodayPage.vue:3: font size: text-sm
+    frontend/src/pages/TodayPage.vue:37: own card: ui-card-heading
+    frontend/src/pages/TodayPage.vue:37: own heading: <h3>
+    frontend/src/pages/TodayPage.vue:52: colour: text-ink
+    frontend/src/pages/TodayPage.vue:52: font size: text-sm
+    frontend/src/pages/TodayPage.vue:52: font weight: font-medium
+    frontend/src/pages/TodayPage.vue:52: own heading: <h4>
+    frontend/src/pages/TodayPage.vue:65: font weight: font-medium
+    frontend/src/pages/TodayPage.vue:104: font weight: font-medium
+    frontend/src/pages/TodayPage.vue:170: colour: text-tone-danger
+    frontend/src/pages/TodayPage.vue:170: font size: text-sm
+FAIL    frontend/src/pages/UsersPage.vue: 14 colour, 10 font size, 4 font weight, 1 own card, 1 padding
+    frontend/src/pages/UsersPage.vue:98: colour: text-danger
+    frontend/src/pages/UsersPage.vue:98: font size: text-sm
+    frontend/src/pages/UsersPage.vue:108: colour: text-danger
+    frontend/src/pages/UsersPage.vue:108: font size: text-sm
+    frontend/src/pages/UsersPage.vue:116: colour: text-ink
+    frontend/src/pages/UsersPage.vue:116: font size: text-sm
+    frontend/src/pages/UsersPage.vue:126: colour: text-ink-muted
+    frontend/src/pages/UsersPage.vue:126: font size: text-sm
+    frontend/src/pages/UsersPage.vue:136: font size: text-sm
+    frontend/src/pages/UsersPage.vue:136: own card: ui-card
+    frontend/src/pages/UsersPage.vue:138: colour: text-ink
+    frontend/src/pages/UsersPage.vue:138: font weight: font-medium
+FAIL    frontend/src/pages/WhatsAppPage.vue: 12 colour, 7 font size, 2 padding, 1 radius
+    frontend/src/pages/WhatsAppPage.vue:99: font size: text-sm
+    frontend/src/pages/WhatsAppPage.vue:117: font size: text-sm
+    frontend/src/pages/WhatsAppPage.vue:118: colour: text-ink-muted
+    frontend/src/pages/WhatsAppPage.vue:118: colour: text-tone-danger
+    frontend/src/pages/WhatsAppPage.vue:129: colour: text-ink
+    frontend/src/pages/WhatsAppPage.vue:129: font size: text-sm
+    frontend/src/pages/WhatsAppPage.vue:140: colour: border-line-soft
+    frontend/src/pages/WhatsAppPage.vue:140: padding: p-ui-md
+    frontend/src/pages/WhatsAppPage.vue:140: radius: rounded-card
+    frontend/src/pages/WhatsAppPage.vue:146: colour: text-ink-muted
+    frontend/src/pages/WhatsAppPage.vue:146: font size: text-sm
+    frontend/src/pages/WhatsAppPage.vue:151: colour: text-ink
+FAIL    frontend/src/pages/WhatsAppSetupPage.vue: 7 colour, 5 font size, 1 own card
+    frontend/src/pages/WhatsAppSetupPage.vue:31: own card: ui-card
+    frontend/src/pages/WhatsAppSetupPage.vue:67: colour: text-ink-muted
+    frontend/src/pages/WhatsAppSetupPage.vue:67: font size: text-sm
+    frontend/src/pages/WhatsAppSetupPage.vue:73: colour: text-danger
+    frontend/src/pages/WhatsAppSetupPage.vue:73: font size: text-sm
+    frontend/src/pages/WhatsAppSetupPage.vue:80: colour: text-ink
+    frontend/src/pages/WhatsAppSetupPage.vue:80: font size: text-sm
+    frontend/src/pages/WhatsAppSetupPage.vue:93: colour: text-danger
+    frontend/src/pages/WhatsAppSetupPage.vue:93: colour: text-ink
+    frontend/src/pages/WhatsAppSetupPage.vue:93: font size: text-sm
+    frontend/src/pages/WhatsAppSetupPage.vue:135: colour: text-ink-body
+    frontend/src/pages/WhatsAppSetupPage.vue:176: colour: text-danger
+55 of 58 pages fail

@@ -25,7 +25,7 @@
 			<li
 				v-for="row in rows"
 				:key="row.name"
-				class="rounded border border-line-soft p-ui-md"
+				class="rounded-card border border-line-soft p-ui-md"
 				data-testid="sellos-shortlist-row"
 				:data-name="row.name"
 			>
@@ -81,7 +81,7 @@
 						<li
 							v-for="(item, index) in current.items"
 							:key="item.name"
-							class="rounded border border-line-soft p-ui-md"
+							class="rounded-card border border-line-soft p-ui-md"
 							data-testid="sellos-shortlist-item"
 							:data-title="item.title"
 							:data-unavailable="item.unavailable"

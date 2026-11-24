@@ -3,7 +3,7 @@
 		<div class="flex min-w-0 items-center gap-ui-md">
 			<span
 				v-if="icon"
-				class="hidden h-11 w-11 shrink-0 items-center justify-center rounded bg-brand-soft text-brand sm:inline-flex"
+				class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-round bg-brand-soft text-brand sm:inline-flex"
 				aria-hidden="true"
 			>
 				<span :class="icon" class="icon-inherit size-5" />

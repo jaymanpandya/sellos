@@ -84,17 +84,55 @@
 	/* Spacing scale */
 	--ui-xs: 4px;
 	--ui-sm: 8px;
-	--ui-md: 14px;
+	--ui-md: 16px;
 	--ui-lg: 24px;
 	--ui-xl: 48px;
 
-	--radius: 14px; /* the one radius: cards, panels, inputs, selects, buttons, menus, drawers, modals */
-	--radius-pill: 9999px; /* status badges only */
+	--radius-card: 14px; /* cards, panels, dialogs, menus that open from a button, boxed notes */
+	--radius-control: 10px; /* buttons, fields, selects, sidebar items, small rectangular chips */
+	--radius-round: 9999px; /* icon badges, avatars, status pills, count badges */
+
+	--ui-card-pad: 16px; /* 20px from 640px, see index.css */
+	--ui-gap-cards: 16px;
+	--ui-field-gap-x: 20px;
+	--ui-field-gap-y: 16px;
+	--ui-page-margin: 16px; /* 24px from 640px */
+	--ui-content-max: 1440px;
 
 	--ui-shadow-card: 0 1px 2px rgba(17, 24, 39, 0.04), 0 6px 20px -8px rgba(17, 24, 39, 0.1);
 	--ui-shadow-lift: 0 2px 4px rgba(17, 24, 39, 0.05), 0 14px 32px -12px rgba(17, 24, 39, 0.18);
-	--ui-shadow-button: none;
+	--ui-shadow-button: 0 1px 2px color-mix(in srgb, var(--sos-brand-dark) 25%, transparent),
+		0 4px 12px -4px color-mix(in srgb, var(--sos-brand) 40%, transparent);
 
 	--ui-touch: 44px;
 	--ui-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Areas: one accent, one soft tint, one dark ink and one icon each (ui-tokens.js, areas). The page sets
+   data-area on its shell; the pieces read --area-accent, --area-soft and --area-ink. */
+:root,
+[data-area="sales"] {
+	--area-accent: #0f4c35;
+	--area-soft: #e3f0ea;
+	--area-ink: #0a3626;
+}
+[data-area="calls"] {
+	--area-accent: #1a6175;
+	--area-soft: #eef8fa;
+	--area-ink: #0e3e4c;
+}
+[data-area="inventory"] {
+	--area-accent: #8a4b00;
+	--area-soft: #fef8ed;
+	--area-ink: #5c3200;
+}
+[data-area="money"] {
+	--area-accent: #08724e;
+	--area-soft: #ecfaf5;
+	--area-ink: #054d34;
+}
+[data-area="company"] {
+	--area-accent: #3f4a5c;
+	--area-soft: #f0f3f9;
+	--area-ink: #1d222b;
 }

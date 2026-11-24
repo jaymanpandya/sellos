@@ -1,5 +1,5 @@
 // SellOS UI tokens (SOS-UI-2B, restated by docs/UI_STANDARD.md). The system SellOS shares with BuildOS and
-// PAMAA: a neutral page, white cards with a soft shadow, Inter, one 14px radius, a pill
+// PAMAA: a neutral page, white cards with a soft shadow, Inter, a 14px card radius, a 10px control radius, a round pill
 // for the current menu item. Only the accent is SellOS's own: the approved brand green of docs/BRAND.md.
 // Pure data; tokens.js and tailwind.config.js read it, ui-tokens.css repeats it as CSS variables.
 
@@ -118,7 +118,7 @@ export const typography = {
 export const spacing = {
 	"ui-xs": "4px",
 	"ui-sm": "8px",
-	"ui-md": "14px",
+	"ui-md": "16px",
 	"ui-lg": "24px",
 	"ui-xl": "48px",
 	touch: "44px", // minimum height and width of any control (PAMAA)
@@ -126,18 +126,21 @@ export const spacing = {
 	topbar: "61px",
 };
 
-// Radius: one value for every card, panel, input, select, button, menu, drawer and modal (`--radius`, 14px).
-// Only a status badge is a full pill. Nothing else may set a radius (scripts/check-guards.sh, guard "radius").
+// Radius (docs/DESIGN_SYSTEM.md, section 2): 14px for cards, panels, dialogs and menus that open from a button;
+// 10px for buttons, fields, selects, sidebar items and small rectangular chips; fully round for icon badges,
+// avatars, status pills and count badges. A page never writes a radius (scripts/check_design_system.py).
 export const radius = {
-	DEFAULT: "14px",
-	pill: "9999px",
+	card: "14px",
+	control: "10px",
+	round: "9999px",
 };
 
 // Soft shadows, shared by BuildOS and PAMAA (neutral grey, not tinted).
 export const shadows = {
 	card: "0 1px 2px rgba(17, 24, 39, 0.04), 0 6px 20px -8px rgba(17, 24, 39, 0.10)",
 	lift: "0 2px 4px rgba(17, 24, 39, 0.05), 0 14px 32px -12px rgba(17, 24, 39, 0.18)",
-	button: "none",
+	// The solid button: dark brand at 25 percent, brand at 40 percent (follows a company's own brand colour).
+	button: "0 1px 2px color-mix(in srgb, var(--sos-brand-dark) 25%, transparent), 0 4px 12px -4px color-mix(in srgb, var(--sos-brand) 40%, transparent)",
 };
 
 export const motion = {
@@ -162,9 +165,73 @@ export function uiCssVariables() {
 		vars[`--ui-${tone}-bg`] = v.bg;
 		vars[`--ui-${tone}-line`] = v.line;
 	}
-	vars["--radius"] = radius.DEFAULT;
-	vars["--radius-pill"] = radius.pill;
+	vars["--radius-card"] = radius.card;
+	vars["--radius-control"] = radius.control;
+	vars["--radius-round"] = radius.round;
 	for (const [k, v] of Object.entries(shadows)) vars[`--ui-shadow-${k}`] = v;
 	vars["--ui-ease"] = motion.ease;
 	return vars;
 }
+
+// SellOS areas (docs/DESIGN_SYSTEM.md, "Areas"): each has one accent, one soft tint, one dark ink and one icon,
+// defined once, from SellOS's own palette. They colour the sidebar chip, the page header icon, the card top edge,
+// the stat figures and the empty state of every page of the area.
+export const areas = {
+	sales: {
+		label: "Leads and Sales",
+		accent: brand.DEFAULT,
+		soft: brand.light,
+		ink: brand.dark,
+		icon: "lucide-users",
+	},
+	calls: {
+		label: "Calls and WhatsApp",
+		accent: status.info.ink,
+		soft: status.info.bg,
+		ink: "#0E3E4C",
+		icon: "lucide-phone-call",
+	},
+	inventory: {
+		label: "Inventory",
+		accent: status.warning.ink,
+		soft: status.warning.bg,
+		ink: "#5C3200",
+		icon: "lucide-building",
+	},
+	money: {
+		label: "Money",
+		accent: status.success.ink,
+		soft: status.success.bg,
+		ink: "#054D34",
+		icon: "lucide-hand-coins",
+	},
+	company: {
+		label: "Company",
+		accent: neutrals.body,
+		soft: status.neutral.bg,
+		ink: neutrals.ink,
+		icon: "lucide-building-2",
+	},
+};
+
+// Every value of section 2 of the source document, in one place. The CSS variables in ui-tokens.css and the
+// Tailwind theme repeat them; sellos/tests/test_design_tokens.py keeps the three in step.
+export const designTokens = {
+	radius: { card: 14, control: 10, round: 9999 },
+	touchHeight: 44,
+	cardPadding: { base: 16, from640: 20 },
+	gapBetweenCards: 16,
+	fieldGap: { across: 20, down: 16 },
+	pageMargin: { base: 16, from640: 24 },
+	contentMaxWidth: 1440,
+	shadow: { card: shadows.card, lift: shadows.lift, button: shadows.button },
+	motion: {
+		fast: 120,
+		base: 180,
+		slow: 250,
+		curve: "cubic-bezier(0.16, 1, 0.3, 1)",
+		reducedMotion: "off",
+	},
+	font: "Inter",
+	typeFloor: { smallPrint: 14, reading: 16 },
+};

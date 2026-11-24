@@ -42,7 +42,7 @@
 		>
 			<div class="absolute inset-0 bg-black/40" @click="closeMenu" />
 			<div
-				class="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t bg-surface p-ui-md pb-[calc(1rem+57px)] text-ink shadow-lift"
+				class="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-card bg-surface p-ui-md pb-[calc(1rem+57px)] text-ink shadow-lift"
 			>
 				<router-link
 					v-for="item in rest"
@@ -50,7 +50,7 @@
 					:to="item.to"
 					:data-testid="`sellos-phone-nav-${item.key}`"
 					exact-active-class="ui-bar-active"
-					class="flex min-h-touch items-center rounded px-3 text-base"
+					class="flex min-h-touch items-center rounded-control px-3 text-base"
 					@click="closeMenu"
 				>
 					<span

@@ -289,7 +289,7 @@
 				v-if="duplicates.length"
 				role="alert"
 				data-testid="sellos-duplicate-warning"
-				class="space-y-ui-md rounded border border-tone-warning-line bg-tone-warning-bg p-ui-md text-sm text-tone-warning"
+				class="space-y-ui-md rounded-card border border-tone-warning-line bg-tone-warning-bg p-ui-md text-sm text-tone-warning"
 			>
 				<p class="font-medium">
 					This person is already in SellOS. Add the enquiry to them instead of making a
@@ -300,7 +300,7 @@
 					:key="match.name"
 					data-testid="sellos-duplicate-match"
 					:data-visible="match.visible ? 'yes' : 'no'"
-					class="rounded border border-line bg-surface p-ui-md text-ink"
+					class="rounded-card border border-line bg-surface p-ui-md text-ink"
 				>
 					<p data-testid="sellos-duplicate-name" class="font-medium">
 						{{ match.visible ? match.client_name : "A client of another agent" }}

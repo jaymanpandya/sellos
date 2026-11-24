@@ -51,7 +51,7 @@
 					<li
 						v-for="item in view.items"
 						:key="item.name"
-						class="rounded border border-line-soft p-ui-md"
+						class="rounded-card border border-line-soft p-ui-md"
 						data-testid="sellos-client-shortlist-item"
 						:data-title="item.title"
 						:data-unavailable="item.unavailable"
@@ -100,7 +100,7 @@
 									:key="url"
 									:src="url"
 									alt="Photo of the home"
-									class="h-32 rounded"
+									class="h-32 rounded-control"
 								/>
 							</div>
 						</div>

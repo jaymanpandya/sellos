@@ -2,7 +2,7 @@
 	<div v-if="show" ref="root" class="relative" data-testid="sellos-notifications">
 		<Button
 			variant="ghost"
-			class="!relative !flex !min-h-touch !min-w-touch !items-center !justify-center !rounded !px-2 !text-sm !text-ink-body hover:!bg-brand-soft"
+			class="!relative !flex !min-h-touch !min-w-touch !items-center !justify-center !rounded-control !px-2 !text-sm !text-ink-body hover:!bg-brand-soft"
 			aria-label="Notifications"
 			:aria-expanded="open"
 			data-testid="sellos-notification-bell"
@@ -24,14 +24,14 @@
 
 			<span
 				v-if="state.unread > 0"
-				class="ml-1 rounded bg-brand px-2 py-0.5 text-xs font-semibold text-on-brand"
+				class="ml-1 rounded-control bg-brand px-2 py-0.5 text-xs font-semibold text-on-brand"
 				data-testid="sellos-notification-count"
 				>{{ state.unread }}</span
 			>
 		</Button>
 		<div
 			v-if="open"
-			class="fixed inset-x-2 top-14 z-30 max-h-[70vh] overflow-y-auto rounded border border-line bg-surface text-ink shadow-lift sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80"
+			class="fixed inset-x-2 top-14 z-30 max-h-[70vh] overflow-y-auto rounded-card border border-line bg-surface text-ink shadow-lift sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80"
 			role="dialog"
 			aria-label="Notifications"
 			data-testid="sellos-notification-panel"

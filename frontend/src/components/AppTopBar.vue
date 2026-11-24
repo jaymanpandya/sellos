@@ -17,14 +17,14 @@
 			<NotificationBell />
 			<button
 				type="button"
-				class="flex min-h-touch items-center gap-2 rounded py-1 pl-1 pr-2 transition hover:bg-brand-soft"
+				class="flex min-h-touch items-center gap-2 rounded-control py-1 pl-1 pr-2 transition hover:bg-brand-soft"
 				:aria-expanded="menuOpen ? 'true' : 'false'"
 				aria-haspopup="true"
 				data-testid="sellos-user-button"
 				@click="menuOpen = !menuOpen"
 			>
 				<span
-					class="flex h-9 w-9 items-center justify-center rounded bg-brand text-xs font-semibold text-on-brand"
+					class="flex h-9 w-9 items-center justify-center rounded-round bg-brand text-xs font-semibold text-on-brand"
 					aria-hidden="true"
 					>{{ badge }}</span
 				>
@@ -38,13 +38,13 @@
 			</button>
 			<div
 				v-if="menuOpen"
-				class="absolute right-0 top-full z-30 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded border border-line bg-surface p-2 text-ink shadow-lift"
+				class="absolute right-0 top-full z-30 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-card border border-line bg-surface p-2 text-ink shadow-lift"
 				data-testid="sellos-user-menu"
 			>
 				<p class="truncate px-3 py-2 text-sm font-semibold">{{ session.fullName }}</p>
 				<button
 					type="button"
-					class="flex min-h-touch w-full items-center gap-2 rounded px-3 text-left text-sm hover:bg-surface-muted"
+					class="flex min-h-touch w-full items-center gap-2 rounded-control px-3 text-left text-sm hover:bg-surface-muted"
 					data-testid="sellos-menu-signout"
 					@click="signOut()"
 				>
@@ -56,7 +56,7 @@
 		<!-- The phone's own sign out, as before the new shell. -->
 		<button
 			type="button"
-			class="min-h-touch min-w-touch shrink-0 whitespace-nowrap rounded px-3 text-base lg:hidden"
+			class="min-h-touch min-w-touch shrink-0 whitespace-nowrap rounded-control px-3 text-base lg:hidden"
 			data-testid="sellos-phone-signout"
 			@click="signOut()"
 		>

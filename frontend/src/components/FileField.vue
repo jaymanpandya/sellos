@@ -9,7 +9,7 @@
 			:accept="accept"
 			:required="required"
 			v-bind="$attrs"
-			class="min-h-touch w-full rounded border border-line-field bg-surface px-ui-sm py-2 text-base text-ink file:mr-ui-md file:min-h-8 file:cursor-pointer file:rounded file:border file:border-ghost-border file:bg-ghost-bg file:px-ui-md file:py-1 file:text-base file:font-medium file:text-ink"
+			class="min-h-touch w-full rounded-control border border-line-field bg-surface px-ui-sm py-2 text-base text-ink file:mr-ui-md file:min-h-8 file:cursor-pointer file:rounded-control file:border file:border-ghost-border file:bg-ghost-bg file:px-ui-md file:py-1 file:text-base file:font-medium file:text-ink"
 			@change="emit('change', $event)"
 		/>
 		<p v-if="hint" class="text-sm text-ink-muted">{{ hint }}</p>

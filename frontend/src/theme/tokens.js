@@ -69,20 +69,23 @@ export const fontFamily = {
 	heading: uiFont.sans,
 };
 
-// One radius (--radius, 14px) for every size name, so frappe-ui's own rounded-md, rounded-lg and so on match.
-// Only a status badge (rounded-pill) and a frappe-ui avatar or spinner (rounded-full) are round.
-const one = "var(--radius)";
+// Card 14px, control 10px, round for pills (ui-tokens.js, radius). frappe-ui's own sized names map to the control
+// radius (small and medium) or the card radius (large and up), so its Dialog, Dropdown and Toast match.
+const card = "var(--radius-card)";
+const control = "var(--radius-control)";
 export const radius = {
 	none: "0",
-	sm: one,
-	DEFAULT: one,
-	md: one,
-	lg: one,
-	xl: one,
-	"2xl": one,
-	"3xl": one,
-	pill: uiRadius.pill,
-	full: uiRadius.pill,
+	sm: control,
+	DEFAULT: control,
+	md: control,
+	lg: card,
+	xl: card,
+	"2xl": card,
+	"3xl": card,
+	card,
+	control,
+	round: uiRadius.round,
+	full: uiRadius.round,
 };
 
 export const boxShadow = shadows;

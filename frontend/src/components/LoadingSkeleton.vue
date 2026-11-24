@@ -11,11 +11,11 @@
 			<div
 				v-for="index in rows"
 				:key="index"
-				class="rounded border border-line bg-surface p-ui-md shadow-card"
+				class="rounded-card border border-line bg-surface p-ui-md shadow-card"
 			>
-				<div class="ui-shimmer h-3 w-20 rounded" />
-				<div class="ui-shimmer my-3 h-7 w-16 rounded" />
-				<div class="ui-shimmer h-3 w-28 rounded" />
+				<div class="ui-shimmer h-3 w-20 rounded-control" />
+				<div class="ui-shimmer my-3 h-7 w-16 rounded-control" />
+				<div class="ui-shimmer h-3 w-28 rounded-control" />
 			</div>
 		</div>
 		<div v-else aria-hidden="true">
@@ -24,9 +24,9 @@
 				:key="index"
 				class="flex items-center gap-ui-md border-b border-line-soft py-ui-md last:border-b-0"
 			>
-				<div class="ui-shimmer h-4 flex-[2] rounded" />
-				<div class="ui-shimmer hidden h-4 flex-1 rounded sm:block" />
-				<div class="ui-shimmer h-5 w-16 rounded" />
+				<div class="ui-shimmer h-4 flex-[2] rounded-control" />
+				<div class="ui-shimmer hidden h-4 flex-1 rounded-control sm:block" />
+				<div class="ui-shimmer h-5 w-16 rounded-control" />
 			</div>
 		</div>
 	</div>
