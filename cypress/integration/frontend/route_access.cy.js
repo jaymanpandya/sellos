@@ -27,6 +27,10 @@ context("SOS-P0-10: route access", () => {
 			body: { message: {} },
 		});
 		cy.intercept("**/api/method/sellos.crm.api.list_stages*", { body: { message: [] } });
+		// The lead page (LD-1 does not exist) also asks for its booking panel (SOS-P7-10). Unstubbed, the
+		// server answered 404 whenever the answer landed inside a later test, which failed that test's
+		// check for unexpected API failures. stubBookingPanel is the stub every lead page spec uses.
+		cy.stubBookingPanel();
 	};
 
 	it("sends a user without a SellOS role to the no access page", () => {

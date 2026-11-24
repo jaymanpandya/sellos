@@ -44,9 +44,17 @@ ROLES.forEach(({ role, label }) => {
 	describe(`Visual walk through: ${label}`, () => {
 		before(() => {
 			cy.bench("sellos.tests.ui_fixtures.seed_agent_leads");
+			// A partner with no firm is refused by the server (403), as it should be; the walk through
+			// shows a partner who has an approved firm.
+			if (role === "channel_partner") {
+				cy.bench("sellos.tests.ui_fixtures.seed_gate_partner_firm", { stage: "approved" });
+			}
 		});
 		after(() => {
 			cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads");
+			if (role === "channel_partner") {
+				cy.bench("sellos.tests.ui_fixtures.remove_gate_partner_firms");
+			}
 		});
 
 		it("opens every page in the menu and saves a screenshot of each", () => {

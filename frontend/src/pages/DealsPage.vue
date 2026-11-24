@@ -75,8 +75,9 @@
 						class="mt-ui-sm text-sm text-ink-muted"
 						data-testid="sellos-deal-approved"
 					>
-						Approved by {{ d.approved_by_name }} on {{ d.approved_on }}. The split is
-						kept unless it is reopened.
+						Approved by {{ d.approved_by_name }} on
+						{{ formatDateTime(d.approved_on) }}. The split is kept unless it is
+						reopened.
 					</p>
 					<div class="mt-ui-sm">
 						<AppButton
@@ -212,6 +213,7 @@ import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { dealApi } from "../crm/dealsApi";
+import { formatDateTime } from "../format";
 
 // Deals (SOS-P4-06). Every change is made on the server and the list read back. The server checks that the
 // shares add up to 100, so the total shown here only helps the person typing.

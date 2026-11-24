@@ -22,7 +22,7 @@
 					:data-testid="`sellos-nav-${item.key}`"
 					:active-class="item.key === 'home' ? '' : 'ui-pill-active'"
 					exact-active-class="ui-pill-active"
-					class="ui-nav-item ui-pill-hover mb-0.5 flex min-h-touch items-center rounded-pill px-3 text-base text-ink-body transition-colors duration-150"
+					class="ui-nav-item ui-pill-hover mb-0.5 flex min-h-touch items-center rounded-badge px-3 text-base text-ink-body transition-colors duration-150"
 				>
 					<span
 						:class="ICONS[item.key] || 'lucide-circle'"
@@ -36,7 +36,7 @@
 		<div class="border-t border-line p-ui-md">
 			<button
 				type="button"
-				class="ui-pill-hover flex min-h-touch w-full items-center rounded-pill px-3 text-left text-base text-ink-body"
+				class="ui-pill-hover flex min-h-touch w-full items-center rounded-badge px-3 text-left text-base text-ink-body"
 				data-testid="sellos-signout"
 				@click="signOut()"
 			>

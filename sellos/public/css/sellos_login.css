@@ -1,21 +1,43 @@
-/* SOS-UI-3D: the sign in page (Frappe's /login) in the SellOS look: brand tile, Inter, the Pandya tokens.
-   It only styles the page; how sign in works is unchanged. Loaded on web pages by web_include_css and
-   scoped to .for-login, so no other page changes. Values are the tokens of frontend/src/theme/ui-tokens.css. */
+/* SOS-UI-3D, restyled by docs/UI_STANDARD.md: the sign in page (Frappe's /login) in the shared look: a neutral page,
+   one white card with the soft shadow, the SellOS tile, Inter. It only styles the page; how sign in works is
+   unchanged. Loaded on web pages by web_include_css and scoped to .for-login, so no other page changes. Values are
+   the tokens of frontend/src/theme/ui-tokens.css. Inter is self hosted (sellos/public/fonts, SIL Open Font License 1.1). */
+@font-face {
+	font-family: "Inter";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/assets/sellos/fonts/Inter-Regular.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Inter";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/assets/sellos/fonts/Inter-Medium.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Inter";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/assets/sellos/fonts/Inter-SemiBold.woff2") format("woff2");
+}
 html body:has(.for-login) {
-	background-color: #fff2dc;
-	color: #003c3c;
+	background-color: #f4f5f7;
+	color: #1d222b;
 	font-family: Inter, system-ui, "Segoe UI", sans-serif;
 }
 body .for-login .page-card {
 	max-width: 420px;
 	margin: 8vh auto 0;
 	padding: 24px;
-	border: 1px solid rgba(0, 45, 45, 0.2);
-	border-radius: 16px;
+	border: 1px solid #dde2ec;
+	border-radius: 14px;
 	background-color: #ffffff;
 	box-shadow:
-		0 1px 2px rgba(0, 45, 45, 0.05),
-		0 6px 20px -8px rgba(0, 45, 45, 0.12);
+		0 1px 2px rgba(17, 24, 39, 0.04),
+		0 6px 20px -8px rgba(17, 24, 39, 0.1);
 }
 /* The brand tile replaces the default logo image. */
 body .for-login .page-card-head .app-logo {
@@ -28,42 +50,46 @@ body .for-login .page-card-head::before {
 	justify-content: center;
 	width: 44px;
 	height: 44px;
-	border-radius: 8px;
-	background-color: #003c3c;
-	color: #e4b33c;
+	border-radius: 10px;
+	background-color: #0f4c35;
+	color: #ffffff;
 	font-size: 22px;
 	font-weight: 600;
 }
 body .for-login .page-card-head h4 {
-	color: #003c3c;
+	color: #1d222b;
 	font-size: 24px;
 	font-weight: 600;
 }
 body .for-login .page-card-subtitle,
 body .for-login label {
-	color: #3f6767;
+	color: #525f78;
 }
 body .for-login .form-control {
 	min-height: 44px;
-	border: 1px solid rgba(0, 45, 45, 0.55);
-	border-radius: 8px;
+	border: 1px solid #778399;
+	border-radius: 10px;
 	background-color: #ffffff;
-	color: #003c3c;
+	color: #1d222b;
 }
 body .for-login .form-control:focus {
-	box-shadow: 0 0 0 2px rgba(0, 60, 60, 0.7);
+	border-color: #0f4c35;
+	box-shadow: 0 0 0 3px rgba(15, 76, 53, 0.18);
 	outline: none;
 }
 body .for-login .es-button {
 	min-height: 44px;
-	border-radius: 8px;
+	border-radius: 10px;
 	font-weight: 500;
 }
 body .for-login .es-button[data-variant="solid"] {
-	border: 1px solid #002d2d;
-	background-color: #003c3c;
-	color: #e4b33c;
+	border: 1px solid transparent;
+	background-color: #0f4c35;
+	color: #ffffff;
+}
+body .for-login .es-button[data-variant="solid"]:hover {
+	background-color: #0a3626;
 }
 body .for-login a {
-	color: #003c3c;
+	color: #0f4c35;
 }

@@ -142,6 +142,8 @@ which the demo no longer uses. A step that fails prints `DEMO SEED STEP FAILED: 
 `scripts/demo.sh status`, then `~/iespl-baseline/sellos-demo.log`. `scripts/demo.sh reset` rebuilds everything.
 The demo uses the same SellOS code as the loop (`apps/sellos`), so a half merged change can show there too.
 
+**A failed seed step fails loudly.** Each part of a company's data (inventory, partners, enquiries, sellers, deals and commission, WhatsApp, visits and follow ups) runs as its own step, so one broken step does not stop the rest. At the end `scripts/demo.sh seed` and `update` print `DEMO SEED FAILED:` with every failed site, step name and error (the full traceback of each is in the output above it) and exit 1. Repeating the seed retries only what is missing.
+
 Records an earlier seed already made stay: `update` adds the content above beside them and never deletes. A site that
 was seeded before this content existed still shows its "Regression ..." projects, firms and shares next to the new ones;
 `scripts/demo.sh reset` rebuilds a site with only the realistic content.

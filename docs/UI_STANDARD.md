@@ -52,6 +52,15 @@ remapped for frappe-ui in `frappe-ui-map.js`. Never write a colour, size or shad
   stat cards. The shimmer is `rgba(17,24,39,.07)` to `.03`, 1.3s, off under reduced motion. Never a bare "Loading".
 * **Empty state.** `EmptyState`: a dashed box on the subtle gradient, a 44px icon chip in the accent tint, a title, one line and an optional action.
 
+## Public pages
+
+The two pages a customer sees before the app have the same look and are not part of the Vue app, so they carry the tokens by hand, the only places that may:
+
+* **Sign in** (Frappe's `/login`): `sellos/public/css/sellos_login.css`, scoped to `.for-login`. The neutral page, one white 14px card with the card shadow, the SellOS tile in the accent, 44px fields with the `#778399` line and a 10px radius, a solid accent button, focus as the soft accent ring. How sign in works is unchanged.
+* **Enquiry** (`/enquiry`, `sellos/www/enquiry.html`): the same, in the template's own `<style>` (the page stands alone). Success and refusal notices use the success and danger tones.
+* **Inter** for both is `sellos/public/fonts/*.woff2` (400, 500, 600), the same files as `frontend/src/theme/fonts`, SIL Open Font License 1.1.
+* `cypress/integration/frontend/ui_style.cy.js` checks both pages' page colour, card, radius, field height and button colour.
+
 ## Contrast, every pairing
 
 Text needs 4.5:1, an input edge 3:1, decorative lines nothing. Output of `python3 -I scripts/contrast.py`.
@@ -105,5 +114,5 @@ Text needs 4.5:1, an input edge 3:1, decorative lines nothing. Output of `python
 ## Screenshots, before and after
 
 Company Admin of the demo company Skyline Realty, 1280 by 800, 24 November 2026. Left of each pair is the old cream and dark green shell, right is this standard,
-both on the same demo data. In `docs/ui-reference/ui-standard/`: `before-<page>.png` and `after-<page>.png` for Home, Leads, Deals, Commission, Call queue, WhatsApp, Site visits and Inventory.
+both on the same demo data. In `docs/ui-reference/ui-standard/`: `before-<page>.png` and `after-<page>.png` for Home, Leads, Deals, Commission, Call queue, WhatsApp, Site visits, Inventory, Sign in and Enquiry.
 All four roles, every menu page and a phone pass are made by `cypress/integration/visual/walkthrough.cy.js` (`bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/visual/walkthrough.cy.js`).

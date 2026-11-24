@@ -168,5 +168,75 @@ class TestDemoData(unittest.TestCase):
 		json.dumps(demo_data.MARKET, default=list)
 
 
+class TestSeedFailsLoudly(unittest.TestCase):
+	"""A failed seed step is named with its error and fails the seed; it is never only a missing section."""
+
+	def test_a_result_with_no_failed_step_has_no_failures(self):
+		line = json.dumps({"site": "s", "leads": 3, "failed_steps": []})
+		self.assertEqual(demo.failed_steps_of("s", line), [])
+
+	def test_each_failed_step_is_named_with_its_error(self):
+		failed = [
+			{"step": "partners", "error": "TypeError: bad seed"},
+			{"step": "whatsapp", "error": "ValidationError: no template"},
+		]
+		line = json.dumps({"site": "s", "failed_steps": failed})
+		self.assertEqual(
+			demo.failed_steps_of("s", line),
+			[("s", "partners", "TypeError: bad seed"), ("s", "whatsapp", "ValidationError: no template")],
+		)
+
+	def test_a_line_that_is_not_the_result_counts_as_a_failure(self):
+		for line in ("seeded", "", '{"site": "s"}', "[1, 2]"):
+			found = demo.failed_steps_of("s", line)
+			self.assertEqual(len(found), 1, line)
+			self.assertIn("not understood", found[0][2])
+
+	def test_a_failing_step_is_rolled_back_recorded_and_the_next_step_still_runs(self):
+		from unittest import mock
+
+		import frappe
+
+		del demo.STEP_FAILURES[:]
+		self.addCleanup(demo.STEP_FAILURES.clear)
+		db = mock.MagicMock()
+
+		def broken():
+			raise ValueError("no such project")
+
+		with (
+			mock.patch.object(frappe, "db", db),
+			mock.patch.object(demo.sys, "stderr", mock.MagicMock()),
+		):
+			self.assertIsNone(demo._isolated("deals", broken))
+			self.assertEqual(demo._isolated("visits", lambda: "made"), "made")
+		db.rollback.assert_called_once()
+		self.assertEqual(demo.STEP_FAILURES, [{"step": "deals", "error": "ValueError: no such project"}])
+
+	def test_seed_raises_naming_every_failed_site_and_step(self):
+		from unittest import mock
+
+		results = {
+			"sellos_tenant_demoalpha.localhost": json.dumps({"failed_steps": []}),
+			"sellos_tenant_demobeta.localhost": json.dumps(
+				{"failed_steps": [{"step": "deals and commission", "error": "KeyError: 'rate'"}]}
+			),
+		}
+		with (
+			mock.patch.object(demo, "ensure_control"),
+			mock.patch.object(demo, "provision_companies"),
+			mock.patch.object(demo, "_run_on", side_effect=lambda site, *a, **k: results[site]),
+			mock.patch("builtins.print"),
+		):
+			with self.assertRaises(demo.DemoSeedFailed) as caught:
+				demo.seed()
+			self.assertEqual(demo.main(["seed"]), 1)
+		message = str(caught.exception)
+		self.assertIn("sellos_tenant_demobeta.localhost", message)
+		self.assertIn("deals and commission", message)
+		self.assertIn("KeyError: 'rate'", message)
+		self.assertNotIn("demoalpha", message)
+
+
 if __name__ == "__main__":
 	unittest.main()

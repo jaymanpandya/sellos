@@ -523,6 +523,15 @@ class DemoRefused(RuntimeError):
 	"""The demo code was pointed at a site that is not a demo site."""
 
 
+class DemoSeedFailed(RuntimeError):
+	"""One or more seed steps failed on a site. Names every step and its error."""
+
+
+# The steps of this process's seed that failed, as {"step", "error"}. seed_company returns them, and seed()
+# raises DemoSeedFailed for them after every site has been tried, so a failure is never just a missing section.
+STEP_FAILURES = []
+
+
 # --- The one safety check ------------------------------------------------------------------------
 
 
@@ -835,6 +844,7 @@ def seed_company(index=0):
 	from sellos.crm import call_outcomes, lead_sources, pipeline
 
 	site = check_demo_site()
+	del STEP_FAILURES[:]
 	data = COMPANIES[int(index) % len(COMPANIES)]
 	ensure_roles()
 	pipeline.ensure_default_stages()
@@ -876,7 +886,12 @@ def seed_company(index=0):
 	_support_grants(users["admin"])
 	_seed_features(index, data, users)
 	frappe.db.commit()  # nosemgrep  bench execute commits too
-	return {"site": site, "leads_made": made, "leads": frappe.db.count("Lead")}
+	return {
+		"site": site,
+		"leads_made": made,
+		"leads": frappe.db.count("Lead"),
+		"failed_steps": list(STEP_FAILURES),
+	}
 
 
 # --- Every feature built so far (SOS-DEMO-2) ---------------------------------------------------------
@@ -1130,7 +1145,8 @@ def _seed(kind, n):
 
 
 def _isolated(label, function, *args):
-	"""Run one seed step. A failure is printed and rolled back to the last commit; the next step still runs."""
+	"""Run one seed step. A failure is rolled back to the last commit, printed and recorded in STEP_FAILURES;
+	the next step still runs, and seed() fails loudly at the end."""
 	import traceback
 
 	import frappe
@@ -1139,8 +1155,9 @@ def _isolated(label, function, *args):
 		result = function(*args)
 		frappe.db.commit()  # nosemgrep  bench execute commits too
 		return result
-	except Exception:
+	except Exception as e:
 		frappe.db.rollback()
+		STEP_FAILURES.append({"step": label, "error": f"{type(e).__name__}: {e}"})
 		print(f"DEMO SEED STEP FAILED: {label}\n{traceback.format_exc()}", file=sys.stderr)
 		return None
 
@@ -1749,11 +1766,30 @@ def seed(control_id=CONTROL_ID, company_ids=COMPANY_IDS):
 		check_demo_id(tenant_id)
 	ensure_control(control_id)
 	provision_companies(control_id, company_ids)
+	failures = []
 	for i, tenant_id in enumerate(company_ids):
 		site = site_of(tenant_id)
 		print(f"Seeding {site} ...")
-		print((_run_on(site, "seed_company", index=i).strip().splitlines() or ["seeded"])[-1])
+		last = (_run_on(site, "seed_company", index=i).strip().splitlines() or ["{}"])[-1]
+		print(last)
+		failures += failed_steps_of(site, last)
+	if failures:
+		raise DemoSeedFailed(
+			f"{len(failures)} seed step(s) failed (the rest of the demo is seeded; the full traceback of each "
+			"is in the output above, and repeating the seed retries only what is missing):\n"
+			+ "\n".join(f"  {site}: step '{step}': {error}" for site, step, error in failures)
+		)
 	print(urls(control_id, company_ids))
+
+
+def failed_steps_of(site, result_line):
+	"""The (site, step, error) of every failed step in seed_company's result line. A line that is not the
+	result at all is itself a failure, so a changed output format cannot hide one."""
+	try:
+		result = json.loads(result_line)
+		return [(site, f["step"], f["error"]) for f in result["failed_steps"]]
+	except (ValueError, KeyError, TypeError):
+		return [(site, "(the seed's result)", f"not understood: {result_line[:200]!r}")]
 
 
 def migrate_all(control_id=CONTROL_ID, company_ids=COMPANY_IDS):
@@ -1858,6 +1894,9 @@ def main(argv=None):
 	except DemoRefused as e:
 		print(str(e), file=sys.stderr)
 		return 2
+	except DemoSeedFailed as e:
+		print(f"DEMO SEED FAILED: {e}", file=sys.stderr)
+		return 1
 	return 0
 
 

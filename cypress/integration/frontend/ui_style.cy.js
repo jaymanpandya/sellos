@@ -391,25 +391,56 @@ context("SOS-UI-3D: Companies, setup wizard and sign in follow the style", () =>
 		});
 	});
 
-	it("Sign in: the SellOS tile, Inter, the page colours, a 16px card and a solid Continue button", () => {
+	it("Sign in: the SellOS tile, Inter, the page colours, a 14px card and a solid Continue button", () => {
 		cy.clearAllCookies();
 		cy.visit("/login");
 		cy.get(".for-login .page-card").should("be.visible");
-		cy.get("body").should("have.css", "background-color", "rgb(255, 242, 220)");
+		cy.get("body").should("have.css", "background-color", "rgb(244, 245, 247)");
 		cy.get("body").invoke("css", "font-family").should("match", /Inter/);
 		cy.get(".for-login .page-card")
-			.should("have.css", "border-top-left-radius", "16px")
+			.should("have.css", "border-top-left-radius", "14px")
 			.and("have.css", "border-top-width", "1px")
-			.and("have.css", "border-top-color", "rgba(0, 45, 45, 0.2)");
+			.and("have.css", "border-top-color", "rgb(221, 226, 236)");
 		cy.get(".for-login .page-card-head h4")
 			.should("have.css", "font-size", "24px")
 			.and("have.css", "font-weight", "600");
 		cy.get(".for-login .page-card-head")
 			.then(($head) => getComputedStyle($head[0], "::before").backgroundColor)
-			.should("eq", "rgb(0, 60, 60)");
+			.should("eq", "rgb(15, 76, 53)");
 		cy.get(".for-login .es-button[type=submit]")
 			.first()
-			.should("have.css", "background-color", "rgb(0, 60, 60)")
-			.and("have.css", "color", "rgb(228, 179, 60)");
+			.should("have.css", "background-color", "rgb(15, 76, 53)")
+			.and("have.css", "color", "rgb(255, 255, 255)");
+	});
+
+	context("the public enquiry page", () => {
+		let seed;
+		beforeEach(() => {
+			cy.signOut();
+			cy.bench("sellos.tests.ui_fixtures.seed_enquiry_page").then((made) => {
+				seed = made;
+			});
+		});
+		afterEach(() => {
+			cy.bench("sellos.tests.ui_fixtures.remove_enquiry_page");
+		});
+
+		it("is the shared look: neutral page, white 14px card, Inter, 44px fields, a solid Send button", () => {
+			cy.visit(`/enquiry?k=${seed.key}`);
+			cy.getByTestId("enquiry-form").should("be.visible");
+			cy.get("body").should("have.css", "background-color", "rgb(244, 245, 247)");
+			cy.get("body").invoke("css", "font-family").should("match", /Inter/);
+			cy.getByTestId("enquiry-form")
+				.should("have.css", "background-color", "rgb(255, 255, 255)")
+				.and("have.css", "border-top-left-radius", "14px")
+				.and("have.css", "border-top-color", "rgb(221, 226, 236)");
+			cy.getByTestId("enquiry-name")
+				.should("have.css", "min-height", "44px")
+				.and("have.css", "border-top-left-radius", "10px");
+			cy.getByTestId("enquiry-submit")
+				.should("have.css", "background-color", "rgb(15, 76, 53)")
+				.and("have.css", "color", "rgb(255, 255, 255)")
+				.and("have.css", "min-height", "44px");
+		});
 	});
 });

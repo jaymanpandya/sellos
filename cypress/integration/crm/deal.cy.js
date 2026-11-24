@@ -53,6 +53,11 @@ context("SOS-P4-06: deals and the commission split", () => {
 			cy.wait("@approve").its("response.statusCode").should("eq", 200);
 			row(made.client).should("have.attr", "data-status", "Approved");
 			row(made.client).find('[data-testid="sellos-deal-approved"]').should("be.visible");
+			// The approval time reads "24 Nov 2026, 11:44", never the raw timestamp.
+			row(made.client)
+				.find('[data-testid="sellos-deal-approved"]')
+				.invoke("text")
+				.should("match", /on \d{1,2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2}\. The split/);
 			row(made.client).find('[data-testid="sellos-deal-reopen"]').click();
 			cy.wait("@reopen").its("response.statusCode").should("eq", 200);
 			row(made.client).should("have.attr", "data-status", "Pending approval");

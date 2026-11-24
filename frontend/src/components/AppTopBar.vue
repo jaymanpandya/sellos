@@ -56,7 +56,7 @@
 		<!-- The phone's own sign out, as before the new shell. -->
 		<button
 			type="button"
-			class="min-h-touch min-w-touch rounded-input px-3 text-base lg:hidden"
+			class="min-h-touch min-w-touch whitespace-nowrap rounded-input px-3 text-base lg:hidden"
 			data-testid="sellos-phone-signout"
 			@click="signOut()"
 		>
