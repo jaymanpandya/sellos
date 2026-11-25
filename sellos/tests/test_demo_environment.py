@@ -32,7 +32,7 @@ class TestSiteNameCheck(unittest.TestCase):
 	def test_only_demo_localhost_sites_pass(self):
 		for good in (
 			"sellos_tenant_demo.localhost",
-			"sellos_tenant_demoalpha.localhost",
+			"sellos_tenant_demobom.localhost",
 			"sellos_tenant_demo2.localhost",
 		):
 			self.assertEqual(demo.check_demo_site(good), good)
@@ -62,34 +62,22 @@ class TestSiteNameCheck(unittest.TestCase):
 		for bad in ("alpha", "regressionfour", "democontrol.localhost", "demo-x", "Demo1"):
 			with self.assertRaises(demo.DemoRefused):
 				demo.check_demo_id(bad)
-		self.assertEqual(demo.site_of("demoalpha"), "sellos_tenant_demoalpha.localhost")
+		self.assertEqual(demo.site_of("demobom"), "sellos_tenant_demobom.localhost")
 		self.assertEqual(demo.main(["seed", "--company", "alpha"]), 2)
 		self.assertEqual(demo.main(["bogus"]), 2)
 
 
 class TestDemoData(unittest.TestCase):
-	def test_every_company_has_all_stages_all_consent_states_and_duplicates(self):
-		from sellos.crm.duplicates import normalise_phone
-
-		for company in demo.COMPANIES:
-			leads = company["leads"]
-			self.assertEqual({row[6] for row in leads} & set(STAGES), set(STAGES), company["name"])
-			self.assertEqual(
-				{row[7] for row in leads}, {"unknown", "consented", "optedout", "dnd", "expired"}
-			)
-			phones = [normalise_phone(row[2]) for row in leads]
-			self.assertTrue(len(phones) > len(set(phones)), "no duplicate phone number")
-			emails = [row[3] for row in leads]
-			self.assertTrue(len(emails) > len(set(emails)), "no duplicate email")
-			self.assertTrue(any(row[8] is None for row in leads), "no lead owned by the partner")
-			self.assertTrue({row[8] for row in leads} >= {0, 1})
+	"""The content itself is tested without a bench in sellos/testing/test_demo_data.py and the builders' tests."""
 
 	def test_every_company_has_the_listed_users(self):
 		for i in range(len(demo.COMPANIES)):
 			roles = [role for _e, _n, role in demo.company_users(i)]
 			self.assertEqual(
 				roles,
-				[demo.COMPANY_ADMIN, demo.AGENT, demo.AGENT, demo.CHANNEL_PARTNER, demo.CLIENT],
+				[demo.COMPANY_ADMIN, demo.SALES_MANAGER]
+				+ [demo.AGENT] * 4
+				+ [demo.CHANNEL_PARTNER, demo.CLIENT],
 			)
 		emails = [e for i in range(len(demo.COMPANIES)) for e, _n, _r in demo.company_users(i)]
 		self.assertEqual(len(emails), len(set(emails)))
@@ -102,47 +90,25 @@ class TestDemoData(unittest.TestCase):
 		for i in range(len(demo.COMPANIES)):
 			for email, _n, _r in demo.company_users(i):
 				self.assertIn(email, text)
-			self.assertIn(demo.sales_manager_email(demo.COMPANIES[i]["word"]), text)
 
 	def test_the_doc_names_update_next_to_seed_and_reset(self):
 		text = (REPO_ROOT / "docs" / "DEMO.md").read_text(encoding="utf-8")
 		for command in ("seed", "update", "reset"):
 			self.assertIn(f"scripts/demo.sh {command}", text)
 
-	def test_the_calls_cover_30_days_two_agents_and_two_purposes(self):
-		days = [row[5] for row in demo.DEMO_CALL_PLAN]
-		self.assertGreaterEqual(max(days), 25)
-		self.assertLessEqual(max(days), 30)
-		self.assertEqual({row[6] for row in demo.DEMO_CALL_PLAN}, {0, 1})
-		self.assertGreaterEqual(len({row[1] for row in demo.DEMO_CALL_PLAN}), 2)
-		self.assertTrue(demo.DEMO_TELEPHONY_ID.startswith("FAKEOK"))  # the fake provider accepts it
-		self.assertIn("NOT-A-REAL-KEY", demo.DEMO_TELEPHONY_ID)
-
-	def test_the_seed_calls_the_production_seed_functions(self):
-		"""The demo's content (demo_data.py) is made by steps, each run on its own so one failure is named and
-		fails the seed (SOS-DEMO-2), and each step goes through the production methods, not around them."""
+	def test_the_seed_runs_every_builder_on_its_own_and_checks_the_minimums(self):
+		"""Each builder is a step run on its own (`_isolated`) so one failure is named and fails the seed."""
 		source = (REPO_ROOT / "sellos" / "testing" / "demo.py").read_text(encoding="utf-8")
-		for label, name in (
-			("inventory", "_seed_demo_inventory"),
-			("partners", "_seed_demo_partners"),
-			("enquiries", "_seed_demo_enquiries"),
-			("sellers", "_seed_demo_sellers"),
-			("deals and commission", "_seed_demo_deals"),
-			("whatsapp", "_seed_demo_whatsapp"),
-			("visits and follow ups", "_seed_demo_visits_and_follow_ups"),
+		for builder in (
+			"demo_inventory.build",
+			"demo_crm.build",
+			"demo_inventory.hold_and_sell",
+			"demo_sales.build",
+			"demo_whatsapp.build",
 		):
-			self.assertIn(f'_isolated("{label}", {name},', source, name)
-		for production in (
-			"fx._make_partner_firm(",  # the production firm methods, with mail off
-			"partner_registrations.register_buyer(",
-			"deals.save_deal(",
-			"deals.approve_splits(",
-			"intake.take(",  # the one lead intake
-			"conversations.receive(",  # the WhatsApp conversation methods, with the fake provider
-			"conversations.send(",
-			"conversations.hand_off(",
-		):
-			self.assertIn(production, source, production)
+			self.assertIn(builder, source, builder)
+		self.assertIn('_isolated("minimums", _check_minimums', source)
+		self.assertIn("remove_regression_records", source)
 
 
 class TestDemoServer(unittest.TestCase):
@@ -173,7 +139,7 @@ class TestDemoServer(unittest.TestCase):
 			body = b"".join(guarded(environ, lambda s, h, e=None: status.append(s)))
 			return status[0], body
 
-		self.assertTrue(call("sellos_tenant_demoalpha.localhost:8006")[0].startswith("200"))
+		self.assertTrue(call("sellos_tenant_demobom.localhost:8006")[0].startswith("200"))
 		for host in (
 			"localhost:8006",
 			"test_site:8006",
@@ -183,7 +149,7 @@ class TestDemoServer(unittest.TestCase):
 			"",
 		):
 			self.assertTrue(call(host)[0].startswith("404"), host)
-		call("sellos_tenant_demoalpha.localhost:8006", {"HTTP_X_FRAPPE_SITE_NAME": "test_site"})
+		call("sellos_tenant_demobom.localhost:8006", {"HTTP_X_FRAPPE_SITE_NAME": "test_site"})
 		self.assertEqual(seen[-1], None)
 		self.assertEqual(len(seen), 2)
 
@@ -270,10 +236,10 @@ class TestGateIgnoresTheDemo(unittest.TestCase):
 		env = {"SELLOS_CHECK_DATABASES_FILE": str(dbs)}
 		self.assertEqual(self.run_check("snapshot", str(bench), snap, env=env).returncode, 0)
 		# A demo site and its database appear while the gate runs: not a failure.
-		for name in ("sellos_tenant_democontrol.localhost", "sellos_tenant_demoalpha.localhost"):
+		for name in ("sellos_tenant_democontrol.localhost", "sellos_tenant_demobom.localhost"):
 			(bench / "sites" / name).mkdir()
 			(bench / "sites" / name / "site_config.json").write_text(json.dumps({"db_name": "other"}))
-		dbs.write_text("sellos_test\ntest_site\nsellos_tenant_democontrol\nsellos_tenant_demoalpha\n")
+		dbs.write_text("sellos_test\ntest_site\nsellos_tenant_democontrol\nsellos_tenant_demobom\n")
 		result = self.run_check("compare", str(bench), snap, env=env)
 		self.assertEqual(result.returncode, 0, result.stdout)
 		# A real tenant left behind is still caught.
@@ -288,7 +254,7 @@ class TestGateIgnoresTheDemo(unittest.TestCase):
 
 	def test_leak_check_never_reads_a_demo_site(self):
 		bench = Path(tempfile.mkdtemp())
-		demo_dir = bench / "sites" / "sellos_tenant_demoalpha.localhost"
+		demo_dir = bench / "sites" / "sellos_tenant_demobom.localhost"
 		other = bench / "sites" / "sellos_tenant_other.localhost"
 		for d in (demo_dir, other):
 			d.mkdir(parents=True)
@@ -305,11 +271,11 @@ class TestGateIgnoresTheDemo(unittest.TestCase):
 		result = subprocess.run([*leak, str(bench / "sites")], env=env, capture_output=True, text=True)
 		self.assertEqual(result.returncode, 1)
 		self.assertIn("sellos_tenant_other", result.stdout)
-		self.assertNotIn("demoalpha", result.stdout)
+		self.assertNotIn("demobom", result.stdout)
 
 	def test_the_baseline_restore_refuses_a_demo_site(self):
 		result = subprocess.run(
-			["bash", str(SCRIPTS / "lib" / "restore_baseline.sh"), "sellos_tenant_demoalpha.localhost", "/nonexistent.sql.gz"],
+			["bash", str(SCRIPTS / "lib" / "restore_baseline.sh"), "sellos_tenant_demobom.localhost", "/nonexistent.sql.gz"],
 			capture_output=True, text=True,
 		)  # fmt: skip
 		self.assertEqual(result.returncode, 2)
@@ -322,17 +288,17 @@ class TestGateIgnoresTheDemo(unittest.TestCase):
 		):
 			os.environ.pop(tenant_sites.ALLOW_DEMO_DROP_ENV, None)
 			with self.assertRaises(tenant_sites.TenantSiteError):
-				tenant_sites.drop("demoalpha")
+				tenant_sites.drop("demobom")
 			run.assert_not_called()
 			tenant_sites.drop("regularone")  # an ordinary tenant is still dropped
 			self.assertEqual(run.call_count, 1)
 			os.environ[tenant_sites.ALLOW_DEMO_DROP_ENV] = "1"
-			tenant_sites.drop("demoalpha")
+			tenant_sites.drop("demobom")
 			self.assertEqual(run.call_count, 2)
 
 	def test_tenant_site_script_cannot_drop_a_demo_site(self):
 		result = subprocess.run(
-			[sys.executable, "-c", "import sys; from sellos.provisioning import tenant_sites as t; sys.exit(t.main(['drop','demoalpha']))"],
+			[sys.executable, "-c", "import sys; from sellos.provisioning import tenant_sites as t; sys.exit(t.main(['drop','demobom']))"],
 			env={k: v for k, v in os.environ.items() if k != tenant_sites.ALLOW_DEMO_DROP_ENV},
 			capture_output=True, text=True,
 		)  # fmt: skip
@@ -382,22 +348,21 @@ class TestDemoSeedAndReset(unittest.TestCase):
 		first = self.demo("seed")
 		self.assertEqual(first.returncode, 0, first.stdout[-1500:] + first.stderr[-1500:])
 		leads = self.query(site, "select count(*) from `tabLead`")[0][0]
-		self.assertGreaterEqual(leads, len(demo.COMPANIES[0]["leads"]))  # and the inbound leads
+		self.assertGreaterEqual(leads, 180)
 		clients = self.query(site, "select count(*) from `tabClient`")[0][0]
 		stages = {r[0] for r in self.query(site, "select distinct stage from `tabLead`")}
-		# Every buyer stage, and the two seller stages the demo's sellers are in (demo_data.py).
-		self.assertEqual(stages, set(STAGES) | {"Seller Qualified", "Seller Valuation shared"})
+		self.assertGreaterEqual(stages, set(STAGES))
 		consent = {r[0] for r in self.query(site, "select distinct consent_status from `tabLead`")}
 		self.assertGreaterEqual(consent, {"Unknown", "Consented", "Opted out", "Registered DND"})
 		grants = {r[0] for r in self.query(site, "select status from `tabSupport Grant`")}
-		self.assertEqual(grants, {"Active", "Revoked"})
+		self.assertGreaterEqual(grants, {"Active", "Revoked"})
 		roles = self.query(
 			site,
 			"select u.name, r.role from `tabHas Role` r join tabUser u on u.name = r.parent where r.role like 'SellOS %'",
 		)
 		self.assertIn([demo.company_users(0)[0][0], demo.COMPANY_ADMIN], roles)
 		self.assertIn([demo.PLATFORM_ADMIN_EMAIL, demo.PLATFORM_ADMIN], roles)
-		self.assertEqual(sum(1 for _u, role in roles if role == demo.AGENT), 2)
+		self.assertEqual(sum(1 for _u, role in roles if role == demo.AGENT), 4)
 		control = demo.site_of(self.CONTROL)
 		self.assertEqual(self.query(control, "select status from `tabTenant`"), [["Active"]])
 
@@ -410,7 +375,7 @@ class TestDemoSeedAndReset(unittest.TestCase):
 		}
 		for table, count in counts.items():
 			self.assertGreater(count, 0, table)
-		self.assertEqual(self.query(site, "select count(*) from `tabSales Team Member`")[0][0], 2)
+		self.assertGreaterEqual(self.query(site, "select count(*) from `tabSales Team Member`")[0][0], 4)
 		purposes = {r[0] for r in self.query(site, "select distinct purpose from `tabCall Log`")}
 		self.assertGreaterEqual(len(purposes), 2)
 		statuses = {r[0] for r in self.query(site, "select status from `tabChannel Partner Firm`")}

@@ -1,17 +1,21 @@
-"""The demo's content (sellos/testing/demo_data.py) is realistic and consistent.
+"""The demo's companies, sign ins and content are realistic and consistent (demo rebuild, 25 November 2026).
 
-Unit tests, no bench: they read the data tables only. The records the data becomes are checked by
+Unit tests, no bench: they read the company config, the sign ins, the names and the pure content generators of the
+builders (demo_inventory, demo_crm, demo_sales, demo_whatsapp). The records the content becomes are checked by
 sellos/tests/test_demo_environment.py, which seeds a real demo site.
 """
 
 import json
+import random
 import re
 import unittest
-from itertools import pairwise
+from collections import Counter
+from datetime import date
 
-from sellos.testing import demo, demo_data
+from sellos.testing import demo, demo_crm, demo_ctx, demo_data, demo_inventory, demo_names, demo_sales
 
-PAYOUTS = {"due", "approved", "paid", "none"}
+TODAY = date(2026, 11, 25)
+OLD_WORDS = ("sky" + "line", "green" + "field", "demo" + "alpha", "demo" + "beta", "Pu" + "ne")
 
 
 def strings(value):
@@ -26,146 +30,150 @@ def strings(value):
 			yield from strings(item)
 
 
-def unit_numbers(spec):
-	if "tower" in spec:
-		ranges = spec["tower"][2]
-		return {str(n) for low, high in ranges for n in range(low, high + 1)}
-	return {u[0] for u in spec["units"]}
+class TestDemoCompanies(unittest.TestCase):
+	"""The two company sites: Pandya Realtors - BOM (Mumbai) and Pandya Realtors - AMD (Ahmedabad)."""
+
+	def test_the_companies_are_bom_and_amd(self):
+		self.assertEqual(
+			[c["name"] for c in demo.COMPANIES], ["Pandya Realtors - BOM", "Pandya Realtors - AMD"]
+		)
+		self.assertEqual([c["city"] for c in demo.COMPANIES], ["Mumbai", "Ahmedabad"])
+		self.assertEqual([c["word"] for c in demo.COMPANIES], ["bom", "amd"])
+
+	def test_the_sites_are_demo_sites_named_for_the_cities(self):
+		self.assertEqual(demo.COMPANY_IDS, ("demobom", "demoamd"))
+		self.assertEqual(demo.CONTROL_ID, "democontrol")
+		for tenant_id in (demo.CONTROL_ID, *demo.COMPANY_IDS):
+			self.assertTrue(demo.is_demo_site(demo.site_of(tenant_id)), tenant_id)
+		self.assertFalse(demo.is_demo_site("sellos_test.localhost"))
+
+	def test_each_company_has_a_sign_in_for_every_role(self):
+		for i in range(len(demo.COMPANIES)):
+			roles = Counter(role for _email, _name, role in demo.company_users(i))
+			self.assertEqual(roles[demo.COMPANY_ADMIN], 1)
+			self.assertEqual(roles[demo.SALES_MANAGER], 1)
+			self.assertEqual(roles[demo.AGENT], 4)
+			self.assertEqual(roles[demo.CHANNEL_PARTNER], 1)
+			self.assertEqual(roles[demo.CLIENT], 1)
+
+	def test_the_sign_ins_are_named_for_the_company_and_use_example_domains(self):
+		for i, company in enumerate(demo.COMPANIES):
+			emails = [email for email, _name, _role in demo.company_users(i)]
+			self.assertEqual(len(emails), len(set(emails)))
+			for email in emails:
+				self.assertTrue(email.endswith(f".{company['word']}@demo.example.com"), email)
+			self.assertIn(f"admin.{company['word']}@demo.example.com", emails)
+			self.assertIn(f"agent4.{company['word']}@demo.example.com", emails)
+
+	def test_users_of_gives_the_builders_their_emails(self):
+		users = demo.users_of(0)
+		self.assertEqual(users["admin"], "admin.bom@demo.example.com")
+		self.assertEqual(len(users["agents"]), 4)
+		self.assertEqual(users["partner"], "partner.bom@demo.example.com")
+		self.assertEqual(demo.users_of(1)["client"], "client.amd@demo.example.com")
+
+	def test_the_sign_in_names_are_the_fixed_staff_names(self):
+		for i, company in enumerate(demo.COMPANIES):
+			names = [name for _email, name, _role in demo.company_users(i)]
+			staff = demo_names.STAFF[company["word"]]
+			self.assertIn(staff["admin"], names)
+			self.assertIn(staff["agents"][3], names)
+
+	def test_nothing_of_the_first_demo_remains_in_the_config(self):
+		for text in strings([demo.COMPANIES, [demo.company_users(i) for i in range(2)], demo.COMPANY_IDS]):
+			for word in OLD_WORDS:
+				self.assertNotIn(word.lower(), text.lower(), text)
+
+	def test_the_password_is_unchanged_and_the_platform_admin_is_one_person(self):
+		self.assertEqual(demo.DEMO_PASSWORD, "Demo@2026")
+		self.assertEqual(demo.PLATFORM_ADMIN_EMAIL, "platform@demo.example.com")
 
 
-def carpet_area(spec, number):
-	if "tower" in spec:
-		return 905 if number in spec["three_bhk"] else spec["tower"][3]
-	return next(u[3] for u in spec["units"] if u[0] == number)
+class TestDemoContentAcrossBuilders(unittest.TestCase):
+	"""What the builders generate fits together: volumes, names, formats, words."""
 
+	def generated(self, region):
+		rng = random.Random(demo_ctx.SEED_OF[region])
+		used = set()
+		developers = demo_inventory.make_developers(rng, region, used)
+		projects = demo_inventory.make_projects(rng, region, TODAY, developers)
+		properties = demo_inventory.make_properties(rng, region, TODAY)
+		agents = [f"agent{n}.{region}@demo.example.com" for n in range(1, 5)]
+		rows = [{"name": p["project_name"], "locality": p["locality"]} for p in projects]
+		leads = demo_crm.generate_leads(rng, region, TODAY, rows, agents, used)
+		sellers = demo_sales.seller_plan(rng, region, TODAY, used)
+		return developers, projects, properties, leads, sellers, used
 
-class TestDemoData(unittest.TestCase):
-	def test_every_company_has_market_data(self):
-		self.assertEqual({c["word"] for c in demo.COMPANIES}, set(demo_data.MARKET))
+	def test_the_volumes_are_at_least_the_brief(self):
+		m = demo_ctx.MINIMUMS
+		for region in ("bom", "amd"):
+			developers, projects, properties, leads, sellers, _used = self.generated(region)
+			self.assertGreaterEqual(len(developers), m["developers"])
+			self.assertGreaterEqual(len(projects), m["projects"])
+			self.assertGreaterEqual(len(properties), m["properties"])
+			self.assertGreaterEqual(len(leads), m["leads"])
+			self.assertGreaterEqual(len(sellers), m["sellers"])
 
-	def test_nothing_looks_like_a_test_fixture(self):
-		for word, market in demo_data.MARKET.items():
-			for text in strings(market):
-				for forbidden in demo_data.FORBIDDEN_WORDS:
-					self.assertNotIn(forbidden, text.lower(), f"{word}: {text!r}")
+	def test_every_pipeline_stage_and_consent_state_has_enough_leads(self):
+		m = demo_ctx.MINIMUMS
+		for region in ("bom", "amd"):
+			leads = self.generated(region)[3]
+			stages = Counter(lead["stage"] for lead in leads)
+			self.assertEqual(len(stages), 11)
+			self.assertGreaterEqual(min(stages.values()), m["leads_per_stage"])
+			consent = Counter(lead["consent"] for lead in leads)
+			self.assertGreaterEqual(consent["consented"], m["leads_per_consent_state"])
+			self.assertGreaterEqual(consent["optedout"], m["leads_per_consent_state"])
+			self.assertGreaterEqual(consent["dnd"], m["leads_per_consent_state"])
+			self.assertGreaterEqual(consent["unknown"] + consent["expired"], m["leads_per_consent_state"])
 
-	def test_no_phone_number_is_written_in_the_data(self):
-		# Numbers come from sellos.tests.phones (the guard of SOS-P1-06), so no digit run of 10 appears.
-		for text in strings(demo_data.MARKET):
-			if re.fullmatch(r"[PA]\d{11}", text):
-				continue  # a RERA number, not a phone number
-			self.assertIsNone(re.search(r"\d{10}", text), text)
-			self.assertNotIn("+91", text)
-
-	def test_projects_are_distinct_and_registered(self):
-		seen = set()
-		for word, market in demo_data.MARKET.items():
-			names = [p["name"] for p in market["projects"]]
-			self.assertEqual(len(names), len(set(names)), word)
-			for project in market["projects"]:
-				self.assertRegex(project["rera"], r"^P\d{11}$")
-				self.assertNotIn(project["rera"], seen)  # a RERA number is unique to a project
-				seen.add(project["rera"])
-				self.assertLess(project["developer"], len(market["developers"]))
-				self.assertTrue(4_000 <= project["rate"] <= 80_000, project["name"])
-
-	def test_unit_numbers_are_unique_in_a_project(self):
-		for market in demo_data.MARKET.values():
-			for project in market["projects"]:
-				if "units" in project:
-					numbers = [u[0] for u in project["units"]]
-					self.assertEqual(len(numbers), len(set(numbers)), project["name"])
-				else:
-					self.assertTrue(set(project["three_bhk"]) <= unit_numbers(project))
-
-	def test_hold_and_block_name_real_units_nobody_else_uses(self):
-		for word, market in demo_data.MARKET.items():
-			held, blocked = market["hold"], market["block"]
-			for ref in (held, blocked):
-				spec = market["projects"][ref["project"]]
-				self.assertIn(ref["unit"], unit_numbers(spec), word)
-			dealt = {
-				(d["project"], d["unit"]) for d in market["deals"] if "unit" in d
-			}  # a deal's unit is neither held nor blocked
-			self.assertNotIn((held["project"], held["unit"]), dealt)
-			self.assertNotIn((blocked["project"], blocked["unit"]), dealt)
-			self.assertNotEqual((held["project"], held["unit"]), (blocked["project"], blocked["unit"]))
-			lead = demo.COMPANIES[[c["word"] for c in demo.COMPANIES].index(word)]["leads"][held["lead"]]
-			self.assertEqual(lead[8], 0)  # the hold is made by the lead's own agent, agent 0
-
-	def test_deals_cover_every_stage_and_are_priced_sensibly(self):
-		for word, market in demo_data.MARKET.items():
-			leads = demo.COMPANIES[[c["word"] for c in demo.COMPANIES].index(word)]["leads"]
-			payouts = [d["payout"] for d in market["deals"]]
-			self.assertTrue(set(payouts) <= PAYOUTS)
-			self.assertEqual({"due", "approved", "paid", "none"}, set(payouts), word)
-			self.assertEqual(
-				len({d["lead"] for d in market["deals"]}), len(market["deals"])
-			)  # a client has one
-			for deal in market["deals"]:
-				self.assertLess(deal["lead"], len(leads))
-				self.assertIn(deal["partner"], (0, 20, 25, 40))
-				self.assertEqual(deal["partner"] == 0, deal["payout"] == "none")
-				self.assertEqual(deal["approved"], deal["payout"] != "none")
-				if "unit" in deal:
-					spec = market["projects"][deal["project"]]
-					self.assertIn(deal["unit"], unit_numbers(spec))
-					per_foot = deal["price"] / carpet_area(spec, deal["unit"])
-					self.assertTrue(0.8 * spec["rate"] <= per_foot <= 1.6 * spec["rate"], (word, deal))
-				else:
-					prop = market["properties"][deal["property"]]
-					self.assertEqual(deal["price"], prop["asking_price"])
-
-	def test_the_partner_registers_one_buyer_for_each_decision(self):
-		for market in demo_data.MARKET.values():
-			decisions = sorted(row[3] for row in market["registrations"])
-			self.assertEqual(decisions, ["approve", "reject", "wait"])
-			projects = {p["name"] for p in market["projects"]}
-			for _name, project, _note, _decision in market["registrations"]:
-				self.assertIn(project, projects)
-			self.assertEqual(sorted(row[1] for row in market["other_firms"]), ["invited", "pending"])
-
-	def test_sellers_have_a_property_and_a_mandate_of_each_kind(self):
-		for market in demo_data.MARKET.values():
-			kinds = {s["mandate"][0]: s["mandate"][3] for s in market["sellers"]}
-			self.assertEqual(kinds, {"Exclusive": False, "Open": True})  # a Draft and a Signed mandate
-			for seller in market["sellers"]:
-				self.assertIn(seller["stage"], ("Seller Qualified", "Seller Valuation shared"))
-
-	def test_whatsapp_conversations_show_every_kind(self):
-		for word, market in demo_data.MARKET.items():
-			customers = market["whatsapp"]["customers"]
-			names = [c["name"] for c in customers]
+	def test_a_person_is_named_once_across_leads_sellers_and_contacts(self):
+		for region in ("bom", "amd"):
+			_developers, _projects, _properties, leads, sellers, used = self.generated(region)
+			names = [lead["name"] for lead in leads] + [seller["name"] for seller in sellers]
 			self.assertEqual(len(names), len(set(names)))
-			steps = [kind for c in customers for kind, _ in c["script"]]
-			texts = [payload for c in customers for kind, payload in c["script"] if kind == "in"]
-			self.assertIn("handoff", steps, word)
-			self.assertIn("template", steps, word)
-			self.assertIn("STOP", texts, word)  # exactly one customer opts out
-			self.assertEqual(texts.count("STOP"), 1)
-			self.assertEqual(texts.count("START"), 1)
-			for customer in customers:
-				self.assertEqual(customer["script"][0][0], "in")  # the customer writes first
-			for kind, payload in (s for c in customers for s in c["script"]):
-				if kind == "template":
-					self.assertEqual(len(payload), 2)  # the template has {{1}} and {{2}}
+			self.assertTrue(set(names) <= used)
 
-	def test_phone_seeds_do_not_overlap(self):
-		seeds = demo_data.PHONE_SEEDS
-		used = {
-			"partner": 3 + 3,  # the firm, two other firms and three buyers
-			"enquiry": 6,
-			"seller": 2,
-			"whatsapp": max(len(m["whatsapp"]["customers"]) for m in demo_data.MARKET.values()),
-		}
-		ranges = sorted((seeds[k], seeds[k] + used[k]) for k in seeds)
-		for (_, end), (start, _) in pairwise(ranges):
-			self.assertLessEqual(end, start)
-		# demo.py's own telephony numbers use seeds 3100 and 3201 to 3204.
-		self.assertTrue(all(low > 3300 for low, _ in ranges))
+	def test_lead_names_are_plain_and_the_source_is_its_own_field(self):
+		sources = {"Website", "Referral", "Property portal", "Hoarding campaign", "Walk in", "Instagram"}
+		for region in ("bom", "amd"):
+			for lead in self.generated(region)[3]:
+				self.assertRegex(lead["name"], r"^[A-Z][a-z]+ [A-Z][a-z]+$")
+				self.assertTrue(lead["source"])
+				for source in sources:
+					self.assertNotIn(source.lower(), lead["name"].lower())
 
-	def test_data_is_plain_json_compatible_apart_from_tuples(self):
-		json.dumps(demo_data.MARKET, default=list)
+	def test_rera_numbers_are_in_the_local_format_and_look_fictional(self):
+		bom = self.generated("bom")[1]
+		amd = self.generated("amd")[1]
+		for project in bom:
+			self.assertRegex(project["rera_number"], r"^P518000\d{5}$")
+		for project in amd:
+			self.assertTrue(project["rera_number"].startswith("PR/GJ/AHMEDABAD/"), project["rera_number"])
+		self.assertEqual(len({p["rera_number"] for p in bom}), len(bom))
+		self.assertEqual(len({p["rera_number"] for p in amd}), len(amd))
+
+	def test_the_localities_are_each_cities_own(self):
+		mumbai = {"Andheri West", "Powai", "Bandra East", "Worli", "Thane", "Mulund", "Chembur", "Goregaon"}
+		ahmedabad = {"SG Highway", "Prahlad Nagar", "Bopal", "Shela", "Gota", "Satellite", "Thaltej"}
+		self.assertTrue(mumbai <= {p["locality"] for p in self.generated("bom")[1]})
+		self.assertTrue(ahmedabad <= {p["locality"] for p in self.generated("amd")[1]})
+		self.assertFalse(mumbai & {p["locality"] for p in self.generated("amd")[1]})
+
+	def test_no_generated_text_carries_a_test_word_or_a_real_looking_phone(self):
+		for region in ("bom", "amd"):
+			content = self.generated(region)
+			for text in strings(content[:5]):
+				for forbidden in (*demo_data.FORBIDDEN_WORDS, "regression"):
+					self.assertNotIn(forbidden, text.lower(), text)
+				self.assertIsNone(re.search(r"(?<![\d/])\d{10}(?![\d/])", text), text)
+
+	def test_the_same_seed_gives_the_same_company(self):
+		self.assertEqual(
+			json.dumps(self.generated("bom")[3], default=str),
+			json.dumps(self.generated("bom")[3], default=str),
+		)
+		self.assertNotEqual(self.generated("bom")[3][0]["name"], self.generated("amd")[3][0]["name"])
 
 
 class TestSeedFailsLoudly(unittest.TestCase):
@@ -217,8 +225,8 @@ class TestSeedFailsLoudly(unittest.TestCase):
 		from unittest import mock
 
 		results = {
-			"sellos_tenant_demoalpha.localhost": json.dumps({"failed_steps": []}),
-			"sellos_tenant_demobeta.localhost": json.dumps(
+			"sellos_tenant_demobom.localhost": json.dumps({"failed_steps": []}),
+			"sellos_tenant_demoamd.localhost": json.dumps(
 				{"failed_steps": [{"step": "deals and commission", "error": "KeyError: 'rate'"}]}
 			),
 		}
@@ -232,10 +240,10 @@ class TestSeedFailsLoudly(unittest.TestCase):
 				demo.seed()
 			self.assertEqual(demo.main(["seed"]), 1)
 		message = str(caught.exception)
-		self.assertIn("sellos_tenant_demobeta.localhost", message)
+		self.assertIn("sellos_tenant_demoamd.localhost", message)
 		self.assertIn("deals and commission", message)
 		self.assertIn("KeyError: 'rate'", message)
-		self.assertNotIn("demoalpha", message)
+		self.assertNotIn("demo" + "alpha", message)
 
 
 if __name__ == "__main__":

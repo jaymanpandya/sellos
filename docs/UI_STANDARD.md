@@ -190,6 +190,6 @@ Text needs 4.5:1, an input edge 3:1, decorative lines nothing. Output of `python
 
 ## Screenshots, before and after
 
-Company Admin of the demo company Skyline Realty, 1280 by 800, 24 November 2026. Left of each pair is the old cream and dark green shell, right is this standard,
+Company Admin of the demo company Pandya Realtors - BOM, 1280 by 800, 24 November 2026. Left of each pair is the old cream and dark green shell, right is this standard,
 both on the same demo data. In `docs/ui-reference/ui-standard/`: `before-<page>.png` and `after-<page>.png` for Home, Leads, Deals, Commission, Call queue, WhatsApp, Site visits, Inventory, Sign in and Enquiry.
 All four roles, every menu page and a phone pass are made by `cypress/integration/visual/walkthrough.cy.js` (`bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/visual/walkthrough.cy.js`).
