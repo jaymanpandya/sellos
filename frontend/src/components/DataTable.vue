@@ -1,5 +1,6 @@
 <template>
-	<section class="ui-table-card" :data-testid="testid">
+	<!-- The table's test id marks a loaded table: while rows are loading it is the loading skeleton that is on screen. -->
+	<section class="ui-table-card" :data-testid="loading ? 'sellos-table-pending' : testid">
 		<h2 v-if="title" class="ui-card-heading border-b border-line-soft px-ui-md py-ui-sm">
 			{{ title }}
 		</h2>

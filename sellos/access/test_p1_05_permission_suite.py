@@ -173,6 +173,9 @@ SAMPLE_CALLS = {
 	"sellos.config.setup_wizard.finish_setup": {},
 	# SOS-P1-17: the calls act on a spare agent made for the test, never on the caller.
 	"sellos.access.users.list_users": {},
+	# Design system pass: the signed in person's own sidebar state, no record in the arguments.
+	"sellos.access.preferences.get_nav_state": {},
+	"sellos.access.preferences.set_nav_state": {"closed": "[]"},
 	"sellos.access.users.user_open_work": {"email": "{spare_user}"},
 	"sellos.access.users.invite_user": {
 		"email": "p117_invited@example.com",
