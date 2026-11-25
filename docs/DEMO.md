@@ -144,6 +144,10 @@ The demo uses the same SellOS code as the loop (`apps/sellos`), so a half merged
 
 **A failed seed step fails loudly.** Each part of a company's data (inventory, partners, enquiries, sellers, deals and commission, WhatsApp, visits and follow ups) runs as its own step, so one broken step does not stop the rest. At the end `scripts/demo.sh seed` and `update` print `DEMO SEED FAILED:` with every failed site, step name and error (the full traceback of each is in the output above it) and exit 1. Repeating the seed retries only what is missing.
 
-Records an earlier seed already made stay: `update` adds the content above beside them and never deletes. A site that
-was seeded before this content existed still shows its "Regression ..." projects, firms and shares next to the new ones;
-`scripts/demo.sh reset` rebuilds a site with only the realistic content.
+`update` adds the content above beside the records an earlier seed made, and it never wipes a site. The one thing it removes is the regression
+seed's "Regression ..." records (clients and their leads, projects with their units, price lists and cost sheets, properties, listings,
+developers): `remove_regression_records()` in `sellos/testing/demo.py` runs at the end of every company site's seed and on the control site,
+behind `check_demo_site` (democontrol, demoalpha, demobeta only; `sellos_test` and every other site are refused). It prints what it removed
+(`DEMO: removed from <site>: {...}`), prints `DEMO: kept on <site>: ...` for a Regression record that a real record still links to (that one is
+left alone), finds nothing the second time, and leaves the four `regression_partner_*` users (a user is linked from the owner field of every
+record). `scripts/demo.sh reset` rebuilds a site with only the realistic content.
