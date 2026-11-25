@@ -17,8 +17,8 @@ context("SOS-P5-06: channel partner deals and earnings", () => {
 		cy.bench("sellos.tests.ui_fixtures.make_gate_commission", { stage: "paid" }).then(
 			(made) => {
 				open();
-				cy.getByTestId("partner-earnings-earned").should("contain", "32,000.00");
-				cy.getByTestId("partner-earnings-potential").should("contain", "0.00");
+				cy.getByTestId("partner-earnings-earned").should("contain", "Rs 32,000");
+				cy.getByTestId("partner-earnings-potential").should("contain", "Rs 0");
 				cy.getByTestId("partner-earnings-deal")
 					.should("have.length", 1)
 					.and("have.attr", "data-deal", made.deal)
@@ -36,8 +36,8 @@ context("SOS-P5-06: channel partner deals and earnings", () => {
 	it("counts a payout that is not yet paid as potential earnings", () => {
 		cy.bench("sellos.tests.ui_fixtures.make_gate_commission", { stage: "due" });
 		open();
-		cy.getByTestId("partner-earnings-earned").should("contain", "0.00");
-		cy.getByTestId("partner-earnings-potential").should("contain", "32,000.00");
+		cy.getByTestId("partner-earnings-earned").should("contain", "Rs 0");
+		cy.getByTestId("partner-earnings-potential").should("contain", "Rs 32,000");
 		cy.getByTestId("partner-earnings-deal").should("have.attr", "data-status", "Due");
 	});
 

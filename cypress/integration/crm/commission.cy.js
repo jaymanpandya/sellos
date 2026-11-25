@@ -68,7 +68,7 @@ context("SOS-P7-04: commission rates and payouts", () => {
 					.should("contain", "UTR-SPEC-1")
 					.and("contain", "2 Apr 2026");
 				cy.getByTestId("commission-total-paid").should("contain", "Rs 32,000");
-				cy.getByTestId("commission-total-due").should("contain", "0.00");
+				cy.getByTestId("commission-total-due").should("contain", "Rs 0");
 			}
 		);
 	});
@@ -107,7 +107,7 @@ context("SOS-P7-04: commission rates and payouts", () => {
 					.should("have.length", 1)
 					.and("have.attr", "data-status", "Paid")
 					.and("have.attr", "data-deal", made.deal)
-					.and("contain", "32,000.00")
+					.and("contain", "Rs 32,000")
 					.and("contain", "UTR-GATE-704");
 				cy.getByTestId("partner-commission-total-paid").should("contain", "Rs 32,000");
 				cy.getByTestId("partner-commission-total").should("contain", "Rs 32,000");

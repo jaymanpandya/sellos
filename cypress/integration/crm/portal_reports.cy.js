@@ -72,13 +72,13 @@ context("SOS-P5-03: the Channel Partner and Platform reports", () => {
 			cy.getByTestId("partner-reports-stage").should("not.exist");
 		});
 
-		it("shows deals as waiting until their records exist, and the commission statement live (SOS-P7-04)", () => {
+		it("shows the deals and the commission statement live, never as waiting (SOS-LOOP)", () => {
 			open();
 			cy.getByTestId("report-panel").should("have.length", 2);
 			cy.getByTestId("report-panel")
 				.filter('[data-panel="deals"]')
-				.should("have.attr", "data-available", "no")
-				.and("contain", "Not live yet");
+				.should("have.attr", "data-available", "yes")
+				.and("not.contain", "Not live yet");
 			cy.getByTestId("report-panel")
 				.filter('[data-panel="commission"]')
 				.should("have.attr", "data-available", "yes")
