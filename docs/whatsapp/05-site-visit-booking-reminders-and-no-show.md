@@ -45,7 +45,7 @@ Buyers and visitors who have enquired. Identity rules apply. Builder name and RE
 
 ## Consent
 
-Recorded and shown as a warning, never blocking. Reminders and no show messages are sent through the consent function like any send. After a WhatsApp STOP, flow 1's rule applies: no reminder or recovery message is sent unprompted until the person opts in again. The advisor's task from the STOP says so, so a person phones to confirm the visit.
+Recorded and shown as a warning. It never stops a call or an SMS. Reminders and no show messages are sent through the consent function like any send. After a WhatsApp STOP, flow 1's rule applies: no reminder or recovery message is sent unprompted until the person opts in again. The advisor's task from the STOP says so, so a person phones to confirm the visit.
 
 ## Handoff
 

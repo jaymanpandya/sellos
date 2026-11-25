@@ -19,13 +19,23 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 			["Name", "Source", "Stage", "Next follow up"].forEach((heading) =>
 				cy.getByTestId("leads-list").find('[role="row"]').should("contain", heading)
 			);
-			// The Flags column is there only when a row has a flag, never as an empty column.
-			cy.getByTestId("leads-list").then(($list) => {
-				const flagged = $list.find(
+			// SOS-LOOP 25 Nov: no Flags column to sit empty. A flag is a badge in the follow up cell of its row.
+			cy.getByTestId("leads-list").find("th").should("not.contain", "Flags");
+			cy.getByTestId("lead-row")
+				.find(
 					'[data-testid="sellos-untouched"], [data-testid="sellos-follow-up-overdue"], [data-testid="sellos-follow-up-untouched"], [data-testid="sellos-lead-overdue"]'
-				).length;
-				expect($list.find("th:contains('Flags')").length > 0, "Flags column").to.eq(
-					flagged > 0
+				)
+				.each(($flag) =>
+					expect(
+						$flag.closest("td").find('[data-testid="sellos-lead-last-activity"]')
+							.length
+					).to.eq(1)
+				);
+			// At 1440 wide the table fits its card with no sideways scroll.
+			cy.viewport(1440, 900);
+			cy.getByTestId("table-view").then(($box) => {
+				expect($box[0].scrollWidth, "table scroll width").to.be.at.most(
+					$box[0].clientWidth
 				);
 			});
 			// SOS-LOOP 25 Nov: a muted phone under the name of a lead that has one.

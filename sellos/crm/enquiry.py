@@ -5,7 +5,7 @@ the first public intake method (`sellos.access.public_intake`): it checks the fo
 honeypot and the fields, then makes or merges the lead through `sellos.crm.intake.take`, which records an
 inquiry Consent Record (7 days) whose evidence is the wording shown, its version, the time, the address and
 the submission, saved as a private file. A person who ticks "Stop contacting me" is recorded as Opted out
-instead. Consent never blocks, so neither outcome stops a later call, SMS or WhatsApp message.
+instead. Consent never blocks, so neither outcome stops a later call or SMS (only a WhatsApp STOP stops what is sent on WhatsApp unprompted).
 
 The wording is the company setting "Consent wording" (SellOS Settings), which a Company Admin edits and
 which also shows to channel partners (SOS-P7-02). The form key is in the link, and a Company Admin rotates

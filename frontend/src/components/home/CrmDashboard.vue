@@ -43,8 +43,8 @@
 							<b class="ui-text-strong" data-testid="sellos-dash-consent-count">{{
 								warned.length
 							}}</b>
-							of {{ queue.total }} leads carry a warning. Calls and messages still go
-							ahead.
+							of {{ queue.total }} leads carry a warning. Calls and SMS still go
+							ahead. After a WhatsApp STOP nothing is sent on WhatsApp unprompted.
 						</p>
 						<ul class="ui-list">
 							<HomeRow

@@ -450,7 +450,8 @@
 				>
 					<p class="ui-text-muted">
 						The conversation with this lead, and the templates you can send, are in
-						WhatsApp. A consent warning never stops a message.
+						WhatsApp. A consent warning does not stop a reply, and after a WhatsApp
+						STOP nothing is sent unprompted.
 					</p>
 					<router-link
 						to="/crm/whatsapp"
@@ -798,7 +799,12 @@
 					testid="sellos-lead-consent-warning"
 					:data-level="detail.consent.warning"
 				>
-					{{ detail.consent.message }} You can still call and message this lead.
+					{{ detail.consent.message }}
+					{{
+						detail.consent.status === "Opted out"
+							? "You can still call and send an SMS. After a WhatsApp STOP nothing is sent on WhatsApp unprompted, and you can still reply when the person writes."
+							: "You can still call and message this lead."
+					}}
 				</Notice>
 				<ul v-if="detail.consent.records.length" data-testid="sellos-lead-consent-records">
 					<li

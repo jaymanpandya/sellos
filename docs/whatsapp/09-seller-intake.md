@@ -35,7 +35,7 @@ Owners and landlords, known or not. Identity rules apply. The owner's data is ne
 
 ## Consent
 
-Recorded and shown as a warning, never blocking. After a WhatsApp STOP, flow 1's rule applies.
+Recorded and shown as a warning. It never stops a call or an SMS. After a WhatsApp STOP, flow 1's rule applies: nothing is sent unprompted, and the person can still write to us and get replies.
 
 ## Handoff
 

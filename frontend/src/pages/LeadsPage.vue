@@ -401,6 +401,7 @@
 			title="All leads"
 			caption="Leads"
 			:columns="columns"
+			dense
 			:rows="leads"
 			:loading="loading"
 			loading-label="Loading leads."
@@ -419,10 +420,10 @@
 			empty-testid="sellos-leads-empty"
 		>
 			<template #cell-client_name="{ row }">
-				<span class="block">{{ row.client_name }}</span>
+				<span class="block whitespace-nowrap">{{ row.client_name }}</span>
 				<span
 					v-if="row.phone"
-					class="block ui-text-muted"
+					class="block whitespace-nowrap ui-text-muted"
 					data-testid="sellos-lead-phone"
 					>{{ row.phone }}</span
 				>
@@ -460,29 +461,28 @@
 					data-testid="sellos-lead-row-consent"
 				/>
 			</template>
-			<template #cell-last_contacted="{ row }">
-				<span class="ui-text-secondary">{{
-					row.last_contacted ? formatShortWhen(row.last_contacted) : "Never"
-				}}</span>
-			</template>
+			<!-- One column for both dates keeps the table inside 1440: the follow up, with the last activity under it. -->
 			<template #cell-next_follow_up="{ row }">
 				<span
 					v-if="row.next_follow_up"
-					class="ui-text-secondary"
+					class="block ui-text-secondary"
 					data-testid="sellos-lead-next-follow-up"
 					:data-state="row.follow_up_state"
 				>
 					{{ formatShortWhen(row.next_follow_up) }}
 				</span>
-			</template>
-			<template #cell-flags="{ row }">
-				<span class="flex flex-wrap items-center gap-ui-sm">
+				<span v-else class="block ui-text-muted">No follow up</span>
+				<span class="block ui-text-muted" data-testid="sellos-lead-last-activity">
+					Last: {{ row.last_contacted ? formatShortWhen(row.last_contacted) : "never" }}
+				</span>
+				<!-- The flags are all about follow up and activity, so they sit here, only on a row that has one. -->
+				<span v-if="hasFlag(row)" class="mt-1 flex flex-col items-start gap-1">
 					<StatusBadge
 						v-if="row.untouched"
 						tone="warning"
 						data-testid="sellos-untouched"
 					>
-						No activity for {{ untouchedDays }} days
+						No activity {{ untouchedDays }} days
 					</StatusBadge>
 					<StatusBadge
 						v-if="row.follow_up_state === 'overdue'"
@@ -496,7 +496,7 @@
 						tone="warning"
 						data-testid="sellos-follow-up-untouched"
 					>
-						Untouched, no follow up for {{ followUpDays }} days
+						No follow up {{ followUpDays }} days
 					</StatusBadge>
 					<StatusBadge
 						v-if="row.overdue_tasks"
@@ -641,15 +641,23 @@ const kpis = computed(() => {
 const agentName = (email) =>
 	options.agents.find((a) => a.name === email)?.full_name || email || "Unassigned";
 // The name cell holds the muted phone (masked for every role but a Company Admin, by the server) and the
-// project interest as its second line. Dates stay on one line. The Flags column shows only when a row has a flag.
+// project interest under it. Dates stay on one line. The flags sit in the follow up cell, only on a row that has one.
 const columns = computed(() => [
-	{ key: "client_name", label: "Name", primary: true, sortable: true, wrap: true },
+	{
+		key: "client_name",
+		label: "Name",
+		primary: true,
+		sortable: true,
+		wrap: true,
+		class: "min-w-[13rem]",
+		thClass: "min-w-[13rem]",
+	},
 	{ key: "source", wrap: true, label: "Source", sortable: true },
 	{ key: "stage", label: "Stage", sortable: true },
 	{
 		key: "assigned_to",
 		wrap: true,
-		label: "Assigned agent",
+		label: "Agent",
 		sortable: true,
 		sortValue: (l) => agentName(l.assigned_to),
 	},
@@ -661,9 +669,7 @@ const columns = computed(() => [
 		sortValue: (l) => Number(l.budget || 0),
 	},
 	{ key: "consent_status", label: "Consent", sortable: true },
-	{ key: "last_contacted", label: "Last activity", sortable: true },
 	{ key: "next_follow_up", label: "Next follow up", sortable: true },
-	...(leads.value.some(hasFlag) ? [{ key: "flags", wrap: true, label: "Flags" }] : []),
 ]);
 const hasFlag = (l) =>
 	Boolean(

@@ -51,6 +51,9 @@ context("SOS-P6-11: WhatsApp", () => {
 	it("takes a customer's message, replies with the consent warning, and never blocks", () => {
 		cy.signInFresh("agent");
 		openThread();
+		// Decision 7: the page says a WhatsApp STOP stops what is sent unprompted, never "never stops a message".
+		cy.contains("After a WhatsApp STOP nothing is sent unprompted").should("be.visible");
+		cy.contains("never stops a message").should("not.exist");
 		cy.getByTestId("whatsapp-message")
 			.first()
 			.should("have.attr", "data-direction", "Inbound")

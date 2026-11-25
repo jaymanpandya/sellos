@@ -33,7 +33,7 @@ Visitors and clients who are buyers. Identity rules of the source apply.
 
 ## Consent
 
-Recorded and shown as a warning, never blocking. After a WhatsApp STOP, flow 1's rule applies: replies only to what the person sends.
+Recorded and shown as a warning. It never stops a call or an SMS. After a WhatsApp STOP, flow 1's rule applies: replies only to what the person sends.
 
 ## Handoff
 

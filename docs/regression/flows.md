@@ -435,6 +435,11 @@ FLOW SOS-P3-12-1 | company_admin | /sellos | Sign in as the gate company admin a
 FLOW SOS-P3-12-2 | agent | /sellos | Sign in as the gate agent and call the same method, then open the Party Name list through the generic calls. | The method is refused with no access, and no name appears in any answer.
 FLOW SOS-P3-12-3 | company_admin | /sellos | Search the Party Name records for a name through the generic list call, and call the method with a name instead of a record ID. | No name is returned: names are never searchable.
 
+## SOS-LOOP 25 Nov (second pass): wording of consent and the Leads table
+
+FLOW SOS-LOOP-25NOV-6 | agent | /sellos/crm/whatsapp | Open WhatsApp and read the page subtitle and a lead's WhatsApp card. | They say a WhatsApp STOP stops what is sent unprompted and that you can still reply; no screen says a warning never stops a message.
+FLOW SOS-LOOP-25NOV-7 | company_admin | /sellos/crm/leads | Open Leads at 1440 wide and at 390 wide. | At 1440 the table has no sideways scroll, names, phones and dates stay on one line, there is no Flags column, and a flag shows as a badge in the follow up cell. At 390 each lead is a card.
+
 ## SOS-LOOP 25 Nov: lists that show a lead
 
 FLOW SOS-LOOP-25NOV-1 | company_admin | /sellos/crm/leads | Open Leads at 1440 wide, read the table and page to the last page. | Dates stay on one line, the phone sits muted under each name with the project interest under it, the budget reads Rs 2.3 crore or Rs 85 lakh, there is no empty Flags column, and Total leads equals the Leads number on Home.

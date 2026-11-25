@@ -10,8 +10,9 @@ number is matched, a lead is made or merged and consent is recorded the same way
 * A contact is an inquiry Consent Record (7 days), with the raw event or submission saved as a private
   file as its evidence, and a Lead Activity. The lead becomes Consented through the one status function.
 * An explicit stop request is recorded as Opted out, with its source. The red warning shows on the lead,
-  the caller queue and the call log. It does not block a later call, SMS or WhatsApp message (Jayman,
-  10 November 2026), and it records no inquiry: a person who says stop has not asked to be called.
+  the caller queue and the call log. It does not block a later call or SMS (Jayman, 10 November 2026).
+  A WhatsApp STOP also stops everything sent on WhatsApp unprompted, and the person can still write to us
+  and get replies (Jayman, 24 November 2026). It records no inquiry: a person who says stop has not asked to be called.
 
 The caller decides who may call it. A public method reaches it only through `sellos.access.public_intake`
 and the provider webhook only after its signature check, so this function does no permission check and

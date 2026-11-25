@@ -3,7 +3,7 @@
 		<template #header>
 			<PageHeader
 				title="WhatsApp"
-				text="Conversations with your leads. A warning shows each lead's consent and never stops a message."
+				text="Conversations with your leads. A warning shows each lead's consent. After a WhatsApp STOP nothing is sent unprompted, but you can still reply when the person writes."
 				icon="lucide-message-circle"
 			/>
 		</template>

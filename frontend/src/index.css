@@ -151,10 +151,14 @@ h3 {
 		@apply w-full border-collapse text-left text-sm;
 	}
 	.ui-table th {
-		@apply sticky top-0 z-10 border-b border-line bg-surface-faint px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted;
+		@apply sticky top-0 z-10 whitespace-nowrap border-b border-line bg-surface-faint px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.06em] text-ink-muted;
 	}
 	.ui-table td {
 		@apply border-b border-line-soft px-3 py-2.5 align-middle;
+	}
+	.ui-table-dense th,
+	.ui-table-dense td {
+		@apply px-2;
 	}
 	.ui-table tbody tr:last-child td {
 		@apply border-b-0;

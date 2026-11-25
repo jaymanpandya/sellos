@@ -209,7 +209,8 @@ def send(lead, text=None, template=None, parameters=None) -> dict:
 	"""Send one WhatsApp message to the lead, checking consent first.
 
 	Returns {"sent", "refused", "reason", "error", "message", "consent_status", "consent_warning",
-	"consent_message"}. With Consent enforcement Off nothing is refused for consent. A message that
+	"consent_message"}. With Consent enforcement Off nothing is refused for consent, except what is sent unprompted after a
+	WhatsApp STOP (Jayman, 24 November 2026). A message that
 	WhatsApp's own rules or a provider failure stop is reported with a clear message: a provider failure
 	is kept on the thread as a failed message."""
 	_lead_doc(lead)

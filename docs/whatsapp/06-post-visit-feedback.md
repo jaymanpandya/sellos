@@ -33,7 +33,7 @@ The buyer who was on the visit. Identity rules apply.
 
 ## Consent
 
-Recorded and shown as a warning, never blocking. After a WhatsApp STOP, flow 1's rule applies: the feedback message is not sent unprompted, and the advisor's STOP task asks the advisor to collect feedback by phone.
+Recorded and shown as a warning. It never stops a call or an SMS. After a WhatsApp STOP, flow 1's rule applies: the feedback message is not sent unprompted, and the advisor's STOP task asks the advisor to collect feedback by phone.
 
 ## Handoff
 

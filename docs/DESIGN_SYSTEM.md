@@ -70,7 +70,7 @@ state, and in each area's colours.
 | Read field | `ReadField` | muted label, ink value, a missing value reads "Not filled in" |
 | Stat tile | `StatCard` / `KpiStrip` | 3px top bar in the tile's colour, 32px round chip, 24px tabular number, helper line; the whole tile is the link |
 | Status pill | `StatusBadge` | round, 1px line, tint, icon and word, 14px |
-| Table | `DataTable` | uppercase muted header, 10px row padding, soft divider, hover tint, Enter opens; phone rows become cards |
+| Table | `DataTable` | uppercase muted header, 10px row padding, soft divider, hover tint, Enter opens; phone rows become cards; `dense` tightens the cell padding for a wide table that must fit 1440 |
 | Empty state | `EmptyState` | dashed tinted box, 44px area chip, bold title, one muted sentence, the action |
 | Notice | `Notice` | white card, 4px coloured left edge, bold title, a short list; several notes are one notice |
 | Tabs | `PageTabs` | 44px text tabs on a line; open tab has a 2px area line and bold ink |

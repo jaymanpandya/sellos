@@ -194,7 +194,7 @@
    "default": "Unknown",
    "read_only": 1,
    "in_standard_filter": 1,
-   "description": "Recorded and shown as a warning. It never stops a call, an SMS or a WhatsApp message."
+   "description": "Recorded and shown as a warning. It never stops a call or an SMS. A WhatsApp STOP stops what is sent on WhatsApp unprompted; replies to the person's own messages still go."
   },
   {
    "fieldname": "opted_out_on",

@@ -25,7 +25,7 @@
 		<template v-else>
 			<!-- Tablet and computer: a real table with a sticky header, inside its card. -->
 			<div v-if="!viewport.phone" class="ui-table-scroll" data-testid="sellos-table-view">
-				<table class="ui-table">
+				<table class="ui-table" :class="dense ? 'ui-table-dense' : ''">
 					<caption v-if="caption" class="sr-only">
 						{{
 							caption
@@ -242,6 +242,8 @@ const props = defineProps({
 	emptyTitle: { type: String, default: "Nothing here yet" },
 	emptyText: { type: String, default: "" },
 	emptyIcon: { type: String, default: "lucide-inbox" },
+	// Tighter cell padding, for a table with many columns that must fit 1440 wide without a sideways scroll.
+	dense: { type: Boolean, default: false },
 	selectable: { type: Boolean, default: false },
 	selected: { type: Array, default: () => [] },
 	// (row) => a route location. The row, and its primary cell, open it.
