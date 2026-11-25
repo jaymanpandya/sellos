@@ -1,126 +1,129 @@
 <template>
-	<PageTemplate data-testid="sellos-client-shortlist-page">
+	<PageTemplate shape="record" data-testid="sellos-client-shortlist-page">
 		<template #header>
-			<PageHeader
+			<RecordHeader
 				:title="view ? view.title : 'Shortlist'"
-				:text="view && view.note ? view.note : ''"
-				icon="lucide-list-checks"
-			/>
+				:line="view && view.note ? view.note : ''"
+				back-to="/client/shortlists"
+				back-label="Back to your shortlists"
+			>
+				<template v-if="view" #status>
+					<StatusBadge
+						:tone="unavailableCount ? 'warning' : 'success'"
+						:label="unavailableCount ? 'Some homes are gone' : 'All homes available'"
+					/>
+				</template>
+			</RecordHeader>
 		</template>
-		<template v-if="view" #kpis>
-			<KpiStrip
-				:items="[
-					{
-						label: 'Homes',
-						value: view.items.length,
-						caption: 'On this shortlist',
-						icon: 'lucide-house',
-					},
-					{
-						label: 'No longer available',
-						value: view.items.filter((i) => i.unavailable).length,
-						caption: 'Ask your agent for others',
-						icon: 'lucide-circle-slash',
-						tone: 'warning',
-					},
-				]"
-				data-testid="sellos-client-shortlist-stats"
-			/>
-		</template>
-		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-client-shortlist-error">
+
+		<div v-if="loadError" data-testid="sellos-client-shortlist-error">
 			<LoadError :message="loadError" @retry="load" />
 		</div>
-		<template v-if="view">
-			<ListCard title="Your agent">
-				<p class="text-sm text-ink" data-testid="sellos-client-shortlist-agent">
-					{{ view.agent.name }}
-					<span v-if="view.agent.phone">, {{ view.agent.phone }}</span>
-				</p>
-				<a
-					class="ui-link mt-ui-sm inline-block text-sm"
-					:href="view.pdf"
-					target="_blank"
-					rel="noopener"
-					data-testid="sellos-client-shortlist-pdf"
+		<LoadingSkeleton v-else-if="!view" :rows="3" label="Loading your shortlist." />
+
+		<SectionCard v-if="view" title="Homes">
+			<ol class="ui-list">
+				<li
+					v-for="item in view.items"
+					:key="item.name"
+					data-testid="sellos-client-shortlist-item"
+					:data-title="item.title"
+					:data-unavailable="item.unavailable"
 				>
-					Download as a PDF
-				</a>
-			</ListCard>
-			<ListCard title="Homes" class="mt-ui-md">
-				<ol class="space-y-ui-sm">
-					<li
-						v-for="item in view.items"
-						:key="item.name"
-						class="rounded-card border border-line-soft p-ui-md"
-						data-testid="sellos-client-shortlist-item"
-						:data-title="item.title"
-						:data-unavailable="item.unavailable"
-					>
-						<div class="flex flex-wrap items-center gap-3">
-							<span class="font-medium text-ink">
-								{{ item.position }}. {{ item.title }}
-							</span>
-							<span class="text-sm text-ink-muted">
-								{{ item.price ? formatMoney(item.price) : "Price on request" }}
-							</span>
-							<StatusBadge
-								v-if="item.unavailable"
-								tone="danger"
-								:label="item.reason"
-								data-testid="sellos-client-shortlist-unavailable"
-							/>
-							<AppButton
-								type="button"
-								data-testid="sellos-client-shortlist-open"
-								@click="openItem(item)"
-							>
-								{{ details[item.name] ? "Hide details" : "View details" }}
-							</AppButton>
-						</div>
-						<p v-if="item.note" class="mt-ui-sm text-sm text-ink">{{ item.note }}</p>
-						<div
-							v-if="details[item.name]"
-							class="mt-ui-sm space-y-ui-sm"
-							data-testid="sellos-client-shortlist-detail"
+					<div class="flex flex-wrap items-center gap-3">
+						<span class="ui-text-strong"> {{ item.position }}. {{ item.title }} </span>
+						<span class="ui-text-muted">
+							{{ item.price ? formatMoney(item.price) : "Price on request" }}
+						</span>
+						<StatusBadge
+							v-if="item.unavailable"
+							tone="danger"
+							:label="item.reason"
+							data-testid="sellos-client-shortlist-unavailable"
+						/>
+						<AppButton
+							type="button"
+							data-testid="sellos-client-shortlist-open"
+							@click="openItem(item)"
 						>
-							<p class="text-sm text-ink-muted">
-								{{
-									[item.configuration, item.locality, item.property_type]
-										.filter(Boolean)
-										.join(", ")
-								}}
-								<span v-if="item.carpet_area">, {{ item.carpet_area }} sq ft</span>
-							</p>
-							<p v-if="item.description" class="text-sm text-ink">
-								{{ item.description }}
-							</p>
-							<div class="flex flex-wrap gap-ui-sm">
-								<img
-									v-for="url in item.photos"
-									:key="url"
-									:src="url"
-									alt="Photo of the home"
-									class="h-32 rounded-control"
-								/>
-							</div>
+							{{ details[item.name] ? "Hide details" : "View details" }}
+						</AppButton>
+					</div>
+					<p v-if="item.note" class="mt-ui-sm ui-text-small">{{ item.note }}</p>
+					<div
+						v-if="details[item.name]"
+						class="mt-ui-sm space-y-ui-sm"
+						data-testid="sellos-client-shortlist-detail"
+					>
+						<p class="ui-text-muted">
+							{{
+								[item.configuration, item.locality, item.property_type]
+									.filter(Boolean)
+									.join(", ")
+							}}
+							<span v-if="item.carpet_area">, {{ item.carpet_area }} sq ft</span>
+						</p>
+						<p v-if="item.description" class="ui-text-small">
+							{{ item.description }}
+						</p>
+						<div class="flex flex-wrap gap-ui-sm">
+							<img
+								v-for="url in item.photos"
+								:key="url"
+								:src="url"
+								alt="Photo of the home"
+								class="h-32"
+							/>
 						</div>
-					</li>
-				</ol>
-			</ListCard>
+					</div>
+				</li>
+			</ol>
+		</SectionCard>
+
+		<template #side>
+			<SectionCard title="Your agent">
+				<template v-if="view">
+					<p class="ui-text-small" data-testid="sellos-client-shortlist-agent">
+						{{ view.agent.name }}
+						<span v-if="view.agent.phone">, {{ view.agent.phone }}</span>
+					</p>
+					<a
+						class="ui-link mt-ui-sm inline-block ui-text-small"
+						:href="view.pdf"
+						target="_blank"
+						rel="noopener"
+						data-testid="sellos-client-shortlist-pdf"
+					>
+						Download as a PDF
+					</a>
+				</template>
+				<p v-else class="ui-text-muted">Your agent is loading.</p>
+			</SectionCard>
+			<SectionCard title="Summary">
+				<dl v-if="view" data-testid="sellos-client-shortlist-stats">
+					<FieldGrid :columns="1">
+						<ReadField label="Homes" :value="String(view.items.length)" />
+						<ReadField label="No longer available" :value="String(unavailableCount)" />
+					</FieldGrid>
+				</dl>
+				<p v-else class="ui-text-muted">The summary is loading.</p>
+			</SectionCard>
 		</template>
 	</PageTemplate>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
-import ListCard from "../components/ListCard.vue";
+import FieldGrid from "../components/FieldGrid.vue";
 import LoadError from "../components/LoadError.vue";
-import KpiStrip from "../components/KpiStrip.vue";
-import PageHeader from "../components/PageHeader.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import ReadField from "../components/ReadField.vue";
+import RecordHeader from "../components/RecordHeader.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { formatMoney } from "../format";
@@ -131,6 +134,9 @@ const route = useRoute();
 const view = ref(null);
 const loadError = ref("");
 const details = reactive({});
+const unavailableCount = computed(
+	() => view.value?.items.filter((i) => i.unavailable).length || 0
+);
 
 async function load() {
 	loadError.value = "";

@@ -44,7 +44,7 @@
 			<template #cell-title="{ row }">
 				<router-link
 					:to="`/client/shortlists/${encodeURIComponent(row.name)}`"
-					class="ui-link font-medium"
+					class="ui-link ui-text-strong"
 					data-testid="sellos-client-shortlist-link"
 				>
 					{{ row.title }}

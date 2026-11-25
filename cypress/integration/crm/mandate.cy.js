@@ -4,6 +4,9 @@
 // (names start with "Gate Seller ") are removed afterwards.
 context("SOS-P4-05: mandates and the Private Sale Dossier", () => {
 	const row = (title) => cy.get(`[data-testid="sellos-mandate-row"][data-title="${title}"]`);
+	// Signing and the Dossier are in a drawer opened from the row (design system pass).
+	const drawer = () => cy.get('[data-testid="sellos-mandate-drawer"]');
+	const openDrawer = (title) => row(title).find('[data-testid="sellos-mandate-manage"]').click();
 	const sellerRow = (title) =>
 		cy.get(`[data-testid="sellos-seller-row"][data-title="${title}"]`);
 	const openMandates = () => {
@@ -36,22 +39,23 @@ context("SOS-P4-05: mandates and the Private Sale Dossier", () => {
 				.should("contain", "Open, 12 months");
 
 			// The Dossier is hidden until it is signed: a note can be kept, but is not shown.
-			row(title).find('[data-testid="sellos-mandate-dossier-locked"]').should("be.visible");
-			row(title).find('[data-testid="sellos-mandate-dossier-open"]').should("not.exist");
+			openDrawer(title);
+			drawer().find('[data-testid="sellos-mandate-dossier-locked"]').should("be.visible");
+			drawer().find('[data-testid="sellos-mandate-dossier-open"]').should("not.exist");
 			cy.intercept("POST", "**/sellos.inventory.mandates.add_dossier_note*").as("note");
-			row(title).find('[data-testid="sellos-mandate-note-title"]').type("Reserve price");
-			row(title)
+			drawer().find('[data-testid="sellos-mandate-note-title"]').type("Reserve price");
+			drawer()
 				.find('textarea[data-testid="sellos-mandate-note-text"]')
 				.type("Not below the reserve.");
-			row(title).find('[data-testid="sellos-mandate-note-add"]').click();
+			drawer().find('[data-testid="sellos-mandate-note-add"]').click();
 			cy.wait("@note").its("response.statusCode").should("eq", 200);
-			row(title).find('[data-testid="sellos-mandate-dossier-locked"]').should("be.visible");
+			drawer().find('[data-testid="sellos-mandate-dossier-locked"]').should("be.visible");
 			cy.contains("Not below the reserve.").should("not.exist");
 
 			// A file that is not a PDF, PNG or JPG does not sign it.
 			cy.intercept("POST", "**/sellos.inventory.mandates.sign_mandate*").as("sign");
 			cy.expectApiStatus("sellos.inventory.mandates.sign_mandate", 417);
-			row(title)
+			drawer()
 				.find('[data-testid="sellos-mandate-sign-file"]')
 				.selectFile({
 					contents: Cypress.Buffer.from("<html>not a pdf</html>"),
@@ -76,7 +80,8 @@ context("SOS-P4-05: mandates and the Private Sale Dossier", () => {
 
 			// Signing needs the signed document. With it, the Dossier is released.
 			openMandates();
-			row(title)
+			openDrawer(title);
+			drawer()
 				.find('[data-testid="sellos-mandate-sign-file"]')
 				.selectFile({
 					contents: Cypress.Buffer.from(made.pdf, "base64"),
@@ -85,21 +90,21 @@ context("SOS-P4-05: mandates and the Private Sale Dossier", () => {
 				});
 			cy.wait("@sign").its("response.statusCode").should("eq", 200);
 			row(title).should("have.attr", "data-status", "Signed");
-			row(title).find('[data-testid="sellos-mandate-signed"]').should("be.visible");
-			row(title)
+			drawer().find('[data-testid="sellos-mandate-signed"]').should("be.visible");
+			drawer()
 				.find('[data-testid="sellos-mandate-dossier-open"]')
 				.should("contain", "(1)")
 				.click();
-			row(title)
+			drawer()
 				.find('[data-testid="sellos-mandate-dossier-item"]')
 				.should("have.length", 1)
 				.and("contain", "Reserve price")
 				.and("contain", "Not below the reserve.");
-			row(title).find('[data-testid="sellos-mandate-view"]').should("have.length", 1);
+			drawer().find('[data-testid="sellos-mandate-view"]').should("have.length", 1);
 
 			// Each opening is logged.
-			row(title).find('[data-testid="sellos-mandate-dossier-open"]').click();
-			row(title).find('[data-testid="sellos-mandate-view"]').should("have.length", 2);
+			drawer().find('[data-testid="sellos-mandate-dossier-open"]').click();
+			drawer().find('[data-testid="sellos-mandate-view"]').should("have.length", 2);
 
 			// Now the seller reaches Listed.
 			cy.visit("/sellos/crm/sellers");

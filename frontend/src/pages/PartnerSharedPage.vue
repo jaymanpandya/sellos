@@ -46,7 +46,7 @@
 				empty-testid="sellos-partner-shared-empty"
 			>
 				<template #cell-project_name="{ row: p }">
-					<span class="font-medium text-ink" data-testid="sellos-partner-shared-name">
+					<span class="ui-text-strong" data-testid="sellos-partner-shared-name">
 						{{ p.project_name }}
 					</span>
 				</template>
@@ -68,37 +68,34 @@
 						data-testid="sellos-partner-shared-detail"
 						:data-project="detail.project.name"
 					>
-						<p class="text-sm text-ink-muted">
+						<p class="ui-text-muted">
 							RERA {{ detail.project.rera_number }},
 							{{ detail.project.project_status }}, {{ detail.project.locality }}
 							{{ detail.project.city }}
 						</p>
 						<template v-if="detail.price_list">
-							<h3 class="ui-card-heading mt-ui-md">Price list</h3>
-							<p
-								class="mt-ui-sm text-base"
-								data-testid="sellos-partner-shared-price"
-							>
+							<p class="mt-ui-md ui-text-strong">Price list</p>
+							<p class="mt-ui-sm" data-testid="sellos-partner-shared-price">
 								{{ detail.price_list.title }}: Rs
 								{{ detail.price_list.base_rate }} per sq ft, floor rise Rs
 								{{ detail.price_list.floor_rise_rate }} per sq ft above floor
 								{{ detail.price_list.floor_rise_from_floor }}
 							</p>
-							<ul class="text-sm text-ink-muted">
+							<ul class="ui-text-muted">
 								<li v-for="c in detail.price_list.charges" :key="c.charge_name">
 									{{ c.charge_name }}: {{ c.value }} ({{ c.basis }})
 								</li>
 							</ul>
 						</template>
 						<template v-if="detail.brochures.length">
-							<h3 class="ui-card-heading mt-ui-md">Brochures</h3>
-							<ul class="mt-ui-sm text-sm">
+							<p class="mt-ui-md ui-text-strong">Brochures</p>
+							<ul class="mt-ui-sm ui-text-small">
 								<li v-for="b in detail.brochures" :key="b.name">
 									<a
 										:href="b.file_url"
 										target="_blank"
 										rel="noopener"
-										class="text-accent underline"
+										class="underline ui-text-error"
 										data-testid="sellos-partner-shared-brochure"
 									>
 										{{ b.title }}

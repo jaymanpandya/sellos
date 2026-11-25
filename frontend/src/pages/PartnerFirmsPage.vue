@@ -24,11 +24,35 @@
 			<KpiStrip :items="kpis" data-testid="sellos-partners-stats" />
 		</template>
 
+		<template #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search firms"
+				search-placeholder="Search firms"
+				search-testid="sellos-partners-search"
+				clear-testid="sellos-partners-filter-clear"
+				:active="Boolean(search || statusFilter)"
+				:chips="chips"
+				data-testid="sellos-partners-filters"
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+				<FormField
+					v-model="statusFilter"
+					compact
+					type="select"
+					label="Status"
+					:options="statusOptions"
+					data-testid="sellos-partners-filter-status"
+				/>
+			</FilterBar>
+		</template>
+
 		<p
 			v-if="error && !inviting"
 			role="alert"
 			data-testid="sellos-partners-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -36,7 +60,7 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-partners-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -48,7 +72,7 @@
 			v-else
 			title="Partner firms"
 			:columns="columns"
-			:rows="firms"
+			:rows="shown"
 			:loading="!loaded"
 			:row-attrs="(f) => ({ 'data-status': f.status })"
 			empty-title="No partner firms yet"
@@ -59,10 +83,10 @@
 			empty-testid="sellos-partners-empty"
 		>
 			<template #cell-firm_name="{ row: f }">
-				<span class="font-medium text-ink" data-testid="sellos-partners-firm-name">
+				<span class="ui-text-strong" data-testid="sellos-partners-firm-name">
 					{{ f.firm_name }}
 				</span>
-				<span class="block text-xs text-ink-muted" data-testid="sellos-partners-code">
+				<span class="block ui-text-muted" data-testid="sellos-partners-code">
 					{{ f.partner_code }}
 				</span>
 			</template>
@@ -74,14 +98,14 @@
 				/>
 			</template>
 			<template #cell-contact_person="{ row: f }">
-				<span class="block text-ink">{{ f.contact_person }}</span>
-				<span class="block text-xs text-ink-muted">
+				<span class="block ui-text-body">{{ f.contact_person }}</span>
+				<span class="block ui-text-muted">
 					{{ f.email }}
 					<span v-if="f.phone" data-testid="sellos-partners-phone">, {{ f.phone }}</span>
 				</span>
 			</template>
 			<template #cell-details="{ row: f }">
-				<p class="text-sm text-ink-muted">
+				<p class="ui-text-muted">
 					RERA: {{ f.rera_number || "not given" }}. PAN:
 					<span data-testid="sellos-partners-pan">{{ f.pan || "not given" }}</span
 					>.
@@ -90,7 +114,7 @@
 						:href="f.agreement"
 						target="_blank"
 						rel="noopener"
-						class="text-accent underline"
+						class="underline ui-text-error"
 						data-testid="sellos-partners-agreement"
 					>
 						Signed agreement
@@ -101,20 +125,20 @@
 				</p>
 				<p
 					v-if="f.status === 'Suspended' && f.status_reason"
-					class="text-sm text-ink-muted"
+					class="ui-text-muted"
 					data-testid="sellos-partners-reason"
 				>
 					Suspended: {{ f.status_reason }}
 				</p>
 				<p
 					v-if="f.status === 'Pending approval' && f.missing.length"
-					class="text-sm text-ink-muted"
+					class="ui-text-muted"
 				>
 					Still missing: {{ f.missing.join(", ") }}.
 				</p>
 				<details class="mt-1" data-testid="sellos-partners-log">
-					<summary class="cursor-pointer text-sm text-ink-muted">Status log</summary>
-					<ul class="mt-1 space-y-1 text-sm text-ink-muted">
+					<summary class="cursor-pointer ui-text-muted">Status log</summary>
+					<ul class="mt-1 space-y-1 ui-text-muted">
 						<li v-for="(l, i) in f.log" :key="i" data-testid="sellos-partners-log-row">
 							{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }} moved it
 							<span v-if="l.from_status">from {{ l.from_status }}</span>
@@ -206,12 +230,7 @@
 					data-testid="sellos-partners-phone-input"
 				/>
 			</FormSection>
-			<p
-				v-if="error"
-				role="alert"
-				data-testid="sellos-partners-error"
-				class="text-sm text-accent"
-			>
+			<p v-if="error" role="alert" data-testid="sellos-partners-error" class="ui-text-error">
 				{{ error }}
 			</p>
 		</FormDrawer>
@@ -226,6 +245,7 @@ import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -253,6 +273,36 @@ const loaded = ref(false);
 const inviting = ref(false);
 const reasons = reactive({});
 const form = reactive({ firm_name: "", contact_person: "", email: "", phone: "" });
+
+const search = ref("");
+const statusFilter = ref("");
+const statusOptions = computed(() => [
+	{ label: "All", value: "" },
+	...[...new Set(firms.value.map((r) => r.status).filter(Boolean))].map((v) => ({
+		label: v,
+		value: v,
+	})),
+]);
+const shown = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return firms.value.filter(
+		(r) =>
+			(!q || `${r.firm_name} ${r.contact_person || ""}`.toLowerCase().includes(q)) &&
+			(!statusFilter.value || r.status === statusFilter.value)
+	);
+});
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Search: ${search.value}` }] : []),
+	...(statusFilter.value ? [{ key: "status", label: statusFilter.value }] : []),
+]);
+function clearFilters() {
+	search.value = "";
+	statusFilter.value = "";
+}
+function removeChip(key) {
+	if (key === "search") search.value = "";
+	else statusFilter.value = "";
+}
 
 const columns = [
 	{ key: "firm_name", label: "Firm", primary: true, sortable: true },

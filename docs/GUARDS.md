@@ -165,3 +165,17 @@ components (`AppButton`, `FormField`, `MoneyField`, `AppCheckbox`, `StatusBadge`
 the lead page do, and follow `docs/UI_STYLE.md`. `docs/ui-backlog.txt` lists the pages that still have raw controls (the starting backlog, set on 20
 November 2026). A page that is not on it and writes one fails the guard; a page on it that no longer has one fails too, until it is taken off the
 list, so the list only shrinks. Never add a page to it. The SOS-UI-3 tasks convert the listed pages.
+
+## 12. design system: a page is assembled from the shared pieces
+
+Added on 25 November 2026 (design system pass, `docs/DESIGN_SYSTEM.md`, rule 6). `scripts/check_design_system.py` runs in pre-commit (the
+`design-system` hook, so also in CI through `scripts/check-guards.sh --all`) and fails when a `.vue` file outside `frontend/src/components` and
+`frontend/src/theme` draws its own button, card, heading, radius, padding, shadow, font size, font weight or colour: a raw `<button>`, `<input>`,
+`<select>` or `<textarea>`, an `<h1>` to `<h6>`, a style attribute, a colour literal, `ui-card` or `ui-card-heading` or `ui-page-title`, or any
+`rounded-*`, `shadow-*`, `text-*` size, `font-*` weight, padding or colour utility. Layout utilities (flex, grid, gap, margins, widths, overflow) and the
+named text roles (`ui-text-body`, `-secondary`, `-strong`, `-small`, `-muted`, `-error`, `-warning`, `-success`) are allowed.
+
+**How to comply.** Use `SectionCard` for a card and its heading, `PageHeader` or `RecordHeader` for the page title, `Notice`, `StatusBadge`,
+`DataTable`, `FieldGrid`, `ReadField`, `AppButton` and the others in `frontend/src/components` (the gallery at `/sellos/gallery` shows them all); if
+a page needs something the pieces do not offer, extend the piece. `docs/design-system-backlog.txt` lists the pages that still fail while the pass is
+under way; it only shrinks and is empty at the end. `python3 scripts/check_design_system.py --list --detail` shows every finding.

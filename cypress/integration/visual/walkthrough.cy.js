@@ -1,7 +1,7 @@
 // Visual walk through (docs/UI_STANDARD.md): opens every page in each role's menu and saves a screenshot.
 // The page list is read from the live sidebar, so a page added to personas.js is walked with no edit here.
 // Screenshots land in cypress/screenshots/visual/walkthrough.cy.js/<role>/ as <nn>-<page>.png (desktop) and
-// phone-<nn>-<page>.png (375x812, Home and Leads). Run:
+// phone-<nn>-<page>.png (390x844, every page). Run:
 //   bench --site sellos_test.localhost run-ui-tests sellos --headless --spec cypress/integration/visual/walkthrough.cy.js
 // The global checks in cypress/support/e2e.js also fail the walk on any API 4xx/5xx or console error.
 
@@ -80,6 +80,8 @@ ROLES.forEach(({ role, label }) => {
 					const n = String(index + 1).padStart(2, "0");
 					cy.visit(link.href);
 					pageDrawn();
+					// At 1440 nothing is cut off or scrolls sideways either (docs/DESIGN_SYSTEM.md, rule 7).
+					noSidewaysScroll(`${link.label} at 1440`);
 					cy.screenshot(`${label}/${n}-${slug(link.label)}`, {
 						capture: "viewport",
 						overwrite: true,
@@ -88,23 +90,24 @@ ROLES.forEach(({ role, label }) => {
 			});
 		});
 
-		it("saves a phone screenshot of Home and of Leads", () => {
-			cy.viewport(375, 812);
+		it("opens every page at 390 wide, nothing scrolls sideways, and saves a screenshot of each", () => {
+			cy.viewport(1440, 960);
 			cy.signInFresh(role);
 			cy.visit("/sellos");
 			pageDrawn();
-			noSidewaysScroll("Home");
-			cy.screenshot(`${label}/phone-01-home`, { capture: "viewport", overwrite: true });
-			cy.getByTestId("phone-nav").should("be.visible");
-			cy.viewport(1400, 960);
 			menuLinks().then((links) => {
-				const leads = links.find((link) => link.label === "Leads");
-				if (!leads) return;
-				cy.viewport(375, 812);
-				cy.visit(leads.href);
-				pageDrawn();
-				noSidewaysScroll("Leads");
-				cy.screenshot(`${label}/phone-02-leads`, { capture: "viewport", overwrite: true });
+				cy.viewport(390, 844);
+				links.forEach((link, index) => {
+					const n = String(index + 1).padStart(2, "0");
+					cy.visit(link.href);
+					pageDrawn();
+					noSidewaysScroll(`${link.label} at 390`);
+					if (index === 0) cy.getByTestId("phone-nav").should("be.visible");
+					cy.screenshot(`${label}/phone-${n}-${slug(link.label)}`, {
+						capture: "viewport",
+						overwrite: true,
+					});
+				});
 			});
 		});
 	});

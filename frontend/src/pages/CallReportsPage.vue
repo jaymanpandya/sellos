@@ -46,7 +46,7 @@
 		</div>
 		<LoadingSkeleton v-else-if="!report" />
 		<div v-else class="space-y-ui-md">
-			<p class="text-sm text-ink-muted" data-testid="sellos-callreports-range">
+			<p class="ui-text-muted" data-testid="sellos-callreports-range">
 				Calls from {{ report.from_date }} to {{ report.to_date }}.
 			</p>
 			<EmptyState
@@ -56,27 +56,25 @@
 				icon="lucide-phone-off"
 			/>
 			<!-- The figure behind each card opens the calls it counts. -->
-			<section v-else class="ui-card flex flex-wrap items-center gap-ui-sm">
-				<h2 class="ui-card-heading mr-ui-sm">See the calls behind</h2>
-				<AppButton
-					v-for="card in cards"
-					:key="card.key"
-					:data-testid="`sellos-callreports-open-${card.key}`"
-					@click="open(card.label, card.figure)"
-				>
-					{{ card.label }}
-				</AppButton>
-			</section>
+			<SectionCard v-else title="See the calls behind">
+				<div class="flex flex-wrap items-center gap-ui-sm">
+					<AppButton
+						v-for="card in cards"
+						:key="card.key"
+						:data-testid="`sellos-callreports-open-${card.key}`"
+						@click="open(card.label, card.figure)"
+					>
+						{{ card.label }}
+					</AppButton>
+				</div>
+			</SectionCard>
 
 			<div
 				v-if="drill"
 				data-testid="sellos-callreports-drill"
 				:data-count="drill.calls.length"
 			>
-				<p
-					class="mb-ui-sm text-sm text-ink-muted"
-					data-testid="sellos-callreports-drill-total"
-				>
+				<p class="mb-ui-sm ui-text-muted" data-testid="sellos-callreports-drill-total">
 					{{ drill.calls.length }} calls, {{ talkTime(drill.totals.talk_seconds) }} talk
 					time,
 					{{ rupees(drill.totals.cost) }}
@@ -98,7 +96,7 @@
 						formatDateTime(row.started_on)
 					}}</template>
 					<template #cell-lead="{ row }">
-						<router-link class="text-brand underline" :to="`/crm/leads/${row.lead}`">
+						<router-link class="ui-link" :to="`/crm/leads/${row.lead}`">
 							{{ row.lead }}
 						</router-link>
 					</template>
@@ -186,7 +184,7 @@
 					</template>
 				</DataTable>
 
-				<p class="text-sm text-ink-muted">
+				<p class="ui-text-muted">
 					Consent coverage: the consent status of each lead when it was called. A call is
 					never stopped by it.
 				</p>
@@ -234,6 +232,7 @@ import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import SectionCard from "../components/SectionCard.vue";
 import { serverMessage } from "../crm/crmApi";
 import { formatDateTime } from "../format";
 import { callsApi, rupees, talkTime } from "../reports/callsApi";

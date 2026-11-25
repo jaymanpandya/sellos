@@ -46,7 +46,7 @@
 		</div>
 		<LoadingSkeleton v-else-if="!funnel" />
 		<div v-else class="space-y-ui-md">
-			<p class="text-sm text-ink-muted" data-testid="sellos-business-range">
+			<p class="ui-text-muted" data-testid="sellos-business-range">
 				From {{ funnel.from_date }} to {{ funnel.to_date }}.
 			</p>
 

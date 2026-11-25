@@ -1,19 +1,24 @@
 <template>
-	<div data-testid="sellos-dash">
-		<LoadError
-			v-if="error"
-			class="mb-ui-md"
-			data-testid="sellos-dash-error"
-			:message="error"
-			@retry="load"
-		/>
-		<LoadingSkeleton v-else-if="!loaded" variant="cards" :rows="4" />
+	<PageTemplate shape="dashboard" data-testid="sellos-home">
+		<template #header><slot name="header" /></template>
+		<template v-if="$slots.notice" #notice><slot name="notice" /></template>
 
-		<template v-if="loaded">
+		<template v-if="loaded" #kpis>
 			<KpiStrip :items="kpis" data-testid="sellos-dash-kpis" />
+		</template>
 
-			<div class="grid grid-cols-1 gap-ui-md lg:grid-cols-2">
-				<ListCard title="Leads by stage" data-testid="sellos-dash-stages">
+		<template #left>
+			<div data-testid="sellos-dash">
+				<LoadError
+					v-if="error"
+					data-testid="sellos-dash-error"
+					:message="error"
+					@retry="load"
+				/>
+				<LoadingSkeleton v-else-if="!loaded" variant="cards" :rows="4" />
+			</div>
+			<template v-if="loaded">
+				<SectionCard title="Leads by stage" data-testid="sellos-dash-stages">
 					<EmptyState
 						v-if="!board.total"
 						title="No leads in the pipeline yet."
@@ -21,9 +26,12 @@
 						icon="lucide-users"
 					/>
 					<StageBars v-else :columns="board.columns" />
-				</ListCard>
+					<template #footer>
+						<router-link to="/crm/leads" class="ui-link">Open leads</router-link>
+					</template>
+				</SectionCard>
 
-				<ListCard title="Consent warnings" data-testid="sellos-dash-consent">
+				<SectionCard title="Consent warnings" data-testid="sellos-dash-consent">
 					<EmptyState
 						v-if="!warned.length"
 						title="No consent warnings."
@@ -31,91 +39,82 @@
 						icon="lucide-shield-check"
 					/>
 					<template v-else>
-						<p class="mb-ui-sm text-sm text-ink-muted">
-							<b
-								class="tabular-nums text-ink"
-								data-testid="sellos-dash-consent-count"
-								>{{ warned.length }}</b
-							>
+						<p class="mb-ui-sm ui-text-muted">
+							<b class="ui-text-strong" data-testid="sellos-dash-consent-count">{{
+								warned.length
+							}}</b>
 							of {{ queue.total }} leads carry a warning. Calls and messages still go
 							ahead.
 						</p>
-						<ul class="divide-y divide-line-soft">
-							<li
+						<ul class="ui-list">
+							<HomeRow
 								v-for="row in warned.slice(0, 5)"
 								:key="row.lead"
-								class="flex items-center justify-between gap-ui-sm py-2"
-								data-testid="sellos-dash-consent-row"
-							>
-								<router-link
-									:to="`/crm/leads/${row.lead}`"
-									class="ui-link min-w-0 truncate"
-									>{{ row.lead_title }}</router-link
-								>
-								<StatusBadge
-									:tone="row.consent_warning === 'red' ? 'danger' : 'warning'"
-									:label="row.consent_status"
-									:title="row.consent_message"
-								/>
-							</li>
+								testid="sellos-dash-consent-row"
+								:title="row.lead_title"
+								:line="row.consent_message || 'Consent status'"
+								:badge="row.consent_status"
+								:badge-tone="row.consent_warning === 'red' ? 'danger' : 'warning'"
+								:badge-title="row.consent_message"
+								:to="`/crm/leads/${row.lead}`"
+							/>
 						</ul>
 					</template>
-				</ListCard>
+				</SectionCard>
+			</template>
+		</template>
 
-				<ListCard title="Follow ups overdue" data-testid="sellos-dash-overdue">
+		<template #right>
+			<template v-if="loaded">
+				<SectionCard title="Follow ups overdue" data-testid="sellos-dash-overdue">
 					<EmptyState
 						v-if="!overdue.length"
 						title="Nothing overdue."
 						text="Every follow up due so far has been done."
 						icon="lucide-clock-alert"
 					/>
-					<ul v-else class="divide-y divide-line-soft">
-						<li
+					<ul v-else class="ui-list">
+						<HomeRow
 							v-for="row in overdue.slice(0, 5)"
 							:key="row.name || row.lead"
-							class="flex items-center justify-between gap-ui-sm py-2"
-							data-testid="sellos-dash-overdue-row"
-						>
-							<router-link
-								:to="`/crm/leads/${row.lead}`"
-								class="ui-link min-w-0 truncate"
-								>{{ row.lead_title }}</router-link
-							>
-							<span class="shrink-0 text-sm text-ink-muted">{{
-								formatWhen(row.due_at || row.due_date)
-							}}</span>
-						</li>
+							testid="sellos-dash-overdue-row"
+							:title="row.lead_title"
+							:line="`Due ${formatWhen(row.due_at || row.due_date)}`"
+							badge="Overdue"
+							badge-tone="danger"
+							:to="`/crm/leads/${row.lead}`"
+						/>
 					</ul>
-				</ListCard>
+				</SectionCard>
 
-				<ListCard title="Today's site visits" data-testid="sellos-dash-visits">
+				<SectionCard title="Today's site visits" data-testid="sellos-dash-visits">
 					<EmptyState
 						v-if="!today.visits_today.length"
 						title="No site visits today."
 						text="Book one from a lead and it shows here on the day."
 						icon="lucide-calendar-check"
 					/>
-					<ul v-else class="divide-y divide-line-soft">
-						<li
+					<ul v-else class="ui-list">
+						<HomeRow
 							v-for="row in today.visits_today.slice(0, 5)"
 							:key="row.name"
-							class="flex items-center justify-between gap-ui-sm py-2"
-							data-testid="sellos-dash-visit-row"
-						>
-							<router-link
-								:to="`/crm/leads/${row.lead}`"
-								class="ui-link min-w-0 truncate"
-								>{{ row.lead_title }}</router-link
-							>
-							<span class="shrink-0 text-sm text-ink-muted">{{
-								formatDateTime(row.visit_datetime)
-							}}</span>
-						</li>
+							testid="sellos-dash-visit-row"
+							:title="row.lead_title"
+							:line="formatDateTime(row.visit_datetime)"
+							badge="Today"
+							badge-tone="info"
+							:to="`/crm/leads/${row.lead}`"
+						/>
 					</ul>
-				</ListCard>
-			</div>
+				</SectionCard>
+			</template>
 		</template>
-	</div>
+
+		<template #rail><slot name="rail" /></template>
+
+		<!-- SOS-P1-26: an Agent and a Sales Manager also land on Today, the lists to work through. -->
+		<slot />
+	</PageTemplate>
 </template>
 
 <script setup>
@@ -125,11 +124,12 @@
 import { computed, onMounted, ref } from "vue";
 
 import EmptyState from "../EmptyState.vue";
-import ListCard from "../ListCard.vue";
+import KpiStrip from "../KpiStrip.vue";
 import LoadError from "../LoadError.vue";
 import LoadingSkeleton from "../LoadingSkeleton.vue";
-import KpiStrip from "../KpiStrip.vue";
-import StatusBadge from "../StatusBadge.vue";
+import PageTemplate from "../PageTemplate.vue";
+import SectionCard from "../SectionCard.vue";
+import HomeRow from "./HomeRow.vue";
 import StageBars from "./StageBars.vue";
 import { crmApi, serverMessage } from "../../crm/crmApi";
 import { formatDateTime, formatWhen } from "../../format";
@@ -152,6 +152,7 @@ const kpis = computed(() => [
 		caption: "In the pipeline",
 		icon: "lucide-users",
 		tone: "",
+		to: "/crm/leads",
 	},
 	{
 		key: "new",
@@ -162,6 +163,7 @@ const kpis = computed(() => [
 		caption: "Waiting for a first call",
 		icon: "lucide-user-plus",
 		tone: "success",
+		to: "/crm/queue",
 	},
 	{
 		key: "overdue",
@@ -172,6 +174,7 @@ const kpis = computed(() => [
 		caption: `${today.value.counts.follow_ups || 0} due today or earlier`,
 		icon: "lucide-clock-alert",
 		tone: "danger",
+		to: "/crm/queue",
 	},
 	{
 		key: "visits",
@@ -182,6 +185,7 @@ const kpis = computed(() => [
 		caption: `${today.value.counts.visits_tomorrow || 0} tomorrow`,
 		icon: "lucide-calendar-check",
 		tone: "info",
+		to: "/crm/visits",
 	},
 ]);
 

@@ -1,5 +1,5 @@
 <template>
-	<ListCard title="Matching homes" data-testid="sellos-lead-matches">
+	<SectionCard title="Matching homes" data-testid="sellos-lead-matches">
 		<AppButton type="button" data-testid="sellos-lead-matches-load" @click="load">
 			Find matching homes
 		</AppButton>
@@ -7,14 +7,14 @@
 			v-if="error"
 			role="alert"
 			data-testid="sellos-lead-matches-error"
-			class="mt-ui-sm text-sm text-accent"
+			class="mt-ui-sm ui-text-error"
 		>
 			{{ error }}
 		</p>
 		<template v-if="result">
 			<p
 				v-if="!result.has_requirements"
-				class="mt-ui-sm text-sm text-ink-muted"
+				class="mt-ui-sm ui-text-muted"
 				data-testid="sellos-lead-matches-none-asked"
 			>
 				Save what the buyer wants above, and SellOS can score homes against it.
@@ -25,32 +25,28 @@
 				text="No Available unit or published listing suits this buyer yet."
 				icon="lucide-building"
 			/>
-			<p
-				v-else
-				class="mt-ui-sm text-sm text-ink-muted"
-				data-testid="sellos-lead-matches-count"
-			>
+			<p v-else class="mt-ui-sm ui-text-muted" data-testid="sellos-lead-matches-count">
 				{{ result.matches.length }} of {{ result.total }} matching homes shown, best first.
 			</p>
-			<ul class="mt-ui-sm space-y-ui-sm">
+			<ul class="mt-ui-sm ui-list">
 				<li
 					v-for="m in result.matches"
 					:key="m.kind + m.name"
-					class="rounded-card border border-line-soft p-ui-md"
+					class="space-y-ui-sm"
 					data-testid="sellos-lead-match"
 					:data-kind="m.kind"
 					:data-title="m.title"
 					:data-score="m.score"
 				>
 					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink">{{ m.title }}</span>
+						<span class="ui-text-strong">{{ m.title }}</span>
 						<StatusBadge
 							:tone="scoreTone(m.score)"
 							:label="`${m.score} out of 100`"
 							data-testid="sellos-lead-match-score"
 						/>
 						<StatusBadge tone="info" :label="m.kind" />
-						<span class="text-sm text-ink-muted">
+						<span class="ui-text-muted">
 							{{ m.price ? rupees(m.price) : "No price yet" }}
 						</span>
 						<AppButton
@@ -63,7 +59,7 @@
 						<span
 							v-if="added[m.kind + m.name]"
 							role="status"
-							class="text-sm text-ink"
+							class="ui-text-small"
 							data-testid="sellos-lead-match-added"
 						>
 							{{ added[m.kind + m.name] }}
@@ -73,7 +69,7 @@
 				</li>
 			</ul>
 		</template>
-	</ListCard>
+	</SectionCard>
 </template>
 
 <script setup>
@@ -81,7 +77,7 @@ import { reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import EmptyState from "../components/EmptyState.vue";
-import ListCard from "../components/ListCard.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import MatchParts from "./MatchParts.vue";

@@ -57,10 +57,10 @@
 			row-testid="sellos-assignment-rule"
 		>
 			<template #cell-describe="{ row }">
-				<span class="text-ink-body">{{ describe(row) }}</span>
+				<span class="ui-text-secondary">{{ describe(row) }}</span>
 			</template>
 			<template #cell-team="{ row }">
-				<span class="text-ink-body">{{ teamName(row.team) }}</span>
+				<span class="ui-text-secondary">{{ teamName(row.team) }}</span>
 			</template>
 			<template #cell-enabled="{ row }">
 				<AppCheckbox
@@ -143,7 +143,7 @@
 			<p
 				v-if="error"
 				role="alert"
-				class="text-sm text-danger"
+				class="ui-text-error"
 				data-testid="sellos-assignment-form-error"
 			>
 				{{ error }}

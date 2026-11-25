@@ -1,11 +1,6 @@
 <template>
 	<div class="mb-4">
-		<router-link
-			v-if="backTo"
-			:to="backTo"
-			class="ui-link-button"
-			data-testid="sellos-record-back"
-		>
+		<router-link v-if="backTo" :to="backTo" class="ui-link-button" :data-testid="backTestid">
 			<span class="lucide-arrow-left icon-inherit size-4" aria-hidden="true" />
 			{{ backLabel }}
 		</router-link>
@@ -37,5 +32,6 @@ defineProps({
 	backTo: { type: [String, Object], default: null },
 	backLabel: { type: String, default: "Back" },
 	titleTestid: { type: String, default: "sellos-record-title" },
+	backTestid: { type: String, default: "sellos-record-back" },
 });
 </script>

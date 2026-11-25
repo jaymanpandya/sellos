@@ -18,10 +18,10 @@
 		<LoadingSkeleton v-else-if="!report" />
 		<template v-else>
 			<ListCard title="Your team" class="mb-ui-md">
-				<p class="text-ink" data-testid="sellos-teamreport-total">
+				<p class="ui-text-body" data-testid="sellos-teamreport-total">
 					Leads: {{ report.total }}
 				</p>
-				<p class="text-sm text-ink-muted" data-testid="sellos-teamreport-teams">
+				<p class="ui-text-muted" data-testid="sellos-teamreport-teams">
 					Teams: {{ report.teams.join(", ") || "None" }}
 				</p>
 			</ListCard>

@@ -19,7 +19,9 @@ context("SOS-LOOP: three radii on every page", () => {
 				"borderBottomRightRadius",
 			].map((c) => style[c]);
 			if (corners.every((c) => ALLOWED.has(c))) return;
-			const badge = el.closest('[class*="rounded-round"], .ui-badge');
+			const badge = el.closest(
+				'[class*="rounded-round"], .ui-badge, .ui-area-chip, .ui-icon-chip, .ui-icon-chip-sm, .ui-count-badge'
+			);
 			if (badge && corners.every((c) => ALLOWED.has(c) || parseFloat(c) >= 100)) return;
 			found.push(
 				`${el.tagName.toLowerCase()}.${String(el.className).slice(0, 60)} ${corners[0]}`

@@ -24,6 +24,22 @@
 			<KpiStrip :items="kpis" data-testid="sellos-teams-stats" />
 		</template>
 
+		<template #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search teams"
+				search-placeholder="Search teams"
+				search-testid="sellos-teams-search"
+				clear-testid="sellos-teams-filter-clear"
+				:active="Boolean(search)"
+				:chips="chips"
+				data-testid="sellos-teams-filters"
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+			</FilterBar>
+		</template>
+
 		<FormDrawer
 			:open="adding"
 			title="Add a team"
@@ -51,9 +67,7 @@
 				/>
 			</FormSection>
 			<fieldset data-testid="sellos-teams-agents">
-				<legend class="ui-card-heading mb-ui-md w-full border-b border-line-soft pb-ui-sm">
-					Agents
-				</legend>
+				<legend class="mb-ui-md w-full ui-text-strong">Agents</legend>
 				<FormField
 					v-for="a in agents"
 					:key="a.name"
@@ -66,12 +80,7 @@
 					@update:model-value="toggleAgent(a.name, $event)"
 				/>
 			</fieldset>
-			<p
-				v-if="error"
-				role="alert"
-				data-testid="sellos-teams-error"
-				class="text-sm text-danger"
-			>
+			<p v-if="error" role="alert" data-testid="sellos-teams-error" class="ui-text-error">
 				{{ error }}
 			</p>
 		</FormDrawer>
@@ -80,7 +89,7 @@
 			v-if="error && !adding"
 			role="alert"
 			data-testid="sellos-teams-error"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -92,7 +101,7 @@
 			title="Teams"
 			caption="Sales teams"
 			:columns="columns"
-			:rows="teams"
+			:rows="shown"
 			:loading="!loaded"
 			loading-label="Loading teams."
 			empty-title="No teams yet"
@@ -102,12 +111,12 @@
 			row-testid="sellos-teams-team"
 		>
 			<template #cell-manager_name="{ row }">
-				<span class="text-ink-body" data-testid="sellos-teams-manager">{{
+				<span class="ui-text-secondary" data-testid="sellos-teams-manager">{{
 					row.manager_name
 				}}</span>
 			</template>
 			<template #cell-members="{ row }">
-				<span class="text-ink-body" data-testid="sellos-teams-members">{{
+				<span class="ui-text-secondary" data-testid="sellos-teams-members">{{
 					row.members.map((m) => m.full_name).join(", ") || "None yet"
 				}}</span>
 			</template>
@@ -128,6 +137,7 @@ import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -166,6 +176,23 @@ const kpis = computed(() => [
 		tone: "warning",
 	},
 ]);
+const search = ref("");
+const shown = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return teams.value.filter(
+		(r) => (!q || `${r.team_name} ${r.manager_name}`.toLowerCase().includes(q)) && true
+	);
+});
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Search: ${search.value}` }] : []),
+]);
+function clearFilters() {
+	search.value = "";
+}
+function removeChip(key) {
+	if (key === "search") search.value = "";
+}
+
 const columns = [
 	{ key: "team_name", label: "Team", primary: true, sortable: true },
 	{ key: "manager_name", label: "Manager", sortable: true },

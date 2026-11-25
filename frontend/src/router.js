@@ -10,6 +10,9 @@ const LeadsPage = () => import("./pages/LeadsPage.vue");
 const SellersPage = () => import("./pages/SellersPage.vue");
 const MandatesPage = () => import("./pages/MandatesPage.vue");
 const DealsPage = () => import("./pages/DealsPage.vue");
+const SellerPage = () => import("./pages/SellerPage.vue");
+const MandatePage = () => import("./pages/MandatePage.vue");
+const DealPage = () => import("./pages/DealPage.vue");
 const LeadPage = () => import("./pages/LeadPage.vue");
 const ImportLeadsPage = () => import("./pages/ImportLeadsPage.vue");
 const CallQueuePage = () => import("./pages/CallQueuePage.vue");
@@ -84,16 +87,34 @@ export function createAppRouter() {
 				meta: { area: "crm", title: "Sellers" },
 			},
 			{
+				path: "/crm/sellers/:name",
+				name: "seller",
+				component: SellerPage,
+				meta: { area: "crm", title: "Seller", crumb: "Sellers" },
+			},
+			{
 				path: "/crm/mandates",
 				name: "mandates",
 				component: MandatesPage,
 				meta: { area: "crm", title: "Mandates" },
 			},
 			{
+				path: "/crm/mandates/:name",
+				name: "mandate",
+				component: MandatePage,
+				meta: { area: "crm", title: "Mandate", crumb: "Mandates" },
+			},
+			{
 				path: "/crm/deals",
 				name: "deals",
 				component: DealsPage,
 				meta: { area: "crm", title: "Deals" },
+			},
+			{
+				path: "/crm/deals/:name",
+				name: "deal",
+				component: DealPage,
+				meta: { area: "crm", title: "Deal", crumb: "Deals" },
 			},
 			{
 				// SOS-P7-04: commission rates and payouts.

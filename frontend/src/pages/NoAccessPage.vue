@@ -1,10 +1,11 @@
 <template>
 	<PageTemplate shape="form">
 		<template #header>
-			<PageHeader title="You do not have access to this page" icon="lucide-lock" />
+			<PageHeader title="No access" icon="lucide-lock" />
 		</template>
 		<SectionCard data-testid="sellos-no-access" title="Access">
-			<p class="ui-text-secondary">
+			<p class="ui-text-strong">You do not have access to this page.</p>
+			<p class="ui-text-secondary mt-1">
 				If you think you should, ask your company admin to check your role.
 			</p>
 		</SectionCard>

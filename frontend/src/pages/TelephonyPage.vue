@@ -1,6 +1,6 @@
 <template>
 	<!-- A settings page with no list: the header card, then headed cards for each form. -->
-	<PageTemplate data-testid="sellos-telephony-page">
+	<PageTemplate shape="form" data-testid="sellos-telephony-page">
 		<template #header>
 			<PageHeader
 				title="Telephony"
@@ -13,14 +13,23 @@
 			<KpiStrip :items="kpis" />
 		</template>
 
+		<template v-if="!loading && !loadError" #notice>
+			<Notice title="How the keys are kept">
+				<p data-testid="sellos-telephony-status">{{ statusText }}</p>
+			</Notice>
+		</template>
+
 		<div v-if="loadError" data-testid="sellos-telephony-load-error">
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 		<LoadingSkeleton v-else-if="loading" />
 
-		<template v-else>
-			<form class="ui-card" data-testid="sellos-telephony-form" @submit.prevent="save">
-				<FormSection title="Plivo account">
+		<form v-else data-testid="sellos-telephony-form" @submit.prevent="save">
+			<SectionCard
+				title="Plivo account"
+				help="The keys are stored encrypted and never shown again."
+			>
+				<FieldGrid>
 					<FormField
 						v-model="form.authId"
 						type="password"
@@ -46,20 +55,17 @@
 						class="md:col-span-2"
 						data-testid="sellos-telephony-number"
 					/>
-				</FormSection>
-				<div class="mt-ui-md space-y-ui-sm">
-					<p class="text-sm text-ink-muted" data-testid="sellos-telephony-status">
-						{{ statusText }}
-					</p>
+				</FieldGrid>
+				<div class="mt-4 space-y-2">
 					<p
 						v-if="error"
 						data-testid="sellos-telephony-error"
 						role="alert"
-						class="text-sm text-danger"
+						class="ui-text-error"
 					>
 						{{ error }}
 					</p>
-					<p v-if="saved" data-testid="sellos-telephony-saved" class="text-sm text-ink">
+					<p v-if="saved" data-testid="sellos-telephony-saved" class="ui-text-small">
 						Saved.
 					</p>
 					<p
@@ -68,30 +74,26 @@
 							result.ok ? 'sellos-telephony-test-ok' : 'sellos-telephony-test-error'
 						"
 						:role="result.ok ? 'status' : 'alert'"
-						:class="result.ok ? 'text-sm text-ink' : 'text-sm text-danger'"
+						:class="result.ok ? 'ui-text-small' : 'ui-text-error'"
 					>
 						{{ result.message }}
 					</p>
-					<div class="flex flex-wrap items-center gap-ui-sm">
-						<AppButton
-							type="button"
-							data-testid="sellos-telephony-test"
-							:disabled="testing"
-							@click="test"
-						>
-							Test connection
-						</AppButton>
-						<AppButton
-							type="submit"
-							variant="primary"
-							data-testid="sellos-telephony-save"
-						>
-							Save
-						</AppButton>
-					</div>
 				</div>
-			</form>
-		</template>
+				<template #footer>
+					<AppButton
+						type="button"
+						data-testid="sellos-telephony-test"
+						:disabled="testing"
+						@click="test"
+					>
+						Test connection
+					</AppButton>
+					<AppButton type="submit" variant="primary" data-testid="sellos-telephony-save">
+						Save
+					</AppButton>
+				</template>
+			</SectionCard>
+		</form>
 		<CallingRules v-if="!loading && !loadError" />
 	</PageTemplate>
 </template>
@@ -105,7 +107,9 @@ import CallingRules from "../components/CallingRules.vue";
 import FormField from "../components/FormField.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
-import FormSection from "../components/FormSection.vue";
+import FieldGrid from "../components/FieldGrid.vue";
+import Notice from "../components/Notice.vue";
+import SectionCard from "../components/SectionCard.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";

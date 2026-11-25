@@ -1,5 +1,5 @@
 <template>
-	<PageTemplate data-testid="sellos-listings-page">
+	<PageTemplate shape="list" data-testid="sellos-listings-page">
 		<template #header>
 			<PageHeader
 				title="Listings"
@@ -29,7 +29,7 @@
 			v-if="error"
 			role="alert"
 			data-testid="sellos-listing-error"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -37,7 +37,7 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-listing-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -67,7 +67,7 @@
 			row-testid="sellos-listing-row"
 		>
 			<template #cell-title="{ row }">
-				<span class="font-medium">{{ row.title }}</span>
+				<span class="ui-text-strong">{{ row.title }}</span>
 			</template>
 			<template #cell-listing_type="{ row }">
 				<StatusBadge
@@ -94,7 +94,7 @@
 				</p>
 				<p
 					v-if="!row.published && row.missing.length"
-					class="text-sm text-ink-muted"
+					class="ui-text-muted"
 					data-testid="sellos-listing-missing"
 				>
 					Needs {{ row.missing.join(", ") }} before it can be published.
@@ -162,8 +162,8 @@
 				</div>
 				<SuitedLeads v-if="row.published" kind="listing" :name="row.name" />
 				<details class="mt-ui-sm" data-testid="sellos-listing-history">
-					<summary class="cursor-pointer text-sm text-ink-muted">Change history</summary>
-					<ul class="mt-1 space-y-1 text-sm text-ink-muted">
+					<summary class="cursor-pointer ui-text-muted">Change history</summary>
+					<ul class="mt-1 space-y-1 ui-text-muted">
 						<li
 							v-for="(c, i) in row.changes"
 							:key="i"

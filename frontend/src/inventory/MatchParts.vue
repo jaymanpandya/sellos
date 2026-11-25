@@ -1,5 +1,5 @@
 <template>
-	<ul class="mt-ui-sm space-y-1 text-sm text-ink-muted" data-testid="sellos-match-parts">
+	<ul class="mt-ui-sm space-y-1 ui-text-muted" data-testid="sellos-match-parts">
 		<li
 			v-for="p in parts"
 			:key="p.key"
@@ -7,7 +7,7 @@
 			:data-part="p.key"
 			:data-applies="p.applies"
 		>
-			<span class="text-ink">{{ p.label }}</span>
+			<span class="ui-text-body">{{ p.label }}</span>
 			<template v-if="p.applies"
 				>: {{ p.score }} out of 100, {{ p.points }} points.</template
 			>

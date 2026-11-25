@@ -38,8 +38,10 @@ context("SOS-P7-05: towers, wings and floors for projects", () => {
 			.find('[data-testid="sellos-inventory-project-link"]')
 			.click();
 		cy.getByTestId("project-page").should("be.visible");
+		cy.getByTestId("tab-structure").click();
 
 		cy.intercept("POST", "**/sellos.inventory.structure.add_tower*").as("addTower");
+		cy.getByTestId("tower-open").click();
 		cy.getByTestId("tower-name-input").type("Tower A");
 		cy.getByTestId("tower-floors-input").type("11 to 12");
 		cy.getByTestId("tower-save").click();
@@ -48,6 +50,7 @@ context("SOS-P7-05: towers, wings and floors for projects", () => {
 		floorRow(12).should("be.visible");
 
 		cy.intercept("POST", "**/sellos.inventory.structure.generate_floor_units*").as("generate");
+		cy.getByTestId("generate-open").click();
 		cy.getByTestId("generate-tower").select("Tower A");
 		cy.getByTestId("generate-floor").select("12");
 		cy.getByTestId("generate-pattern").type("1201 to 1208");
@@ -59,12 +62,14 @@ context("SOS-P7-05: towers, wings and floors for projects", () => {
 		floorRow(12).find('[data-testid="sellos-floor-unit"]').should("have.length", 8);
 
 		// Generating again changes nothing.
+		cy.getByTestId("generate-open").click();
 		cy.getByTestId("generate-save").click();
 		cy.wait("@generate").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("structure-notice").should("contain", "0 units made, 8 already there");
 		floorRow(12).find('[data-testid="sellos-floor-unit"]').should("have.length", 8);
 
 		// A Held unit stops the floor from being removed, and the message counts it.
+		cy.getByTestId("tab-units").click();
 		cy.get('[data-testid="sellos-unit-row"][data-number="1203"]')
 			.find('[data-testid="sellos-unit-set-held"]')
 			.click();
@@ -73,6 +78,7 @@ context("SOS-P7-05: towers, wings and floors for projects", () => {
 			"data-status",
 			"Held"
 		);
+		cy.getByTestId("tab-structure").click();
 		cy.intercept("POST", "**/sellos.inventory.structure.remove_floor*").as("removeFloor");
 		floorRow(12).find('[data-testid="sellos-floor-remove"]').click();
 		cy.wait("@removeFloor");
@@ -100,6 +106,7 @@ context("SOS-P7-05: towers, wings and floors for projects", () => {
 			.find('[data-testid="sellos-inventory-project-link"]')
 			.click();
 		cy.wait("@project");
+		cy.getByTestId("tab-structure").click();
 		cy.intercept("POST", "**/sellos.inventory.structure.save_amenity*").as("saveAmenity");
 		cy.getByTestId("amenity-input").type(amenity);
 		cy.getByTestId("amenity-add").click();
@@ -127,6 +134,7 @@ context("SOS-P7-05: towers, wings and floors for projects", () => {
 		cy.contains('[data-testid="sellos-inventory-project-row"]', projectName)
 			.find('[data-testid="sellos-inventory-project-link"]')
 			.click();
+		cy.getByTestId("tab-structure").click();
 		towerRow("Tower A").should("be.visible");
 		cy.getByTestId("tower-form").should("not.exist");
 		cy.getByTestId("generate-form").should("not.exist");

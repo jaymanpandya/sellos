@@ -31,7 +31,7 @@
 			v-if="error && !registering"
 			role="alert"
 			data-testid="sellos-partner-register-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -39,7 +39,7 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-partner-register-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -66,12 +66,12 @@
 				/>
 			</template>
 			<template #cell-protected_until="{ row: r }">
-				<p v-if="r.protected_until" class="text-sm text-ink-muted">
+				<p v-if="r.protected_until" class="ui-text-muted">
 					Protected in your firm's name until {{ formatDate(r.protected_until) }}.
 				</p>
 				<p
 					v-if="r.rejection_reason"
-					class="text-sm text-ink-muted"
+					class="ui-text-muted"
 					data-testid="sellos-partner-register-reason"
 				>
 					Rejected: {{ r.rejection_reason }}
@@ -124,7 +124,7 @@
 			</FormSection>
 			<FormSection title="Consent">
 				<div class="space-y-ui-sm md:col-span-2">
-					<p class="text-sm text-ink" data-testid="sellos-partner-register-wording">
+					<p class="ui-text-small" data-testid="sellos-partner-register-wording">
 						{{ wording }}
 					</p>
 					<FormField
@@ -133,20 +133,20 @@
 						label="The buyer agreed to this"
 						data-testid="sellos-partner-register-agreed"
 					/>
-					<p class="text-sm text-ink-muted">
+					<p class="ui-text-muted">
 						You can register the buyer without it. The company then sees that consent
 						is unknown.
 					</p>
 				</div>
 			</FormSection>
-			<p class="text-sm text-ink-muted" data-testid="sellos-partner-register-left">
+			<p class="ui-text-muted" data-testid="sellos-partner-register-left">
 				You can register {{ remaining }} more buyers this hour.
 			</p>
 			<p
 				v-if="error"
 				role="alert"
 				data-testid="sellos-partner-register-error"
-				class="text-sm text-accent"
+				class="ui-text-error"
 			>
 				{{ error }}
 			</p>

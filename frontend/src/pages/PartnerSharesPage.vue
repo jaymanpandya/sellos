@@ -24,11 +24,35 @@
 			<KpiStrip :items="kpis" data-testid="sellos-shares-stats" />
 		</template>
 
+		<template #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search shares"
+				search-placeholder="Search shares"
+				search-testid="sellos-shares-search"
+				clear-testid="sellos-shares-filter-clear"
+				:active="Boolean(search || statusFilter)"
+				:chips="chips"
+				data-testid="sellos-shares-filters"
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+				<FormField
+					v-model="statusFilter"
+					compact
+					type="select"
+					label="Status"
+					:options="statusOptions"
+					data-testid="sellos-shares-filter-status"
+				/>
+			</FilterBar>
+		</template>
+
 		<p
 			v-if="error && !sharing"
 			role="alert"
 			data-testid="sellos-shares-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -36,7 +60,7 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-shares-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -48,7 +72,7 @@
 			v-else
 			title="Shares"
 			:columns="columns"
-			:rows="shares"
+			:rows="shown"
 			:loading="!loaded"
 			:row-attrs="(s) => ({ 'data-status': s.status, 'data-project': s.project })"
 			empty-title="Nothing is shared yet"
@@ -59,7 +83,7 @@
 			empty-testid="sellos-shares-empty"
 		>
 			<template #cell-project_name="{ row: s }">
-				<span class="font-medium text-ink" data-testid="sellos-shares-row-project">
+				<span class="ui-text-strong" data-testid="sellos-shares-row-project">
 					{{ s.project_name }}
 				</span>
 			</template>
@@ -74,15 +98,15 @@
 				/>
 			</template>
 			<template #cell-what="{ row: s }">
-				<p class="text-sm text-ink-muted">
+				<p class="ui-text-muted">
 					{{ s.all_units ? "All units" : `${s.units.length} chosen units` }};
 					{{ s.share_price_list ? "price list" : "no price list" }};
 					{{ s.brochures.length }} brochures.
 					<span v-if="s.withdrawn_reason">Withdrawn: {{ s.withdrawn_reason }}</span>
 				</p>
 				<details class="mt-1">
-					<summary class="cursor-pointer text-sm text-ink-muted">Log</summary>
-					<ul class="mt-1 space-y-1 text-sm text-ink-muted">
+					<summary class="cursor-pointer ui-text-muted">Log</summary>
+					<ul class="mt-1 space-y-1 ui-text-muted">
 						<li v-for="(l, i) in s.log" :key="i" data-testid="sellos-shares-log-row">
 							{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}, {{ l.action }}
 							<span v-if="l.detail">({{ l.detail }})</span>
@@ -150,7 +174,7 @@
 								:label="f.firm_name"
 								:data-testid="`sellos-shares-firm-${f.name}`"
 							/>
-							<p v-if="!options.firms.length" class="text-sm text-ink-muted">
+							<p v-if="!options.firms.length" class="ui-text-muted">
 								No firm is Approved yet.
 							</p>
 						</template>
@@ -197,12 +221,7 @@
 					</div>
 				</FormSection>
 			</template>
-			<p
-				v-if="error"
-				role="alert"
-				data-testid="sellos-shares-error"
-				class="text-sm text-accent"
-			>
+			<p v-if="error" role="alert" data-testid="sellos-shares-error" class="ui-text-error">
 				{{ error }}
 			</p>
 		</FormDrawer>
@@ -218,6 +237,7 @@ import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -246,6 +266,36 @@ const form = reactive({
 	priceList: false,
 	brochures: {},
 });
+
+const search = ref("");
+const statusFilter = ref("");
+const statusOptions = computed(() => [
+	{ label: "All", value: "" },
+	...[...new Set(shares.value.map((r) => r.status).filter(Boolean))].map((v) => ({
+		label: v,
+		value: v,
+	})),
+]);
+const shown = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return shares.value.filter(
+		(r) =>
+			(!q || `${r.project_name} ${r.firm_name || ""}`.toLowerCase().includes(q)) &&
+			(!statusFilter.value || r.status === statusFilter.value)
+	);
+});
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Search: ${search.value}` }] : []),
+	...(statusFilter.value ? [{ key: "status", label: statusFilter.value }] : []),
+]);
+function clearFilters() {
+	search.value = "";
+	statusFilter.value = "";
+}
+function removeChip(key) {
+	if (key === "search") search.value = "";
+	else statusFilter.value = "";
+}
 
 const columns = [
 	{ key: "project_name", label: "Project", primary: true, sortable: true },

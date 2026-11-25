@@ -31,11 +31,35 @@
 			<KpiStrip :items="kpis" data-testid="sellos-commission-stats" />
 		</template>
 
+		<template #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search payouts"
+				search-placeholder="Search payouts"
+				search-testid="sellos-commission-search"
+				clear-testid="sellos-commission-filter-clear"
+				:active="Boolean(search || statusFilter)"
+				:chips="chips"
+				data-testid="sellos-commission-filters"
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+				<FormField
+					v-model="statusFilter"
+					compact
+					type="select"
+					label="Status"
+					:options="statusOptions"
+					data-testid="sellos-commission-filter-status"
+				/>
+			</FilterBar>
+		</template>
+
 		<p
 			v-if="error && !drawer"
 			role="alert"
 			data-testid="sellos-commission-error"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -43,14 +67,14 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-commission-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
 		<p
 			v-if="exported"
 			role="status"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 			data-testid="sellos-commission-exported"
 		>
 			{{ exported }}
@@ -63,21 +87,20 @@
 			@retry="load"
 		/>
 
-		<section v-if="waiting.length" class="ui-card mb-ui-md">
-			<h2 class="ui-card-heading mb-ui-sm">Deals waiting for a rate</h2>
-			<ul class="space-y-1 text-sm" data-testid="sellos-commission-waiting">
-				<li v-for="w in waiting" :key="w.deal + w.partner_firm" class="text-ink">
+		<SectionCard v-if="waiting.length" title="Deals waiting for a rate" class="mb-ui-md">
+			<ul class="space-y-1 ui-text-small" data-testid="sellos-commission-waiting">
+				<li v-for="w in waiting" :key="w.deal + w.partner_firm" class="ui-text-body">
 					{{ w.deal }}, {{ w.firm_name }}: {{ w.reason }}
 				</li>
 			</ul>
-		</section>
+		</SectionCard>
 
 		<DataTable
 			v-if="!loadError"
 			title="Payouts"
 			caption="Payouts"
 			:columns="payoutColumns"
-			:rows="payouts"
+			:rows="shown"
 			:loading="!loaded"
 			loading-label="Loading payouts."
 			:row-name="(row) => row.firm_name"
@@ -92,7 +115,7 @@
 		>
 			<template #cell-firm_name="{ row }">
 				<span class="block">{{ row.firm_name }}</span>
-				<span class="block text-sm font-normal text-ink-muted">{{ row.target }}</span>
+				<span class="block ui-text-muted">{{ row.target }}</span>
 			</template>
 			<template #cell-status="{ row }">
 				<StatusBadge
@@ -102,14 +125,14 @@
 				/>
 			</template>
 			<template #cell-booking_date="{ row }">
-				<span class="text-ink-body">{{ formatDate(row.booking_date) }}</span>
+				<span class="ui-text-secondary">{{ formatDate(row.booking_date) }}</span>
 			</template>
 			<template #cell-agreement_value="{ row }">
 				<span class="tabular-nums">{{ formatMoney(row.agreement_value, 2) }}</span>
 			</template>
 			<template #cell-commission_total="{ row }">
 				<span class="block tabular-nums">{{ formatMoney(row.commission_total, 2) }}</span>
-				<span class="block text-sm text-ink-muted">
+				<span class="block ui-text-muted">
 					{{ row.rate_basis }}, firm's share {{ row.partner_percent }}%
 				</span>
 			</template>
@@ -121,14 +144,14 @@
 			<template #cell-notes="{ row }">
 				<p
 					v-if="row.status === 'Paid'"
-					class="text-sm text-ink"
+					class="ui-text-small"
 					data-testid="sellos-commission-payout-paid"
 				>
 					Paid on {{ formatDate(row.paid_on) }}, reference {{ row.payment_reference }}.
 				</p>
 				<p
 					v-if="row.status === 'On hold'"
-					class="text-sm text-ink"
+					class="ui-text-small"
 					data-testid="sellos-commission-payout-hold"
 				>
 					On hold: {{ row.hold_reason }}
@@ -194,7 +217,7 @@
 				empty-testid="sellos-commission-rates-empty"
 			>
 				<template #cell-firm_name="{ row }">
-					<span class="text-ink-body">{{ row.firm_name || "All partners" }}</span>
+					<span class="ui-text-secondary">{{ row.firm_name || "All partners" }}</span>
 				</template>
 				<template #cell-value="{ row }">
 					<span class="tabular-nums">{{
@@ -204,7 +227,7 @@
 					}}</span>
 				</template>
 				<template #cell-start_date="{ row }">
-					<span class="text-ink-body">{{ formatDate(row.start_date) }}</span>
+					<span class="ui-text-secondary">{{ formatDate(row.start_date) }}</span>
 				</template>
 				<template #cell-archive="{ row }">
 					<AppButton
@@ -273,7 +296,7 @@
 				v-if="error"
 				role="alert"
 				data-testid="sellos-commission-error"
-				class="text-sm text-danger"
+				class="ui-text-error"
 			>
 				{{ error }}
 			</p>
@@ -308,7 +331,7 @@
 				v-if="error"
 				role="alert"
 				data-testid="sellos-commission-error"
-				class="text-sm text-danger"
+				class="ui-text-error"
 			>
 				{{ error }}
 			</p>
@@ -338,7 +361,7 @@
 				v-if="error"
 				role="alert"
 				data-testid="sellos-commission-error"
-				class="text-sm text-danger"
+				class="ui-text-error"
 			>
 				{{ error }}
 			</p>
@@ -382,7 +405,7 @@
 				v-if="error"
 				role="alert"
 				data-testid="sellos-commission-error"
-				class="text-sm text-danger"
+				class="ui-text-error"
 			>
 				{{ error }}
 			</p>
@@ -398,10 +421,12 @@ import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { commissionApi } from "../crm/commissionApi";
 import { serverMessage } from "../crm/crmApi";
@@ -433,6 +458,37 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+
+const search = ref("");
+const statusFilter = ref("");
+const statusOptions = [
+	{ label: "All statuses", value: "" },
+	{ label: "Due", value: "Due" },
+	{ label: "Approved", value: "Approved" },
+	{ label: "Paid", value: "Paid" },
+	{ label: "On hold", value: "On hold" },
+];
+const shown = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return payouts.value.filter(
+		(r) =>
+			(!q || `${r.firm_name} ${r.target}`.toLowerCase().includes(q)) &&
+			(!statusFilter.value || r.status === statusFilter.value)
+	);
+});
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Search: ${search.value}` }] : []),
+	...(statusFilter.value ? [{ key: "status", label: `${statusFilter.value}` }] : []),
+]);
+function clearFilters() {
+	search.value = "";
+	statusFilter.value = "";
+}
+function removeChip(key) {
+	if (key === "search") search.value = "";
+	else statusFilter.value = "";
+}
+
 // Which drawer is open: "rate", "pay", "hold", "export", or "" for none.
 const drawer = ref("");
 const activePayout = computed(() => payouts.value.find((p) => p.name === active.value) || null);

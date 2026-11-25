@@ -7,12 +7,10 @@
 			:data-panel="panel.key"
 			:data-available="panel.available ? 'yes' : 'no'"
 		>
-			<ListCard v-if="!panel.available" :title="panel.title">
+			<SectionCard v-if="!panel.available" :title="panel.title">
 				<EmptyState title="Not live yet" :text="panel.message" icon="lucide-hourglass" />
-			</ListCard>
-			<template v-else>
-				<h2 class="ui-card-heading mb-ui-sm">{{ panel.title }}</h2>
-				<p class="mb-ui-md text-sm text-ink-muted">{{ panel.description }}</p>
+			</SectionCard>
+			<SectionCard v-else :title="panel.title" :help="panel.description">
 				<KpiStrip
 					v-if="panel.stats?.length"
 					:items="
@@ -24,7 +22,7 @@
 					:rows="panel.rows || []"
 					:first-label="firstLabel"
 				/>
-			</template>
+			</SectionCard>
 		</div>
 	</div>
 </template>
@@ -36,7 +34,7 @@
 import { rupees, talkTime } from "../reports/callsApi";
 import EmptyState from "./EmptyState.vue";
 import KpiStrip from "./KpiStrip.vue";
-import ListCard from "./ListCard.vue";
+import SectionCard from "./SectionCard.vue";
 import ReportTable from "./ReportTable.vue";
 
 defineProps({

@@ -1,31 +1,43 @@
 <template>
-	<PageTemplate data-testid="sellos-partner-firm-page">
+	<PageTemplate shape="record" data-testid="sellos-partner-firm-page">
 		<template #header>
-			<PageHeader
-				title="Your firm"
-				text="Complete your firm's details. The company approves your firm before you can register leads."
-				icon="lucide-handshake"
+			<RecordHeader
+				:title="firm ? firm.firm_name : 'Your firm'"
+				title-testid="sellos-partner-firm-name"
 			>
-				<AppButton
-					v-if="firm && firm.can_edit"
-					type="button"
-					variant="primary"
-					data-testid="sellos-partner-firm-edit"
-					@click="editing = true"
-				>
-					Edit firm details
-				</AppButton>
-			</PageHeader>
+				<template v-if="firm" #status>
+					<StatusBadge
+						:tone="STATUS_TONE[firm.status] || 'neutral'"
+						:label="firm.status"
+						data-testid="sellos-partner-firm-status"
+					/>
+				</template>
+				<template v-if="firm" #line>
+					<p class="ui-text-muted mt-0.5" data-testid="sellos-partner-firm-code">
+						Partner code {{ firm.partner_code }}
+					</p>
+				</template>
+				<template v-if="firm && firm.can_edit" #actions>
+					<AppButton
+						type="button"
+						variant="primary"
+						data-testid="sellos-partner-firm-edit"
+						@click="editing = true"
+					>
+						Edit firm details
+					</AppButton>
+				</template>
+			</RecordHeader>
 		</template>
 
-		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-partner-firm-load-error">
+		<div v-if="loadError" data-testid="sellos-partner-firm-load-error">
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 		<p
 			v-if="error && !editing"
 			role="alert"
 			data-testid="sellos-partner-firm-error"
-			class="mb-ui-md text-sm text-accent"
+			class="ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -37,36 +49,67 @@
 			icon="lucide-handshake"
 		/>
 
-		<div v-if="firm" class="space-y-ui-md">
-			<div
-				class="ui-card"
+		<template v-if="firm">
+			<SectionCard
+				title="Where your firm stands"
 				data-testid="sellos-partner-firm-state"
 				:data-status="firm.status"
 			>
-				<div class="flex flex-wrap items-center gap-3">
-					<h2
-						class="text-base font-medium text-ink"
-						data-testid="sellos-partner-firm-name"
-					>
-						{{ firm.firm_name }}
-					</h2>
-					<span class="text-sm text-ink-muted" data-testid="sellos-partner-firm-code">
-						Partner code {{ firm.partner_code }}
-					</span>
-					<StatusBadge
-						:tone="STATUS_TONE[firm.status] || 'neutral'"
-						:label="firm.status"
-						data-testid="sellos-partner-firm-status"
-					/>
-				</div>
-				<p class="mt-ui-sm text-base text-ink" data-testid="sellos-partner-firm-message">
+				<p class="ui-text-body" data-testid="sellos-partner-firm-message">
 					{{ message }}
 				</p>
-				<p v-if="firm.missing.length" class="mt-ui-sm text-sm text-ink-muted">
+				<p v-if="firm.missing.length" class="mt-ui-sm ui-text-muted">
 					Still needed: {{ firm.missing.join(", ") }}.
 				</p>
-			</div>
-		</div>
+			</SectionCard>
+			<SectionCard
+				title="Firm details"
+				help="The company sees these before it approves your firm."
+			>
+				<dl>
+					<FieldGrid>
+						<ReadField label="Firm name" :value="firm.firm_name" />
+						<ReadField label="Contact person" :value="firm.contact_person" />
+						<ReadField label="Email" :value="firm.email" />
+						<ReadField label="Phone" :value="firm.phone_masked" />
+						<ReadField
+							label="RERA agent registration number"
+							:value="firm.rera_number"
+						/>
+						<ReadField
+							label="PAN"
+							:value="firm.has_pan ? 'Given, only the company sees it' : ''"
+						/>
+						<ReadField
+							label="Signed agreement"
+							:value="firm.has_agreement ? 'Uploaded' : ''"
+						/>
+					</FieldGrid>
+				</dl>
+			</SectionCard>
+		</template>
+
+		<template #side>
+			<SectionCard title="Summary">
+				<dl v-if="firm">
+					<FieldGrid :columns="1">
+						<ReadField label="Status" :value="firm.status" />
+						<ReadField label="Partner code" :value="firm.partner_code" />
+						<ReadField
+							label="Can register leads"
+							:value="firm.can_work ? 'Yes' : 'Not yet'"
+						/>
+					</FieldGrid>
+				</dl>
+				<p v-else class="ui-text-muted">Your firm is loading.</p>
+			</SectionCard>
+			<SectionCard title="What happens next">
+				<p class="ui-text-muted">
+					A firm that is not approved can register no lead and see no inventory. Complete
+					the details, and the company approves your firm.
+				</p>
+			</SectionCard>
+		</template>
 
 		<!-- The firm's details are a drawer opened from the header. -->
 		<FormDrawer
@@ -134,7 +177,7 @@
 				v-if="error"
 				role="alert"
 				data-testid="sellos-partner-firm-error"
-				class="text-sm text-accent"
+				class="ui-text-error"
 			>
 				{{ error }}
 			</p>
@@ -147,13 +190,16 @@ import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import EmptyState from "../components/EmptyState.vue";
+import FieldGrid from "../components/FieldGrid.vue";
 import FileField from "../components/FileField.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import LoadError from "../components/LoadError.vue";
-import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import ReadField from "../components/ReadField.vue";
+import RecordHeader from "../components/RecordHeader.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { partnersApi, readFileBase64 } from "../company/partnersApi";
 import { serverMessage } from "../crm/crmApi";

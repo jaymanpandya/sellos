@@ -1,32 +1,24 @@
 <template>
-	<div v-if="detail" data-testid="sellos-lead-page">
-		<router-link :to="listPath" data-testid="sellos-lead-back" class="ui-link text-sm"
-			>Back to leads</router-link
-		>
-
-		<!-- The summary header: name, stage, phone, assigned agent, consent, and the actions. -->
-		<header class="ui-card mb-ui-md mt-2" data-testid="sellos-lead-summary">
-			<div class="flex flex-wrap items-start justify-between gap-ui-md">
-				<div class="min-w-0">
-					<div class="flex flex-wrap items-center gap-ui-sm">
-						<h1 class="ui-page-title" data-testid="sellos-lead-name">
-							{{ detail.client.client_name }}
-						</h1>
-						<StatusBadge
-							v-if="detail.pipeline"
-							tone="info"
-							:label="detail.pipeline.stage"
-							:data-stage="detail.pipeline.stage"
-							data-testid="sellos-lead-summary-stage"
-						/>
-						<StatusBadge
-							v-if="detail.consent"
-							:tone="consentTone"
-							:label="detail.consent.status"
-							data-testid="sellos-lead-summary-consent"
-						/>
-					</div>
-					<p class="ui-page-lead">
+	<PageTemplate v-if="detail" shape="record" data-testid="sellos-lead-page">
+		<template #header>
+			<RecordHeader
+				:title="detail.client.client_name"
+				:back-to="listPath"
+				back-label="Back to leads"
+				back-testid="sellos-lead-back"
+				title-testid="sellos-lead-name"
+			>
+				<template #status>
+					<StatusBadge
+						v-if="detail.pipeline"
+						tone="info"
+						:label="detail.pipeline.stage"
+						:data-stage="detail.pipeline.stage"
+						data-testid="sellos-lead-summary-stage"
+					/>
+				</template>
+				<template #line>
+					<p class="ui-text-muted mt-0.5" data-testid="sellos-lead-summary">
 						{{ detail.client.client_type }} ·
 						<span data-testid="sellos-lead-phone">{{
 							detail.client.phone || "No phone"
@@ -39,9 +31,11 @@
 							detail.lead.assigned_to || "nobody"
 						}}</span>
 					</p>
-				</div>
-				<div v-if="canLog" class="flex flex-wrap items-center gap-ui-sm">
-					<ClickToCall :lead="route.params.name" check-pending @done="load" />
+				</template>
+				<template v-if="canLog" #actions>
+					<AppButton type="button" data-testid="sellos-lead-archive" @click="archive">
+						Archive
+					</AppButton>
 					<AppButton
 						type="button"
 						data-testid="sellos-lead-whatsapp"
@@ -54,898 +48,856 @@
 						/></template>
 						WhatsApp
 					</AppButton>
-					<AppButton type="button" data-testid="sellos-lead-archive" @click="archive">
-						Archive
-					</AppButton>
-				</div>
-			</div>
-			<section
-				data-testid="sellos-lead-follow-up"
-				:data-state="followUp.follow_up_state || 'none'"
-				class="mt-ui-md flex flex-wrap items-center gap-ui-md border-t border-line-soft pt-ui-md"
-			>
-				<h2 class="ui-card-heading">Next follow up</h2>
-				<span
-					v-if="followUp.next_follow_up"
-					data-testid="sellos-lead-next-follow-up"
-					class="text-ink"
+					<ClickToCall :lead="route.params.name" check-pending @done="load" />
+				</template>
+			</RecordHeader>
+		</template>
+
+		<template #tabs>
+			<PageTabs v-model="tab" :tabs="TABS" label="Lead sections" />
+		</template>
+
+		<div
+			:id="`panel-${tab}`"
+			class="min-w-0 space-y-4"
+			role="tabpanel"
+			:aria-labelledby="`tab-${tab}`"
+		>
+			<template v-if="tab === 'overview'">
+				<SectionCard
+					v-if="detail.pipeline"
+					title="Stage"
+					data-testid="sellos-lead-stage"
+					:data-stage="detail.pipeline.stage"
+					class="space-y-ui-md"
 				>
-					{{ followUp.next_follow_up_title }},
-					{{ whenLabel(followUp.next_follow_up) }}
-				</span>
-				<span v-else data-testid="sellos-lead-next-follow-up" class="text-ink-muted">
-					No open follow up
-				</span>
-				<StatusBadge
-					v-if="followUp.follow_up_state === 'overdue'"
-					tone="danger"
-					label="Overdue"
-					data-testid="sellos-lead-follow-up-overdue"
-				/>
-				<StatusBadge
-					v-if="followUp.follow_up_untouched"
-					tone="warning"
-					:label="`Untouched, no follow up for ${followUp.untouched_days} days`"
-					data-testid="sellos-lead-follow-up-untouched"
-				/>
-			</section>
-		</header>
-
-		<PageTabs v-model="tab" :tabs="TABS" label="Lead sections" />
-
-		<div class="grid grid-cols-1 gap-ui-md lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-			<div
-				:id="`panel-${tab}`"
-				class="min-w-0 space-y-ui-md"
-				role="tabpanel"
-				:aria-labelledby="`tab-${tab}`"
-			>
-				<template v-if="tab === 'overview'">
-					<ListCard
-						v-if="detail.pipeline"
-						title="Stage"
-						data-testid="sellos-lead-stage"
-						:data-stage="detail.pipeline.stage"
-						class="space-y-ui-md"
+					<div class="flex flex-wrap items-end justify-between gap-ui-sm">
+						<FormField
+							v-if="canLog"
+							:key="stageSelectKey"
+							type="select"
+							label="Stage"
+							class="w-full max-w-[14rem]"
+							:model-value="detail.pipeline.stage"
+							:options="stageOptions"
+							data-testid="sellos-lead-stage-select"
+							@update:model-value="chooseStage"
+						/>
+						<StatusBadge
+							v-else
+							tone="info"
+							:label="detail.pipeline.stage"
+							data-testid="sellos-lead-stage-name"
+						/>
+					</div>
+					<form
+						v-if="lostStage"
+						class="flex flex-wrap items-end gap-ui-sm"
+						data-testid="sellos-lead-lost-form"
+						@submit.prevent="confirmLost"
 					>
-						<div class="flex flex-wrap items-end justify-between gap-ui-sm">
-							<FormField
-								v-if="canLog"
-								:key="stageSelectKey"
-								type="select"
-								label="Stage"
-								class="w-full max-w-[14rem]"
-								:model-value="detail.pipeline.stage"
-								:options="stageOptions"
-								data-testid="sellos-lead-stage-select"
-								@update:model-value="chooseStage"
+						<FormField
+							v-model="lostReason"
+							type="select"
+							:label="`Why is this lead going to ${lostStage}?`"
+							required
+							:options="lostReasonOptions"
+							data-testid="sellos-lead-lost-reason"
+						/>
+						<AppButton
+							variant="primary"
+							type="submit"
+							data-testid="sellos-lead-lost-save"
+						>
+							Move to {{ lostStage }}
+						</AppButton>
+						<AppButton
+							type="button"
+							data-testid="sellos-lead-lost-cancel"
+							@click="cancelLost"
+						>
+							Cancel
+						</AppButton>
+					</form>
+					<p
+						v-if="detail.pipeline.lost_reason"
+						data-testid="sellos-lead-lost-reason-shown"
+						class="ui-text-muted"
+					>
+						Lost reason: {{ detail.pipeline.lost_reason }}
+					</p>
+					<Notice
+						v-if="stageWarning"
+						:tone="stageWarning.level === 'red' ? 'danger' : 'warning'"
+						testid="sellos-lead-stage-warning"
+						:data-level="stageWarning.level"
+					>
+						{{ stageWarning.message }}
+					</Notice>
+					<p
+						v-if="stageError"
+						role="alert"
+						data-testid="sellos-lead-stage-error"
+						class="ui-text-error"
+					>
+						{{ stageError }}
+					</p>
+					<ul v-if="detail.pipeline.log.length" data-testid="sellos-lead-stage-log">
+						<li
+							v-for="(row, i) in detail.pipeline.log"
+							:key="i"
+							data-testid="sellos-lead-stage-change"
+							class="ui-text-muted"
+						>
+							{{ row.from_stage || "No stage" }} to {{ row.to_stage }},
+							{{ formatWhen(row.changed_on) }}, {{ row.changed_by }}
+							<span
+								v-if="row.lost_reason"
+								data-testid="sellos-lead-stage-change-reason"
+							>
+								. Lost reason: {{ row.lost_reason }}</span
+							>
+							<span
+								v-if="row.warning"
+								data-testid="sellos-lead-stage-change-warning"
+							>
+								. {{ row.warning }}</span
+							>
+						</li>
+					</ul>
+				</SectionCard>
+
+				<SectionCard
+					v-if="detail.can_merge"
+					title="Merge a duplicate client"
+					data-testid="sellos-merge"
+					class="space-y-ui-sm"
+				>
+					<p class="ui-text-muted">
+						Move another client's leads, activities, tasks and site visits to
+						{{ detail.client.client_name }}. The other client is archived, not deleted.
+					</p>
+					<FormField
+						v-model="mergeFrom"
+						type="select"
+						label="Duplicate client"
+						:options="mergeOptions"
+						data-testid="sellos-merge-select"
+					/>
+					<p
+						v-if="mergeError"
+						role="alert"
+						data-testid="sellos-merge-error"
+						class="ui-text-error"
+					>
+						{{ mergeError }}
+					</p>
+					<p v-if="mergeDone" data-testid="sellos-merge-done" class="ui-text-muted">
+						{{ mergeDone }}
+					</p>
+					<AppButton
+						variant="primary"
+						type="button"
+						:disabled="!mergeFrom"
+						data-testid="sellos-merge-save"
+						@click="merge"
+					>
+						Merge into {{ detail.client.client_name }}
+					</AppButton>
+				</SectionCard>
+			</template>
+
+			<template v-if="tab === 'requirements'">
+				<SectionCard
+					title="Requirements"
+					data-testid="sellos-lead-requirements"
+					class="space-y-ui-md"
+				>
+					<form v-if="canLog" class="space-y-ui-md" @submit.prevent="saveRequirements">
+						<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
+							<MoneyField
+								v-model="req.budget_from"
+								label="Budget from (Rs)"
+								data-testid="sellos-lead-req-budget-from"
 							/>
-							<StatusBadge
-								v-else
-								tone="info"
-								:label="detail.pipeline.stage"
-								data-testid="sellos-lead-stage-name"
+							<MoneyField
+								v-model="req.budget_to"
+								label="Budget to (Rs)"
+								data-testid="sellos-lead-req-budget-to"
 							/>
 						</div>
-						<form
-							v-if="lostStage"
-							class="flex flex-wrap items-end gap-ui-sm"
-							data-testid="sellos-lead-lost-form"
-							@submit.prevent="confirmLost"
-						>
+						<fieldset class="flex flex-wrap gap-ui-md ui-text-small">
+							<legend class="mb-1 ui-text-secondary">Configuration</legend>
 							<FormField
-								v-model="lostReason"
-								type="select"
-								:label="`Why is this lead going to ${lostStage}?`"
-								required
-								:options="lostReasonOptions"
-								data-testid="sellos-lead-lost-reason"
+								v-for="c in CONFIGURATIONS"
+								:key="c"
+								type="checkbox"
+								:label="c"
+								:value="c"
+								:model-value="req.configuration.includes(c)"
+								data-testid="sellos-lead-req-configuration"
+								@update:model-value="toggleConfiguration(c, $event)"
 							/>
-							<AppButton
-								variant="primary"
-								type="submit"
-								data-testid="sellos-lead-lost-save"
-							>
-								Move to {{ lostStage }}
-							</AppButton>
-							<AppButton
-								type="button"
-								data-testid="sellos-lead-lost-cancel"
-								@click="cancelLost"
-							>
-								Cancel
-							</AppButton>
-						</form>
-						<p
-							v-if="detail.pipeline.lost_reason"
-							data-testid="sellos-lead-lost-reason-shown"
-							class="text-sm text-ink-muted"
-						>
-							Lost reason: {{ detail.pipeline.lost_reason }}
-						</p>
-						<p
-							v-if="stageWarning"
-							role="alert"
-							data-testid="sellos-lead-stage-warning"
-							:data-level="stageWarning.level"
-							class="rounded-control border px-3 py-2 text-sm"
-							:class="
-								stageWarning.level === 'red'
-									? 'border-tone-danger-line bg-tone-danger-bg text-tone-danger'
-									: 'border-tone-warning-line bg-tone-warning-bg text-tone-warning'
-							"
-						>
-							{{ stageWarning.message }}
-						</p>
-						<p
-							v-if="stageError"
-							role="alert"
-							data-testid="sellos-lead-stage-error"
-							class="text-sm text-danger"
-						>
-							{{ stageError }}
-						</p>
-						<ul v-if="detail.pipeline.log.length" data-testid="sellos-lead-stage-log">
-							<li
-								v-for="(row, i) in detail.pipeline.log"
-								:key="i"
-								data-testid="sellos-lead-stage-change"
-								class="text-sm text-ink-muted"
-							>
-								{{ row.from_stage || "No stage" }} to {{ row.to_stage }},
-								{{ formatWhen(row.changed_on) }}, {{ row.changed_by }}
-								<span
-									v-if="row.lost_reason"
-									data-testid="sellos-lead-stage-change-reason"
-								>
-									. Lost reason: {{ row.lost_reason }}</span
-								>
-								<span
-									v-if="row.warning"
-									data-testid="sellos-lead-stage-change-warning"
-								>
-									. {{ row.warning }}</span
-								>
-							</li>
-						</ul>
-					</ListCard>
-
-					<ListCard
-						v-if="detail.can_merge"
-						title="Merge a duplicate client"
-						data-testid="sellos-merge"
-						class="space-y-ui-sm"
-					>
-						<p class="text-sm text-ink-muted">
-							Move another client's leads, activities, tasks and site visits to
-							{{ detail.client.client_name }}. The other client is archived, not
-							deleted.
-						</p>
+						</fieldset>
+						<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
+							<FormField
+								v-model="req.property_type"
+								type="select"
+								label="Property type"
+								:options="withBlank(PROPERTY_TYPES, 'Not set')"
+								data-testid="sellos-lead-req-property-type"
+							/>
+							<FormField
+								v-model="req.purpose"
+								type="select"
+								label="Purpose"
+								:options="withBlank(PURPOSES, 'Not set')"
+								data-testid="sellos-lead-req-purpose"
+							/>
+							<FormField
+								v-model="req.timeline"
+								type="select"
+								label="Timeline"
+								:options="withBlank(TIMELINES, 'Not set')"
+								data-testid="sellos-lead-req-timeline"
+							/>
+							<FormField
+								v-model="req.possession"
+								type="select"
+								label="Possession"
+								:options="withBlank(POSSESSIONS, 'Not set')"
+								data-testid="sellos-lead-req-possession"
+							/>
+						</div>
 						<FormField
-							v-model="mergeFrom"
-							type="select"
-							label="Duplicate client"
-							:options="mergeOptions"
-							data-testid="sellos-merge-select"
+							v-model="req.localities"
+							label="Preferred localities"
+							hint="Separate them with commas."
+							data-testid="sellos-lead-req-localities"
 						/>
 						<p
-							v-if="mergeError"
+							v-if="requirementsError"
 							role="alert"
-							data-testid="sellos-merge-error"
-							class="text-sm text-danger"
+							data-testid="sellos-lead-req-error"
+							class="ui-text-error"
 						>
-							{{ mergeError }}
-						</p>
-						<p
-							v-if="mergeDone"
-							data-testid="sellos-merge-done"
-							class="text-sm text-ink-muted"
-						>
-							{{ mergeDone }}
+							{{ requirementsError }}
 						</p>
 						<AppButton
 							variant="primary"
-							type="button"
-							:disabled="!mergeFrom"
-							data-testid="sellos-merge-save"
-							@click="merge"
+							type="submit"
+							data-testid="sellos-lead-req-save"
 						>
-							Merge into {{ detail.client.client_name }}
+							Save requirements
 						</AppButton>
-					</ListCard>
-				</template>
-
-				<template v-if="tab === 'requirements'">
-					<ListCard
-						title="Requirements"
-						data-testid="sellos-lead-requirements"
-						class="space-y-ui-md"
-					>
-						<form
-							v-if="canLog"
-							class="space-y-ui-md"
-							@submit.prevent="saveRequirements"
-						>
-							<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
-								<MoneyField
-									v-model="req.budget_from"
-									label="Budget from (Rs)"
-									data-testid="sellos-lead-req-budget-from"
-								/>
-								<MoneyField
-									v-model="req.budget_to"
-									label="Budget to (Rs)"
-									data-testid="sellos-lead-req-budget-to"
-								/>
-							</div>
-							<fieldset class="flex flex-wrap gap-ui-md text-sm text-ink">
-								<legend class="mb-1 text-ink-body">Configuration</legend>
-								<FormField
-									v-for="c in CONFIGURATIONS"
-									:key="c"
-									type="checkbox"
-									:label="c"
-									:value="c"
-									:model-value="req.configuration.includes(c)"
-									data-testid="sellos-lead-req-configuration"
-									@update:model-value="toggleConfiguration(c, $event)"
-								/>
-							</fieldset>
-							<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
-								<FormField
-									v-model="req.property_type"
-									type="select"
-									label="Property type"
-									:options="withBlank(PROPERTY_TYPES, 'Not set')"
-									data-testid="sellos-lead-req-property-type"
-								/>
-								<FormField
-									v-model="req.purpose"
-									type="select"
-									label="Purpose"
-									:options="withBlank(PURPOSES, 'Not set')"
-									data-testid="sellos-lead-req-purpose"
-								/>
-								<FormField
-									v-model="req.timeline"
-									type="select"
-									label="Timeline"
-									:options="withBlank(TIMELINES, 'Not set')"
-									data-testid="sellos-lead-req-timeline"
-								/>
-								<FormField
-									v-model="req.possession"
-									type="select"
-									label="Possession"
-									:options="withBlank(POSSESSIONS, 'Not set')"
-									data-testid="sellos-lead-req-possession"
-								/>
-							</div>
-							<FormField
-								v-model="req.localities"
-								label="Preferred localities"
-								hint="Separate them with commas."
-								data-testid="sellos-lead-req-localities"
-							/>
-							<p
-								v-if="requirementsError"
-								role="alert"
-								data-testid="sellos-lead-req-error"
-								class="text-sm text-danger"
-							>
-								{{ requirementsError }}
-							</p>
-							<AppButton
-								variant="primary"
-								type="submit"
-								data-testid="sellos-lead-req-save"
-							>
-								Save requirements
-							</AppButton>
-						</form>
-						<p data-testid="sellos-lead-req-summary" class="text-sm text-ink-muted">
-							{{ summary }}
-						</p>
-					</ListCard>
-
-					<LeadMatches
-						v-if="canLog"
-						:lead="route.params.name"
-						@added="shortlists && shortlists.reload()"
-					/>
-					<LeadShortlists v-if="canLog" ref="shortlists" :lead="route.params.name" />
-				</template>
-
-				<template v-if="tab === 'activity' && canLog">
-					<ListCard
-						v-if="canLog"
-						title="Log an activity or a follow up"
-						data-testid="sellos-lead-log"
-						class="space-y-ui-lg"
-					>
-						<form
-							class="grid grid-cols-1 items-end gap-ui-md sm:grid-cols-[10rem_1fr_auto]"
-							data-testid="sellos-lead-activity-form"
-							@submit.prevent="logActivity"
-						>
-							<FormField
-								v-model="activity.type"
-								type="select"
-								label="Activity type"
-								:options="ACTIVITY_TYPES"
-								data-testid="sellos-lead-activity-type"
-							/>
-							<FormField
-								v-model="activity.notes"
-								label="Notes"
-								data-testid="sellos-lead-activity-notes"
-							/>
-							<AppButton
-								variant="primary"
-								type="submit"
-								data-testid="sellos-lead-activity-save"
-							>
-								Add activity
-							</AppButton>
-						</form>
-						<form
-							class="grid grid-cols-1 items-end gap-ui-md sm:grid-cols-[1fr_14rem_auto]"
-							data-testid="sellos-lead-task-form"
-							@submit.prevent="addTask"
-						>
-							<FormField
-								v-model="task.title"
-								label="Task"
-								required
-								data-testid="sellos-lead-task-title"
-							/>
-							<FormField
-								v-model="task.due_at"
-								label="Follow up date and time"
-								required
-								type="datetime-local"
-								data-testid="sellos-lead-task-due"
-							/>
-							<AppButton type="submit" data-testid="sellos-lead-task-save">
-								Add follow up
-							</AppButton>
-						</form>
-					</ListCard>
-				</template>
-
-				<template v-if="tab === 'calls'">
-					<ListCard
-						v-if="canLog"
-						title="Log a call"
-						data-testid="sellos-lead-call"
-						class="space-y-ui-md"
-					>
-						<form
-							class="space-y-ui-md"
-							data-testid="sellos-lead-call-form"
-							@submit.prevent="logCall"
-						>
-							<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
-								<FormField
-									v-model="call.outcome"
-									type="select"
-									label="Outcome"
-									required
-									:options="outcomeOptions"
-									data-testid="sellos-lead-call-outcome"
-								/>
-								<FormField
-									v-model.number="call.minutes"
-									type="number"
-									label="Duration in minutes"
-									min="0"
-									step="any"
-									data-testid="sellos-lead-call-minutes"
-								/>
-							</div>
-							<FormField
-								v-model="call.notes"
-								label="Notes"
-								data-testid="sellos-lead-call-notes"
-							/>
-							<FormField
-								v-if="chosenOutcome?.needs_follow_up"
-								v-model="call.followUp"
-								label="Follow up on"
-								required
-								type="datetime-local"
-								data-testid="sellos-lead-call-follow-up"
-							/>
-							<div class="flex flex-wrap items-end gap-ui-md">
-								<FormField
-									v-model="call.stage"
-									type="select"
-									label="Stage after this call"
-									:options="callStageOptions"
-									data-testid="sellos-lead-call-stage"
-								/>
-								<AppButton
-									v-if="suggestedStage && call.stage !== suggestedStage"
-									type="button"
-									data-testid="sellos-lead-call-suggestion"
-									@click="call.stage = suggestedStage"
-								>
-									Suggested stage: {{ suggestedStage }}. Use it
-								</AppButton>
-								<FormField
-									v-if="callStageIsLost"
-									v-model="call.lostReason"
-									type="select"
-									label="Lost reason"
-									required
-									:options="lostReasonOptions"
-									data-testid="sellos-lead-call-lost-reason"
-								/>
-							</div>
-							<p
-								v-if="callError"
-								role="alert"
-								data-testid="sellos-lead-call-error"
-								class="text-sm text-danger"
-							>
-								{{ callError }}
-							</p>
-							<p
-								v-if="callSaved"
-								data-testid="sellos-lead-call-saved"
-								class="text-sm text-ink-muted"
-							>
-								{{ callSaved }}
-							</p>
-							<AppButton
-								variant="primary"
-								type="submit"
-								data-testid="sellos-lead-call-save"
-								>Log call</AppButton
-							>
-						</form>
-					</ListCard>
-					<ListCard
-						v-if="canLog"
-						title="WhatsApp"
-						data-testid="sellos-lead-whatsapp-card"
-						class="space-y-ui-sm"
-					>
-						<p class="text-sm text-ink-muted">
-							The conversation with this lead, and the templates you can send, are in
-							WhatsApp. A consent warning never stops a message.
-						</p>
-						<router-link
-							to="/crm/whatsapp"
-							class="ui-link"
-							data-testid="sellos-lead-whatsapp-open"
-							>Open WhatsApp conversations</router-link
-						>
-					</ListCard>
-				</template>
-
-				<template v-if="tab === 'visits' && canLog">
-					<ListCard
-						v-if="canLog"
-						title="Book a site visit"
-						data-testid="sellos-lead-visit-card"
-						class="space-y-ui-lg"
-					>
-						<form
-							class="grid grid-cols-1 items-end gap-ui-md sm:grid-cols-2"
-							data-testid="sellos-lead-visit-form"
-							@submit.prevent="addVisit"
-						>
-							<FormField
-								v-model="visit.project_name"
-								label="Site visit: project"
-								required
-								data-testid="sellos-lead-visit-project"
-							/>
-							<FormField
-								v-model="visit.visit_datetime"
-								label="Site visit: date and time"
-								required
-								type="datetime-local"
-								data-testid="sellos-lead-visit-when"
-							/>
-							<FormField
-								v-model="visit.agent"
-								type="select"
-								label="Agent for the visit"
-								:options="visitAgentOptions"
-								data-testid="sellos-lead-visit-agent"
-							/>
-							<div>
-								<AppButton type="submit" data-testid="sellos-lead-visit-save">
-									Add visit
-								</AppButton>
-							</div>
-						</form>
-					</ListCard>
-				</template>
-
-				<template v-if="tab === 'deals'">
-					<LeadBooking v-if="canBook" :lead="route.params.name" @changed="load" />
-					<EmptyState
-						v-if="!canBook"
-						title="No deals to show"
-						text="Bookings and deals on this lead appear here for the people who may book."
-						icon="lucide-handshake"
-					/>
-				</template>
-
-				<!-- The history of the open tab: everything under Activity, the calls and WhatsApp under Calls and WhatsApp, the visits under Site visits. -->
-				<div v-if="['activity', 'calls', 'visits'].includes(tab)">
-					<h2 class="ui-card-heading">Timeline</h2>
-					<p
-						v-if="!tabTimeline.length"
-						data-testid="sellos-lead-timeline-empty"
-						class="mt-2 text-ink-muted"
-					>
-						Nothing logged yet.
+					</form>
+					<p data-testid="sellos-lead-req-summary" class="ui-text-muted">
+						{{ summary }}
 					</p>
-					<ul class="mt-2 space-y-ui-sm" data-testid="sellos-lead-timeline">
-						<li
-							v-for="item in tabTimeline"
-							data-testid="sellos-lead-timeline-item"
-							:key="item.kind + item.name"
-							class="ui-card !p-ui-md"
-						>
-							<div class="flex items-center justify-between gap-2">
-								<span class="font-medium text-ink">
-									<span class="mr-2 text-xs uppercase text-ink-muted">{{
-										item.kind
-									}}</span
-									>{{ item.title }}
-									<span
-										v-if="item.outcome"
-										data-testid="sellos-lead-timeline-outcome"
-										class="ml-1 text-sm text-ink-muted"
-										>{{ item.outcome }}{{ callLength(item) }}</span
-									>
-								</span>
-								<StatusBadge
-									v-if="item.overdue"
-									tone="danger"
-									label="Overdue"
-									data-testid="sellos-lead-timeline-overdue"
-								/>
-								<span v-else-if="item.status" class="text-xs text-ink-muted">{{
-									item.status
-								}}</span>
-							</div>
-							<p class="text-sm text-ink-muted">
-								{{ formatWhen(item.when) }}
-							</p>
-							<p v-if="item.notes" class="mt-1 text-sm text-ink">{{ item.notes }}</p>
-							<p
-								v-if="item.kind === 'visit'"
-								data-testid="sellos-lead-visit-confirmation"
-								class="text-sm text-ink-muted"
-							>
-								{{ item.confirmation_status
-								}}<template v-if="item.agent"> , agent {{ item.agent }}</template
-								><template v-if="item.visit_outcome"
-									>, outcome: {{ item.visit_outcome }}</template
-								>
-							</p>
-							<div
-								v-if="
-									canLog && item.kind === 'visit' && item.status === 'Scheduled'
-								"
-								class="mt-2 flex flex-wrap gap-2"
-							>
-								<VisitConfirm
-									:visit="item"
-									:confirmations="visitOptions.confirmations"
-									@changed="load"
-								/>
-								<AppButton
-									type="button"
-									data-testid="sellos-lead-visit-done"
-									@click="startVisitDone(item)"
-								>
-									Mark visit done
-								</AppButton>
-							</div>
-							<form
-								v-if="visitDoing === item.name"
-								class="mt-2 space-y-ui-sm"
-								data-testid="sellos-lead-visit-done-form"
-								@submit.prevent="finishVisitDone(item)"
-							>
-								<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
-									<FormField
-										v-model="visitDone.outcome"
-										type="select"
-										label="Outcome of the visit"
-										:options="visitOutcomeOptions"
-										data-testid="sellos-lead-visit-outcome"
-									/>
-									<FormField
-										v-model="visitDone.notes"
-										label="Visit note"
-										data-testid="sellos-lead-visit-outcome-notes"
-									/>
-								</div>
-								<p
-									v-if="visitError"
-									role="alert"
-									data-testid="sellos-lead-visit-error"
-									class="text-sm text-danger"
-								>
-									{{ visitError }}
-								</p>
-								<div class="flex gap-2">
-									<AppButton
-										variant="primary"
-										type="submit"
-										data-testid="sellos-lead-visit-done-save"
-									>
-										Done
-									</AppButton>
-									<AppButton type="button" @click="visitDoing = ''"
-										>Cancel</AppButton
-									>
-								</div>
-							</form>
-							<p
-								v-if="offeredStage && offeredFor === item.name"
-								data-testid="sellos-lead-visit-offer"
-								class="mt-2 text-sm text-ink"
-							>
-								Next stage: {{ offeredStage }}.
-								<AppButton
-									type="button"
-									data-testid="sellos-lead-visit-offer-use"
-									@click="acceptOffer"
-								>
-									Move the lead to {{ offeredStage }}
-								</AppButton>
-							</p>
-							<AppButton
-								v-if="canLog && item.kind === 'task' && item.status !== 'Done'"
-								type="button"
-								class="mt-2"
-								data-testid="sellos-lead-task-done"
-								@click="startDone(item)"
-							>
-								Mark done
-							</AppButton>
-							<form
-								v-if="doing === item.name"
-								class="mt-2 space-y-ui-sm"
-								data-testid="sellos-lead-done-form"
-								@submit.prevent="finishDone(item)"
-							>
-								<p class="text-sm text-ink-muted">
-									Choose how the call went, or write a note.
-								</p>
-								<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
-									<FormField
-										v-model="doneForm.outcome"
-										type="select"
-										label="Call outcome"
-										:options="doneOutcomeOptions"
-										data-testid="sellos-lead-done-outcome"
-									/>
-									<FormField
-										v-model="doneForm.notes"
-										label="Note"
-										data-testid="sellos-lead-done-notes"
-									/>
-								</div>
-								<FormField
-									v-if="doneOutcome?.needs_follow_up"
-									v-model="doneForm.followUp"
-									label="Next follow up on"
-									required
-									type="datetime-local"
-									data-testid="sellos-lead-done-follow-up"
-								/>
-								<p
-									v-if="doneError"
-									role="alert"
-									data-testid="sellos-lead-done-error"
-									class="text-sm text-danger"
-								>
-									{{ doneError }}
-								</p>
-								<div class="flex gap-2">
-									<AppButton
-										variant="primary"
-										type="submit"
-										data-testid="sellos-lead-done-save"
-										>Done</AppButton
-									>
-									<AppButton
-										type="button"
-										data-testid="sellos-lead-done-cancel"
-										@click="doing = ''"
-									>
-										Cancel
-									</AppButton>
-								</div>
-							</form>
-						</li>
-					</ul>
-				</div>
-			</div>
+				</SectionCard>
 
-			<!-- The right rail: assignment and consent evidence, on every tab. -->
-			<aside class="min-w-0 space-y-ui-md">
-				<ListCard
-					v-if="canReassign"
-					title="Assigned agent"
-					data-testid="sellos-reassign"
-					class="space-y-ui-sm"
+				<LeadMatches
+					v-if="canLog"
+					:lead="route.params.name"
+					@added="shortlists && shortlists.reload()"
+				/>
+				<LeadShortlists v-if="canLog" ref="shortlists" :lead="route.params.name" />
+			</template>
+
+			<template v-if="tab === 'activity' && canLog">
+				<SectionCard
+					v-if="canLog"
+					title="Log an activity or a follow up"
+					data-testid="sellos-lead-log"
+					class="space-y-ui-lg"
 				>
-					<p class="text-sm text-ink-muted">
-						Now:
-						<span data-testid="sellos-reassign-current">{{
-							detail.lead.assigned_to || "Nobody"
-						}}</span>
-					</p>
-					<FormField
-						type="select"
-						label="Assign to"
-						:model-value="detail.lead.assigned_to || ''"
-						:options="assigneeOptions"
-						data-testid="sellos-reassign-select"
-						@update:model-value="reassign"
-					/>
-					<p
-						v-if="reassignError"
-						role="alert"
-						data-testid="sellos-reassign-error"
-						class="text-sm text-danger"
+					<form
+						class="grid grid-cols-1 items-end gap-ui-md sm:grid-cols-[10rem_1fr_auto]"
+						data-testid="sellos-lead-activity-form"
+						@submit.prevent="logActivity"
 					>
-						{{ reassignError }}
-					</p>
-					<ul
-						v-if="detail.assignments && detail.assignments.length"
-						class="text-sm text-ink-muted"
-						data-testid="sellos-assignment-log"
-					>
-						<li
-							v-for="a in detail.assignments"
-							:key="a.name"
-							data-testid="sellos-assignment-entry"
+						<FormField
+							v-model="activity.type"
+							type="select"
+							label="Activity type"
+							:options="ACTIVITY_TYPES"
+							data-testid="sellos-lead-activity-type"
+						/>
+						<FormField
+							v-model="activity.notes"
+							label="Notes"
+							data-testid="sellos-lead-activity-notes"
+						/>
+						<AppButton
+							variant="primary"
+							type="submit"
+							data-testid="sellos-lead-activity-save"
 						>
-							{{ a.method }}: {{ a.from_name || a.from_agent || "nobody" }} to
-							{{ a.to_name || a.to_agent || "nobody" }}
-						</li>
-					</ul>
-				</ListCard>
+							Add activity
+						</AppButton>
+					</form>
+					<form
+						class="grid grid-cols-1 items-end gap-ui-md sm:grid-cols-[1fr_14rem_auto]"
+						data-testid="sellos-lead-task-form"
+						@submit.prevent="addTask"
+					>
+						<FormField
+							v-model="task.title"
+							label="Task"
+							required
+							data-testid="sellos-lead-task-title"
+						/>
+						<FormField
+							v-model="task.due_at"
+							label="Follow up date and time"
+							required
+							type="datetime-local"
+							data-testid="sellos-lead-task-due"
+						/>
+						<AppButton type="submit" data-testid="sellos-lead-task-save">
+							Add follow up
+						</AppButton>
+					</form>
+				</SectionCard>
+			</template>
 
-				<ListCard
-					v-if="detail.consent"
-					title="Consent"
-					data-testid="sellos-lead-consent"
-					:data-status="detail.consent.status"
+			<template v-if="tab === 'calls'">
+				<SectionCard
+					v-if="canLog"
+					title="Log a call"
+					data-testid="sellos-lead-call"
 					class="space-y-ui-md"
 				>
-					<div>
-						<StatusBadge
-							:tone="consentTone"
-							:label="detail.consent.status"
-							data-testid="sellos-lead-consent-status"
-						/>
-					</div>
-					<p
-						v-if="detail.consent.warning"
-						role="alert"
-						data-testid="sellos-lead-consent-warning"
-						:data-level="detail.consent.warning"
-						class="rounded-control border px-3 py-2 text-sm"
-						:class="
-							detail.consent.warning === 'red'
-								? 'border-tone-danger-line bg-tone-danger-bg text-tone-danger'
-								: 'border-tone-warning-line bg-tone-warning-bg text-tone-warning'
-						"
+					<form
+						class="space-y-ui-md"
+						data-testid="sellos-lead-call-form"
+						@submit.prevent="logCall"
 					>
-						{{ detail.consent.message }} You can still call and message this lead.
-					</p>
-					<ul
-						v-if="detail.consent.records.length"
-						data-testid="sellos-lead-consent-records"
-					>
-						<li
-							v-for="record in detail.consent.records"
-							:key="record.name"
-							data-testid="sellos-lead-consent-record"
-							class="text-sm text-ink-muted"
-						>
-							{{ record.basis }}, {{ formatWhen(record.recorded_on) }},
-							{{
-								record.expires_on
-									? (record.live ? "expires " : "expired ") +
-									  formatWhen(record.expires_on)
-									: "no expiry"
-							}}
-							<span v-if="record.renewal_count"
-								>, renewal {{ record.renewal_count }}</span
-							>
-							<a
-								:href="record.evidence_link"
-								target="_blank"
-								rel="noopener"
-								class="ui-link ml-1"
-								>Evidence</a
-							>
-						</li>
-					</ul>
-					<template v-if="canLog">
-						<form
-							class="grid grid-cols-1 items-end gap-ui-md"
-							data-testid="sellos-lead-consent-form"
-							@submit.prevent="addConsent"
-						>
+						<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
 							<FormField
-								v-model="consentForm.basis"
+								v-model="call.outcome"
 								type="select"
-								label="Consent basis"
-								:options="CONSENT_BASES"
-								data-testid="sellos-lead-consent-basis"
-							/>
-							<FormField
-								v-model="consentForm.evidence"
-								label="Evidence link"
+								label="Outcome"
 								required
-								data-testid="sellos-lead-consent-evidence"
+								:options="outcomeOptions"
+								data-testid="sellos-lead-call-outcome"
 							/>
-							<AppButton
-								variant="primary"
-								type="submit"
-								data-testid="sellos-lead-consent-save"
-							>
-								Record basis
-							</AppButton>
-						</form>
-						<p
-							v-if="consentError"
-							data-testid="sellos-lead-consent-error"
-							class="text-sm text-danger"
-						>
-							{{ consentError }}
-						</p>
-						<div class="flex flex-wrap items-end gap-ui-sm">
 							<FormField
-								v-model="stopSource"
+								v-model.number="call.minutes"
+								type="number"
+								label="Duration in minutes"
+								min="0"
+								step="any"
+								data-testid="sellos-lead-call-minutes"
+							/>
+						</div>
+						<FormField
+							v-model="call.notes"
+							label="Notes"
+							data-testid="sellos-lead-call-notes"
+						/>
+						<FormField
+							v-if="chosenOutcome?.needs_follow_up"
+							v-model="call.followUp"
+							label="Follow up on"
+							required
+							type="datetime-local"
+							data-testid="sellos-lead-call-follow-up"
+						/>
+						<div class="flex flex-wrap items-end gap-ui-md">
+							<FormField
+								v-model="call.stage"
 								type="select"
-								label="Stop request came by"
-								:options="STOP_SOURCES"
-								data-testid="sellos-lead-optout-source"
+								label="Stage after this call"
+								:options="callStageOptions"
+								data-testid="sellos-lead-call-stage"
 							/>
 							<AppButton
+								v-if="suggestedStage && call.stage !== suggestedStage"
 								type="button"
-								data-testid="sellos-lead-optout"
-								@click="optOut"
+								data-testid="sellos-lead-call-suggestion"
+								@click="call.stage = suggestedStage"
 							>
-								Record stop request
+								Suggested stage: {{ suggestedStage }}. Use it
 							</AppButton>
-							<AppButton
-								type="button"
-								data-testid="sellos-lead-dnd"
-								@click="setDnd(1)"
-							>
-								Number is on the DND list
-							</AppButton>
-							<AppButton
-								v-if="detail.consent.status === 'Registered DND'"
-								type="button"
-								data-testid="sellos-lead-dnd-clear"
-								@click="setDnd(0)"
-							>
-								Number is not on the DND list
+							<FormField
+								v-if="callStageIsLost"
+								v-model="call.lostReason"
+								type="select"
+								label="Lost reason"
+								required
+								:options="lostReasonOptions"
+								data-testid="sellos-lead-call-lost-reason"
+							/>
+						</div>
+						<p
+							v-if="callError"
+							role="alert"
+							data-testid="sellos-lead-call-error"
+							class="ui-text-error"
+						>
+							{{ callError }}
+						</p>
+						<p
+							v-if="callSaved"
+							data-testid="sellos-lead-call-saved"
+							class="ui-text-muted"
+						>
+							{{ callSaved }}
+						</p>
+						<AppButton
+							variant="primary"
+							type="submit"
+							data-testid="sellos-lead-call-save"
+							>Log call</AppButton
+						>
+					</form>
+				</SectionCard>
+				<SectionCard
+					v-if="canLog"
+					title="WhatsApp"
+					data-testid="sellos-lead-whatsapp-card"
+					class="space-y-ui-sm"
+				>
+					<p class="ui-text-muted">
+						The conversation with this lead, and the templates you can send, are in
+						WhatsApp. A consent warning never stops a message.
+					</p>
+					<router-link
+						to="/crm/whatsapp"
+						class="ui-link"
+						data-testid="sellos-lead-whatsapp-open"
+						>Open WhatsApp conversations</router-link
+					>
+				</SectionCard>
+			</template>
+
+			<template v-if="tab === 'visits' && canLog">
+				<SectionCard
+					v-if="canLog"
+					title="Book a site visit"
+					data-testid="sellos-lead-visit-card"
+					class="space-y-ui-lg"
+				>
+					<form
+						class="grid grid-cols-1 items-end gap-ui-md sm:grid-cols-2"
+						data-testid="sellos-lead-visit-form"
+						@submit.prevent="addVisit"
+					>
+						<FormField
+							v-model="visit.project_name"
+							label="Site visit: project"
+							required
+							data-testid="sellos-lead-visit-project"
+						/>
+						<FormField
+							v-model="visit.visit_datetime"
+							label="Site visit: date and time"
+							required
+							type="datetime-local"
+							data-testid="sellos-lead-visit-when"
+						/>
+						<FormField
+							v-model="visit.agent"
+							type="select"
+							label="Agent for the visit"
+							:options="visitAgentOptions"
+							data-testid="sellos-lead-visit-agent"
+						/>
+						<div>
+							<AppButton type="submit" data-testid="sellos-lead-visit-save">
+								Add visit
 							</AppButton>
 						</div>
-					</template>
-				</ListCard>
-			</aside>
+					</form>
+				</SectionCard>
+			</template>
+
+			<template v-if="tab === 'deals'">
+				<LeadBooking v-if="canBook" :lead="route.params.name" @changed="load" />
+				<EmptyState
+					v-if="!canBook"
+					title="No deals to show"
+					text="Bookings and deals on this lead appear here for the people who may book."
+					icon="lucide-handshake"
+				/>
+			</template>
+
+			<!-- The history of the open tab: everything under Activity, the calls and WhatsApp under Calls and WhatsApp, the visits under Site visits. -->
+			<SectionCard v-if="['activity', 'calls', 'visits'].includes(tab)" title="Timeline">
+				<p
+					v-if="!tabTimeline.length"
+					data-testid="sellos-lead-timeline-empty"
+					class="mt-2 ui-text-muted"
+				>
+					Nothing logged yet.
+				</p>
+				<ul class="ui-list mt-2" data-testid="sellos-lead-timeline">
+					<li
+						v-for="item in tabTimeline"
+						data-testid="sellos-lead-timeline-item"
+						:key="item.kind + item.name"
+					>
+						<div class="flex items-center justify-between gap-2">
+							<span class="ui-text-strong">
+								<span class="mr-2 uppercase ui-text-muted">{{ item.kind }}</span
+								>{{ item.title }}
+								<span
+									v-if="item.outcome"
+									data-testid="sellos-lead-timeline-outcome"
+									class="ml-1 ui-text-muted"
+									>{{ item.outcome }}{{ callLength(item) }}</span
+								>
+							</span>
+							<StatusBadge
+								v-if="item.overdue"
+								tone="danger"
+								label="Overdue"
+								data-testid="sellos-lead-timeline-overdue"
+							/>
+							<span v-else-if="item.status" class="ui-text-muted">{{
+								item.status
+							}}</span>
+						</div>
+						<p class="ui-text-muted">
+							{{ formatWhen(item.when) }}
+						</p>
+						<p v-if="item.notes" class="mt-1 ui-text-small">{{ item.notes }}</p>
+						<p
+							v-if="item.kind === 'visit'"
+							data-testid="sellos-lead-visit-confirmation"
+							class="ui-text-muted"
+						>
+							{{ item.confirmation_status
+							}}<template v-if="item.agent"> , agent {{ item.agent }}</template
+							><template v-if="item.visit_outcome"
+								>, outcome: {{ item.visit_outcome }}</template
+							>
+						</p>
+						<div
+							v-if="canLog && item.kind === 'visit' && item.status === 'Scheduled'"
+							class="mt-2 flex flex-wrap gap-2"
+						>
+							<VisitConfirm
+								:visit="item"
+								:confirmations="visitOptions.confirmations"
+								@changed="load"
+							/>
+							<AppButton
+								type="button"
+								data-testid="sellos-lead-visit-done"
+								@click="startVisitDone(item)"
+							>
+								Mark visit done
+							</AppButton>
+						</div>
+						<form
+							v-if="visitDoing === item.name"
+							class="mt-2 space-y-ui-sm"
+							data-testid="sellos-lead-visit-done-form"
+							@submit.prevent="finishVisitDone(item)"
+						>
+							<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
+								<FormField
+									v-model="visitDone.outcome"
+									type="select"
+									label="Outcome of the visit"
+									:options="visitOutcomeOptions"
+									data-testid="sellos-lead-visit-outcome"
+								/>
+								<FormField
+									v-model="visitDone.notes"
+									label="Visit note"
+									data-testid="sellos-lead-visit-outcome-notes"
+								/>
+							</div>
+							<p
+								v-if="visitError"
+								role="alert"
+								data-testid="sellos-lead-visit-error"
+								class="ui-text-error"
+							>
+								{{ visitError }}
+							</p>
+							<div class="flex gap-2">
+								<AppButton
+									variant="primary"
+									type="submit"
+									data-testid="sellos-lead-visit-done-save"
+								>
+									Done
+								</AppButton>
+								<AppButton type="button" @click="visitDoing = ''"
+									>Cancel</AppButton
+								>
+							</div>
+						</form>
+						<p
+							v-if="offeredStage && offeredFor === item.name"
+							data-testid="sellos-lead-visit-offer"
+							class="mt-2 ui-text-small"
+						>
+							Next stage: {{ offeredStage }}.
+							<AppButton
+								type="button"
+								data-testid="sellos-lead-visit-offer-use"
+								@click="acceptOffer"
+							>
+								Move the lead to {{ offeredStage }}
+							</AppButton>
+						</p>
+						<AppButton
+							v-if="canLog && item.kind === 'task' && item.status !== 'Done'"
+							type="button"
+							class="mt-2"
+							data-testid="sellos-lead-task-done"
+							@click="startDone(item)"
+						>
+							Mark done
+						</AppButton>
+						<form
+							v-if="doing === item.name"
+							class="mt-2 space-y-ui-sm"
+							data-testid="sellos-lead-done-form"
+							@submit.prevent="finishDone(item)"
+						>
+							<p class="ui-text-muted">Choose how the call went, or write a note.</p>
+							<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
+								<FormField
+									v-model="doneForm.outcome"
+									type="select"
+									label="Call outcome"
+									:options="doneOutcomeOptions"
+									data-testid="sellos-lead-done-outcome"
+								/>
+								<FormField
+									v-model="doneForm.notes"
+									label="Note"
+									data-testid="sellos-lead-done-notes"
+								/>
+							</div>
+							<FormField
+								v-if="doneOutcome?.needs_follow_up"
+								v-model="doneForm.followUp"
+								label="Next follow up on"
+								required
+								type="datetime-local"
+								data-testid="sellos-lead-done-follow-up"
+							/>
+							<p
+								v-if="doneError"
+								role="alert"
+								data-testid="sellos-lead-done-error"
+								class="ui-text-error"
+							>
+								{{ doneError }}
+							</p>
+							<div class="flex gap-2">
+								<AppButton
+									variant="primary"
+									type="submit"
+									data-testid="sellos-lead-done-save"
+									>Done</AppButton
+								>
+								<AppButton
+									type="button"
+									data-testid="sellos-lead-done-cancel"
+									@click="doing = ''"
+								>
+									Cancel
+								</AppButton>
+							</div>
+						</form>
+					</li>
+				</ul>
+			</SectionCard>
 		</div>
-	</div>
+
+		<template #side>
+			<SectionCard
+				title="Next follow up"
+				data-testid="sellos-lead-follow-up"
+				:data-state="followUp.follow_up_state || 'none'"
+			>
+				<p
+					v-if="followUp.next_follow_up"
+					data-testid="sellos-lead-next-follow-up"
+					class="ui-text-body"
+				>
+					{{ followUp.next_follow_up_title }},
+					{{ whenLabel(followUp.next_follow_up) }}
+				</p>
+				<p v-else data-testid="sellos-lead-next-follow-up" class="ui-text-muted">
+					No open follow up
+				</p>
+				<div class="mt-2 flex flex-wrap gap-2">
+					<StatusBadge
+						v-if="followUp.follow_up_state === 'overdue'"
+						tone="danger"
+						label="Overdue"
+						data-testid="sellos-lead-follow-up-overdue"
+					/>
+					<StatusBadge
+						v-if="followUp.follow_up_untouched"
+						tone="warning"
+						:label="`Untouched, no follow up for ${followUp.untouched_days} days`"
+						data-testid="sellos-lead-follow-up-untouched"
+					/>
+				</div>
+			</SectionCard>
+			<SectionCard
+				v-if="canReassign"
+				title="Assigned agent"
+				data-testid="sellos-reassign"
+				class="space-y-ui-sm"
+			>
+				<p class="ui-text-muted">
+					Now:
+					<span data-testid="sellos-reassign-current">{{
+						detail.lead.assigned_to || "Nobody"
+					}}</span>
+				</p>
+				<FormField
+					type="select"
+					label="Assign to"
+					:model-value="detail.lead.assigned_to || ''"
+					:options="assigneeOptions"
+					data-testid="sellos-reassign-select"
+					@update:model-value="reassign"
+				/>
+				<p
+					v-if="reassignError"
+					role="alert"
+					data-testid="sellos-reassign-error"
+					class="ui-text-error"
+				>
+					{{ reassignError }}
+				</p>
+				<ul
+					v-if="detail.assignments && detail.assignments.length"
+					class="ui-text-muted"
+					data-testid="sellos-assignment-log"
+				>
+					<li
+						v-for="a in detail.assignments"
+						:key="a.name"
+						data-testid="sellos-assignment-entry"
+					>
+						{{ a.method }}: {{ a.from_name || a.from_agent || "nobody" }} to
+						{{ a.to_name || a.to_agent || "nobody" }}
+					</li>
+				</ul>
+			</SectionCard>
+
+			<SectionCard
+				v-if="detail.consent"
+				title="Consent"
+				data-testid="sellos-lead-consent"
+				:data-status="detail.consent.status"
+				class="space-y-ui-md"
+			>
+				<div>
+					<StatusBadge
+						:tone="consentTone"
+						:label="detail.consent.status"
+						data-testid="sellos-lead-consent-status"
+					/>
+				</div>
+				<Notice
+					v-if="detail.consent.warning"
+					:tone="detail.consent.warning === 'red' ? 'danger' : 'warning'"
+					testid="sellos-lead-consent-warning"
+					:data-level="detail.consent.warning"
+				>
+					{{ detail.consent.message }} You can still call and message this lead.
+				</Notice>
+				<ul v-if="detail.consent.records.length" data-testid="sellos-lead-consent-records">
+					<li
+						v-for="record in detail.consent.records"
+						:key="record.name"
+						data-testid="sellos-lead-consent-record"
+						class="ui-text-muted"
+					>
+						{{ record.basis }}, {{ formatWhen(record.recorded_on) }},
+						{{
+							record.expires_on
+								? (record.live ? "expires " : "expired ") +
+								  formatWhen(record.expires_on)
+								: "no expiry"
+						}}
+						<span v-if="record.renewal_count"
+							>, renewal {{ record.renewal_count }}</span
+						>
+						<a
+							:href="record.evidence_link"
+							target="_blank"
+							rel="noopener"
+							class="ui-link ml-1"
+							>Evidence</a
+						>
+					</li>
+				</ul>
+				<template v-if="canLog">
+					<form
+						class="grid grid-cols-1 items-end gap-ui-md"
+						data-testid="sellos-lead-consent-form"
+						@submit.prevent="addConsent"
+					>
+						<FormField
+							v-model="consentForm.basis"
+							type="select"
+							label="Consent basis"
+							:options="CONSENT_BASES"
+							data-testid="sellos-lead-consent-basis"
+						/>
+						<FormField
+							v-model="consentForm.evidence"
+							label="Evidence link"
+							required
+							data-testid="sellos-lead-consent-evidence"
+						/>
+						<AppButton
+							variant="primary"
+							type="submit"
+							data-testid="sellos-lead-consent-save"
+						>
+							Record basis
+						</AppButton>
+					</form>
+					<p
+						v-if="consentError"
+						data-testid="sellos-lead-consent-error"
+						class="ui-text-error"
+					>
+						{{ consentError }}
+					</p>
+					<div class="flex flex-wrap items-end gap-ui-sm">
+						<FormField
+							v-model="stopSource"
+							type="select"
+							label="Stop request came by"
+							:options="STOP_SOURCES"
+							data-testid="sellos-lead-optout-source"
+						/>
+						<AppButton type="button" data-testid="sellos-lead-optout" @click="optOut">
+							Record stop request
+						</AppButton>
+						<AppButton type="button" data-testid="sellos-lead-dnd" @click="setDnd(1)">
+							Number is on the DND list
+						</AppButton>
+						<AppButton
+							v-if="detail.consent.status === 'Registered DND'"
+							type="button"
+							data-testid="sellos-lead-dnd-clear"
+							@click="setDnd(0)"
+						>
+							Number is not on the DND list
+						</AppButton>
+					</div>
+				</template>
+			</SectionCard>
+		</template>
+	</PageTemplate>
 	<LoadError
 		v-else-if="error"
 		:message="error"
@@ -967,8 +919,11 @@ import LeadBooking from "../inventory/LeadBooking.vue";
 import LeadMatches from "../inventory/LeadMatches.vue";
 import LeadShortlists from "../inventory/LeadShortlists.vue";
 import EmptyState from "../components/EmptyState.vue";
-import ListCard from "../components/ListCard.vue";
 import PageTabs from "../components/PageTabs.vue";
+import PageTemplate from "../components/PageTemplate.vue";
+import RecordHeader from "../components/RecordHeader.vue";
+import SectionCard from "../components/SectionCard.vue";
+import Notice from "../components/Notice.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import StatusBadge from "../components/StatusBadge.vue";

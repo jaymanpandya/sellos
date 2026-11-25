@@ -39,7 +39,7 @@
 				<p
 					v-if="!loading && !users.length"
 					data-testid="sellos-support-no-users"
-					class="text-ink-muted md:col-span-2"
+					class="md:col-span-2 ui-text-muted"
 				>
 					No support user is set up for this company yet.
 				</p>
@@ -66,12 +66,7 @@
 					data-testid="sellos-support-reason"
 				/>
 			</FormSection>
-			<p
-				v-if="error"
-				data-testid="sellos-support-error"
-				role="alert"
-				class="text-sm text-danger"
-			>
+			<p v-if="error" data-testid="sellos-support-error" role="alert" class="ui-text-error">
 				{{ error }}
 			</p>
 		</FormDrawer>
@@ -80,7 +75,7 @@
 			v-if="error && !granting"
 			data-testid="sellos-support-error"
 			role="alert"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -104,16 +99,16 @@
 			empty-testid="sellos-support-empty"
 		>
 			<template #cell-support_user_name="{ row }">
-				<span class="block font-medium text-ink">{{ row.support_user_name }}</span>
+				<span class="block ui-text-strong">{{ row.support_user_name }}</span>
 			</template>
 			<template #cell-period="{ row }">
-				<span class="text-ink-body"
+				<span class="ui-text-secondary"
 					>{{ formatDateTime(row.starts_at) }} to
 					{{ formatDateTime(row.expires_at) }}</span
 				>
 			</template>
 			<template #cell-reason="{ row }">
-				<span class="text-ink-body">{{ row.reason }}</span>
+				<span class="ui-text-secondary">{{ row.reason }}</span>
 			</template>
 			<template #cell-status="{ row }">
 				<StatusBadge
@@ -145,12 +140,12 @@
 
 		<!-- The log of the grant that was opened: who did what, and when. -->
 		<ListCard v-if="open" title="Log" class="mt-ui-md">
-			<ul class="space-y-1 text-sm" data-testid="sellos-support-log">
+			<ul class="space-y-1 ui-text-small" data-testid="sellos-support-log">
 				<li
 					v-for="(line, i) in log"
 					:key="i"
 					data-testid="sellos-support-log-row"
-					class="text-ink-muted"
+					class="ui-text-muted"
 				>
 					{{ line.timestamp.slice(0, 19) }} · {{ line.user }} · {{ line.action }}
 					<span v-if="line.path"> · {{ line.http_method }} {{ line.path }}</span>

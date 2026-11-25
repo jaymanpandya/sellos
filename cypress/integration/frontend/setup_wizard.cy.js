@@ -12,7 +12,7 @@ context("SOS-P1-03: setup wizard", () => {
 	it("collects the four areas, resumes after leaving, and shows the branding afterwards", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos");
-		cy.getByTestId("home-setup-banner").click();
+		cy.getByTestId("home-setup-banner").find("a").click();
 		cy.location("pathname").should("eq", "/sellos/company/setup");
 
 		// Step 1: the company profile.
@@ -41,7 +41,7 @@ context("SOS-P1-03: setup wizard", () => {
 
 		// The admin leaves and comes back: the wizard opens where it stopped.
 		cy.visit("/sellos");
-		cy.getByTestId("home-setup-banner").click();
+		cy.getByTestId("home-setup-banner").find("a").click();
 		cy.getByTestId("setup-resumed").should("be.visible");
 		cy.getByTestId("setup-users").should("be.visible");
 		["profile", "branding", "stages"].forEach((key) =>
@@ -52,6 +52,7 @@ context("SOS-P1-03: setup wizard", () => {
 
 		// Step 4: the first users and roles.
 		cy.getByTestId("setup-step-users").click();
+		cy.getByTestId("setup-add-person").click();
 		cy.getByTestId("setup-user-first-name").type("Wizard");
 		cy.getByTestId("setup-user-email").type(AGENT_EMAIL);
 		cy.getByTestId("setup-user-role").select("Agent");

@@ -1,9 +1,10 @@
 <template>
-	<div v-if="weights" class="ui-card mt-ui-md" data-testid="sellos-match-weights">
-		<h2 class="ui-card-heading mb-ui-sm">Match score weights</h2>
-		<p class="mb-ui-md text-sm text-ink-muted">
-			How much each part counts when SellOS scores a home for a buyer. 25 each by default.
-		</p>
+	<SectionCard
+		v-if="weights"
+		title="Match score weights"
+		help="How much each part counts when SellOS scores a home for a buyer. 25 each by default."
+		data-testid="sellos-match-weights"
+	>
 		<div class="flex flex-wrap items-end gap-ui-sm">
 			<FormField
 				v-for="p in parts"
@@ -22,7 +23,7 @@
 			v-if="error"
 			role="alert"
 			data-testid="sellos-match-weights-error"
-			class="mt-ui-sm text-sm text-accent"
+			class="mt-ui-sm ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -30,11 +31,11 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-match-weights-notice"
-			class="mt-ui-sm text-sm text-ink"
+			class="mt-ui-sm ui-text-small"
 		>
 			{{ notice }}
 		</p>
-	</div>
+	</SectionCard>
 </template>
 
 <script setup>
@@ -42,6 +43,7 @@ import { onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import FormField from "../components/FormField.vue";
+import SectionCard from "../components/SectionCard.vue";
 import { serverMessage } from "../crm/crmApi";
 import { session } from "../session";
 import { matchApi } from "./inventoryApi";

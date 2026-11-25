@@ -111,53 +111,51 @@
 		<div v-else class="space-y-ui-md">
 			<p
 				v-if="!savingView && viewNote"
-				class="text-sm text-ink-muted"
+				class="ui-text-muted"
 				data-testid="sellos-reports-view-note"
 			>
 				{{ viewNote }}
 			</p>
-			<p
-				v-if="exportNote"
-				class="text-sm text-ink-muted"
-				data-testid="sellos-reports-export-note"
-			>
+			<p v-if="exportNote" class="ui-text-muted" data-testid="sellos-reports-export-note">
 				{{ exportNote }}
 			</p>
 			<LoadingSkeleton v-if="!result" />
 			<template v-else>
-				<section class="ui-card flex flex-wrap items-center justify-between gap-ui-md">
-					<div class="min-w-0 text-sm text-ink-muted">
-						<p data-testid="sellos-reports-about">
-							{{ result.report.description }} {{ result.report.date_label }} from
-							{{ result.from_date }} to {{ result.to_date }}.
-						</p>
-						<p data-testid="sellos-reports-scope">
-							{{ scopeText }}
-							<span
-								v-if="result.report.last_refreshed"
-								data-testid="sellos-reports-refreshed"
+				<SectionCard title="About this report">
+					<div class="flex flex-wrap items-center justify-between gap-ui-md">
+						<div class="min-w-0 ui-text-muted">
+							<p data-testid="sellos-reports-about">
+								{{ result.report.description }} {{ result.report.date_label }} from
+								{{ result.from_date }} to {{ result.to_date }}.
+							</p>
+							<p data-testid="sellos-reports-scope">
+								{{ scopeText }}
+								<span
+									v-if="result.report.last_refreshed"
+									data-testid="sellos-reports-refreshed"
+								>
+									Summary table refreshed
+									{{ formatDateTime(result.report.last_refreshed) }}.
+								</span>
+							</p>
+						</div>
+						<div class="flex flex-wrap items-center gap-ui-sm">
+							<AppButton
+								v-if="canRefresh"
+								data-testid="sellos-reports-refresh"
+								@click="refresh"
 							>
-								Summary table refreshed
-								{{ formatDateTime(result.report.last_refreshed) }}.
-							</span>
-						</p>
+								Refresh summary table
+							</AppButton>
+							<AppButton
+								data-testid="sellos-reports-open-all"
+								@click="open('All records', undefined)"
+							>
+								See records
+							</AppButton>
+						</div>
 					</div>
-					<div class="flex flex-wrap items-center gap-ui-sm">
-						<AppButton
-							v-if="canRefresh"
-							data-testid="sellos-reports-refresh"
-							@click="refresh"
-						>
-							Refresh summary table
-						</AppButton>
-						<AppButton
-							data-testid="sellos-reports-open-all"
-							@click="open('All records', undefined)"
-						>
-							See records
-						</AppButton>
-					</div>
-				</section>
+				</SectionCard>
 
 				<DataTable
 					:title="`By ${result.report.group_label.toLowerCase()}`"
@@ -192,10 +190,7 @@
 				</DataTable>
 
 				<div v-if="drill" data-testid="sellos-reports-drill" :data-count="drill.total">
-					<p
-						class="mb-ui-sm text-sm text-ink-muted"
-						data-testid="sellos-reports-drill-total"
-					>
+					<p class="mb-ui-sm ui-text-muted" data-testid="sellos-reports-drill-total">
 						{{ drill.total }} records<span v-if="drill.truncated">
 							, the newest {{ drill.shown }} are listed</span
 						>.
@@ -221,7 +216,7 @@
 						>
 							<router-link
 								v-if="column.field === leadColumn && row.lead"
-								class="text-brand underline"
+								class="ui-link"
 								:to="`/crm/leads/${row.lead}`"
 							>
 								{{ row[drillKey(at)] }}
@@ -233,12 +228,12 @@
 			</template>
 
 			<div v-if="canExport && schedules" class="space-y-ui-sm">
-				<p v-if="!schedules.mail_ready" class="text-sm text-ink-muted">
+				<p v-if="!schedules.mail_ready" class="ui-text-muted">
 					This site cannot send email yet, so a schedule is kept but nothing is sent.
 				</p>
 				<p
 					v-if="!scheduling && scheduleNote"
-					class="text-sm text-ink-muted"
+					class="ui-text-muted"
 					data-testid="sellos-reports-schedule-note"
 				>
 					{{ scheduleNote }}
@@ -318,11 +313,7 @@
 					class="md:col-span-2"
 				/>
 			</FormSection>
-			<p
-				v-if="viewNote"
-				class="text-sm text-ink-muted"
-				data-testid="sellos-reports-view-note"
-			>
+			<p v-if="viewNote" class="ui-text-muted" data-testid="sellos-reports-view-note">
 				{{ viewNote }}
 			</p>
 		</FormDrawer>
@@ -402,7 +393,7 @@
 			</FormSection>
 			<p
 				v-if="scheduleNote"
-				class="text-sm text-ink-muted"
+				class="ui-text-muted"
 				data-testid="sellos-reports-schedule-note"
 			>
 				{{ scheduleNote }}
@@ -426,6 +417,7 @@ import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import SectionCard from "../components/SectionCard.vue";
 import { serverMessage } from "../crm/crmApi";
 import { formatDateTime } from "../format";
 import { rupees, talkTime } from "../reports/callsApi";

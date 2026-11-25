@@ -21,11 +21,35 @@
 			<KpiStrip :items="kpis" data-testid="sellos-registrations-stats" />
 		</template>
 
+		<template #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search registrations"
+				search-placeholder="Search registrations"
+				search-testid="sellos-registrations-search"
+				clear-testid="sellos-registrations-filter-clear"
+				:active="Boolean(search || statusFilter)"
+				:chips="chips"
+				data-testid="sellos-registrations-filters"
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+				<FormField
+					v-model="statusFilter"
+					compact
+					type="select"
+					label="Status"
+					:options="statusOptions"
+					data-testid="sellos-registrations-filter-status"
+				/>
+			</FilterBar>
+		</template>
+
 		<p
 			v-if="error && !editingSettings"
 			role="alert"
 			data-testid="sellos-registrations-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -33,7 +57,7 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-registrations-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -45,7 +69,7 @@
 			v-else
 			title="Registrations"
 			:columns="columns"
-			:rows="rows"
+			:rows="shown"
 			:loading="!loaded"
 			:row-attrs="(r) => ({ 'data-status': r.status })"
 			empty-title="No registrations yet"
@@ -56,13 +80,10 @@
 			empty-testid="sellos-registrations-empty"
 		>
 			<template #cell-buyer_name="{ row: r }">
-				<span class="font-medium text-ink" data-testid="sellos-registrations-buyer">
+				<span class="ui-text-strong" data-testid="sellos-registrations-buyer">
 					{{ r.buyer_name }}
 				</span>
-				<span
-					class="block text-xs text-ink-muted"
-					data-testid="sellos-registrations-phone"
-				>
+				<span class="block ui-text-muted" data-testid="sellos-registrations-phone">
 					{{ r.phone }}
 				</span>
 			</template>
@@ -74,29 +95,29 @@
 				/>
 			</template>
 			<template #cell-firm_name="{ row: r }">
-				<p class="text-sm text-ink-muted">
+				<p class="ui-text-muted">
 					Registered by {{ r.firm_name }} ({{ r.partner_user }}).
 					<span v-if="r.project_of_interest">Project: {{ r.project_of_interest }}.</span>
 					<span data-testid="sellos-registrations-consent">
 						Consent: {{ r.consent.status }}.
 					</span>
 				</p>
-				<p v-if="r.note" class="text-sm text-ink-muted">{{ r.note }}</p>
-				<p v-if="r.protected_until" class="text-sm text-ink-muted">
+				<p v-if="r.note" class="ui-text-muted">{{ r.note }}</p>
+				<p v-if="r.protected_until" class="ui-text-muted">
 					<span v-if="r.protected">Protected until</span>
 					<span v-else>Protection ended</span>
 					{{ formatDate(r.protected_until) }}.
 				</p>
 				<p
 					v-if="r.rejection_reason"
-					class="text-sm text-ink-muted"
+					class="ui-text-muted"
 					data-testid="sellos-registrations-reason"
 				>
 					Rejected: {{ r.rejection_reason }}
 				</p>
 				<details class="mt-1" data-testid="sellos-registrations-log">
-					<summary class="cursor-pointer text-sm text-ink-muted">Log</summary>
-					<ul class="mt-1 space-y-1 text-sm text-ink-muted">
+					<summary class="cursor-pointer ui-text-muted">Log</summary>
+					<ul class="mt-1 space-y-1 ui-text-muted">
 						<li
 							v-for="(l, i) in r.log"
 							:key="i"
@@ -191,7 +212,7 @@
 				v-if="error"
 				role="alert"
 				data-testid="sellos-registrations-error"
-				class="text-sm text-accent"
+				class="ui-text-error"
 			>
 				{{ error }}
 			</p>
@@ -207,6 +228,7 @@ import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -240,6 +262,36 @@ const settings = reactive({
 	consent_wording: "",
 	partner_confirmation_wording: "",
 });
+
+const search = ref("");
+const statusFilter = ref("");
+const statusOptions = computed(() => [
+	{ label: "All", value: "" },
+	...[...new Set(rows.value.map((r) => r.status).filter(Boolean))].map((v) => ({
+		label: v,
+		value: v,
+	})),
+]);
+const shown = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return rows.value.filter(
+		(r) =>
+			(!q || `${r.buyer_name} ${r.firm_name || ""}`.toLowerCase().includes(q)) &&
+			(!statusFilter.value || r.status === statusFilter.value)
+	);
+});
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Search: ${search.value}` }] : []),
+	...(statusFilter.value ? [{ key: "status", label: statusFilter.value }] : []),
+]);
+function clearFilters() {
+	search.value = "";
+	statusFilter.value = "";
+}
+function removeChip(key) {
+	if (key === "search") search.value = "";
+	else statusFilter.value = "";
+}
 
 const columns = [
 	{ key: "buyer_name", label: "Buyer", primary: true, sortable: true },

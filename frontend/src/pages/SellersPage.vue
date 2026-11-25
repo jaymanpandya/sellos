@@ -24,11 +24,26 @@
 			<KpiStrip :items="kpis" data-testid="sellos-seller-stats" />
 		</template>
 
+		<template v-if="!loadError" #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search sellers"
+				search-placeholder="Search by seller"
+				search-testid="sellos-seller-search"
+				clear-testid="sellos-seller-filter-clear"
+				:active="Boolean(search)"
+				:chips="search ? [{ key: 'search', label: `Seller: ${search}` }] : []"
+				data-testid="sellos-seller-filters"
+				@clear="search = ''"
+				@remove-chip="search = ''"
+			/>
+		</template>
+
 		<p
 			v-if="error && !creating"
 			role="alert"
 			data-testid="sellos-seller-error"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -36,7 +51,7 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-seller-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -48,8 +63,7 @@
 			@retry="load"
 		/>
 
-		<section v-if="stages.length" class="ui-card mb-ui-md">
-			<h2 class="ui-card-heading mb-ui-sm">Sellers by stage</h2>
+		<SectionCard v-if="stages.length" title="Sellers by stage" class="mb-ui-md">
 			<div class="flex flex-wrap gap-ui-sm" data-testid="sellos-seller-stage-counts">
 				<StatusBadge
 					v-for="s in stages"
@@ -60,14 +74,15 @@
 					:data-stage="s.label"
 				/>
 			</div>
-		</section>
+		</SectionCard>
 
 		<DataTable
 			v-if="!loadError"
 			title="Seller pipeline"
 			caption="Sellers"
 			:columns="columns"
-			:rows="sellers"
+			:rows="shownSellers"
+			:row-to="(row) => `/crm/sellers/${row.name}`"
 			:loading="!loaded"
 			loading-label="Loading sellers."
 			:row-name="(row) => row.lead_title"
@@ -131,7 +146,7 @@
 				</AppButton>
 				<ul
 					v-if="shownLog === row.name"
-					class="mt-ui-sm space-y-1 text-sm text-ink-muted"
+					class="mt-ui-sm space-y-1 ui-text-muted"
 					data-testid="sellos-seller-log"
 				>
 					<li v-if="!log.length">No stage changes yet.</li>
@@ -172,12 +187,7 @@
 					data-testid="sellos-seller-source"
 				/>
 			</FormSection>
-			<p
-				v-if="error"
-				role="alert"
-				data-testid="sellos-seller-error"
-				class="text-sm text-danger"
-			>
+			<p v-if="error" role="alert" data-testid="sellos-seller-error" class="ui-text-error">
 				{{ error }}
 			</p>
 		</FormDrawer>
@@ -192,10 +202,12 @@ import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
 import { formatWhen } from "../format";
@@ -216,6 +228,13 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+const search = ref("");
+const shownSellers = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return q
+		? sellers.value.filter((l) => (l.lead_title || "").toLowerCase().includes(q))
+		: sellers.value;
+});
 const creating = ref(false);
 
 const stageOptions = computed(() => stages.value.map((s) => ({ label: s.label, value: s.name })));

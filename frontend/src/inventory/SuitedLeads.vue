@@ -7,14 +7,14 @@
 			v-if="error"
 			role="alert"
 			data-testid="sellos-suited-error"
-			class="mt-ui-sm text-sm text-accent"
+			class="mt-ui-sm ui-text-error"
 		>
 			{{ error }}
 		</p>
 		<template v-if="result">
 			<p
 				v-if="!result.eligible"
-				class="mt-ui-sm text-sm text-ink-muted"
+				class="mt-ui-sm ui-text-muted"
 				data-testid="sellos-suited-ineligible"
 			>
 				{{ result.message }}
@@ -25,11 +25,11 @@
 				text="None of the leads you may see want something like it."
 				icon="lucide-users"
 			/>
-			<ul class="mt-ui-sm space-y-ui-sm">
+			<ul class="mt-ui-sm ui-list">
 				<li
 					v-for="l in result.leads"
 					:key="l.name"
-					class="rounded-card border border-line-soft p-ui-md"
+					class="space-y-ui-sm"
 					data-testid="sellos-suited-lead"
 					:data-lead="l.name"
 					:data-score="l.score"
@@ -37,15 +37,15 @@
 					<div class="flex flex-wrap items-center gap-3">
 						<router-link
 							:to="`/crm/leads/${encodeURIComponent(l.name)}`"
-							class="ui-link font-medium"
+							class="ui-link ui-text-strong"
 						>
 							{{ l.client_name || l.lead_title || l.name }}
 						</router-link>
 						<StatusBadge :tone="scoreTone(l.score)" :label="`${l.score} out of 100`" />
-						<span class="text-sm text-ink-muted" data-testid="sellos-suited-phone">{{
+						<span class="ui-text-muted" data-testid="sellos-suited-phone">{{
 							l.phone
 						}}</span>
-						<span class="text-sm text-ink-muted">{{ l.assigned_to_name }}</span>
+						<span class="ui-text-muted">{{ l.assigned_to_name }}</span>
 					</div>
 					<MatchParts :parts="l.parts" />
 				</li>

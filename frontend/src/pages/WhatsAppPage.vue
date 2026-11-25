@@ -1,5 +1,5 @@
 <template>
-	<PageTemplate data-testid="sellos-whatsapp-page">
+	<PageTemplate shape="list" data-testid="sellos-whatsapp-page">
 		<template #header>
 			<PageHeader
 				title="WhatsApp"
@@ -92,11 +92,11 @@
 					icon="lucide-messages-square"
 					data-testid="sellos-whatsapp-none"
 				/>
-				<ListCard v-else :title="thread.title">
+				<SectionCard v-else :title="thread.title">
 					<div class="mb-ui-md flex flex-wrap items-center gap-ui-sm">
 						<router-link
 							:to="`/crm/leads/${thread.lead}`"
-							class="ui-link text-sm"
+							class="ui-link ui-text-small"
 							data-testid="sellos-whatsapp-lead"
 							>Open the lead</router-link
 						>
@@ -114,11 +114,9 @@
 					</div>
 					<p
 						v-if="thread.consent_message"
-						class="mb-ui-md text-sm"
+						class="mb-ui-md ui-text-small"
 						:class="
-							thread.consent_warning === 'red'
-								? 'text-tone-danger'
-								: 'text-ink-muted'
+							thread.consent_warning === 'red' ? 'ui-text-error' : 'ui-text-muted'
 						"
 						data-testid="sellos-whatsapp-warning"
 					>
@@ -126,7 +124,7 @@
 					</p>
 					<p
 						v-if="thread.state === 'With a human'"
-						class="mb-ui-md text-sm text-ink"
+						class="mb-ui-md ui-text-small"
 						data-testid="sellos-whatsapp-handoff-note"
 					>
 						Handed to {{ thread.handed_to }}.
@@ -137,34 +135,34 @@
 						<li
 							v-for="message in thread.messages"
 							:key="message.name"
-							class="rounded-card border border-line-soft p-ui-md"
+							class="ui-text-body"
 							data-testid="sellos-whatsapp-message"
 							:data-direction="message.direction"
 							:data-status="message.status"
 							:data-intent="message.intent || 'none'"
 						>
-							<p class="text-sm text-ink-muted">
+							<p class="ui-text-muted">
 								{{ message.direction === "Inbound" ? "Customer" : "You" }} ·
 								{{ message.status }}
 								<span v-if="message.intent"> · {{ message.intent }}</span>
 							</p>
-							<p class="text-ink" data-testid="sellos-whatsapp-body">
+							<p class="ui-text-body" data-testid="sellos-whatsapp-body">
 								{{ message.body }}
 							</p>
 							<p
 								v-if="message.error"
-								class="text-sm text-tone-danger"
+								class="ui-text-error"
 								data-testid="sellos-whatsapp-message-error"
 							>
 								{{ message.error }}
 							</p>
 							<p
 								v-if="message.consent_status"
-								class="text-sm"
+								class="ui-text-small"
 								:class="
 									message.consent_warning === 'red'
-										? 'text-tone-danger'
-										: 'text-ink-muted'
+										? 'ui-text-error'
+										: 'ui-text-muted'
 								"
 								data-testid="sellos-whatsapp-message-consent"
 								:data-level="message.consent_warning"
@@ -224,15 +222,15 @@
 
 					<p
 						v-if="result"
-						class="mt-ui-md text-sm"
-						:class="result.ok ? 'text-ink' : 'text-tone-danger'"
+						class="mt-ui-md ui-text-small"
+						:class="result.ok ? 'ui-text-body' : 'ui-text-error'"
 						:role="result.ok ? 'status' : 'alert'"
 						data-testid="sellos-whatsapp-result"
 					>
 						{{ result.text }}
 					</p>
 
-					<div class="mt-ui-lg space-y-ui-md border-t border-line-soft pt-ui-md">
+					<div class="mt-ui-lg space-y-ui-md">
 						<FormField
 							v-model="note"
 							label="Note for the person taking over"
@@ -257,7 +255,7 @@
 							</AppButton>
 						</div>
 					</div>
-				</ListCard>
+				</SectionCard>
 			</div>
 		</div>
 	</PageTemplate>
@@ -272,10 +270,10 @@ import EmptyState from "../components/EmptyState.vue";
 import FilterBar from "../components/FilterBar.vue";
 import FormField from "../components/FormField.vue";
 import KpiStrip from "../components/KpiStrip.vue";
-import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { whatsappApi } from "../whatsapp/whatsappApi";

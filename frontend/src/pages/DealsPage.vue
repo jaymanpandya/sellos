@@ -24,11 +24,35 @@
 			<KpiStrip :items="kpis" data-testid="sellos-deal-stats" />
 		</template>
 
+		<template #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search deals"
+				search-placeholder="Search deals"
+				search-testid="sellos-deal-search"
+				clear-testid="sellos-deal-filter-clear"
+				:active="Boolean(search || statusFilter)"
+				:chips="chips"
+				data-testid="sellos-deal-filters"
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+				<FormField
+					v-model="statusFilter"
+					compact
+					type="select"
+					label="Status"
+					:options="statusOptions"
+					data-testid="sellos-deal-filter-status"
+				/>
+			</FilterBar>
+		</template>
+
 		<p
 			v-if="error && !creating"
 			role="alert"
 			data-testid="sellos-deal-error"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -36,7 +60,7 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-deal-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -53,7 +77,8 @@
 			title="All deals"
 			caption="Deals"
 			:columns="columns"
-			:rows="deals"
+			:rows="shown"
+			:row-to="(row) => `/crm/deals/${row.name}`"
 			:loading="!loaded"
 			loading-label="Loading deals."
 			:row-name="(row) => row.client_name"
@@ -93,7 +118,7 @@
 						:key="n"
 						data-testid="sellos-deal-split"
 						:data-party="s.party_type"
-						class="text-sm text-ink"
+						class="ui-text-small"
 					>
 						{{ s.party_type }}: {{ s.party }}, {{ s.percent }}% ({{
 							formatMoney(s.amount)
@@ -104,7 +129,7 @@
 			<template #cell-approval="{ row }">
 				<p
 					v-if="row.approval_status === 'Approved'"
-					class="mb-ui-sm text-sm text-ink-muted"
+					class="mb-ui-sm ui-text-muted"
 					data-testid="sellos-deal-approved"
 				>
 					Approved by {{ row.approved_by_name }} on
@@ -178,7 +203,7 @@
 				/>
 			</FormSection>
 			<FormSection title="Commission split">
-				<p class="text-sm text-ink-muted md:col-span-2">
+				<p class="md:col-span-2 ui-text-muted">
 					Leave a share empty to leave that party out. The shares must add up to 100.
 				</p>
 				<FormField
@@ -214,19 +239,14 @@
 					data-testid="sellos-deal-company-percent"
 				/>
 				<p
-					class="text-sm md:col-span-2"
-					:class="total === 100 ? 'text-ink' : 'text-danger'"
+					class="md:col-span-2 ui-text-small"
+					:class="total === 100 ? 'ui-text-body' : 'ui-text-error'"
 					data-testid="sellos-deal-total"
 				>
 					The split adds up to {{ total }} percent.
 				</p>
 			</FormSection>
-			<p
-				v-if="error"
-				role="alert"
-				data-testid="sellos-deal-error"
-				class="text-sm text-danger"
-			>
+			<p v-if="error" role="alert" data-testid="sellos-deal-error" class="ui-text-error">
 				{{ error }}
 			</p>
 		</FormDrawer>
@@ -241,6 +261,7 @@ import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import MoneyField from "../components/MoneyField.vue";
@@ -272,6 +293,35 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+
+const search = ref("");
+const statusFilter = ref("");
+const statusOptions = [
+	{ label: "All statuses", value: "" },
+	{ label: "Approved", value: "Approved" },
+	{ label: "Pending approval", value: "Pending approval" },
+];
+const shown = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return deals.value.filter(
+		(r) =>
+			(!q || `${r.client_name} ${r.target}`.toLowerCase().includes(q)) &&
+			(!statusFilter.value || r.approval_status === statusFilter.value)
+	);
+});
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Search: ${search.value}` }] : []),
+	...(statusFilter.value ? [{ key: "status", label: `${statusFilter.value}` }] : []),
+]);
+function clearFilters() {
+	search.value = "";
+	statusFilter.value = "";
+}
+function removeChip(key) {
+	if (key === "search") search.value = "";
+	else statusFilter.value = "";
+}
+
 const creating = ref(false);
 
 const kpis = computed(() => {

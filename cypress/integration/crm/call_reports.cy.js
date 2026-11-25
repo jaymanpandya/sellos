@@ -18,13 +18,17 @@ context("SOS-P2-11: the call reports", () => {
 	const text = (testId) => cy.getByTestId(testId).invoke("text");
 	const open = () => {
 		cy.signInFresh("company_admin");
+		cy.intercept("POST", "**/sellos.reports.calls.call_report*").as("callReport");
 		cy.visit("/sellos/reports/calls");
 		cy.getByTestId("callreports-total-calls").should("be.visible");
+		cy.wait("@callReport");
 	};
 	const setRange = (from, to) => {
 		cy.getByTestId("callreports-from").clear().type(from);
 		cy.getByTestId("callreports-to").clear().type(to);
 		cy.getByTestId("callreports-from").closest("form").find("button[type=submit]").click();
+		// The page writes the answer's dates back into the boxes: wait for it before the next edit.
+		cy.wait("@callReport");
 	};
 
 	it("shows totals that match the Call Log for the dates", () => {

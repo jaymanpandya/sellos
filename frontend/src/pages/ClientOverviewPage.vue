@@ -20,11 +20,11 @@
 					<p
 						v-for="(row, i) in view.buyer.stages"
 						:key="i"
-						class="text-base text-ink"
+						class="ui-text-body"
 						data-testid="sellos-client-buyer-stage"
 					>
 						Where you are: <strong>{{ row.stage }}</strong>
-						<span class="text-ink-muted">, since {{ formatWhen(row.stage_on) }}</span>
+						<span class="ui-text-muted">, since {{ formatWhen(row.stage_on) }}</span>
 					</p>
 				</ListCard>
 
@@ -90,11 +90,11 @@
 					:title="seller.property ? `Your sale: ${seller.property}` : 'Your sale'"
 					data-testid="sellos-client-seller"
 				>
-					<p class="text-base text-ink">
+					<p class="ui-text-body">
 						Where it is: <strong>{{ seller.stage }}</strong>
 					</p>
-					<h3 class="ui-card-heading mt-ui-md">Mandate</h3>
-					<p v-if="!seller.mandate" class="mt-ui-sm text-sm text-ink-muted">
+					<p class="mt-ui-md ui-text-strong">Mandate</p>
+					<p v-if="!seller.mandate" class="mt-ui-sm ui-text-muted">
 						No mandate has been made yet.
 					</p>
 					<div
@@ -102,7 +102,7 @@
 						class="mt-ui-sm flex flex-wrap items-center gap-3"
 						data-testid="sellos-client-mandate"
 					>
-						<span class="text-sm text-ink">
+						<span class="ui-text-small">
 							{{ seller.mandate.type }}, {{ seller.mandate.term_months }} months
 						</span>
 						<StatusBadge
@@ -116,10 +116,10 @@
 						class="mt-ui-sm"
 						data-testid="sellos-client-dossier"
 					>
-						<p v-if="!seller.mandate.dossier_released" class="text-sm text-ink-muted">
+						<p v-if="!seller.mandate.dossier_released" class="ui-text-muted">
 							The Dossier is available once the mandate is signed.
 						</p>
-						<ul v-else class="list-disc pl-5 text-sm text-ink">
+						<ul v-else class="list-disc ml-5 ui-text-small">
 							<li v-for="(item, k) in seller.mandate.dossier" :key="k">
 								{{ item.title }}
 							</li>
@@ -148,10 +148,7 @@
 					:empty-testid="`sellos-client-enquiries-${i}-empty`"
 				>
 					<template #cell-label="{ row }">
-						<span
-							class="font-medium text-ink"
-							data-testid="sellos-client-enquiry-label"
-						>
+						<span class="ui-text-strong" data-testid="sellos-client-enquiry-label">
 							{{ row.label }}
 						</span>
 					</template>

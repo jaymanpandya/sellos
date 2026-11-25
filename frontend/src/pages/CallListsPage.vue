@@ -1,5 +1,5 @@
 <template>
-	<PageTemplate data-testid="sellos-calllists-page">
+	<PageTemplate shape="list" data-testid="sellos-calllists-page">
 		<template #header>
 			<PageHeader
 				title="Call lists"
@@ -106,8 +106,8 @@
 			</template>
 		</DataTable>
 
-		<ListCard title="Untouched leads">
-			<p class="mb-ui-md text-sm text-ink-muted">
+		<SectionCard title="Untouched leads">
+			<p class="mb-ui-md ui-text-muted">
 				A lead in an open stage with no open follow up is flagged untouched after this many
 				days.
 			</p>
@@ -141,7 +141,7 @@
 					data-testid="sellos-calllists-untouched-saved"
 				/>
 			</form>
-		</ListCard>
+		</SectionCard>
 
 		<!-- The two add forms are drawers: nothing is an open form under a list. -->
 		<FormDrawer
@@ -176,7 +176,7 @@
 					data-testid="sellos-calllists-new-outcome-followup"
 				/>
 			</FormSection>
-			<p v-if="formError" role="alert" class="text-sm text-tone-danger">{{ formError }}</p>
+			<p v-if="formError" role="alert" class="ui-text-error">{{ formError }}</p>
 		</FormDrawer>
 		<FormDrawer
 			:open="reasonOpen"
@@ -198,7 +198,7 @@
 					data-testid="sellos-calllists-new-reason"
 				/>
 			</FormSection>
-			<p v-if="formError" role="alert" class="text-sm text-tone-danger">{{ formError }}</p>
+			<p v-if="formError" role="alert" class="ui-text-error">{{ formError }}</p>
 		</FormDrawer>
 	</PageTemplate>
 </template>
@@ -213,10 +213,10 @@ import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import KpiStrip from "../components/KpiStrip.vue";
-import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
 

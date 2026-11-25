@@ -1,6 +1,6 @@
 <template>
-	<ListCard title="Shortlists" data-testid="sellos-lead-shortlists">
-		<p class="mb-ui-sm text-sm text-ink-muted">
+	<SectionCard title="Shortlists" data-testid="sellos-lead-shortlists">
+		<p class="mb-ui-sm ui-text-muted">
 			Homes for this buyer, in the order you choose, shared as a link to their own view or as
 			a PDF. Add homes from the matching homes above.
 		</p>
@@ -11,7 +11,7 @@
 			v-if="error"
 			role="alert"
 			data-testid="sellos-shortlist-error"
-			class="mt-ui-sm text-sm text-accent"
+			class="mt-ui-sm ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -21,21 +21,21 @@
 			text="Make one, or press Add to shortlist on a matching home."
 			icon="lucide-list-checks"
 		/>
-		<ul class="mt-ui-sm space-y-ui-sm">
+		<ul class="mt-ui-sm ui-list">
 			<li
 				v-for="row in rows"
 				:key="row.name"
-				class="rounded-card border border-line-soft p-ui-md"
+				class="space-y-ui-sm"
 				data-testid="sellos-shortlist-row"
 				:data-name="row.name"
 			>
 				<div class="flex flex-wrap items-center gap-3">
-					<span class="font-medium text-ink">{{ row.title }}</span>
+					<span class="ui-text-strong">{{ row.title }}</span>
 					<StatusBadge
 						:tone="row.shared ? 'success' : 'neutral'"
 						:label="row.shared ? 'Shared' : 'Draft'"
 					/>
-					<span class="text-sm text-ink-muted">{{ row.item_count }} homes</span>
+					<span class="ui-text-muted">{{ row.item_count }} homes</span>
 					<AppButton
 						type="button"
 						data-testid="sellos-shortlist-open"
@@ -77,21 +77,21 @@
 						text="Add homes from the matching homes above."
 						icon="lucide-building"
 					/>
-					<ol class="space-y-ui-sm">
+					<ol class="ui-list">
 						<li
 							v-for="(item, index) in current.items"
 							:key="item.name"
-							class="rounded-card border border-line-soft p-ui-md"
+							class="space-y-ui-sm"
 							data-testid="sellos-shortlist-item"
 							:data-title="item.title"
 							:data-unavailable="item.unavailable"
 						>
 							<div class="flex flex-wrap items-center gap-3">
-								<span class="font-medium text-ink">
+								<span class="ui-text-strong">
 									{{ index + 1 }}. {{ item.title }}
 								</span>
 								<StatusBadge tone="info" :label="item.kind" />
-								<span class="text-sm text-ink-muted">
+								<span class="ui-text-muted">
 									{{ item.price ? rupees(item.price) : "No price yet" }}
 								</span>
 								<StatusBadge
@@ -101,7 +101,7 @@
 									data-testid="sellos-shortlist-unavailable"
 								/>
 								<span
-									class="text-sm text-ink-muted"
+									class="ui-text-muted"
 									data-testid="sellos-shortlist-opened"
 									:data-count="item.opened.count"
 								>
@@ -185,18 +185,14 @@
 						v-if="notice"
 						role="status"
 						data-testid="sellos-shortlist-notice"
-						class="text-sm text-ink"
+						class="ui-text-small"
 					>
 						{{ notice }}
 					</p>
-					<p
-						v-if="shared"
-						class="text-sm text-ink-muted"
-						data-testid="sellos-shortlist-link"
-					>
+					<p v-if="shared" class="ui-text-muted" data-testid="sellos-shortlist-link">
 						{{ shared.link }}
 					</p>
-					<p v-if="current.shared" class="text-sm text-ink-muted">
+					<p v-if="current.shared" class="ui-text-muted">
 						Shared {{ current.share_count }} time(s), last on
 						{{ whenText(current.shared_on) }}. {{ current.opened_count }} of
 						{{ current.item_count }} homes opened by the buyer.
@@ -204,7 +200,7 @@
 				</div>
 			</li>
 		</ul>
-	</ListCard>
+	</SectionCard>
 </template>
 
 <script setup>
@@ -213,7 +209,7 @@ import { onMounted, reactive, ref } from "vue";
 import AppButton from "../components/AppButton.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { rupees, shortlistApi, whenText } from "./inventoryApi";

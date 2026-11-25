@@ -55,7 +55,7 @@
 					</span>
 				</template>
 				<template #cell-deal_date="{ row }">
-					<span class="text-ink-body">{{ formatDate(row.deal_date) }}</span>
+					<span class="ui-text-secondary">{{ formatDate(row.deal_date) }}</span>
 				</template>
 				<template #cell-percent="{ row }">
 					<span class="tabular-nums">{{ row.percent }}%</span>
@@ -79,15 +79,15 @@
 						height="160"
 						data-testid="sellos-partner-earnings-qr"
 					/>
-					<div class="text-sm text-ink">
+					<div class="ui-text-small">
 						<p>Share this code or your link with buyers and with your own team.</p>
 						<p
-							class="mt-ui-sm break-all text-ink-muted"
+							class="mt-ui-sm break-all ui-text-muted"
 							data-testid="sellos-partner-earnings-link"
 						>
 							{{ result.link }}
 						</p>
-						<p class="mt-ui-sm text-ink-muted">Partner code {{ result.firm.name }}</p>
+						<p class="mt-ui-sm ui-text-muted">Partner code {{ result.firm.name }}</p>
 					</div>
 				</div>
 			</ListCard>

@@ -57,7 +57,7 @@
 		</div>
 		<LoadingSkeleton v-else-if="!result" />
 		<div v-else class="space-y-ui-md">
-			<p class="text-sm text-ink-muted" data-testid="sellos-partner-reports-about">
+			<p class="ui-text-muted" data-testid="sellos-partner-reports-about">
 				<span v-if="result.firm" data-testid="sellos-partner-reports-firm">
 					{{ result.firm.firm_name }}.
 				</span>
@@ -84,7 +84,7 @@
 				</template>
 			</DataTable>
 
-			<p class="text-sm text-ink-muted" data-testid="sellos-partner-reports-shown">
+			<p class="ui-text-muted" data-testid="sellos-partner-reports-shown">
 				{{ result.leads.shown }} of {{ result.leads.total }} leads are listed.
 			</p>
 			<DataTable

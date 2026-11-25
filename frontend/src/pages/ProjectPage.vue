@@ -1,35 +1,54 @@
 <template>
-	<PageTemplate data-testid="sellos-project-page">
+	<PageTemplate shape="record" data-testid="sellos-project-page">
 		<template #header>
-			<PageHeader
+			<RecordHeader
 				:title="project ? project.project_name : 'Project'"
-				text="The project's RERA number and its units. Each unit has a configuration, carpet area, floor, parking and a status."
-				icon="lucide-building-2"
+				:line="
+					project
+						? [
+								project.developer,
+								[project.locality, project.city].filter(Boolean).join(', '),
+						  ]
+								.filter(Boolean)
+								.join(', ')
+						: ''
+				"
+				:back-to="{ name: 'inventory' }"
+				back-label="Back to inventory"
 			>
-				<AppButton
-					v-if="canEdit"
-					type="button"
-					variant="primary"
-					data-testid="sellos-unit-add"
-					@click="openUnitForm"
-				>
-					<template #prefix
-						><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
-					/></template>
-					Add unit
-				</AppButton>
-			</PageHeader>
+				<template v-if="project" #status>
+					<StatusBadge tone="neutral" :label="project.project_status" />
+				</template>
+				<template #actions>
+					<AppButton
+						v-if="canEdit"
+						type="button"
+						variant="primary"
+						data-testid="sellos-unit-add"
+						@click="openUnitForm"
+					>
+						<template #prefix
+							><span class="lucide-plus icon-inherit size-4" aria-hidden="true"
+						/></template>
+						Add unit
+					</AppButton>
+				</template>
+			</RecordHeader>
 		</template>
 
 		<template v-if="project" #kpis>
 			<KpiStrip :items="kpis" data-testid="sellos-project-stats" />
 		</template>
 
+		<template #tabs>
+			<PageTabs v-model="tab" :tabs="tabs" label="Project sections" />
+		</template>
+
 		<p
 			v-if="error"
 			role="alert"
 			data-testid="sellos-project-error"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -37,7 +56,7 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-project-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -45,29 +64,98 @@
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 
-		<div v-if="project" class="ui-card mb-ui-md" data-testid="sellos-project-summary">
-			<p class="text-sm text-ink">
-				<span class="font-medium">{{ project.developer }}</span
-				>. RERA number:
-				<span data-testid="sellos-project-rera">{{ project.rera_number }}</span
-				>. {{ [project.locality, project.city].filter(Boolean).join(", ") }}.
-				{{ project.project_status }}.
-			</p>
-			<p class="text-sm text-ink-muted" data-testid="sellos-project-counts">
-				{{ project.units.total }} units: {{ project.units.Available }} available,
-				{{ project.units.Held }} held, {{ project.units.Booked }} booked,
-				{{ project.units.Sold }} sold, {{ project.units.Blocked }} blocked.
-			</p>
-			<p class="text-sm text-ink-muted" data-testid="sellos-project-possession">
-				Possession: {{ formatDate(project.possession_date) || "not set" }}.
-			</p>
-		</div>
+		<template v-if="tab === 'units'">
+			<UnitGrid v-if="project" :project="route.params.name" :refresh="units" />
 
-		<UnitGrid v-if="project" class="mb-ui-md" :project="route.params.name" :refresh="units" />
+			<DataTable
+				title="Units"
+				caption="Units"
+				:columns="columns"
+				:rows="units"
+				:loading="!loaded && !loadError"
+				loading-label="Loading units."
+				:row-attrs="
+					(u) => ({
+						'data-number': u.unit_number,
+						'data-status': u.status,
+					})
+				"
+				:row-name="(u) => `unit ${u.unit_number}`"
+				empty-title="No units yet"
+				empty-text="Add the first unit."
+				empty-icon="lucide-door-open"
+				testid="sellos-project-units"
+				row-testid="sellos-unit-row"
+			>
+				<template #cell-unit_number="{ row }">
+					<span class="ui-text-strong" data-testid="sellos-unit-number">{{
+						row.unit_number
+					}}</span>
+				</template>
+				<template #cell-status="{ row }">
+					<StatusBadge
+						:tone="STATUS_TONE[row.status] || 'neutral'"
+						:label="row.status"
+						data-testid="sellos-unit-status"
+					/>
+				</template>
+				<template #cell-configuration="{ row }">
+					{{ row.configuration || "No configuration" }}
+				</template>
+				<template #cell-carpet_area="{ row }">{{ row.carpet_area }} sq ft</template>
+				<template #cell-floor="{ row }">{{ row.floor ?? "-" }}</template>
+				<template #cell-cost_sheet="{ row }">
+					<router-link
+						:to="{ name: 'cost-sheet', params: { unit: row.name } }"
+						class="ui-link ui-text-strong"
+						data-testid="sellos-unit-cost-sheet"
+					>
+						Cost sheet
+					</router-link>
+				</template>
+				<template #cell-change="{ row }">
+					<div class="flex flex-wrap items-end gap-ui-sm">
+						<FormField
+							v-model="reasons[row.name]"
+							label="Reason (optional)"
+							class="w-56"
+							data-testid="sellos-unit-reason"
+						/>
+						<AppButton
+							v-for="s in otherStatuses(row.status)"
+							:key="s"
+							type="button"
+							:data-testid="`sellos-unit-set-${s.toLowerCase()}`"
+							@click="changeStatus(row, s)"
+						>
+							Mark {{ s }}
+						</AppButton>
+					</div>
+				</template>
+				<template #cell-log="{ row }">
+					<details data-testid="sellos-unit-log">
+						<summary class="cursor-pointer ui-text-muted">Status log</summary>
+						<ul class="mt-1 space-y-1 ui-text-muted">
+							<li
+								v-for="(l, i) in row.log"
+								:key="i"
+								data-testid="sellos-unit-log-row"
+							>
+								{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}
+								<span v-if="l.from_status"
+									>moved it from {{ l.from_status }} to</span
+								>
+								<span v-else>set it</span>
+								{{ l.to_status }}<span v-if="l.reason"> ({{ l.reason }})</span>
+							</li>
+						</ul>
+					</details>
+				</template>
+			</DataTable>
+		</template>
 
 		<ProjectStructure
-			v-if="project"
-			class="mb-ui-md"
+			v-if="project && tab === 'structure'"
 			:project="route.params.name"
 			:towers="structure.towers"
 			:can-edit="canEdit"
@@ -81,87 +169,41 @@
 			@options="structure.amenity_options = $event"
 		/>
 
-		<ProjectPricing v-if="project" class="mb-ui-md" :project="route.params.name" />
+		<ProjectPricing v-if="project && tab === 'pricing'" :project="route.params.name" />
 
-		<DataTable
-			title="Units"
-			caption="Units"
-			:columns="columns"
-			:rows="units"
-			:loading="!loaded && !loadError"
-			loading-label="Loading units."
-			:row-attrs="
-				(u) => ({
-					'data-number': u.unit_number,
-					'data-status': u.status,
-				})
-			"
-			:row-name="(u) => `unit ${u.unit_number}`"
-			empty-title="No units yet"
-			empty-text="Add the first unit."
-			empty-icon="lucide-door-open"
-			testid="sellos-project-units"
-			row-testid="sellos-unit-row"
-		>
-			<template #cell-unit_number="{ row }">
-				<span class="font-medium" data-testid="sellos-unit-number">{{
-					row.unit_number
-				}}</span>
-			</template>
-			<template #cell-status="{ row }">
-				<StatusBadge
-					:tone="STATUS_TONE[row.status] || 'neutral'"
-					:label="row.status"
-					data-testid="sellos-unit-status"
-				/>
-			</template>
-			<template #cell-configuration="{ row }">
-				{{ row.configuration || "No configuration" }}
-			</template>
-			<template #cell-carpet_area="{ row }">{{ row.carpet_area }} sq ft</template>
-			<template #cell-floor="{ row }">{{ row.floor ?? "-" }}</template>
-			<template #cell-cost_sheet="{ row }">
-				<router-link
-					:to="{ name: 'cost-sheet', params: { unit: row.name } }"
-					class="ui-link text-sm font-medium"
-					data-testid="sellos-unit-cost-sheet"
-				>
-					Cost sheet
-				</router-link>
-			</template>
-			<template #cell-change="{ row }">
-				<div class="flex flex-wrap items-end gap-ui-sm">
-					<FormField
-						v-model="reasons[row.name]"
-						label="Reason (optional)"
-						class="w-56"
-						data-testid="sellos-unit-reason"
-					/>
-					<AppButton
-						v-for="s in otherStatuses(row.status)"
-						:key="s"
-						type="button"
-						:data-testid="`sellos-unit-set-${s.toLowerCase()}`"
-						@click="changeStatus(row, s)"
-					>
-						Mark {{ s }}
-					</AppButton>
-				</div>
-			</template>
-			<template #cell-log="{ row }">
-				<details data-testid="sellos-unit-log">
-					<summary class="cursor-pointer text-sm text-ink-muted">Status log</summary>
-					<ul class="mt-1 space-y-1 text-sm text-ink-muted">
-						<li v-for="(l, i) in row.log" :key="i" data-testid="sellos-unit-log-row">
-							{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}
-							<span v-if="l.from_status">moved it from {{ l.from_status }} to</span>
-							<span v-else>set it</span>
-							{{ l.to_status }}<span v-if="l.reason"> ({{ l.reason }})</span>
-						</li>
-					</ul>
-				</details>
-			</template>
-		</DataTable>
+		<template #side>
+			<SectionCard v-if="project" title="Project" data-testid="sellos-project-summary">
+				<dl>
+					<FieldGrid :columns="1">
+						<ReadField label="Developer" :value="project.developer" />
+						<ReadField label="RERA number">
+							<span class="ui-text-body" data-testid="sellos-project-rera">{{
+								project.rera_number
+							}}</span>
+						</ReadField>
+						<ReadField
+							label="Location"
+							:value="[project.locality, project.city].filter(Boolean).join(', ')"
+						/>
+						<ReadField label="Possession">
+							<span class="ui-text-body" data-testid="sellos-project-possession">{{
+								formatDate(project.possession_date) || "Not filled in"
+							}}</span>
+						</ReadField>
+					</FieldGrid>
+				</dl>
+			</SectionCard>
+			<SectionCard v-if="project" title="Units">
+				<p class="ui-text-muted" data-testid="sellos-project-counts">
+					{{ project.units.total }} units: {{ project.units.Available }} available,
+					{{ project.units.Held }} held, {{ project.units.Booked }} booked,
+					{{ project.units.Sold }} sold, {{ project.units.Blocked }} blocked.
+				</p>
+			</SectionCard>
+			<SectionCard v-else title="Project">
+				<LoadingSkeleton :rows="3" label="Loading the project." />
+			</SectionCard>
+		</template>
 
 		<FormDrawer
 			v-if="canEdit"
@@ -211,7 +253,7 @@
 			<p
 				v-if="error"
 				role="alert"
-				class="text-sm text-danger"
+				class="ui-text-error"
 				data-testid="sellos-unit-form-error"
 			>
 				{{ error }}
@@ -226,13 +268,18 @@ import { useRoute } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
+import FieldGrid from "../components/FieldGrid.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
-import PageHeader from "../components/PageHeader.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import PageTabs from "../components/PageTabs.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import ReadField from "../components/ReadField.vue";
+import RecordHeader from "../components/RecordHeader.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { formatDate, formatWhen } from "../format";
@@ -254,6 +301,14 @@ const loadError = ref("");
 const loaded = ref(false);
 const reasons = reactive({});
 const unitOpen = ref(false);
+const tab = ref("units");
+const tabs = [
+	{ key: "units", label: "Units" },
+	{ key: "structure", label: "Structure" },
+	{ key: "pricing", label: "Pricing" },
+];
+// A link or a test may open a tab: ?tab=structure or ?tab=pricing.
+if (tabs.some((t) => t.key === route.query.tab)) tab.value = route.query.tab;
 const saving = ref(false);
 // SOS-P7-05: towers, floors, possession date, amenities and brochures.
 const structure = reactive({

@@ -1,10 +1,15 @@
 <template>
-	<PageTemplate data-testid="sellos-cost-sheet-page">
+	<PageTemplate shape="record" data-testid="sellos-cost-sheet-page">
 		<template #header>
-			<PageHeader
+			<RecordHeader
 				:title="options ? `Cost sheet for unit ${options.unit.unit_number}` : 'Cost sheet'"
-				text="The price from the price list in force, the charges, stamp duty, registration and GST, the total and the payment plan's schedule."
-				icon="lucide-receipt-indian-rupee"
+				:line="options ? options.unit.project_name : ''"
+				:back-to="
+					options
+						? { name: 'project', params: { name: options.unit.project } }
+						: { name: 'inventory' }
+				"
+				back-label="Back to the project"
 			/>
 		</template>
 
@@ -16,7 +21,7 @@
 			v-if="error"
 			role="alert"
 			data-testid="sellos-cost-error"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -24,101 +29,71 @@
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 
-		<div v-if="options" class="ui-card mb-ui-md" data-testid="sellos-cost-unit">
-			<p class="text-sm text-ink">
-				<router-link
-					:to="{ name: 'project', params: { name: options.unit.project } }"
-					class="ui-link font-medium"
-					data-testid="sellos-cost-project-link"
-				>
-					{{ options.unit.project_name }}
-				</router-link>
-				, unit {{ options.unit.unit_number }},
-				{{ options.unit.configuration || "no configuration" }},
-				{{ options.unit.carpet_area }} sq ft carpet area, floor
-				{{ options.unit.floor ?? "-" }}, {{ options.unit.parking }} parking.
-			</p>
-			<p
-				v-if="options.price_list"
-				class="text-sm text-ink-muted"
-				data-testid="sellos-cost-list"
-			>
-				Price list in force: {{ options.price_list.title }} (from
-				{{ formatDate(options.price_list.effective_from) }}),
-				{{ formatMoney(options.price_list.base_rate) }} per sq ft.
-			</p>
-		</div>
-
-		<p
-			v-if="options && !options.ready"
-			role="status"
-			data-testid="sellos-cost-problem"
-			class="ui-card mb-ui-md text-sm text-danger"
-		>
+		<Notice v-if="options && !options.ready" tone="danger" testid="sellos-cost-problem">
 			{{ options.problem }}
-		</p>
+		</Notice>
 
 		<form
 			v-if="options && options.ready"
-			class="ui-card mb-ui-md"
 			data-testid="sellos-cost-form"
 			@submit.prevent="make"
 		>
-			<h2 class="ui-card-heading mb-ui-md">Make a cost sheet</h2>
-			<EmptyState
-				v-if="!options.plans.length"
-				title="No payment plan yet"
-				text="A Company Admin adds a payment plan on the project page."
-				icon="lucide-calendar-clock"
-			/>
-			<FormField
-				v-else
-				v-model="planName"
-				type="select"
-				label="Payment plan"
-				:options="planOptions"
-				required
-				class="max-w-md"
-				data-testid="sellos-cost-plan"
-			/>
-			<div v-if="optional.length" class="mt-ui-md space-y-ui-sm">
-				<h3 class="text-sm font-medium text-ink">Charges to add</h3>
-				<AppCheckbox
-					v-for="c in optional"
-					:key="c.charge_name"
-					:model-value="!!chosen[c.charge_name]"
-					:label="`${c.charge_name} (${formatMoney(c.value)}${
-						c.basis === 'Rate per sq ft' ? ' per sq ft' : ''
-					})`"
-					:data-testid="`sellos-cost-charge-${c.charge_name}`"
-					@update:model-value="chosen[c.charge_name] = $event"
+			<SectionCard title="Make a cost sheet">
+				<EmptyState
+					v-if="!options.plans.length"
+					title="No payment plan yet"
+					text="A Company Admin adds a payment plan on the project page."
+					icon="lucide-calendar-clock"
 				/>
-			</div>
-			<div class="mt-ui-md">
-				<AppButton
-					type="submit"
-					variant="primary"
-					:disabled="!options.plans.length"
-					data-testid="sellos-cost-make"
-				>
-					Make cost sheet
-				</AppButton>
-			</div>
+				<FieldGrid v-else>
+					<FormField
+						v-model="planName"
+						type="select"
+						label="Payment plan"
+						:options="planOptions"
+						required
+						data-testid="sellos-cost-plan"
+					/>
+				</FieldGrid>
+				<div v-if="optional.length" class="mt-ui-md space-y-ui-sm">
+					<p class="ui-text-strong">Charges to add</p>
+					<AppCheckbox
+						v-for="c in optional"
+						:key="c.charge_name"
+						:model-value="!!chosen[c.charge_name]"
+						:label="`${c.charge_name} (${formatMoney(c.value)}${
+							c.basis === 'Rate per sq ft' ? ' per sq ft' : ''
+						})`"
+						:data-testid="`sellos-cost-charge-${c.charge_name}`"
+						@update:model-value="chosen[c.charge_name] = $event"
+					/>
+				</div>
+				<template #footer>
+					<AppButton
+						type="submit"
+						variant="primary"
+						:disabled="!options.plans.length"
+						data-testid="sellos-cost-make"
+					>
+						Make cost sheet
+					</AppButton>
+				</template>
+			</SectionCard>
 		</form>
 
-		<ListCard v-if="sheet" :title="`Cost sheet ${sheet.name}`" class="mb-ui-md">
+		<SectionCard v-if="sheet" :title="`Cost sheet ${sheet.name}`">
 			<div data-testid="sellos-cost-sheet" :data-name="sheet.name">
-				<p class="mb-ui-sm text-sm text-ink-muted">
+				<p class="mb-ui-sm ui-text-muted">
 					Price list {{ sheet.price_list_title }} (from
 					{{ formatDate(sheet.price_list_from) }}), made by {{ sheet.made_by }}.
 				</p>
-				<ul class="divide-y divide-line-soft" data-testid="sellos-cost-lines">
+				<ul class="ui-list" data-testid="sellos-cost-lines">
 					<li
 						v-for="line in lines"
 						:key="line.key"
 						:data-testid="`sellos-cost-line-${line.key}`"
-						class="flex justify-between gap-ui-md py-1 text-sm"
-						:class="line.strong ? 'font-semibold text-ink' : 'text-ink'"
+						class="flex justify-between gap-ui-md ui-text-small"
+						:class="line.strong ? 'ui-text-strong' : 'ui-text-body'"
 					>
 						<span>{{ line.label }}</span>
 						<span class="tabular-nums" data-testid="sellos-cost-amount">{{
@@ -126,15 +101,15 @@
 						}}</span>
 					</li>
 				</ul>
-				<h3 class="mt-ui-md text-sm font-medium text-ink">
+				<p class="mt-ui-md ui-text-strong">
 					{{ sheet.plan_name }} ({{ sheet.plan_type }})
-				</h3>
-				<ul class="divide-y divide-line-soft" data-testid="sellos-cost-schedule">
+				</p>
+				<ul class="ui-list" data-testid="sellos-cost-schedule">
 					<li
 						v-for="(i, n) in sheet.instalments"
 						:key="n"
 						data-testid="sellos-cost-instalment"
-						class="flex justify-between gap-ui-md py-1 text-sm text-ink"
+						class="flex justify-between gap-ui-md ui-text-small"
 					>
 						<span
 							>{{ i.label
@@ -151,14 +126,14 @@
 						:href="costSheetApi.pdfUrl(sheet.name)"
 						target="_blank"
 						rel="noopener"
-						class="ui-link font-medium"
+						class="ui-link ui-text-strong"
 						data-testid="sellos-cost-pdf"
 					>
 						Download the PDF
 					</a>
 				</p>
 			</div>
-		</ListCard>
+		</SectionCard>
 
 		<DataTable
 			v-if="options"
@@ -180,6 +155,35 @@
 				</AppButton>
 			</template>
 		</DataTable>
+
+		<template #side>
+			<SectionCard v-if="options" title="Unit" data-testid="sellos-cost-unit">
+				<p class="ui-text-small">
+					<router-link
+						:to="{ name: 'project', params: { name: options.unit.project } }"
+						class="ui-link ui-text-strong"
+						data-testid="sellos-cost-project-link"
+					>
+						{{ options.unit.project_name }}
+					</router-link>
+					, unit {{ options.unit.unit_number }},
+					{{ options.unit.configuration || "no configuration" }},
+					{{ options.unit.carpet_area }} sq ft carpet area, floor
+					{{ options.unit.floor ?? "-" }}, {{ options.unit.parking }} parking.
+				</p>
+			</SectionCard>
+			<SectionCard v-if="options" title="Price list in force">
+				<p v-if="options.price_list" class="ui-text-muted" data-testid="sellos-cost-list">
+					Price list in force: {{ options.price_list.title }} (from
+					{{ formatDate(options.price_list.effective_from) }}),
+					{{ formatMoney(options.price_list.base_rate) }} per sq ft.
+				</p>
+				<p v-else class="ui-text-muted">Not filled in</p>
+			</SectionCard>
+			<SectionCard v-if="!options" title="Unit">
+				<LoadingSkeleton :rows="3" label="Loading the unit." />
+			</SectionCard>
+		</template>
 	</PageTemplate>
 </template>
 
@@ -191,11 +195,14 @@ import AppButton from "../components/AppButton.vue";
 import AppCheckbox from "../components/AppCheckbox.vue";
 import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
+import FieldGrid from "../components/FieldGrid.vue";
 import FormField from "../components/FormField.vue";
 import KpiStrip from "../components/KpiStrip.vue";
-import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
-import PageHeader from "../components/PageHeader.vue";
+import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import Notice from "../components/Notice.vue";
+import RecordHeader from "../components/RecordHeader.vue";
+import SectionCard from "../components/SectionCard.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import { serverMessage } from "../crm/crmApi";
 import { formatDate, formatMoney } from "../format";

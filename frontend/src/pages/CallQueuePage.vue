@@ -1,5 +1,5 @@
 <template>
-	<PageTemplate data-testid="sellos-queue">
+	<PageTemplate shape="list" data-testid="sellos-queue">
 		<template #header>
 			<PageHeader title="Call queue" text="Who to call next." icon="lucide-phone" />
 		</template>
@@ -8,10 +8,10 @@
 			<KpiStrip :items="kpis" data-testid="sellos-queue-stats" />
 		</template>
 
-		<p class="mb-ui-md text-sm text-ink-muted" data-testid="sellos-queue-note">
+		<Notice class="mb-ui-md" testid="sellos-queue-note">
 			Consented leads come first, the soonest expiry first, then the rest. Every lead you may
 			see is here, and a warning never stops a call.
-		</p>
+		</Notice>
 		<LoadError
 			v-if="error"
 			class="mb-ui-md"
@@ -41,7 +41,7 @@
 			empty-testid="sellos-queue-empty"
 		>
 			<template #cell-position="{ row }">
-				<span class="text-ink-muted" data-testid="sellos-queue-position">{{
+				<span class="ui-text-muted" data-testid="sellos-queue-position">{{
 					row.position
 				}}</span>
 			</template>
@@ -58,20 +58,23 @@
 				/>
 				<p
 					v-if="row.consent_message"
-					class="mt-1 text-xs"
-					:class="row.consent_warning === 'red' ? 'text-tone-danger' : 'text-ink-muted'"
+					class="mt-1 ui-text-small"
+					:class="row.consent_warning === 'red' ? 'ui-text-error' : 'ui-text-muted'"
 					data-testid="sellos-queue-warning"
 				>
 					{{ row.consent_message }}
 				</p>
 			</template>
 			<template #cell-time_left="{ row }">
-				<span v-if="row.time_left" class="text-ink" data-testid="sellos-queue-time-left"
+				<span
+					v-if="row.time_left"
+					class="ui-text-body"
+					data-testid="sellos-queue-time-left"
 					>{{ row.time_left }} left</span
 				>
 				<span
 					v-else-if="row.consent_status === 'Consented'"
-					class="text-ink-muted"
+					class="ui-text-muted"
 					data-testid="sellos-queue-no-expiry"
 					>No expiry</span
 				>
@@ -91,7 +94,7 @@
 				</AppButton>
 				<p
 					v-if="shown.has(row.lead)"
-					class="mt-ui-sm text-sm text-ink"
+					class="mt-ui-sm ui-text-small"
 					data-testid="sellos-queue-number"
 				>
 					<template v-if="row.phone">
@@ -115,6 +118,7 @@ import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
+import Notice from "../components/Notice.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";

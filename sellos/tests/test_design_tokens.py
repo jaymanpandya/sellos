@@ -15,6 +15,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 THEME = REPO_ROOT / "frontend" / "src" / "theme"
 JS = (THEME / "ui-tokens.js").read_text(encoding="utf-8")
+# The formatter may break a line: the token file is read with its whitespace removed.
+JS_FLAT = "".join(JS.split())
 CSS = (THEME / "ui-tokens.css").read_text(encoding="utf-8")
 
 AREAS = ["sales", "calls", "inventory", "money", "company"]
@@ -46,12 +48,12 @@ class TestDesignTokens(unittest.TestCase):
 			"fieldGap: { across: 20, down: 16 }",
 			"pageMargin: { base: 16, from640: 24 }",
 			"contentMaxWidth: 1440",
-			"fast: 120, base: 180, slow: 250",
+			"fast: 120, base: 180, slow: 250,",
 			"cubic-bezier(0.16, 1, 0.3, 1)",
 			'font: "Inter"',
 			"typeFloor: { smallPrint: 14, reading: 16 }",
 		):
-			self.assertIn(needle, JS)
+			self.assertIn("".join(needle.split()), JS_FLAT)
 
 	def test_the_css_variables_repeat_the_tokens(self):
 		self.assertEqual(css_var("--radius-card"), "14px")

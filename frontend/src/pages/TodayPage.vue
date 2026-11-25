@@ -1,6 +1,6 @@
 <template>
 	<div data-testid="sellos-today">
-		<p class="mb-ui-md text-sm text-ink-muted" data-testid="sellos-today-scope">
+		<p class="mb-ui-md ui-text-muted" data-testid="sellos-today-scope">
 			{{ scopeNote }}
 		</p>
 		<LoadError
@@ -27,14 +27,14 @@
 				</li>
 			</ul>
 
-			<section
+			<SectionCard
 				v-for="s in SECTIONS"
 				:id="`today-${s.key}`"
 				:key="s.key"
+				:title="s.label"
 				class="mb-ui-md"
 				:data-testid="`sellos-today-section-${s.key}`"
 			>
-				<h3 class="ui-card-heading mb-ui-sm">{{ s.label }}</h3>
 				<EmptyState
 					v-if="!view[s.key].length"
 					:data-testid="`sellos-today-empty-${s.key}`"
@@ -49,9 +49,9 @@
 						data-testid="sellos-today-agent"
 						:data-agent="group.agent"
 					>
-						<h4 class="mb-1 text-sm font-medium text-ink">
+						<p class="mb-1 ui-text-strong">
 							{{ group.agent_name }} ({{ group.rows.length }})
-						</h4>
+						</p>
 						<DataTable
 							:caption="`${s.label}, ${group.agent_name}`"
 							:columns="columnsFor(s.key)"
@@ -62,7 +62,7 @@
 							<template #cell-lead_title="{ row }">
 								<router-link
 									:to="`/crm/leads/${row.lead}`"
-									class="ui-link font-medium"
+									class="ui-link ui-text-strong"
 									data-testid="sellos-today-lead"
 									>{{ row.lead_title }}</router-link
 								>
@@ -101,7 +101,7 @@
 					<template #cell-lead_title="{ row }">
 						<router-link
 							:to="`/crm/leads/${row.lead}`"
-							class="ui-link font-medium"
+							class="ui-link ui-text-strong"
 							data-testid="sellos-today-lead"
 							>{{ row.lead_title }}</router-link
 						>
@@ -125,7 +125,7 @@
 						/>
 					</template>
 				</DataTable>
-			</section>
+			</SectionCard>
 		</template>
 
 		<!-- Log a call: a drawer, so no form sits open under a list. -->
@@ -167,7 +167,7 @@
 				v-if="logError"
 				role="alert"
 				data-testid="sellos-today-log-error"
-				class="text-sm text-tone-danger"
+				class="ui-text-error"
 			>
 				{{ logError }}
 			</p>
@@ -185,6 +185,7 @@ import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TodayRow from "../components/TodayRow.vue";
 import VisitConfirm from "../components/VisitConfirm.vue";

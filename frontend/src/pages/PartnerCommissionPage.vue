@@ -51,15 +51,13 @@
 		/>
 		<LoadingSkeleton v-else-if="!result" />
 		<template v-else>
-			<p
-				class="mb-ui-md text-sm text-ink-muted"
-				data-testid="sellos-partner-commission-about"
-			>
+			<p class="mb-ui-md ui-text-muted" data-testid="sellos-partner-commission-about">
 				Deals booked from {{ formatDate(result.from_date) }} to
 				{{ formatDate(result.to_date) }}. All payouts in these dates:
-				<b class="text-ink tabular-nums" data-testid="sellos-partner-commission-total">{{
-					formatMoney(result.totals.total, 2)
-				}}</b
+				<b
+					class="tabular-nums ui-text-body"
+					data-testid="sellos-partner-commission-total"
+					>{{ formatMoney(result.totals.total, 2) }}</b
 				>.
 			</p>
 			<DataTable
@@ -81,14 +79,14 @@
 					<StatusBadge :tone="TONES[row.status]" :label="row.status" />
 				</template>
 				<template #cell-booking_date="{ row }">
-					<span class="text-ink-body">{{ formatDate(row.booking_date) }}</span>
+					<span class="ui-text-secondary">{{ formatDate(row.booking_date) }}</span>
 				</template>
 				<template #cell-agreement_value="{ row }">
 					<span class="tabular-nums">{{ formatMoney(row.agreement_value, 2) }}</span>
 				</template>
 				<template #cell-partner_percent="{ row }">
 					<span class="block tabular-nums">{{ row.partner_percent }}%</span>
-					<span class="block text-sm text-ink-muted">{{ row.rate_basis }}</span>
+					<span class="block ui-text-muted">{{ row.rate_basis }}</span>
 				</template>
 				<template #cell-commission_due="{ row }">
 					<span class="tabular-nums" data-testid="sellos-partner-commission-due">{{
@@ -96,11 +94,11 @@
 					}}</span>
 				</template>
 				<template #cell-notes="{ row }">
-					<p v-if="row.status === 'Paid'" class="text-sm text-ink">
+					<p v-if="row.status === 'Paid'" class="ui-text-small">
 						Paid on {{ formatDate(row.paid_on) }}, reference
 						{{ row.payment_reference }}.
 					</p>
-					<p v-if="row.status === 'On hold'" class="text-sm text-ink">
+					<p v-if="row.status === 'On hold'" class="ui-text-small">
 						On hold: {{ row.hold_reason }}
 					</p>
 				</template>

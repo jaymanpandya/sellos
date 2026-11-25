@@ -144,6 +144,8 @@ h3 {
 	}
 	.ui-table-scroll {
 		@apply max-h-[70vh] overflow-auto;
+		/* A row scrolled into view stops below the sticky header, not under it. */
+		scroll-padding-top: 3.5rem;
 	}
 	.ui-table {
 		@apply w-full border-collapse text-left text-sm;
@@ -510,5 +512,21 @@ input[type="datetime-local"]:invalid::-webkit-datetime-edit {
 @media (prefers-reduced-motion: reduce) {
 	.ui-pill-flash {
 		animation: none;
+	}
+}
+
+@layer components {
+	.ui-notice[data-tone="danger"] {
+		border-left-color: var(--ui-danger);
+	}
+	/* A plain list: rows with a soft divider (a timeline, the rows of a dashboard card). */
+	.ui-list > li {
+		@apply border-b border-line-soft py-3;
+	}
+	.ui-list > li:last-child {
+		@apply border-b-0 pb-0;
+	}
+	.ui-list > li:first-child {
+		@apply pt-0;
 	}
 }

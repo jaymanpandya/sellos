@@ -1,11 +1,25 @@
 <template>
-	<PageTemplate data-testid="sellos-import-page">
+	<PageTemplate shape="form" data-testid="sellos-import-page">
 		<template #header>
 			<PageHeader
 				title="Import a bought lead list"
-				text="Choose a CSV file. Every lead comes in from the source Bought list with the consent status Unknown, or Registered DND when the file says the number is on the do not call list. A person already in SellOS, or twice in the file, is merged into one. Nothing here stops a call or a message: the warning shows on the lead."
+				text="Choose a CSV file of a bought lead list, check the preview, then import."
 				icon="lucide-file-up"
 			/>
+		</template>
+
+		<template #notice>
+			<Notice title="How the import works">
+				<ul>
+					<li>
+						Every lead comes in from the source Bought list with the consent status
+						Unknown, or Registered DND when the file says the number is on the do not
+						call list.
+					</li>
+					<li>A person already in SellOS, or twice in the file, is merged into one.</li>
+					<li>Nothing here stops a call or a message: the warning shows on the lead.</li>
+				</ul>
+			</Notice>
 		</template>
 
 		<template v-if="preview" #kpis>
@@ -14,14 +28,13 @@
 
 		<LoadError
 			v-if="error"
-			class="mb-ui-md"
 			data-testid="sellos-import-error"
 			:message="error"
 			@retry="retry"
 		/>
 
-		<ListCard title="The file" class="mb-ui-md">
-			<div class="space-y-ui-md">
+		<SectionCard title="The file">
+			<FieldGrid>
 				<FileField
 					label="CSV file"
 					accept=".csv,text/csv,text/plain"
@@ -34,12 +47,12 @@
 					placeholder="For example Magicbricks Pune, November"
 					data-testid="sellos-import-list-name"
 				/>
-			</div>
-		</ListCard>
+			</FieldGrid>
+		</SectionCard>
 
-		<div v-if="preview" data-testid="sellos-import-preview">
-			<ListCard title="Which column is which" class="mb-ui-md">
-				<div class="grid gap-ui-md sm:grid-cols-2">
+		<div v-if="preview" class="space-y-4" data-testid="sellos-import-preview">
+			<SectionCard title="Which column is which">
+				<FieldGrid>
 					<FormField
 						v-for="f in preview.fields"
 						:key="f.field"
@@ -50,25 +63,24 @@
 						:data-testid="`sellos-import-map-${f.field}`"
 						@update:model-value="mapColumn(f.field, $event)"
 					/>
-				</div>
+				</FieldGrid>
 
-				<p class="mt-ui-md text-sm text-ink" data-testid="sellos-import-counts">
+				<p class="mt-ui-md ui-text-small" data-testid="sellos-import-counts">
 					{{ preview.counts.rows }} rows: {{ preview.counts.new_leads }} new leads,
 					{{ preview.counts.merged_with_existing }} merged with people already in SellOS,
 					{{ preview.counts.merged_in_file }} merged within the file,
 					{{ preview.counts.registered_dnd }} on the do not call list,
 					{{ preview.counts.skipped }} skipped.
 				</p>
-				<p v-if="preview.counts.unrecognised_dnd" class="text-sm text-ink-muted">
+				<p v-if="preview.counts.unrecognised_dnd" class="ui-text-muted">
 					{{ preview.counts.unrecognised_dnd }} do not call values were not recognised
 					and are treated as no result.
 				</p>
-			</ListCard>
+			</SectionCard>
 
 			<DataTable
 				title="A sample of the rows"
 				caption="A sample of the rows"
-				class="mb-ui-md"
 				:columns="sampleColumns"
 				:rows="preview.sample"
 				row-key="rows"
@@ -79,10 +91,10 @@
 			>
 				<template #cell-action="{ row }">{{ actions[row.action] }}</template>
 			</DataTable>
-			<ListCard title="Skipped rows and import" class="mb-ui-md">
+			<SectionCard title="Skipped rows and import">
 				<ul
 					v-if="preview.skipped.length"
-					class="mt-ui-sm text-sm text-ink-muted"
+					class="mt-ui-sm ui-text-muted"
 					data-testid="sellos-import-skipped"
 				>
 					<li v-for="s in preview.skipped" :key="s.row">
@@ -100,35 +112,34 @@
 						Import {{ preview.counts.rows - preview.counts.skipped }} rows
 					</AppButton>
 				</div>
-			</ListCard>
+			</SectionCard>
 		</div>
 
-		<ListCard
+		<SectionCard
 			v-if="result"
 			title="Import done"
-			class="mb-ui-md"
 			data-testid="sellos-import-result"
 			role="status"
 		>
-			<p class="font-medium text-ink">
+			<p class="ui-text-strong">
 				{{ result.counts.new_leads }} leads imported, {{ result.merged.length }} merged
 				into leads already there, {{ result.counts.skipped }} skipped.
 			</p>
-			<p class="mt-1 text-sm text-ink-muted">
+			<p class="mt-1 ui-text-muted">
 				{{ result.counts.registered_dnd }} are registered on the do not call list. They can
 				still be called, with the warning shown.
 			</p>
-			<ul v-if="result.skipped.length" class="mt-ui-sm text-sm text-ink-muted">
+			<ul v-if="result.skipped.length" class="mt-ui-sm ui-text-muted">
 				<li v-for="s in result.skipped" :key="s.row">Row {{ s.row }}: {{ s.reason }}</li>
 			</ul>
 			<router-link
-				class="ui-link mt-ui-md inline-flex min-h-touch items-center font-medium"
+				class="ui-link mt-ui-md inline-flex min-h-touch items-center ui-text-strong"
 				:to="{ path: '/crm/leads', query: { source: 'Bought list' } }"
 				data-testid="sellos-import-view-leads"
 			>
 				See the imported leads
 			</router-link>
-		</ListCard>
+		</SectionCard>
 	</PageTemplate>
 </template>
 
@@ -138,11 +149,13 @@ import { computed, reactive, ref } from "vue";
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
 import FileField from "../components/FileField.vue";
+import FieldGrid from "../components/FieldGrid.vue";
 import FormField from "../components/FormField.vue";
 import KpiStrip from "../components/KpiStrip.vue";
-import ListCard from "../components/ListCard.vue";
+import SectionCard from "../components/SectionCard.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import Notice from "../components/Notice.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
 

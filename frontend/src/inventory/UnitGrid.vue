@@ -4,7 +4,7 @@
 			v-if="error"
 			role="alert"
 			data-testid="sellos-grid-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -12,12 +12,12 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-grid-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
 
-		<ListCard title="Availability">
+		<SectionCard title="Availability">
 			<div class="mb-ui-md flex flex-wrap items-end gap-ui-md">
 				<FormField
 					v-model="filters.configuration"
@@ -57,11 +57,11 @@
 			<div
 				v-for="t in grid.towers"
 				:key="t.name"
-				class="mb-ui-md rounded-card border border-line-soft p-ui-md"
+				class="mb-ui-md space-y-ui-sm"
 				data-testid="sellos-grid-tower"
 				:data-tower="t.tower_name"
 			>
-				<h3 class="mb-ui-sm font-medium text-ink">{{ t.tower_name }}</h3>
+				<p class="mb-ui-sm ui-text-strong">{{ t.tower_name }}</p>
 				<div
 					v-for="f in t.floors"
 					:key="f.floor_number ?? 'other'"
@@ -69,10 +69,10 @@
 					data-testid="sellos-grid-floor"
 					:data-floor="f.floor_number"
 				>
-					<span class="w-20 text-sm text-ink">{{
+					<span class="w-20 ui-text-small">{{
 						f.floor_number === null ? f.floor_label : `Floor ${f.floor_number}`
 					}}</span>
-					<span v-if="!f.units.length" class="text-sm text-ink-muted">No units</span>
+					<span v-if="!f.units.length" class="ui-text-muted">No units</span>
 					<UnitCell v-for="u in f.units" :key="u.name" :unit="u" @pick="pick" />
 				</div>
 			</div>
@@ -81,21 +81,25 @@
 				class="mb-ui-md flex flex-wrap items-center gap-ui-sm"
 				data-testid="sellos-grid-other"
 			>
-				<span class="w-20 text-sm text-ink">Units</span>
+				<span class="w-20 ui-text-small">Units</span>
 				<UnitCell v-for="u in grid.other_units" :key="u.name" :unit="u" @pick="pick" />
 			</div>
-		</ListCard>
+		</SectionCard>
 
-		<div v-if="picked" class="ui-card mt-ui-md" data-testid="sellos-grid-detail">
-			<h2 class="ui-card-heading mb-ui-sm">Unit {{ picked.unit_number }}</h2>
-			<p class="text-sm text-ink-muted" data-testid="sellos-grid-detail-status">
+		<SectionCard
+			v-if="picked"
+			:title="`Unit ${picked.unit_number}`"
+			class="mt-ui-md"
+			data-testid="sellos-grid-detail"
+		>
+			<p class="ui-text-muted" data-testid="sellos-grid-detail-status">
 				{{ picked.status
 				}}<template v-if="picked.configuration"> , {{ picked.configuration }}</template
 				>, {{ picked.carpet_area }} sq ft.
 			</p>
 			<p
 				v-if="picked.status === 'Held'"
-				class="text-sm text-ink"
+				class="ui-text-small"
 				data-testid="sellos-grid-detail-holder"
 			>
 				Held by {{ picked.held_by_name }} until {{ picked.held_until }}.
@@ -103,7 +107,7 @@
 			</p>
 			<p
 				v-if="picked.status === 'Blocked' && picked.blocked_reason"
-				class="text-sm text-ink"
+				class="ui-text-small"
 				data-testid="sellos-grid-detail-reason"
 			>
 				Blocked: {{ picked.blocked_reason }}
@@ -162,10 +166,14 @@
 					Unblock
 				</AppButton>
 			</div>
-		</div>
+		</SectionCard>
 
-		<div v-if="grid.can_block" class="ui-card mt-ui-md" data-testid="sellos-grid-settings">
-			<h2 class="ui-card-heading mb-ui-md">Unit hold hours</h2>
+		<SectionCard
+			v-if="grid.can_block"
+			title="Unit hold hours"
+			class="mt-ui-md"
+			data-testid="sellos-grid-settings"
+		>
 			<div class="flex flex-wrap items-end gap-ui-sm">
 				<FormField
 					v-model="hours"
@@ -178,7 +186,7 @@
 					Save hours
 				</AppButton>
 			</div>
-		</div>
+		</SectionCard>
 	</section>
 </template>
 
@@ -188,7 +196,7 @@ import { computed, defineComponent, h, reactive, ref, watch } from "vue";
 import AppButton from "../components/AppButton.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import SuitedLeads from "./SuitedLeads.vue";

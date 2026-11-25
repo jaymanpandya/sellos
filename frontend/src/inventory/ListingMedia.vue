@@ -1,10 +1,10 @@
 <template>
-	<div class="mt-ui-sm rounded-card border border-line-soft p-ui-md" data-testid="sellos-media">
+	<div class="mt-ui-sm space-y-ui-sm" data-testid="sellos-media">
 		<p
 			v-if="error"
 			role="alert"
 			data-testid="sellos-media-error"
-			class="mb-ui-sm text-sm text-accent"
+			class="mb-ui-sm ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -12,7 +12,7 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-media-notice"
-			class="mb-ui-sm text-sm text-ink"
+			class="mb-ui-sm ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -21,12 +21,12 @@
 		</div>
 		<p
 			v-if="loaded && !loadError && !media.length"
-			class="text-sm text-ink-muted"
+			class="ui-text-muted"
 			data-testid="sellos-media-empty"
 		>
 			No photos or videos yet.
 		</p>
-		<ol class="space-y-ui-sm" data-testid="sellos-media-list">
+		<ol class="ui-list" data-testid="sellos-media-list">
 			<li
 				v-for="(m, i) in media"
 				:key="m.name"
@@ -39,7 +39,7 @@
 					v-if="m.media_type === 'Photo'"
 					:src="m.file_url"
 					:alt="m.title"
-					class="h-16 w-24 rounded-control object-cover"
+					class="h-16 w-24 object-cover"
 					data-testid="sellos-media-picture"
 				/>
 				<video
@@ -47,11 +47,11 @@
 					:src="m.file_url"
 					controls
 					preload="metadata"
-					class="h-16 w-24 rounded-control"
+					class="h-16 w-24"
 					data-testid="sellos-media-video"
 				/>
 				<div class="min-w-0 flex-1">
-					<span class="font-medium text-ink" data-testid="sellos-media-title">
+					<span class="ui-text-strong" data-testid="sellos-media-title">
 						{{ m.position }}. {{ m.title }}
 					</span>
 					<StatusBadge
@@ -60,7 +60,7 @@
 						class="ml-ui-sm"
 						data-testid="sellos-media-kind"
 					/>
-					<span class="ml-ui-sm text-sm text-ink-muted">{{ size(m.size_bytes) }}</span>
+					<span class="ml-ui-sm ui-text-muted">{{ size(m.size_bytes) }}</span>
 				</div>
 				<div v-if="canEdit" class="flex flex-wrap gap-ui-sm">
 					<AppButton

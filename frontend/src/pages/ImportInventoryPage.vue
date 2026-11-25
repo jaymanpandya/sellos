@@ -1,21 +1,36 @@
 <template>
-	<PageTemplate data-testid="sellos-inventory-import-page">
+	<PageTemplate shape="form" data-testid="sellos-inventory-import-page">
 		<template #header>
 			<PageHeader
 				title="Import inventory"
-				text="Bring in your developers, projects, units, properties, listings and mandates from a spreadsheet. Import them in that order, one file for each. A dry run shows what would happen and writes nothing. A record that is already in SellOS is updated, never doubled, so the same file can be imported again safely."
+				text="Bring in your inventory from a spreadsheet, one file for each kind of record."
 				icon="lucide-file-up"
 			/>
 		</template>
+		<template #notice>
+			<Notice title="How the import works">
+				<ul>
+					<li>
+						Import developers, projects, units, properties, listings and mandates in
+						that order, one file for each.
+					</li>
+					<li>A dry run shows what would happen and writes nothing.</li>
+					<li>
+						A record that is already in SellOS is updated, never doubled, so the same
+						file can be imported again safely.
+					</li>
+				</ul>
+			</Notice>
+		</template>
+
 		<LoadError
 			v-if="error"
-			class="mb-ui-md"
 			data-testid="sellos-inventory-import-error"
 			:message="error"
 			@retry="start"
 		/>
 
-		<ListCard title="What the file holds" class="mb-ui-md">
+		<SectionCard title="What the file holds">
 			<div class="space-y-ui-md">
 				<div role="group" aria-label="Record type" class="flex flex-wrap gap-ui-sm">
 					<AppButton
@@ -31,7 +46,7 @@
 						{{ t.label }}
 					</AppButton>
 				</div>
-				<p class="text-sm text-ink-muted" data-testid="sellos-inventory-import-help">
+				<p class="ui-text-muted" data-testid="sellos-inventory-import-help">
 					{{ help }}
 				</p>
 				<AppButton
@@ -51,16 +66,15 @@
 					@change="chooseFile"
 				/>
 			</div>
-		</ListCard>
+		</SectionCard>
 
-		<ListCard
+		<SectionCard
 			v-if="dryRun"
 			title="Dry run: nothing has been written"
-			class="mb-ui-md"
 			data-testid="sellos-inventory-import-dry-run"
 		>
 			<CountCards :counts="dryRun.counts" />
-			<p class="mt-ui-md text-sm text-ink" data-testid="sellos-inventory-import-dry-counts">
+			<p class="mt-ui-md ui-text-small" data-testid="sellos-inventory-import-dry-counts">
 				{{ summary(dryRun.counts, true) }}
 			</p>
 			<FailedRows :failed="dryRun.failed" test-id="sellos-inventory-import-dry-failed" />
@@ -75,32 +89,28 @@
 					Import the file
 				</AppButton>
 			</div>
-		</ListCard>
+		</SectionCard>
 
-		<ListCard
+		<SectionCard
 			v-if="result"
 			title="Import done"
-			class="mb-ui-md"
 			data-testid="sellos-inventory-import-result"
 			role="status"
 		>
 			<CountCards :counts="result.counts" />
-			<p
-				class="mt-ui-md font-medium text-ink"
-				data-testid="sellos-inventory-import-result-counts"
-			>
+			<p class="mt-ui-md ui-text-strong" data-testid="sellos-inventory-import-result-counts">
 				{{ summary(result.counts, false) }}
 			</p>
 			<FailedRows :failed="result.failed" test-id="sellos-inventory-import-failed" />
 			<a
-				class="ui-link mt-ui-md inline-flex min-h-touch items-center font-medium"
+				class="ui-link mt-ui-md inline-flex min-h-touch items-center ui-text-strong"
 				:href="result.report_file"
 				download
 				data-testid="sellos-inventory-import-report"
 			>
 				Download the reconciliation report
 			</a>
-		</ListCard>
+		</SectionCard>
 	</PageTemplate>
 </template>
 
@@ -109,9 +119,10 @@ import { computed, onMounted, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import FileField from "../components/FileField.vue";
-import ListCard from "../components/ListCard.vue";
+import SectionCard from "../components/SectionCard.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
+import Notice from "../components/Notice.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import { serverMessage } from "../crm/crmApi";
 import { importApi } from "../inventory/inventoryApi";

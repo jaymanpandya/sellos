@@ -10,11 +10,12 @@ context("SOS-P7-07: price lists, payment plans and cost sheets", () => {
 
 	const openProject = (made) => {
 		cy.intercept("POST", "**/sellos.inventory.pricing.project_pricing*").as("pricing");
-		cy.visit(`/sellos/inventory/projects/${encodeURIComponent(made.project)}`);
+		cy.visit(`/sellos/inventory/projects/${encodeURIComponent(made.project)}?tab=pricing`);
 		cy.wait("@pricing");
 	};
 	const openUnitSheet = (made) => {
 		cy.intercept("POST", "**/sellos.inventory.cost_sheet.cost_sheet_options*").as("options");
+		cy.getByTestId("tab-units").click();
 		cy.get(`[data-testid="sellos-unit-row"][data-number="1201"]`)
 			.find('[data-testid="sellos-unit-cost-sheet"]')
 			.click();
@@ -50,6 +51,7 @@ context("SOS-P7-07: price lists, payment plans and cost sheets", () => {
 			cy.getByTestId("pricing-notice").should("contain", "The percentages are saved.");
 
 			cy.intercept("POST", "**/sellos.inventory.pricing.save_price_list*").as("saveList");
+			cy.getByTestId("pricelist-open").click();
 			cy.getByTestId("pricelist-title").type("Gate Inventory Spec List");
 			cy.getByTestId("pricelist-from").type("2026-01-01");
 			cy.getByTestId("pricelist-base").type("12000");
@@ -77,6 +79,7 @@ context("SOS-P7-07: price lists, payment plans and cost sheets", () => {
 
 			// A plan that does not add up to 100 is refused, and the screen shows the running total.
 			cy.intercept("POST", "**/sellos.inventory.pricing.save_payment_plan*").as("savePlan");
+			cy.getByTestId("plan-open").click();
 			cy.getByTestId("plan-name").type("Gate Inventory Spec Plan");
 			cy.getByTestId("instalment-label-0").type("On booking");
 			cy.getByTestId("instalment-due-0").type("On booking");

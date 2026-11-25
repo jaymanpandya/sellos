@@ -31,7 +31,7 @@
 						aria-hidden="true"
 					/>
 				</template>
-				More filters
+				Filters
 				<span
 					v-if="moreCount && !open"
 					class="ml-1 rounded-round bg-brand px-1.5 text-xs text-on-brand-accent"

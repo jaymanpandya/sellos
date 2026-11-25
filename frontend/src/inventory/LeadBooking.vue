@@ -1,35 +1,30 @@
 <template>
-	<ListCard title="Book a unit" data-testid="sellos-lead-booking">
+	<SectionCard title="Book a unit" data-testid="sellos-lead-booking">
 		<p
 			v-if="panel && panel.consent.warning"
 			data-testid="sellos-booking-consent"
 			:data-status="panel.consent.status"
-			class="mb-ui-sm text-sm text-ink-muted"
+			class="mb-ui-sm ui-text-muted"
 		>
 			{{ panel.consent.message }} This does not stop the booking.
 		</p>
-		<p
-			v-if="error"
-			role="alert"
-			data-testid="sellos-booking-error"
-			class="text-sm text-accent"
-		>
+		<p v-if="error" role="alert" data-testid="sellos-booking-error" class="ui-text-error">
 			{{ error }}
 		</p>
 
-		<ul v-if="panel && panel.active.length" class="space-y-ui-sm">
+		<ul v-if="panel && panel.active.length" class="ui-list">
 			<li
 				v-for="deal in panel.active"
 				:key="deal.name"
-				class="rounded-card border border-line-soft p-ui-md"
+				class="space-y-ui-sm"
 				data-testid="sellos-booking-row"
 				:data-deal="deal.name"
 				:data-unit="deal.unit_label"
 			>
 				<div class="flex flex-wrap items-center gap-3">
-					<span class="font-medium text-ink">{{ deal.unit_label }}</span>
+					<span class="ui-text-strong">{{ deal.unit_label }}</span>
 					<StatusBadge tone="success" label="Booked" />
-					<span class="text-sm text-ink-muted">
+					<span class="ui-text-muted">
 						{{ rupees(deal.price) }}, booking amount {{ rupees(deal.booking_amount) }}
 					</span>
 					<AppButton
@@ -64,11 +59,7 @@
 			data-testid="sellos-booking-form"
 			@submit.prevent="book"
 		>
-			<p
-				v-if="panel.partner"
-				class="text-sm text-ink-muted"
-				data-testid="sellos-booking-partner"
-			>
+			<p v-if="panel.partner" class="ui-text-muted" data-testid="sellos-booking-partner">
 				{{ panel.partner }} registered this buyer and shares the commission.
 			</p>
 			<div class="grid grid-cols-1 gap-ui-md sm:grid-cols-2">
@@ -104,11 +95,11 @@
 			>
 		</form>
 
-		<ul v-if="panel && panel.cancelled.length" class="mt-ui-md space-y-ui-sm">
+		<ul v-if="panel && panel.cancelled.length" class="mt-ui-md ui-list">
 			<li
 				v-for="deal in panel.cancelled"
 				:key="deal.name"
-				class="text-sm text-ink-muted"
+				class="ui-text-muted"
 				data-testid="sellos-booking-cancelled"
 				:data-deal="deal.name"
 			>
@@ -117,7 +108,7 @@
 				}}"
 			</li>
 		</ul>
-	</ListCard>
+	</SectionCard>
 </template>
 
 <script setup>
@@ -125,7 +116,7 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import SectionCard from "../components/SectionCard.vue";
 import MoneyField from "../components/MoneyField.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";

@@ -118,6 +118,7 @@ context("SOS-P1-24: pipeline board and lead list filters", () => {
 
 	it("filters by stage, and keeps the filter in the address", () => {
 		openList("agent");
+		cy.openMoreFilters();
 		cy.getByTestId("leads-filter-stage").select("Qualified");
 		cy.wait("@list");
 		rows()
@@ -129,6 +130,7 @@ context("SOS-P1-24: pipeline board and lead list filters", () => {
 
 	it("filters by agent and by source", () => {
 		openList("company_admin");
+		cy.openMoreFilters();
 		cy.getByTestId("leads-filter-agent").select(seed.agent_email);
 		cy.wait("@list");
 		rows().should("contain", seed.agent_a).and("not.contain", seed.admin);
@@ -169,6 +171,7 @@ context("SOS-P1-24: pipeline board and lead list filters", () => {
 		cy.getByTestId("leads-filter-apply").click();
 		cy.wait("@list");
 		rows().should("have.length", 1).and("contain", seed.agent_b);
+		cy.openMoreFilters();
 		cy.getByTestId("leads-filter-source").select("Referral");
 		cy.wait("@list");
 		cy.getByTestId("lead-row").should("not.exist");

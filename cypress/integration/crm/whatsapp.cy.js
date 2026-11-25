@@ -103,7 +103,7 @@ context("SOS-P6-11: WhatsApp", () => {
 		cy.getByTestId("whatsapp-consent")
 			.should("have.attr", "data-level", "red")
 			.and("contain.text", "Opted out");
-		cy.getByTestId("whatsapp-warning").should("have.class", "text-tone-danger");
+		cy.getByTestId("whatsapp-warning").should("have.class", "ui-text-error");
 		cy.get('textarea[data-testid="sellos-whatsapp-text"]').type(
 			"Understood. Your visit on Sunday stays booked."
 		);

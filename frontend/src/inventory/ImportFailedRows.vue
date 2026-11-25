@@ -1,5 +1,5 @@
 <template>
-	<ul v-if="failed.length" class="mt-ui-md text-sm text-ink-muted" :data-testid="testId">
+	<ul v-if="failed.length" class="mt-ui-md ui-text-muted" :data-testid="testId">
 		<li v-for="f in failed" :key="f.row">Row {{ f.row }}: {{ f.reason }}</li>
 	</ul>
 </template>

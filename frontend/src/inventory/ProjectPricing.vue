@@ -4,7 +4,7 @@
 			v-if="error"
 			role="alert"
 			data-testid="sellos-pricing-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -12,29 +12,39 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-pricing-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
 
-		<ListCard title="Price lists">
+		<SectionCard title="Price lists">
+			<template v-if="state && state.can_edit" #actions>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-pricelist-open"
+					@click="drawer = 'list'"
+				>
+					New price list
+				</AppButton>
+			</template>
 			<EmptyState
 				v-if="state && !state.price_lists.length"
 				title="No price list yet"
 				text="A Company Admin adds a dated price list. The one in force is used for cost sheets."
 				icon="lucide-indian-rupee"
 			/>
-			<ul v-if="state" class="space-y-ui-sm" data-testid="sellos-pricing-lists">
+			<ul v-if="state" class="ui-list" data-testid="sellos-pricing-lists">
 				<li
 					v-for="l in state.price_lists"
 					:key="l.name"
 					data-testid="sellos-pricelist-row"
 					:data-title="l.title"
 					:data-in-force="l.in_force ? 1 : 0"
-					class="rounded-card border border-line-soft p-ui-md"
+					class="space-y-ui-sm"
 				>
 					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink">{{ l.title }}</span>
+						<span class="ui-text-strong">{{ l.title }}</span>
 						<StatusBadge
 							:tone="l.in_force ? 'success' : l.scheduled ? 'info' : 'neutral'"
 							:label="
@@ -42,9 +52,9 @@
 							"
 							data-testid="sellos-pricelist-state"
 						/>
-						<span class="text-sm text-ink-muted">From {{ l.effective_from }}</span>
+						<span class="ui-text-muted">From {{ l.effective_from }}</span>
 					</div>
-					<p class="text-sm text-ink-muted">
+					<p class="ui-text-muted">
 						{{ rupees(l.base_rate) }} per sq ft of carpet area<span
 							v-if="Number(l.floor_rise_rate)"
 						>
@@ -52,7 +62,7 @@
 							above floor {{ l.floor_rise_from_floor }}</span
 						>.
 					</p>
-					<p v-if="l.charges.length" class="text-sm text-ink-muted">
+					<p v-if="l.charges.length" class="ui-text-muted">
 						<span v-for="(c, i) in l.charges" :key="i">
 							{{ c.charge_name }} ({{ c.charge_type.toLowerCase() }}):
 							{{ rupees(c.value)
@@ -63,16 +73,74 @@
 					</p>
 				</li>
 			</ul>
-		</ListCard>
+		</SectionCard>
 
-		<form
+		<SectionCard title="Payment plans" class="mt-ui-md">
+			<template v-if="state && state.can_edit" #actions>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-plan-open"
+					@click="drawer = 'plan'"
+				>
+					New payment plan
+				</AppButton>
+			</template>
+			<EmptyState
+				v-if="state && !state.payment_plans.length"
+				title="No payment plan yet"
+				text="A Company Admin adds payment plan templates. Their percentages add up to 100."
+				icon="lucide-calendar-clock"
+			/>
+			<ul v-if="state" class="ui-list" data-testid="sellos-pricing-plans">
+				<li
+					v-for="p in state.payment_plans"
+					:key="p.name"
+					data-testid="sellos-plan-row"
+					:data-name="p.plan_name"
+					:data-archived="p.archived"
+					class="space-y-ui-sm"
+				>
+					<div class="flex flex-wrap items-center gap-3">
+						<span class="ui-text-strong">{{ p.plan_name }}</span>
+						<StatusBadge
+							:tone="p.archived ? 'neutral' : 'info'"
+							:label="p.archived ? 'Archived' : p.plan_type"
+						/>
+						<AppButton
+							v-if="state.can_edit"
+							type="button"
+							data-testid="sellos-plan-archive"
+							@click="archivePlan(p)"
+						>
+							{{ p.archived ? "Restore" : "Archive" }}
+						</AppButton>
+					</div>
+					<p class="ui-text-muted">
+						<span v-for="(r, i) in p.instalments" :key="i">
+							{{ r.label }} {{ r.percent }}%<span v-if="r.due_on">
+								({{ r.due_on }})</span
+							><span v-else-if="p.plan_type === 'Time linked'">
+								(after {{ r.days_after_booking }} days)</span
+							><span v-if="i < p.instalments.length - 1">, </span>
+						</span>
+					</p>
+				</li>
+			</ul>
+		</SectionCard>
+
+		<FormDrawer
 			v-if="state && state.can_edit"
-			class="ui-card mt-ui-md"
-			data-testid="sellos-pricelist-form"
-			@submit.prevent="savePriceList"
+			:open="drawer === 'list'"
+			title="New price list"
+			text="A price list is never changed once saved. Make a new one with a later date. Parking is per parking slot of the unit and always added."
+			submit-label="Save price list"
+			testid="sellos-pricelist-form"
+			submit-testid="sellos-pricelist-save"
+			@close="drawer = ''"
+			@submit="savePriceList"
 		>
-			<h2 class="ui-card-heading mb-ui-md">New price list</h2>
-			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+			<FormSection title="Price list">
 				<FormField
 					v-model="list.title"
 					label="Title"
@@ -105,126 +173,79 @@
 					label="Floor rise applies above floor"
 					data-testid="sellos-pricelist-rise-floor"
 				/>
-			</div>
-			<h3 class="mt-ui-md text-sm font-medium text-ink">
-				Charges (preferred location, parking and other)
-			</h3>
-			<div
-				v-for="(c, i) in list.charges"
-				:key="i"
-				class="mt-ui-sm grid grid-cols-1 items-end gap-ui-sm md:grid-cols-6"
-				data-testid="sellos-charge-row"
-			>
-				<FormField
-					v-model="c.charge_type"
-					type="select"
-					label="Kind"
-					:options="state.charge_types"
-					:data-testid="`sellos-charge-kind-${i}`"
-				/>
-				<FormField
-					v-model="c.charge_name"
-					label="Name"
-					:data-testid="`sellos-charge-name-${i}`"
-				/>
-				<FormField
-					v-model="c.basis"
-					type="select"
-					label="Basis"
-					:options="state.bases"
-					:data-testid="`sellos-charge-basis-${i}`"
-				/>
-				<FormField
-					v-model="c.value"
-					type="number"
-					label="Amount or rate (Rs)"
-					:data-testid="`sellos-charge-value-${i}`"
-				/>
-				<AppCheckbox
-					:model-value="!!c.always_apply || c.charge_type === 'Parking'"
-					label="Always added"
-					:disabled="c.charge_type === 'Parking'"
-					:data-testid="`sellos-charge-always-${i}`"
-					@update:model-value="c.always_apply = $event ? 1 : 0"
-				/>
-				<AppButton
-					type="button"
-					:data-testid="`sellos-charge-remove-${i}`"
-					@click="list.charges.splice(i, 1)"
-				>
-					Remove charge
-				</AppButton>
-			</div>
-			<div class="mt-ui-md flex flex-wrap gap-ui-sm">
-				<AppButton
-					type="button"
-					data-testid="sellos-pricelist-add-charge"
-					@click="addCharge"
-				>
-					Add a charge
-				</AppButton>
-				<AppButton type="submit" variant="primary" data-testid="sellos-pricelist-save">
-					Save price list
-				</AppButton>
-			</div>
-			<p class="mt-ui-sm text-xs text-ink-muted">
-				A price list is never changed once saved. Make a new one with a later date. Parking
-				is per parking slot of the unit and always added.
-			</p>
-		</form>
-
-		<ListCard title="Payment plans" class="mt-ui-md">
-			<EmptyState
-				v-if="state && !state.payment_plans.length"
-				title="No payment plan yet"
-				text="A Company Admin adds payment plan templates. Their percentages add up to 100."
-				icon="lucide-calendar-clock"
-			/>
-			<ul v-if="state" class="space-y-ui-sm" data-testid="sellos-pricing-plans">
-				<li
-					v-for="p in state.payment_plans"
-					:key="p.name"
-					data-testid="sellos-plan-row"
-					:data-name="p.plan_name"
-					:data-archived="p.archived"
-					class="rounded-card border border-line-soft p-ui-md"
-				>
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink">{{ p.plan_name }}</span>
-						<StatusBadge
-							:tone="p.archived ? 'neutral' : 'info'"
-							:label="p.archived ? 'Archived' : p.plan_type"
+			</FormSection>
+			<FormSection title="Charges (preferred location, parking and other)">
+				<div class="space-y-ui-md md:col-span-2">
+					<div
+						v-for="(c, i) in list.charges"
+						:key="i"
+						class="mt-ui-sm grid grid-cols-1 items-end gap-ui-sm md:grid-cols-6"
+						data-testid="sellos-charge-row"
+					>
+						<FormField
+							v-model="c.charge_type"
+							type="select"
+							label="Kind"
+							:options="state.charge_types"
+							:data-testid="`sellos-charge-kind-${i}`"
+						/>
+						<FormField
+							v-model="c.charge_name"
+							label="Name"
+							:data-testid="`sellos-charge-name-${i}`"
+						/>
+						<FormField
+							v-model="c.basis"
+							type="select"
+							label="Basis"
+							:options="state.bases"
+							:data-testid="`sellos-charge-basis-${i}`"
+						/>
+						<FormField
+							v-model="c.value"
+							type="number"
+							label="Amount or rate (Rs)"
+							:data-testid="`sellos-charge-value-${i}`"
+						/>
+						<AppCheckbox
+							:model-value="!!c.always_apply || c.charge_type === 'Parking'"
+							label="Always added"
+							:disabled="c.charge_type === 'Parking'"
+							:data-testid="`sellos-charge-always-${i}`"
+							@update:model-value="c.always_apply = $event ? 1 : 0"
 						/>
 						<AppButton
-							v-if="state.can_edit"
 							type="button"
-							data-testid="sellos-plan-archive"
-							@click="archivePlan(p)"
+							:data-testid="`sellos-charge-remove-${i}`"
+							@click="list.charges.splice(i, 1)"
 						>
-							{{ p.archived ? "Restore" : "Archive" }}
+							Remove charge
 						</AppButton>
 					</div>
-					<p class="text-sm text-ink-muted">
-						<span v-for="(r, i) in p.instalments" :key="i">
-							{{ r.label }} {{ r.percent }}%<span v-if="r.due_on">
-								({{ r.due_on }})</span
-							><span v-else-if="p.plan_type === 'Time linked'">
-								(after {{ r.days_after_booking }} days)</span
-							><span v-if="i < p.instalments.length - 1">, </span>
-						</span>
-					</p>
-				</li>
-			</ul>
-		</ListCard>
+					<AppButton
+						type="button"
+						data-testid="sellos-pricelist-add-charge"
+						@click="addCharge"
+					>
+						Add a charge
+					</AppButton>
+				</div>
+			</FormSection>
+			<p v-if="error" role="alert" class="ui-text-error">{{ error }}</p>
+		</FormDrawer>
 
-		<form
+		<FormDrawer
 			v-if="state && state.can_edit"
-			class="ui-card mt-ui-md"
-			data-testid="sellos-plan-form"
-			@submit.prevent="savePlan"
+			:open="drawer === 'plan'"
+			title="New payment plan"
+			text="The percentages of its instalments add up to 100."
+			submit-label="Save payment plan"
+			testid="sellos-plan-form"
+			submit-testid="sellos-plan-save"
+			@close="drawer = ''"
+			@submit="savePlan"
 		>
-			<h2 class="ui-card-heading mb-ui-md">New payment plan</h2>
-			<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+			<FormSection title="Payment plan">
 				<FormField
 					v-model="plan.plan_name"
 					label="Plan name"
@@ -239,108 +260,106 @@
 					required
 					data-testid="sellos-plan-type"
 				/>
-			</div>
-			<div
-				v-for="(r, i) in plan.instalments"
-				:key="i"
-				class="mt-ui-sm grid grid-cols-1 items-end gap-ui-sm md:grid-cols-5"
-				data-testid="sellos-instalment-row"
-			>
-				<FormField
-					v-model="r.label"
-					label="Instalment"
-					:data-testid="`sellos-instalment-label-${i}`"
-				/>
-				<FormField
-					v-if="plan.plan_type === 'Time linked'"
-					v-model="r.days_after_booking"
-					type="number"
-					label="Days after booking"
-					:data-testid="`sellos-instalment-days-${i}`"
-				/>
-				<FormField
-					v-else
-					v-model="r.due_on"
-					label="Due on"
-					:data-testid="`sellos-instalment-due-${i}`"
-				/>
-				<FormField
-					v-model="r.percent"
-					type="number"
-					label="Percent of the total"
-					:data-testid="`sellos-instalment-percent-${i}`"
-				/>
-				<AppButton
-					type="button"
-					:data-testid="`sellos-instalment-remove-${i}`"
-					@click="plan.instalments.splice(i, 1)"
-				>
-					Remove instalment
-				</AppButton>
-			</div>
-			<p
-				class="mt-ui-sm text-sm"
-				:class="planTotal === 100 ? 'text-ink' : 'text-accent'"
-				data-testid="sellos-plan-total"
-			>
-				Total: {{ planTotal }} percent<span v-if="planTotal !== 100">
-					(it must add up to 100)</span
-				>
-			</p>
-			<div class="mt-ui-md flex flex-wrap gap-ui-sm">
-				<AppButton
-					type="button"
-					data-testid="sellos-plan-add-instalment"
-					@click="addInstalment"
-				>
-					Add an instalment
-				</AppButton>
-				<AppButton type="submit" variant="primary" data-testid="sellos-plan-save">
-					Save payment plan
-				</AppButton>
-			</div>
-		</form>
+			</FormSection>
+			<FormSection title="Instalments">
+				<div class="space-y-ui-md md:col-span-2">
+					<div
+						v-for="(r, i) in plan.instalments"
+						:key="i"
+						class="mt-ui-sm grid grid-cols-1 items-end gap-ui-sm md:grid-cols-5"
+						data-testid="sellos-instalment-row"
+					>
+						<FormField
+							v-model="r.label"
+							label="Instalment"
+							:data-testid="`sellos-instalment-label-${i}`"
+						/>
+						<FormField
+							v-if="plan.plan_type === 'Time linked'"
+							v-model="r.days_after_booking"
+							type="number"
+							label="Days after booking"
+							:data-testid="`sellos-instalment-days-${i}`"
+						/>
+						<FormField
+							v-else
+							v-model="r.due_on"
+							label="Due on"
+							:data-testid="`sellos-instalment-due-${i}`"
+						/>
+						<FormField
+							v-model="r.percent"
+							type="number"
+							label="Percent of the total"
+							:data-testid="`sellos-instalment-percent-${i}`"
+						/>
+						<AppButton
+							type="button"
+							:data-testid="`sellos-instalment-remove-${i}`"
+							@click="plan.instalments.splice(i, 1)"
+						>
+							Remove instalment
+						</AppButton>
+					</div>
+					<p
+						class="mt-ui-sm ui-text-small"
+						:class="planTotal === 100 ? 'ui-text-body' : 'ui-text-error'"
+						data-testid="sellos-plan-total"
+					>
+						Total: {{ planTotal }} percent<span v-if="planTotal !== 100">
+							(it must add up to 100)</span
+						>
+					</p>
+					<AppButton
+						type="button"
+						data-testid="sellos-plan-add-instalment"
+						@click="addInstalment"
+					>
+						Add an instalment
+					</AppButton>
+				</div>
+			</FormSection>
+			<p v-if="error" role="alert" class="ui-text-error">{{ error }}</p>
+		</FormDrawer>
 
-		<div class="ui-card mt-ui-md" data-testid="sellos-rates">
-			<h2 class="ui-card-heading mb-ui-md">Cost sheet percentages</h2>
-			<p v-if="state && !state.rates" class="mb-ui-sm text-sm text-accent">
+		<SectionCard title="Cost sheet percentages" data-testid="sellos-rates">
+			<p v-if="state && !state.rates" class="mb-ui-sm ui-text-error">
 				Not set yet. Cost sheets wait until a Company Admin sets them.
 			</p>
 			<p
 				v-else-if="state && !state.can_edit"
-				class="text-sm text-ink-muted"
+				class="ui-text-muted"
 				data-testid="sellos-rates-text"
 			>
 				Stamp duty {{ state.rates.stamp_duty_percent }}%, registration
 				{{ state.rates.registration_percent }}%, GST {{ state.rates.gst_percent }}%.
 			</p>
-			<div v-if="state && state.can_edit" class="flex flex-wrap items-end gap-ui-sm">
+			<FieldGrid v-if="state && state.can_edit" :columns="3">
 				<FormField
 					v-model="rates.stamp"
 					type="number"
 					label="Stamp duty (%)"
-					class="w-40"
 					data-testid="sellos-rate-stamp"
 				/>
 				<FormField
 					v-model="rates.registration"
 					type="number"
 					label="Registration (%)"
-					class="w-40"
 					data-testid="sellos-rate-registration"
 				/>
 				<FormField
 					v-model="rates.gst"
 					type="number"
 					label="GST (%)"
-					class="w-40"
 					data-testid="sellos-rate-gst"
 				/>
+			</FieldGrid>
+			<template v-if="state && state.can_edit" #footer>
 				<AppButton type="button" data-testid="sellos-rates-save" @click="saveRates">
 					Save percentages
 				</AppButton>
-			</div>
-		</div>
+			</template>
+		</SectionCard>
 	</section>
 </template>
 
@@ -350,8 +369,11 @@ import { computed, reactive, ref, watch } from "vue";
 import AppButton from "../components/AppButton.vue";
 import AppCheckbox from "../components/AppCheckbox.vue";
 import EmptyState from "../components/EmptyState.vue";
+import FieldGrid from "../components/FieldGrid.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { pricingApi, rupees } from "./inventoryApi";
@@ -364,6 +386,7 @@ const props = defineProps({
 });
 
 const state = ref(null);
+const drawer = ref(""); // "list" or "plan": the form drawer that is open
 const error = ref("");
 const notice = ref("");
 const blankList = () => ({
@@ -447,6 +470,7 @@ async function savePriceList() {
 		)
 	) {
 		Object.assign(list, blankList());
+		drawer.value = "";
 	}
 }
 
@@ -469,6 +493,7 @@ async function savePlan() {
 		)
 	) {
 		Object.assign(plan, blankPlan());
+		drawer.value = "";
 	}
 }
 

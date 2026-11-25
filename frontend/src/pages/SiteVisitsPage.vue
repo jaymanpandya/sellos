@@ -1,5 +1,5 @@
 <template>
-	<PageTemplate data-testid="sellos-visits-page">
+	<PageTemplate shape="list" data-testid="sellos-visits-page">
 		<template #header>
 			<PageHeader title="Site visits" :text="scopeNote" icon="lucide-calendar-check">
 				<div class="flex flex-wrap gap-ui-sm" role="group" aria-label="Calendar view">
@@ -41,7 +41,7 @@
 			@retry="retry"
 		/>
 
-		<p class="mb-ui-sm text-sm text-ink-muted" data-testid="sellos-visits-tomorrow-date">
+		<p class="mb-ui-sm ui-text-muted" data-testid="sellos-visits-tomorrow-date">
 			{{ tomorrow ? dayLabel(tomorrow.date) : "" }}
 		</p>
 		<DataTable
@@ -61,7 +61,7 @@
 			empty-testid="sellos-visits-tomorrow-empty"
 		>
 			<template #cell-lead_title="{ row }">
-				<router-link :to="`/crm/leads/${row.lead}`" class="ui-link font-medium">{{
+				<router-link :to="`/crm/leads/${row.lead}`" class="ui-link ui-text-strong">{{
 					row.lead_title
 				}}</router-link>
 			</template>
@@ -85,27 +85,27 @@
 			</template>
 		</DataTable>
 
-		<ListCard title="Calendar">
-			<p class="mb-ui-sm text-sm text-ink-muted" data-testid="sellos-visits-range">
+		<SectionCard title="Calendar">
+			<p class="mb-ui-sm ui-text-muted" data-testid="sellos-visits-range">
 				{{ calendar ? rangeLabel : "" }}
 			</p>
 			<LoadingSkeleton v-if="!calendar && !error" :rows="3" />
-			<ul class="space-y-ui-sm" data-testid="sellos-visits-calendar">
+			<ul class="space-y-ui-md" data-testid="sellos-visits-calendar">
 				<li
 					v-for="d in calendar?.days || []"
 					:key="d.date"
 					data-testid="sellos-visits-day"
 					:data-date="d.date"
-					class="rounded-card border border-line-soft bg-surface-faint p-ui-md"
+					class="space-y-1"
 				>
-					<p class="text-sm font-medium text-ink">{{ dayLabel(d.date) }}</p>
-					<p v-if="!d.visits.length" class="text-sm text-ink-muted">No visits.</p>
+					<p class="ui-text-strong">{{ dayLabel(d.date) }}</p>
+					<p v-if="!d.visits.length" class="ui-text-muted">No visits.</p>
 					<ul class="space-y-1">
 						<li
 							v-for="v in d.visits"
 							:key="v.name"
 							data-testid="sellos-visits-item"
-							class="flex flex-wrap items-center gap-ui-sm text-sm text-ink"
+							class="flex flex-wrap items-center gap-ui-sm ui-text-small"
 						>
 							<span>
 								{{ timeOf(v.visit_datetime) }}
@@ -124,7 +124,7 @@
 					</ul>
 				</li>
 			</ul>
-		</ListCard>
+		</SectionCard>
 	</PageTemplate>
 </template>
 
@@ -134,11 +134,11 @@ import { computed, onMounted, ref } from "vue";
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
 import KpiStrip from "../components/KpiStrip.vue";
-import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import VisitConfirm from "../components/VisitConfirm.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";

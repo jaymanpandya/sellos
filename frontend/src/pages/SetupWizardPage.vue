@@ -1,6 +1,6 @@
 <template>
 	<!-- A wizard, not a list: the header card, the step buttons, and one headed card per step. -->
-	<PageTemplate data-testid="sellos-setup-page">
+	<PageTemplate shape="form" data-testid="sellos-setup-page">
 		<template #header>
 			<PageHeader
 				title="Set up your company"
@@ -8,28 +8,34 @@
 				icon="lucide-settings"
 			/>
 		</template>
-		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-setup-load-error">
+		<template v-if="state && !loadError && !(state.complete && !editing)" #notice>
+			<Notice v-if="resumed" title="Welcome back">
+				<p data-testid="sellos-setup-resumed">You are carrying on where you left off.</p>
+			</Notice>
+			<Notice v-else title="Four short steps">
+				<p>Your company, your logo and colour, your lead stages and your first people.</p>
+			</Notice>
+		</template>
+
+		<div v-if="loadError" data-testid="sellos-setup-load-error">
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 		<LoadingSkeleton v-else-if="!state" :rows="3" />
 
 		<template v-else>
-			<div v-if="state.complete && !editing" class="ui-card" data-testid="sellos-setup-done">
+			<SectionCard
+				v-if="state.complete && !editing"
+				title="Setup complete"
+				data-testid="sellos-setup-done"
+			>
 				<div class="flex items-center gap-2">
 					<StatusBadge label="Done" tone="success" />
-					<p class="font-medium text-ink">Your company is set up.</p>
+					<p class="ui-text-strong">Your company is set up.</p>
 				</div>
-				<p class="mt-1 text-ink-muted">
+				<p class="mt-1 ui-text-muted">
 					{{ session.company.name }} now shows in the app with your logo and colours.
 				</p>
-				<div class="mt-ui-md flex flex-wrap gap-ui-sm">
-					<AppButton
-						variant="primary"
-						data-testid="sellos-setup-go-home"
-						@click="router.push('/')"
-					>
-						Go to home
-					</AppButton>
+				<template #footer>
 					<AppButton
 						type="button"
 						data-testid="sellos-setup-edit"
@@ -37,18 +43,18 @@
 					>
 						Change a setting
 					</AppButton>
-				</div>
-			</div>
+					<AppButton
+						variant="primary"
+						data-testid="sellos-setup-go-home"
+						@click="router.push('/')"
+					>
+						Go to home
+					</AppButton>
+				</template>
+			</SectionCard>
 
-			<template v-else>
-				<p
-					v-if="resumed"
-					class="mb-ui-md text-ink-muted"
-					data-testid="sellos-setup-resumed"
-				>
-					Welcome back. You are carrying on where you left off.
-				</p>
-				<ol class="mb-ui-md flex flex-wrap gap-ui-sm" data-testid="sellos-setup-steps">
+			<div v-else class="space-y-4">
+				<ol class="flex flex-wrap gap-ui-sm" data-testid="sellos-setup-steps">
 					<li v-for="(key, i) in state.steps" :key="key">
 						<AppButton
 							type="button"
@@ -65,129 +71,130 @@
 
 				<form
 					v-if="step === 'profile'"
-					class="ui-card"
 					data-testid="sellos-setup-profile"
 					@submit.prevent="run(saveProfile, 'branding')"
 				>
-					<FormSection title="Your company">
-						<FormField
-							v-model="profile.company_name"
-							label="Company name"
-							required
-							data-testid="sellos-setup-company-name"
-						/>
-						<FormField
-							v-model="profile.contact_phone"
-							type="tel"
-							label="Company phone"
-							data-testid="sellos-setup-phone"
-						/>
-						<FormField
-							v-model="profile.contact_email"
-							type="email"
-							label="Company email"
-							data-testid="sellos-setup-email"
-						/>
-						<FormField
-							v-model="profile.city"
-							label="City"
-							data-testid="sellos-setup-city"
-						/>
-						<FormField
-							v-model="profile.address"
-							type="textarea"
-							label="Address"
-							class="md:col-span-2"
-							data-testid="sellos-setup-address"
-						/>
-					</FormSection>
-					<div class="mt-ui-md">
-						<AppButton
-							type="submit"
-							variant="primary"
-							:disabled="busy"
-							data-testid="sellos-setup-save-profile"
-						>
-							Save and continue
-						</AppButton>
-					</div>
+					<SectionCard title="Your company">
+						<FieldGrid>
+							<FormField
+								v-model="profile.company_name"
+								label="Company name"
+								required
+								data-testid="sellos-setup-company-name"
+							/>
+							<FormField
+								v-model="profile.contact_phone"
+								type="tel"
+								label="Company phone"
+								data-testid="sellos-setup-phone"
+							/>
+							<FormField
+								v-model="profile.contact_email"
+								type="email"
+								label="Company email"
+								data-testid="sellos-setup-email"
+							/>
+							<FormField
+								v-model="profile.city"
+								label="City"
+								data-testid="sellos-setup-city"
+							/>
+							<FormField
+								v-model="profile.address"
+								type="textarea"
+								label="Address"
+								class="md:col-span-2"
+								data-testid="sellos-setup-address"
+							/>
+						</FieldGrid>
+						<template #footer>
+							<AppButton
+								type="submit"
+								variant="primary"
+								:disabled="busy"
+								data-testid="sellos-setup-save-profile"
+							>
+								Save and continue
+							</AppButton>
+						</template>
+					</SectionCard>
 				</form>
 
 				<form
 					v-else-if="step === 'branding'"
-					class="ui-card"
 					data-testid="sellos-setup-branding"
 					@submit.prevent="run(saveBranding, 'stages')"
 				>
-					<FormSection title="Logo and colour">
-						<div class="flex items-center gap-3 md:col-span-2">
-							<img
-								v-if="logoPreview"
-								:src="logoPreview"
-								alt="Logo preview"
-								class="h-12 w-auto"
-								data-testid="sellos-setup-logo-preview"
+					<SectionCard title="Logo and colour">
+						<FieldGrid>
+							<div class="flex items-center gap-3 md:col-span-2">
+								<img
+									v-if="logoPreview"
+									:src="logoPreview"
+									alt="Logo preview"
+									class="h-12 w-auto"
+									data-testid="sellos-setup-logo-preview"
+								/>
+								<span v-else class="ui-text-muted">No logo yet.</span>
+							</div>
+							<FileField
+								label="Logo (PNG, JPG, GIF or WebP, up to 1 MB)"
+								accept="image/png,image/jpeg,image/gif,image/webp"
+								data-testid="sellos-setup-logo-file"
+								class="md:col-span-2"
+								@change="chooseLogo"
 							/>
-							<span v-else class="text-sm text-ink-muted">No logo yet.</span>
-						</div>
-						<FileField
-							label="Logo (PNG, JPG, GIF or WebP, up to 1 MB)"
-							accept="image/png,image/jpeg,image/gif,image/webp"
-							data-testid="sellos-setup-logo-file"
-							class="md:col-span-2"
-							@change="chooseLogo"
-						/>
-						<div v-if="logoPreview" class="md:col-span-2">
+							<div v-if="logoPreview" class="md:col-span-2">
+								<AppButton
+									type="button"
+									data-testid="sellos-setup-logo-remove"
+									@click="removeLogo"
+								>
+									Remove the logo
+								</AppButton>
+							</div>
+							<div class="flex items-end gap-ui-sm md:col-span-2">
+								<FormField
+									v-model="branding.brand_color"
+									label="Brand colour"
+									hint="A six digit hex colour, starting with #."
+									pattern="#[0-9a-fA-F]{6}"
+									class="max-w-[12rem]"
+									data-testid="sellos-setup-color"
+								/>
+								<svg
+									class="mb-7 size-11 shrink-0"
+									viewBox="0 0 10 10"
+									aria-hidden="true"
+									data-testid="sellos-setup-color-swatch"
+								>
+									<rect width="10" height="10" :fill="branding.brand_color" />
+								</svg>
+							</div>
+						</FieldGrid>
+						<template #footer>
 							<AppButton
-								type="button"
-								data-testid="sellos-setup-logo-remove"
-								@click="removeLogo"
+								type="submit"
+								variant="primary"
+								:disabled="busy"
+								data-testid="sellos-setup-save-branding"
 							>
-								Remove the logo
+								Save and continue
 							</AppButton>
-						</div>
-						<div class="flex items-end gap-ui-sm md:col-span-2">
-							<FormField
-								v-model="branding.brand_color"
-								label="Brand colour"
-								hint="A hex colour such as #0f4c35."
-								pattern="#[0-9a-fA-F]{6}"
-								class="max-w-[12rem]"
-								data-testid="sellos-setup-color"
-							/>
-							<span
-								class="mb-7 inline-block h-11 w-11 shrink-0 rounded-round border border-line"
-								:style="{ backgroundColor: branding.brand_color }"
-								aria-hidden="true"
-								data-testid="sellos-setup-color-swatch"
-							/>
-						</div>
-					</FormSection>
-					<div class="mt-ui-md">
-						<AppButton
-							type="submit"
-							variant="primary"
-							:disabled="busy"
-							data-testid="sellos-setup-save-branding"
-						>
-							Save and continue
-						</AppButton>
-					</div>
+						</template>
+					</SectionCard>
 				</form>
 
 				<form
 					v-else-if="step === 'stages'"
-					class="ui-card"
 					data-testid="sellos-setup-stages"
 					@submit.prevent="run(saveStages, 'users')"
 				>
-					<FormSection title="Lead stages">
-						<p class="text-sm text-ink-muted md:col-span-2">
-							These are the stages a lead moves through. Rename them, reorder them or
-							add your own. Keep at least one Won and one Lost stage. A stage that
-							has leads cannot be removed: move its leads first.
-						</p>
-						<ul class="space-y-ui-sm md:col-span-2">
+					<SectionCard
+						title="Lead stages"
+						help="These are the stages a lead moves through. Rename them, reorder them or add your own. Keep at least one Won and one Lost stage. A stage that has leads cannot be removed: move its leads first."
+					>
+						<ul class="space-y-ui-sm">
 							<li
 								v-for="(s, i) in stages"
 								:key="i"
@@ -211,7 +218,7 @@
 								/>
 								<span
 									v-if="s.leads"
-									class="mb-3 whitespace-nowrap text-xs text-ink-muted"
+									class="mb-3 whitespace-nowrap ui-text-muted"
 									data-testid="sellos-setup-stage-leads"
 								>
 									{{ s.leads }} {{ s.leads === 1 ? "lead" : "leads" }}
@@ -251,27 +258,27 @@
 								</AppButton>
 							</li>
 						</ul>
-					</FormSection>
-					<div class="mt-ui-md flex flex-wrap gap-ui-sm">
-						<AppButton
-							type="button"
-							data-testid="sellos-setup-stage-add"
-							@click="stages.push({ stage_name: '', stage_type: 'Open' })"
-						>
-							Add a stage
-						</AppButton>
-						<AppButton
-							type="submit"
-							variant="primary"
-							:disabled="busy"
-							data-testid="sellos-setup-save-stages"
-						>
-							Save and continue
-						</AppButton>
-					</div>
+						<template #footer>
+							<AppButton
+								type="button"
+								data-testid="sellos-setup-stage-add"
+								@click="stages.push({ stage_name: '', stage_type: 'Open' })"
+							>
+								Add a stage
+							</AppButton>
+							<AppButton
+								type="submit"
+								variant="primary"
+								:disabled="busy"
+								data-testid="sellos-setup-save-stages"
+							>
+								Save and continue
+							</AppButton>
+						</template>
+					</SectionCard>
 				</form>
 
-				<div v-else class="space-y-ui-md" data-testid="sellos-setup-users">
+				<div v-else class="space-y-4" data-testid="sellos-setup-users">
 					<DataTable
 						title="Your first people"
 						caption="People added so far"
@@ -279,89 +286,90 @@
 						:rows="state.users"
 						row-key="email"
 						empty-title="No one added yet"
-						empty-text="Add the first people on your team below."
+						empty-text="Add the first people on your team with Add a person."
 						empty-icon="lucide-users"
 						testid="sellos-setup-user-list"
 						row-testid="sellos-setup-user-row"
 					>
 						<template #cell-full_name="{ row }">
-							<span class="font-medium text-ink">{{
-								row.full_name || row.email
-							}}</span>
+							<span class="ui-text-strong">{{ row.full_name || row.email }}</span>
 						</template>
 						<template #cell-roles="{ row }">
-							<span class="text-ink-body">{{
+							<span class="ui-text-secondary">{{
 								row.roles.map((r) => ROLE_LABELS[r] || r).join(", ")
 							}}</span>
 						</template>
 					</DataTable>
-					<form
-						class="ui-card"
-						data-testid="sellos-setup-user-form"
-						@submit.prevent="addUser"
-					>
-						<FormSection title="Add a person">
-							<p class="text-sm text-ink-muted md:col-span-2">
-								Each person gets one role and an email to set a password when your
-								company can send email. You can add more later.
-							</p>
-							<FormField
-								v-model="user.first_name"
-								label="First name"
-								required
-								data-testid="sellos-setup-user-first-name"
-							/>
-							<FormField
-								v-model="user.last_name"
-								label="Last name"
-								data-testid="sellos-setup-user-last-name"
-							/>
-							<FormField
-								v-model="user.email"
-								type="email"
-								label="Email"
-								required
-								data-testid="sellos-setup-user-email"
-							/>
-							<FormField
-								v-model="user.role"
-								type="select"
-								label="Role"
-								:options="roleOptions"
-								data-testid="sellos-setup-user-role"
-							/>
-						</FormSection>
-						<div class="mt-ui-md">
-							<AppButton
-								type="submit"
-								:disabled="busy"
-								data-testid="sellos-setup-add-user"
-							>
-								Add person
-							</AppButton>
-						</div>
-					</form>
-					<AppButton
-						type="button"
-						variant="primary"
-						:disabled="busy"
-						data-testid="sellos-setup-finish"
-						@click="finish"
-					>
-						Finish setup
-					</AppButton>
+					<div class="flex flex-wrap items-center justify-end gap-ui-sm">
+						<AppButton
+							type="button"
+							data-testid="sellos-setup-add-person"
+							@click="addingUser = true"
+						>
+							Add a person
+						</AppButton>
+						<AppButton
+							type="button"
+							variant="primary"
+							:disabled="busy"
+							data-testid="sellos-setup-finish"
+							@click="finish"
+						>
+							Finish setup
+						</AppButton>
+					</div>
 				</div>
 
 				<p
 					v-if="error"
 					role="alert"
-					class="mt-ui-md text-sm text-danger"
+					class="ui-text-error"
 					data-testid="sellos-setup-error"
 				>
 					{{ error }}
 				</p>
-			</template>
+			</div>
 		</template>
+
+		<FormDrawer
+			:open="addingUser"
+			title="Add a person"
+			text="Each person gets one role and an email to set a password when your company can send email. You can add more later."
+			submit-label="Add person"
+			:busy="busy"
+			testid="sellos-setup-user-form"
+			submit-testid="sellos-setup-add-user"
+			@close="addingUser = false"
+			@submit="addUser"
+		>
+			<FormSection title="Person">
+				<FormField
+					v-model="user.first_name"
+					label="First name"
+					required
+					data-testid="sellos-setup-user-first-name"
+				/>
+				<FormField
+					v-model="user.last_name"
+					label="Last name"
+					data-testid="sellos-setup-user-last-name"
+				/>
+				<FormField
+					v-model="user.email"
+					type="email"
+					label="Email"
+					required
+					data-testid="sellos-setup-user-email"
+				/>
+				<FormField
+					v-model="user.role"
+					type="select"
+					label="Role"
+					:options="roleOptions"
+					data-testid="sellos-setup-user-role"
+				/>
+			</FormSection>
+		</FormDrawer>
 	</PageTemplate>
 </template>
 
@@ -370,6 +378,10 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
+import FieldGrid from "../components/FieldGrid.vue";
+import FormDrawer from "../components/FormDrawer.vue";
+import Notice from "../components/Notice.vue";
+import SectionCard from "../components/SectionCard.vue";
 import FileField from "../components/FileField.vue";
 import DataTable from "../components/DataTable.vue";
 import FormField from "../components/FormField.vue";
@@ -391,6 +403,7 @@ const step = ref("profile");
 const resumed = ref(false);
 const editing = ref(false);
 const busy = ref(false);
+const addingUser = ref(false);
 const error = ref("");
 const loadError = ref("");
 const profile = reactive({});
@@ -498,6 +511,7 @@ async function addUser() {
 		);
 		state.value = { ...state.value, users: result.users };
 		Object.assign(user, { first_name: "", last_name: "", email: "" });
+		addingUser.value = false;
 	} catch (e) {
 		error.value = serverMessage(e, "The person could not be added.");
 	} finally {

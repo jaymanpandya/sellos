@@ -24,19 +24,43 @@
 			<KpiStrip :items="kpis" data-testid="sellos-mandate-stats" />
 		</template>
 
+		<template v-if="!loadError" #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search mandates"
+				search-placeholder="Search by seller"
+				search-testid="sellos-mandate-search"
+				clear-testid="sellos-mandate-filter-clear"
+				:active="Boolean(search || statusFilter)"
+				:chips="chips"
+				data-testid="sellos-mandate-filters"
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+				<FormField
+					v-model="statusFilter"
+					compact
+					type="select"
+					label="Status"
+					:options="statusOptions"
+					data-testid="sellos-mandate-filter-status"
+				/>
+			</FilterBar>
+		</template>
+
 		<p
-			v-if="error && !creating"
+			v-if="error && !creating && !current"
 			role="alert"
 			data-testid="sellos-mandate-error"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
 		<p
-			v-if="notice"
+			v-if="notice && !current"
 			role="status"
 			data-testid="sellos-mandate-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -53,7 +77,8 @@
 			title="All mandates"
 			caption="Mandates"
 			:columns="columns"
-			:rows="mandates"
+			:rows="shownMandates"
+			:row-to="(row) => `/crm/mandates/${row.name}`"
 			:loading="!loaded"
 			loading-label="Loading mandates."
 			:row-name="(row) => row.lead_title"
@@ -77,123 +102,163 @@
 				/>
 			</template>
 			<template #cell-terms="{ row }">
-				<span class="text-ink-body" data-testid="sellos-mandate-terms">
+				<span class="ui-text-secondary" data-testid="sellos-mandate-terms">
 					{{ row.mandate_type }}, {{ row.term_months }} months from
 					{{ formatDate(row.start_date) }}, fee {{ row.fee_percent }}%
 				</span>
 			</template>
-			<template #cell-signing="{ row }">
-				<div v-if="row.status !== 'Signed'">
-					<p class="mb-ui-sm text-sm text-ink-muted">
-						Upload the signed document to sign this mandate. It is required.
-					</p>
-					<FileField
-						label="Signed document"
-						accept=".pdf,.png,.jpg,.jpeg"
-						required
-						:hint="`A ${fileTypes} file of up to ${fileLimit} MB.`"
-						data-testid="sellos-mandate-sign-file"
-						@change="(e) => sign(row, e)"
-					/>
-				</div>
-				<p v-else class="text-sm text-ink-muted" data-testid="sellos-mandate-signed">
-					Signed on {{ formatWhen(row.signed_on) }} (recorded by
-					{{ row.signed_by_name }}). Its terms are kept.
-				</p>
-			</template>
-			<template #cell-dossier="{ row }">
-				<p
-					v-if="!row.dossier_released"
-					class="text-sm text-ink-muted"
-					data-testid="sellos-mandate-dossier-locked"
+			<template #cell-manage="{ row }">
+				<AppButton
+					type="button"
+					data-testid="sellos-mandate-manage"
+					@click="manageName = row.name"
 				>
-					The Dossier is hidden until the mandate is signed. Notes and files you add now
-					are kept and released with the signature.
-				</p>
-				<div v-else>
-					<AppButton
-						type="button"
-						data-testid="sellos-mandate-dossier-open"
-						@click="open(row)"
-					>
-						Open the Dossier ({{ row.dossier_count }})
-					</AppButton>
-				</div>
-				<div
-					v-if="dossier[row.name]"
-					class="mt-ui-sm space-y-ui-sm"
-					data-testid="sellos-mandate-dossier"
-				>
-					<ul class="space-y-1">
-						<li v-if="!dossier[row.name].items.length">The Dossier is empty.</li>
-						<li
-							v-for="(i, n) in dossier[row.name].items"
-							:key="n"
-							data-testid="sellos-mandate-dossier-item"
-							:data-title="i.title"
-							class="text-sm text-ink"
-						>
-							<span class="font-medium">{{ i.title }}</span>
-							<span v-if="i.kind === 'Note'">: {{ i.note }}</span>
-							<a
-								v-else
-								:href="i.file"
-								target="_blank"
-								rel="noopener"
-								class="underline"
-							>
-								(file)
-							</a>
-							<span class="text-ink-muted">
-								, added by {{ i.added_by_name }} on
-								{{ formatWhen(i.added_on) }}</span
-							>
-						</li>
-					</ul>
-					<p class="text-sm font-medium text-ink">Who has opened it</p>
-					<ul
-						class="space-y-1 text-sm text-ink-muted"
-						data-testid="sellos-mandate-views"
-					>
-						<li
-							v-for="(v, n) in dossier[row.name].views"
-							:key="n"
-							data-testid="sellos-mandate-view"
-						>
-							{{ v.viewed_by_name }}, {{ formatWhen(v.viewed_on) }}
-						</li>
-					</ul>
-				</div>
-				<div class="mt-ui-md grid gap-ui-sm">
-					<FormField
-						v-model="noteTitle[row.name]"
-						label="Note title"
-						data-testid="sellos-mandate-note-title"
-					/>
-					<FormField
-						v-model="noteText[row.name]"
-						type="textarea"
-						label="Note"
-						data-testid="sellos-mandate-note-text"
-					/>
-					<div class="flex flex-wrap items-end gap-ui-sm">
-						<AppButton
-							type="button"
-							data-testid="sellos-mandate-note-add"
-							@click="addNote(row)"
-						>
-							Add note
-						</AppButton>
-						<FileField
-							label="Add a file to the Dossier"
-							accept=".pdf,.png,.jpg,.jpeg"
-							data-testid="sellos-mandate-dossier-file"
-							@change="(e) => addFile(row, e)"
-						/>
-					</div>
-				</div>
+					{{ row.status === "Signed" ? "Dossier" : "Sign and Dossier" }}
+				</AppButton>
 			</template>
 		</DataTable>
+
+		<!-- Signing and the Private Sale Dossier: a drawer opened from the row, never controls inside the row. -->
+		<FormDrawer
+			:open="Boolean(current)"
+			:title="current ? `Mandate for ${current.lead_title}` : 'Mandate'"
+			text="Sign the mandate with the signed document, then keep notes and files in its Private Sale Dossier."
+			submit-label="Done"
+			testid="sellos-mandate-drawer"
+			submit-testid="sellos-mandate-drawer-done"
+			@close="manageName = ''"
+			@submit="manageName = ''"
+		>
+			<template v-if="current">
+				<SectionCard title="Signature">
+					<div v-if="current.status !== 'Signed'">
+						<p class="mb-ui-sm ui-text-muted">
+							Upload the signed document to sign this mandate. It is required.
+						</p>
+						<FileField
+							label="Signed document"
+							accept=".pdf,.png,.jpg,.jpeg"
+							required
+							:hint="`A ${fileTypes} file of up to ${fileLimit} MB.`"
+							data-testid="sellos-mandate-sign-file"
+							@change="(e) => sign(current, e)"
+						/>
+					</div>
+					<p v-else class="ui-text-muted" data-testid="sellos-mandate-signed">
+						Signed on {{ formatWhen(current.signed_on) }} (recorded by
+						{{ current.signed_by_name }}). Its terms are kept.
+					</p>
+				</SectionCard>
+				<SectionCard title="Private Sale Dossier">
+					<p
+						v-if="!current.dossier_released"
+						class="ui-text-muted"
+						data-testid="sellos-mandate-dossier-locked"
+					>
+						The Dossier is hidden until the mandate is signed. Notes and files you add
+						now are kept and released with the signature.
+					</p>
+					<div v-else>
+						<AppButton
+							type="button"
+							data-testid="sellos-mandate-dossier-open"
+							@click="open(current)"
+						>
+							Open the Dossier ({{ current.dossier_count }})
+						</AppButton>
+					</div>
+					<div
+						v-if="dossier[current.name]"
+						class="mt-ui-sm space-y-ui-sm"
+						data-testid="sellos-mandate-dossier"
+					>
+						<ul class="space-y-1">
+							<li v-if="!dossier[current.name].items.length">
+								The Dossier is empty.
+							</li>
+							<li
+								v-for="(i, n) in dossier[current.name].items"
+								:key="n"
+								data-testid="sellos-mandate-dossier-item"
+								:data-title="i.title"
+								class="ui-text-small"
+							>
+								<span class="ui-text-strong">{{ i.title }}</span>
+								<span v-if="i.kind === 'Note'">: {{ i.note }}</span>
+								<a
+									v-else
+									:href="i.file"
+									target="_blank"
+									rel="noopener"
+									class="underline"
+								>
+									(file)
+								</a>
+								<span class="ui-text-muted">
+									, added by {{ i.added_by_name }} on
+									{{ formatWhen(i.added_on) }}</span
+								>
+							</li>
+						</ul>
+						<p class="ui-text-strong">Who has opened it</p>
+						<ul class="space-y-1 ui-text-muted" data-testid="sellos-mandate-views">
+							<li
+								v-for="(v, n) in dossier[current.name].views"
+								:key="n"
+								data-testid="sellos-mandate-view"
+							>
+								{{ v.viewed_by_name }}, {{ formatWhen(v.viewed_on) }}
+							</li>
+						</ul>
+					</div>
+					<div class="mt-ui-md grid gap-ui-sm">
+						<FormField
+							v-model="noteTitle[current.name]"
+							label="Note title"
+							data-testid="sellos-mandate-note-title"
+							@keydown.enter.prevent
+						/>
+						<FormField
+							v-model="noteText[current.name]"
+							type="textarea"
+							label="Note"
+							data-testid="sellos-mandate-note-text"
+						/>
+						<div class="flex flex-wrap items-end gap-ui-sm">
+							<AppButton
+								type="button"
+								data-testid="sellos-mandate-note-add"
+								@click="addNote(current)"
+							>
+								Add note
+							</AppButton>
+							<FileField
+								label="Add a file to the Dossier"
+								accept=".pdf,.png,.jpg,.jpeg"
+								data-testid="sellos-mandate-dossier-file"
+								@change="(e) => addFile(current, e)"
+							/>
+						</div>
+					</div>
+				</SectionCard>
+				<p
+					v-if="error"
+					role="alert"
+					data-testid="sellos-mandate-error"
+					class="ui-text-error"
+				>
+					{{ error }}
+				</p>
+				<p
+					v-if="notice"
+					role="status"
+					data-testid="sellos-mandate-notice"
+					class="ui-text-small"
+				>
+					{{ notice }}
+				</p>
+			</template>
+		</FormDrawer>
 
 		<!-- Recording a mandate is a drawer: nothing is an open form under the list. -->
 		<FormDrawer
@@ -238,12 +303,7 @@
 					data-testid="sellos-mandate-fee"
 				/>
 			</FormSection>
-			<p
-				v-if="error"
-				role="alert"
-				data-testid="sellos-mandate-error"
-				class="text-sm text-danger"
-			>
+			<p v-if="error" role="alert" data-testid="sellos-mandate-error" class="ui-text-error">
 				{{ error }}
 			</p>
 		</FormDrawer>
@@ -259,10 +319,12 @@ import FileField from "../components/FileField.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { readFileBase64 } from "../company/partnersApi";
 import { serverMessage } from "../crm/crmApi";
@@ -285,6 +347,35 @@ const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
 const creating = ref(false);
+const manageName = ref("");
+const search = ref("");
+const statusFilter = ref("");
+const current = computed(() => mandates.value.find((m) => m.name === manageName.value) || null);
+const statusOptions = [
+	{ label: "All statuses", value: "" },
+	{ label: "Signed", value: "Signed" },
+	{ label: "Draft", value: "Draft" },
+];
+const shownMandates = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return mandates.value.filter(
+		(m) =>
+			(!q || (m.lead_title || "").toLowerCase().includes(q)) &&
+			(!statusFilter.value || m.status === statusFilter.value)
+	);
+});
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Seller: ${search.value}` }] : []),
+	...(statusFilter.value ? [{ key: "status", label: `Status: ${statusFilter.value}` }] : []),
+]);
+function clearFilters() {
+	search.value = "";
+	statusFilter.value = "";
+}
+function removeChip(key) {
+	if (key === "search") search.value = "";
+	else statusFilter.value = "";
+}
 
 const kpis = computed(() => {
 	const rows = mandates.value;
@@ -316,8 +407,7 @@ const columns = [
 	{ key: "lead_title", label: "Seller", primary: true, sortable: true },
 	{ key: "status", label: "Status", sortable: true },
 	{ key: "terms", label: "Terms", wrap: true, class: "min-w-[12rem]" },
-	{ key: "signing", label: "Signature", wrap: true, class: "min-w-[16rem]" },
-	{ key: "dossier", label: "Private Sale Dossier", wrap: true, class: "min-w-[20rem]" },
+	{ key: "manage", label: "Signature and Dossier", wrap: true },
 ];
 const rowAttrs = (m) => ({
 	"data-title": m.lead_title,

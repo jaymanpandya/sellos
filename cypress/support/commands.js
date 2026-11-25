@@ -265,6 +265,8 @@ Cypress.Commands.overwrite("select", (original, subject, valueOrText, options) =
 // cy.optionTexts("lead-stage-select").should("deep.eq", [...]).
 Cypress.Commands.add("optionTexts", (testId) => {
 	cy.getByTestId(testId).click();
+	// The list renders as it opens: give it a moment, so the texts are read from the whole list.
+	cy.wait(300, { log: false });
 	return cy
 		.get('[role="option"]', { log: false })
 		.then(($options) => [...$options].map((o) => o.innerText.trim()))

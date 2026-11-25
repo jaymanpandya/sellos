@@ -85,17 +85,27 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 		});
 	});
 
-	it("shows one row of filters, and the rest under More filters", () => {
+	it("shows one row with the search and Filters, and every filter under Filters", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/crm/leads");
-		["search", "filter-stage", "filter-agent", "filter-source"].forEach((id) =>
+		["search", "filters-toggle"].forEach((id) =>
 			cy.getByTestId(`leads-${id}`).should("be.visible")
 		);
-		cy.getByTestId("leads-filter-budget-min").should("not.be.visible");
-		cy.getByTestId("leads-filter-contacted-from").should("not.be.visible");
-		cy.getByTestId("leads-filters-toggle").should("contain", "More filters").click();
-		cy.getByTestId("leads-filter-budget-min").should("be.visible");
-		cy.getByTestId("leads-filter-contacted-from").should("be.visible");
+		[
+			"filter-stage",
+			"filter-agent",
+			"filter-source",
+			"filter-budget-min",
+			"filter-contacted-from",
+		].forEach((id) => cy.getByTestId(`leads-${id}`).should("not.be.visible"));
+		cy.getByTestId("leads-filters-toggle").should("contain", "Filters").click();
+		[
+			"filter-stage",
+			"filter-agent",
+			"filter-source",
+			"filter-budget-min",
+			"filter-contacted-from",
+		].forEach((id) => cy.getByTestId(`leads-${id}`).should("be.visible"));
 		cy.getByTestId("leads-filters-toggle")
 			.should("have.attr", "aria-expanded", "true")
 			.click();
@@ -124,7 +134,6 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 			cy.getByTestId("leads-filter-clear").should("not.exist");
 			cy.getByTestId("lead-select").first().check();
 			cy.getByTestId("bulk").should("be.visible");
-			cy.getByTestId("bulk-agent").select("Gate Agent");
 			cy.getByTestId("bulk-reassign").should("not.be.disabled");
 			cy.getByTestId("bulk-clear").click();
 			cy.getByTestId("bulk").should("not.exist");

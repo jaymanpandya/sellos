@@ -4,7 +4,7 @@
 			v-if="error"
 			role="alert"
 			data-testid="sellos-structure-error"
-			class="mb-ui-md text-sm text-accent"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -12,32 +12,50 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-structure-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
 
-		<ListCard title="Towers and floors">
+		<SectionCard title="Towers and floors">
+			<template v-if="canEdit" #actions>
+				<AppButton
+					v-if="towers.length"
+					type="button"
+					data-testid="sellos-generate-open"
+					@click="openDrawer('generate')"
+				>
+					Make units
+				</AppButton>
+				<AppButton
+					type="button"
+					variant="primary"
+					data-testid="sellos-tower-open"
+					@click="openDrawer('tower')"
+				>
+					Add tower
+				</AppButton>
+			</template>
 			<EmptyState
 				v-if="!towers.length"
 				title="No towers or wings yet"
-				text="Add a tower or wing below, then its floors and units."
+				text="Add a tower or wing, then its floors and units."
 				icon="lucide-building"
 			/>
-			<ul class="space-y-ui-sm" data-testid="sellos-structure-towers">
+			<ul class="ui-list" data-testid="sellos-structure-towers">
 				<li
 					v-for="t in towers"
 					:key="t.name"
 					data-testid="sellos-tower-row"
 					:data-name="t.name"
 					:data-tower="t.tower_name"
-					class="rounded-card border border-line-soft p-ui-md"
+					class="space-y-ui-sm"
 				>
 					<div class="flex flex-wrap items-center gap-3">
-						<span class="font-medium text-ink" data-testid="sellos-tower-name">{{
+						<span class="ui-text-strong" data-testid="sellos-tower-name">{{
 							t.tower_name
 						}}</span>
-						<span class="text-sm text-ink-muted" data-testid="sellos-tower-count">
+						<span class="ui-text-muted" data-testid="sellos-tower-count">
 							{{ t.floors.length }} floors, {{ t.unit_count }} units
 						</span>
 						<AppButton
@@ -55,9 +73,9 @@
 							:key="f.floor_number"
 							data-testid="sellos-floor-row"
 							:data-floor="f.floor_number"
-							class="flex flex-wrap items-center gap-2 text-sm text-ink-muted"
+							class="flex flex-wrap items-center gap-2 ui-text-muted"
 						>
-							<span class="w-20 text-ink">Floor {{ f.floor_number }}</span>
+							<span class="w-20 ui-text-body">Floor {{ f.floor_number }}</span>
 							<StatusBadge
 								v-for="u in f.units"
 								:key="u.name"
@@ -79,16 +97,19 @@
 					</ul>
 				</li>
 			</ul>
-		</ListCard>
+		</SectionCard>
 
 		<template v-if="canEdit">
-			<form
-				class="ui-card mt-ui-md"
-				data-testid="sellos-tower-form"
-				@submit.prevent="addTower"
+			<FormDrawer
+				:open="drawer === 'tower'"
+				title="Add a tower or wing"
+				submit-label="Add tower"
+				testid="sellos-tower-form"
+				submit-testid="sellos-tower-save"
+				@close="drawer = ''"
+				@submit="addTower"
 			>
-				<h2 class="ui-card-heading mb-ui-md">Add a tower or wing</h2>
-				<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+				<FormSection title="Tower or wing">
 					<FormField
 						v-model="tower.name"
 						label="Tower or wing"
@@ -101,22 +122,21 @@
 						hint="For example 1 to 20"
 						data-testid="sellos-tower-floors-input"
 					/>
-				</div>
-				<div class="mt-ui-md">
-					<AppButton type="submit" variant="primary" data-testid="sellos-tower-save"
-						>Add tower</AppButton
-					>
-				</div>
-			</form>
+				</FormSection>
+				<p v-if="error" role="alert" class="ui-text-error">{{ error }}</p>
+			</FormDrawer>
 
-			<form
+			<FormDrawer
 				v-if="towers.length"
-				class="ui-card mt-ui-md"
-				data-testid="sellos-generate-form"
-				@submit.prevent="generate"
+				:open="drawer === 'generate'"
+				title="Make the units of a floor"
+				submit-label="Make units"
+				testid="sellos-generate-form"
+				submit-testid="sellos-generate-save"
+				@close="drawer = ''"
+				@submit="generate"
 			>
-				<h2 class="ui-card-heading mb-ui-md">Make the units of a floor</h2>
-				<div class="grid grid-cols-1 gap-x-ui-md gap-y-ui-md md:grid-cols-2">
+				<FormSection title="Units">
 					<FormField
 						v-model="gen.tower"
 						type="select"
@@ -154,46 +174,47 @@
 						required
 						data-testid="sellos-generate-area"
 					/>
-				</div>
-				<div class="mt-ui-md">
-					<AppButton type="submit" variant="primary" data-testid="sellos-generate-save"
-						>Make units</AppButton
-					>
-				</div>
-			</form>
+				</FormSection>
+				<p v-if="error" role="alert" class="ui-text-error">{{ error }}</p>
+			</FormDrawer>
 		</template>
 
-		<div class="ui-card mt-ui-md" data-testid="sellos-project-details">
-			<h2 class="ui-card-heading mb-ui-md">Possession, amenities and brochures</h2>
-			<FormField
-				v-model="date"
-				type="date"
-				label="Possession date"
-				:disabled="!canEdit"
-				data-testid="sellos-possession-date"
-			/>
-			<fieldset class="mt-ui-md">
-				<legend class="text-sm text-ink-muted">Amenities</legend>
-				<p
-					v-if="!amenityOptions.length"
-					class="text-sm text-ink-muted"
-					data-testid="sellos-amenities-empty"
-				>
-					The Company Admin has not added any amenities yet.
-				</p>
-				<div class="flex flex-wrap gap-x-ui-md">
-					<AppCheckbox
-						v-for="a in amenityOptions"
-						:key="a"
-						:model-value="chosen.includes(a)"
-						:label="a"
-						:disabled="!canEdit"
-						data-testid="sellos-amenity-choice"
-						:data-amenity="a"
-						@update:model-value="toggle(a, $event)"
-					/>
-				</div>
-			</fieldset>
+		<SectionCard
+			title="Possession and amenities"
+			class="mt-ui-md"
+			data-testid="sellos-project-details"
+		>
+			<FieldGrid>
+				<FormField
+					v-model="date"
+					type="date"
+					label="Possession date"
+					:disabled="!canEdit"
+					data-testid="sellos-possession-date"
+				/>
+				<fieldset class="md:col-span-2">
+					<legend class="ui-text-muted">Amenities</legend>
+					<p
+						v-if="!amenityOptions.length"
+						class="ui-text-muted"
+						data-testid="sellos-amenities-empty"
+					>
+						The Company Admin has not added any amenities yet.
+					</p>
+					<div class="flex flex-wrap gap-x-ui-md">
+						<AppCheckbox
+							v-for="a in amenityOptions"
+							:key="a"
+							:model-value="chosen.includes(a)"
+							:label="a"
+							:disabled="!canEdit"
+							data-testid="sellos-amenity-choice"
+							:data-amenity="a"
+							@update:model-value="toggle(a, $event)"
+						/>
+					</div>
+				</fieldset>
+			</FieldGrid>
 			<div v-if="canEdit" class="mt-ui-md">
 				<AppButton
 					type="button"
@@ -215,16 +236,17 @@
 					Add to the list
 				</AppButton>
 			</div>
+		</SectionCard>
 
-			<h3 class="mt-ui-lg mb-ui-sm text-sm font-medium text-ink">Brochures</h3>
+		<SectionCard title="Brochures" class="mt-ui-md">
 			<ul class="space-y-1" data-testid="sellos-brochures">
 				<li
 					v-for="b in brochures"
 					:key="b.file"
 					data-testid="sellos-brochure-row"
-					class="text-sm text-ink"
+					class="ui-text-small"
 				>
-					<a :href="b.file" target="_blank" rel="noopener" class="underline">{{
+					<a :href="b.file" target="_blank" rel="noopener" class="ui-link">{{
 						b.title
 					}}</a>
 					<AppButton
@@ -237,7 +259,7 @@
 					</AppButton>
 				</li>
 			</ul>
-			<div v-if="canEdit" class="mt-ui-sm grid grid-cols-1 gap-ui-md md:grid-cols-2">
+			<FieldGrid v-if="canEdit" class="mt-ui-sm">
 				<FormField
 					v-model="brochureTitle"
 					label="Brochure title"
@@ -250,8 +272,8 @@
 					data-testid="sellos-brochure-file"
 					@change="addBrochure"
 				/>
-			</div>
-		</div>
+			</FieldGrid>
+		</SectionCard>
 	</section>
 </template>
 
@@ -261,9 +283,12 @@ import { computed, reactive, ref, watch } from "vue";
 import AppButton from "../components/AppButton.vue";
 import AppCheckbox from "../components/AppCheckbox.vue";
 import EmptyState from "../components/EmptyState.vue";
+import FieldGrid from "../components/FieldGrid.vue";
 import FileField from "../components/FileField.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
-import ListCard from "../components/ListCard.vue";
+import FormSection from "../components/FormSection.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { readFileBase64 } from "../company/partnersApi";
 import { serverMessage } from "../crm/crmApi";
@@ -286,6 +311,11 @@ const props = defineProps({
 const emit = defineEmits(["state", "options"]);
 
 const error = ref("");
+const drawer = ref(""); // "tower" or "generate": the form drawer that is open
+function openDrawer(which) {
+	error.value = "";
+	drawer.value = which;
+}
 const notice = ref("");
 const tower = reactive({ name: "", floors: "" });
 const gen = reactive({ tower: "", floor: "", pattern: "", configuration: "", carpet_area: "" });
@@ -335,6 +365,7 @@ async function addTower() {
 	) {
 		tower.name = "";
 		tower.floors = "";
+		drawer.value = "";
 	}
 }
 
@@ -364,6 +395,7 @@ async function generate() {
 		});
 		emit("state", data);
 		notice.value = `${data.created.length} units made, ${data.skipped.length} already there.`;
+		drawer.value = "";
 	} catch (e) {
 		error.value = serverMessage(e, "The units could not be made.");
 	}

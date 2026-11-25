@@ -24,6 +24,30 @@
 			<KpiStrip :items="kpis" data-testid="sellos-tenant-stats" />
 		</template>
 
+		<template #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search companies"
+				search-placeholder="Search companies"
+				search-testid="sellos-tenants-search"
+				clear-testid="sellos-tenants-filter-clear"
+				:active="Boolean(search || statusFilter)"
+				:chips="chips"
+				data-testid="sellos-tenants-filters"
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+				<FormField
+					v-model="statusFilter"
+					compact
+					type="select"
+					label="Status"
+					:options="statusOptions"
+					data-testid="sellos-tenants-filter-status"
+				/>
+			</FilterBar>
+		</template>
+
 		<FormDrawer
 			:open="creating"
 			title="Add a company"
@@ -64,12 +88,7 @@
 					data-testid="sellos-tenant-plan"
 				/>
 			</FormSection>
-			<p
-				v-if="error"
-				data-testid="sellos-tenant-error"
-				role="alert"
-				class="text-sm text-danger"
-			>
+			<p v-if="error" data-testid="sellos-tenant-error" role="alert" class="ui-text-error">
 				{{ error }}
 			</p>
 		</FormDrawer>
@@ -78,7 +97,7 @@
 			v-if="error && !creating"
 			data-testid="sellos-tenant-error"
 			role="alert"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -90,7 +109,7 @@
 			title="Companies"
 			caption="Companies"
 			:columns="columns"
-			:rows="tenants"
+			:rows="shown"
 			:loading="loading"
 			loading-label="Loading companies."
 			empty-title="No company has been requested yet"
@@ -101,7 +120,7 @@
 			empty-testid="sellos-tenant-empty"
 		>
 			<template #cell-company_name="{ row }">
-				<span class="block font-medium text-ink" data-testid="sellos-tenant-name">{{
+				<span class="block ui-text-strong" data-testid="sellos-tenant-name">{{
 					row.company_name
 				}}</span>
 			</template>
@@ -137,6 +156,7 @@ import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -194,6 +214,39 @@ const kpis = computed(() => [
 		tone: "danger",
 	},
 ]);
+const search = ref("");
+const statusFilter = ref("");
+const statusOptions = computed(() => [
+	{ label: "All", value: "" },
+	...[...new Set(tenants.value.map((r) => r.status).filter(Boolean))].map((v) => ({
+		label: v,
+		value: v,
+	})),
+]);
+const shown = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return tenants.value.filter(
+		(r) =>
+			(!q ||
+				`${r.company_name} ${r.site_name || ""} ${r.admin_email || ""}`
+					.toLowerCase()
+					.includes(q)) &&
+			(!statusFilter.value || r.status === statusFilter.value)
+	);
+});
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Search: ${search.value}` }] : []),
+	...(statusFilter.value ? [{ key: "status", label: statusFilter.value }] : []),
+]);
+function clearFilters() {
+	search.value = "";
+	statusFilter.value = "";
+}
+function removeChip(key) {
+	if (key === "search") search.value = "";
+	else statusFilter.value = "";
+}
+
 const columns = [
 	{ key: "company_name", label: "Company", primary: true, sortable: true },
 	{ key: "site_name", label: "Site", sortable: true },

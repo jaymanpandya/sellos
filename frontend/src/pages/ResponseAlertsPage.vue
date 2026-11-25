@@ -1,5 +1,5 @@
 <template>
-	<PageTemplate data-testid="sellos-response-alerts-page">
+	<PageTemplate shape="form" data-testid="sellos-response-alerts-page">
 		<template #header>
 			<PageHeader
 				title="Response time alerts"
@@ -15,44 +15,52 @@
 
 		<form
 			v-else
-			class="ui-card max-w-3xl space-y-ui-md"
+			class="space-y-ui-md"
 			data-testid="sellos-response-form"
 			@submit.prevent="save"
 		>
-			<h2 class="ui-card-heading">Limits</h2>
-			<FormField
-				v-model="form.unassignedMinutes"
-				type="number"
-				label="Minutes a new lead may stay unassigned"
-				hint="After this many minutes with no agent, the Company Admin is alerted."
-				data-testid="sellos-response-unassigned"
-			/>
-			<FormField
-				v-model="form.contactMinutes"
-				type="number"
-				label="Minutes an assigned lead may wait for a call or activity"
-				hint="Counted from the assignment. The agent is alerted, then the Sales Manager of the agent's team (the Company Admin when there is no team)."
-				data-testid="sellos-response-contact"
-			/>
-			<p
-				v-if="error"
-				data-testid="sellos-response-error"
-				role="alert"
-				class="text-sm text-tone-danger"
+			<SectionCard
+				title="Limits"
+				help="Both limits are counted in minutes from the moment a new lead arrives or is assigned."
 			>
-				{{ error }}
-			</p>
-			<p
-				v-if="saved"
-				data-testid="sellos-response-saved"
-				role="status"
-				class="text-sm text-ink"
-			>
-				Saved.
-			</p>
-			<AppButton type="submit" variant="primary" data-testid="sellos-response-save">
-				Save
-			</AppButton>
+				<FieldGrid>
+					<FormField
+						v-model="form.unassignedMinutes"
+						type="number"
+						label="Minutes a new lead may stay unassigned"
+						hint="After this many minutes with no agent, the Company Admin is alerted."
+						data-testid="sellos-response-unassigned"
+					/>
+					<FormField
+						v-model="form.contactMinutes"
+						type="number"
+						label="Minutes an assigned lead may wait for a call or activity"
+						hint="Counted from the assignment. The agent is alerted, then the Sales Manager of the agent's team (the Company Admin when there is no team)."
+						data-testid="sellos-response-contact"
+					/>
+				</FieldGrid>
+				<p
+					v-if="error"
+					data-testid="sellos-response-error"
+					role="alert"
+					class="ui-text-error mt-ui-md"
+				>
+					{{ error }}
+				</p>
+				<p
+					v-if="saved"
+					data-testid="sellos-response-saved"
+					role="status"
+					class="ui-text-small mt-ui-md"
+				>
+					Saved.
+				</p>
+				<template #footer>
+					<AppButton type="submit" variant="primary" data-testid="sellos-response-save">
+						Save
+					</AppButton>
+				</template>
+			</SectionCard>
 		</form>
 	</PageTemplate>
 </template>
@@ -62,11 +70,13 @@ import { onMounted, reactive, ref } from "vue";
 
 import { logRequestError } from "../api";
 import AppButton from "../components/AppButton.vue";
+import FieldGrid from "../components/FieldGrid.vue";
 import FormField from "../components/FormField.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import SectionCard from "../components/SectionCard.vue";
 import { serverMessage } from "../crm/crmApi";
 import { responseTimesApi } from "../crm/responseTimesApi";
 

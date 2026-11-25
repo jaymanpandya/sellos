@@ -1,5 +1,5 @@
 <template>
-	<PageTemplate data-testid="sellos-inventory-page">
+	<PageTemplate shape="list" data-testid="sellos-inventory-page">
 		<template #header>
 			<PageHeader
 				title="Inventory"
@@ -8,7 +8,7 @@
 			>
 				<router-link
 					:to="{ name: 'listings' }"
-					class="ui-link font-medium"
+					class="ui-link ui-text-strong"
 					data-testid="sellos-inventory-listings-link"
 				>
 					Listings
@@ -51,7 +51,7 @@
 			v-if="error"
 			role="alert"
 			data-testid="sellos-inventory-error"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -59,7 +59,7 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-inventory-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
@@ -86,7 +86,7 @@
 				<template #cell-project_name="{ row }">
 					<router-link
 						:to="projectTo(row)"
-						class="text-ink no-underline hover:underline"
+						class="no-underline hover:underline ui-text-body"
 						data-testid="sellos-inventory-project-link"
 					>
 						{{ row.project_name }}
@@ -163,10 +163,7 @@
 		<!-- The status log of a secondary property. -->
 		<Dialog v-model="logOpen" :options="{ title: logTitle, size: 'md' }">
 			<template #body-content>
-				<ul
-					class="space-y-1 text-sm text-ink-muted"
-					data-testid="sellos-inventory-property-log"
-				>
+				<ul class="space-y-1 ui-text-muted" data-testid="sellos-inventory-property-log">
 					<li v-for="(l, i) in logRows" :key="i">
 						{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}
 						<span v-if="l.from_status">moved it from {{ l.from_status }} to</span>
@@ -204,7 +201,7 @@
 				<p
 					v-if="error"
 					role="alert"
-					class="text-sm text-danger"
+					class="ui-text-error"
 					data-testid="sellos-inventory-drawer-error"
 				>
 					{{ error }}
@@ -267,7 +264,7 @@
 				<p
 					v-if="error"
 					role="alert"
-					class="text-sm text-danger"
+					class="ui-text-error"
 					data-testid="sellos-inventory-drawer-error"
 				>
 					{{ error }}
@@ -347,7 +344,7 @@
 				<p
 					v-if="error"
 					role="alert"
-					class="text-sm text-danger"
+					class="ui-text-error"
 					data-testid="sellos-inventory-drawer-error"
 				>
 					{{ error }}

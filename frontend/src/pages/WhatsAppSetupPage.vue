@@ -1,6 +1,6 @@
 <template>
 	<!-- A settings page: the header card, a headed card for the number, and the templates as a table. -->
-	<PageTemplate data-testid="sellos-whatsapp-setup-page">
+	<PageTemplate shape="form" data-testid="sellos-whatsapp-setup-page">
 		<template #header>
 			<PageHeader
 				title="WhatsApp setup"
@@ -21,80 +21,86 @@
 			</PageHeader>
 		</template>
 
+		<template v-if="!loading && !loadError" #notice>
+			<Notice title="Connection status">
+				<p data-testid="sellos-whatsapp-setup-status">{{ statusText }}</p>
+			</Notice>
+		</template>
+
 		<div v-if="loadError" data-testid="sellos-whatsapp-setup-load-error">
 			<LoadError :message="loadError" @retry="load" />
 		</div>
 		<LoadingSkeleton v-else-if="loading" />
 
-		<template v-else>
-			<form
-				class="ui-card mb-ui-md"
-				data-testid="sellos-whatsapp-setup-form"
-				@submit.prevent="save"
-			>
-				<FormSection title="Your number">
-					<FormField
-						v-model="form.accessToken"
-						type="password"
-						label="Access token"
-						autocomplete="off"
-						:placeholder="state.access_token_set ? 'Saved. Type to replace it.' : ''"
-						data-testid="sellos-whatsapp-setup-token"
-					/>
-					<FormField
-						v-model="form.appSecret"
-						type="password"
-						label="Webhook signing secret"
-						autocomplete="off"
-						:placeholder="state.app_secret_set ? 'Saved. Type to replace it.' : ''"
-						data-testid="sellos-whatsapp-setup-secret"
-					/>
-					<FormField
-						v-model="form.phoneNumberId"
-						label="Number ID"
-						inputmode="numeric"
-						data-testid="sellos-whatsapp-setup-number-id"
-					/>
-					<FormField
-						v-model="form.displayNumber"
-						type="tel"
-						label="WhatsApp number"
-						inputmode="tel"
-						data-testid="sellos-whatsapp-setup-number"
-					/>
-				</FormSection>
-				<div class="mt-ui-md space-y-ui-sm">
-					<p class="text-sm text-ink-muted" data-testid="sellos-whatsapp-setup-status">
-						{{ statusText }}
-					</p>
-					<p
-						v-if="error"
-						role="alert"
-						class="text-sm text-danger"
-						data-testid="sellos-whatsapp-setup-error"
-					>
-						{{ error }}
-					</p>
-					<p
-						v-if="saved"
-						class="text-sm text-ink"
-						data-testid="sellos-whatsapp-setup-saved"
-					>
-						Saved.
-					</p>
-					<p
-						v-if="result"
-						:data-testid="
-							result.ok
-								? 'sellos-whatsapp-setup-test-ok'
-								: 'sellos-whatsapp-setup-test-error'
-						"
-						:role="result.ok ? 'status' : 'alert'"
-						:class="result.ok ? 'text-sm text-ink' : 'text-sm text-danger'"
-					>
-						{{ result.message }}
-					</p>
-					<div class="flex flex-wrap items-center gap-ui-sm">
+		<div v-else class="space-y-4">
+			<form data-testid="sellos-whatsapp-setup-form" @submit.prevent="save">
+				<SectionCard
+					title="Your number"
+					help="The keys are stored encrypted and never shown again."
+				>
+					<FieldGrid>
+						<FormField
+							v-model="form.accessToken"
+							type="password"
+							label="Access token"
+							autocomplete="off"
+							:placeholder="
+								state.access_token_set ? 'Saved. Type to replace it.' : ''
+							"
+							data-testid="sellos-whatsapp-setup-token"
+						/>
+						<FormField
+							v-model="form.appSecret"
+							type="password"
+							label="Webhook signing secret"
+							autocomplete="off"
+							:placeholder="state.app_secret_set ? 'Saved. Type to replace it.' : ''"
+							data-testid="sellos-whatsapp-setup-secret"
+						/>
+						<FormField
+							v-model="form.phoneNumberId"
+							label="Number ID"
+							inputmode="numeric"
+							data-testid="sellos-whatsapp-setup-number-id"
+						/>
+						<FormField
+							v-model="form.displayNumber"
+							type="tel"
+							label="WhatsApp number"
+							inputmode="tel"
+							data-testid="sellos-whatsapp-setup-number"
+						/>
+					</FieldGrid>
+					<div class="mt-4 space-y-2">
+						<p
+							v-if="error"
+							role="alert"
+							class="ui-text-error"
+							data-testid="sellos-whatsapp-setup-error"
+						>
+							{{ error }}
+						</p>
+						<p
+							v-if="saved"
+							class="ui-text-small"
+							data-testid="sellos-whatsapp-setup-saved"
+						>
+							Saved.
+						</p>
+						<p
+							v-if="result"
+							:data-testid="
+								result.ok
+									? 'sellos-whatsapp-setup-test-ok'
+									: 'sellos-whatsapp-setup-test-error'
+							"
+							:role="result.ok ? 'status' : 'alert'"
+							:class="result.ok ? 'ui-text-small' : 'ui-text-error'"
+						>
+							{{ result.message }}
+						</p>
+					</div>
+					<template #footer>
 						<AppButton
 							type="button"
 							data-testid="sellos-whatsapp-setup-test"
@@ -110,8 +116,8 @@
 						>
 							Save
 						</AppButton>
-					</div>
-				</div>
+					</template>
+				</SectionCard>
 			</form>
 
 			<DataTable
@@ -132,10 +138,10 @@
 					/>
 				</template>
 				<template #cell-enabled="{ row }">
-					<span class="text-ink-body">{{ row.enabled ? "On" : "Off" }}</span>
+					<span class="ui-text-secondary">{{ row.enabled ? "On" : "Off" }}</span>
 				</template>
 			</DataTable>
-		</template>
+		</div>
 
 		<FormDrawer
 			:open="addingTemplate"
@@ -173,7 +179,7 @@
 			<p
 				v-if="templateError"
 				role="alert"
-				class="text-sm text-danger"
+				class="ui-text-error"
 				data-testid="sellos-whatsapp-template-error"
 			>
 				{{ templateError }}
@@ -191,6 +197,9 @@ import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import FieldGrid from "../components/FieldGrid.vue";
+import Notice from "../components/Notice.vue";
+import SectionCard from "../components/SectionCard.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";

@@ -4,9 +4,8 @@
 			<PageHeader
 				title="Leads"
 				text="Everyone who has asked about a property, and where each enquiry stands."
-				icon="lucide-users"
 			>
-				<div class="flex gap-ui-sm" role="group" aria-label="View">
+				<div class="flex gap-2" role="group" aria-label="View">
 					<AppButton
 						type="button"
 						:aria-pressed="view === 'list'"
@@ -57,54 +56,53 @@
 				apply-testid="sellos-leads-filter-apply"
 				:more-count="moreActive"
 				:active="filtersOn"
+				:chips="chips"
+				@remove-chip="removeChip"
 				data-testid="sellos-leads-filters"
 				@update:search="load"
 				@apply="load"
 				@clear="clearFilters"
 			>
-				<FormField
-					compact
-					:model-value="filters.stage"
-					type="select"
-					label="Stage"
-					:options="
-						withAny(
-							'Any stage',
-							stages.map((st) => st.name)
-						)
-					"
-					data-testid="sellos-leads-filter-stage"
-					@update:model-value="setFilter('stage', $event)"
-				/>
-				<FormField
-					compact
-					:model-value="filters.assigned_to"
-					type="select"
-					label="Agent"
-					:options="
-						withAny(
-							'Any agent',
-							options.agents.map((a) => ({ value: a.name, label: a.full_name }))
-						)
-					"
-					data-testid="sellos-leads-filter-agent"
-					@update:model-value="setFilter('assigned_to', $event)"
-				/>
-				<FormField
-					compact
-					:model-value="filters.source"
-					type="select"
-					label="Source"
-					:options="
-						withAny(
-							'Any source',
-							filterSources.map((so) => so.name)
-						)
-					"
-					data-testid="sellos-leads-filter-source"
-					@update:model-value="setFilter('source', $event)"
-				/>
 				<template #more>
+					<FormField
+						:model-value="filters.stage"
+						type="select"
+						label="Stage"
+						:options="
+							withAny(
+								'Any stage',
+								stages.map((st) => st.name)
+							)
+						"
+						data-testid="sellos-leads-filter-stage"
+						@update:model-value="setFilter('stage', $event)"
+					/>
+					<FormField
+						:model-value="filters.assigned_to"
+						type="select"
+						label="Agent"
+						:options="
+							withAny(
+								'Any agent',
+								options.agents.map((a) => ({ value: a.name, label: a.full_name }))
+							)
+						"
+						data-testid="sellos-leads-filter-agent"
+						@update:model-value="setFilter('assigned_to', $event)"
+					/>
+					<FormField
+						:model-value="filters.source"
+						type="select"
+						label="Source"
+						:options="
+							withAny(
+								'Any source',
+								filterSources.map((so) => so.name)
+							)
+						"
+						data-testid="sellos-leads-filter-source"
+						@update:model-value="setFilter('source', $event)"
+					/>
 					<MoneyField
 						v-model="filters.budget_min"
 						label="Budget from (Rs)"
@@ -285,31 +283,27 @@
 					</AppButton>
 				</div>
 			</FormSection>
-			<section
+			<Notice
 				v-if="duplicates.length"
-				role="alert"
-				data-testid="sellos-duplicate-warning"
-				class="space-y-ui-md rounded-card border border-tone-warning-line bg-tone-warning-bg p-ui-md text-sm text-tone-warning"
+				tone="warning"
+				title="This person is already in SellOS. Add the enquiry to them instead of making a second client."
+				testid="sellos-duplicate-warning"
 			>
-				<p class="font-medium">
-					This person is already in SellOS. Add the enquiry to them instead of making a
-					second client.
-				</p>
 				<div
 					v-for="match in duplicates"
 					:key="match.name"
 					data-testid="sellos-duplicate-match"
 					:data-visible="match.visible ? 'yes' : 'no'"
-					class="rounded-card border border-line bg-surface p-ui-md text-ink"
+					class="mt-4 space-y-1"
 				>
-					<p data-testid="sellos-duplicate-name" class="font-medium">
+					<p data-testid="sellos-duplicate-name" class="ui-text-strong">
 						{{ match.visible ? match.client_name : "A client of another agent" }}
 					</p>
-					<p class="text-ink-muted">
+					<p class="ui-text-muted">
 						Same {{ match.matched_on.map(matchLabel).join(" and ") }}.
 						<span data-testid="sellos-duplicate-phone">{{ match.phone }}</span>
 					</p>
-					<ul v-if="match.leads.length" class="mt-1">
+					<ul v-if="match.leads.length">
 						<li
 							v-for="lead in match.leads"
 							:key="lead.name"
@@ -318,24 +312,29 @@
 							{{ lead.lead_title }}
 						</li>
 					</ul>
-					<p v-if="!match.can_add" class="mt-1 text-ink-muted">
+					<p v-if="!match.can_add" class="ui-text-muted">
 						You cannot see this client. Ask a Company Admin to look at it.
 					</p>
 					<AppButton
 						v-else
 						type="button"
-						class="mt-ui-sm"
+						class="mt-2"
 						data-testid="sellos-duplicate-add"
 						@click="addToExisting(match)"
 					>
 						Add this enquiry to {{ match.client_name }}
 					</AppButton>
 				</div>
-				<AppButton type="button" data-testid="sellos-duplicate-new" @click="create(true)">
+				<AppButton
+					type="button"
+					class="mt-4"
+					data-testid="sellos-duplicate-new"
+					@click="create(true)"
+				>
 					Save as a new client anyway
 				</AppButton>
-			</section>
-			<p v-if="error" data-testid="sellos-lead-form-error" class="text-sm text-danger">
+			</Notice>
+			<p v-if="error" data-testid="sellos-lead-form-error" class="ui-text-error">
 				{{ error }}
 			</p>
 		</FormDrawer>
@@ -360,7 +359,7 @@
 		<p
 			v-if="bulkNotice"
 			role="status"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 			data-testid="sellos-bulk-result"
 		>
 			{{ bulkNotice }}
@@ -368,7 +367,7 @@
 		<p
 			v-if="bulkError"
 			role="alert"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 			data-testid="sellos-bulk-error"
 		>
 			{{ bulkError }}
@@ -421,15 +420,13 @@
 		>
 			<template #cell-client_name="{ row }">
 				<span class="block">{{ row.client_name }}</span>
-				<span v-if="row.phone" class="block text-sm font-normal text-ink-muted">{{
-					row.phone
-				}}</span>
+				<span v-if="row.phone" class="block ui-text-muted">{{ row.phone }}</span>
 			</template>
 			<template #cell-project="{ row }">
-				<span class="text-ink-body">{{ projectInterest(row) }}</span>
+				<span class="ui-text-secondary">{{ projectInterest(row) }}</span>
 			</template>
 			<template #cell-source="{ row }">
-				<span class="text-ink-body" data-testid="sellos-lead-source">{{
+				<span class="ui-text-secondary" data-testid="sellos-lead-source">{{
 					row.campaign ? `${row.source} · ${row.campaign}` : row.source
 				}}</span>
 			</template>
@@ -442,7 +439,7 @@
 				/>
 			</template>
 			<template #cell-assigned_to="{ row }">
-				<span class="text-ink-body">{{ agentName(row.assigned_to) }}</span>
+				<span class="ui-text-secondary">{{ agentName(row.assigned_to) }}</span>
 			</template>
 			<template #cell-budget="{ row }">
 				<span class="tabular-nums">{{ formatMoney(row.budget || "") }}</span>
@@ -456,14 +453,14 @@
 				/>
 			</template>
 			<template #cell-last_contacted="{ row }">
-				<span class="text-ink-body">{{
+				<span class="ui-text-secondary">{{
 					row.last_contacted ? formatWhen(row.last_contacted) : "Never"
 				}}</span>
 			</template>
 			<template #cell-next_follow_up="{ row }">
 				<span
 					v-if="row.next_follow_up"
-					class="text-ink-body"
+					class="ui-text-secondary"
 					data-testid="sellos-lead-next-follow-up"
 					:data-state="row.follow_up_state"
 				>
@@ -523,6 +520,7 @@ import KpiStrip from "../components/KpiStrip.vue";
 import LeadBoard from "../components/LeadBoard.vue";
 import LoadError from "../components/LoadError.vue";
 import MoneyField from "../components/MoneyField.vue";
+import Notice from "../components/Notice.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
@@ -566,9 +564,12 @@ const options = reactive({ agents: [], teams: [], consent_statuses: [] });
 const filterSources = ref([]);
 const board = reactive({ columns: [] });
 const view = ref("list");
-// One row of filters by default (search, stage, agent, source); the rest sit under "More filters", which
+// One row (search and Filters); every filter sits under Filters, which
 // opens by itself when a bookmarked view already uses one of them.
 const MORE_KEYS = [
+	"stage",
+	"assigned_to",
+	"source",
 	"budget_min",
 	"budget_max",
 	"configuration",
@@ -614,6 +615,7 @@ const kpis = computed(() => {
 			caption: "past their date",
 			icon: "lucide-clock-alert",
 			tone: "danger",
+			to: { path: basePath.value, query: { follow_up: "overdue" } },
 		},
 		{
 			label: "Untouched",
@@ -621,6 +623,7 @@ const kpis = computed(() => {
 			caption: `no activity for ${untouchedDays.value} days`,
 			icon: "lucide-hourglass",
 			tone: "warning",
+			to: { path: basePath.value, query: { untouched: "1" } },
 		},
 	];
 });
@@ -630,8 +633,14 @@ const kpis = computed(() => {
 const agentName = (email) =>
 	options.agents.find((a) => a.name === email)?.full_name || email || "Unassigned";
 const columns = [
-	{ key: "client_name", label: "Name", primary: true, sortable: true, wrap: true },
-	{ key: "project", label: "Project interest", wrap: true, class: "min-w-[7rem]" },
+	{ key: "client_name", label: "Name", primary: true, sortable: true },
+	{
+		key: "project",
+		label: "Project interest",
+		wrap: true,
+		class: "hidden 2xl:table-cell",
+		thClass: "hidden 2xl:table-cell",
+	},
 	{ key: "source", wrap: true, label: "Source", sortable: true },
 	{ key: "stage", label: "Stage", sortable: true },
 	{
@@ -673,6 +682,45 @@ const rowActions = (lead) => [
 	},
 ];
 
+// The filters that are on, as removable chips under the search row (docs/DESIGN_SYSTEM.md, list screens).
+const CHIP_LABELS = {
+	stage: "Stage",
+	assigned_to: "Agent",
+	team: "Team",
+	source: "Source",
+	consent_status: "Consent",
+	budget_min: "Budget from",
+	budget_max: "Budget to",
+	configuration: "Configuration",
+	locality: "Locality",
+	timeline: "Timeline",
+	last_contacted_from: "Last contacted from",
+	last_contacted_to: "Last contacted to",
+	follow_up: "Follow up",
+	sort: "Sort",
+};
+const chips = computed(() => {
+	const list = Object.entries(filters)
+		.filter(([, value]) => value !== "" && value != null)
+		.map(([key, value]) => {
+			const shown =
+				key === "assigned_to"
+					? agentName(value)
+					: key.startsWith("budget")
+					? formatMoney(value)
+					: value;
+			return { key, label: `${CHIP_LABELS[key] || key}: ${shown}` };
+		});
+	if (untouchedOnly.value)
+		list.push({ key: "untouched", label: `No activity for ${untouchedDays.value} days` });
+	return list;
+});
+function removeChip(key) {
+	if (key === "untouched") untouchedOnly.value = false;
+	else filters[key] = "";
+	load();
+}
+
 // Whether any filter, the search or the untouched box is on: Clear shows.
 const filtersOn = computed(
 	() => Object.keys(activeFilters()).length > 0 || Boolean(search.value) || untouchedOnly.value
@@ -709,12 +757,16 @@ function readUrl() {
 	if (moreActive.value) moreOpen.value = true;
 }
 
-function writeUrl() {
+function urlQuery() {
 	const query = { ...activeFilters() };
 	if (search.value) query.q = search.value;
 	if (untouchedOnly.value) query.untouched = "1";
 	if (view.value === "board") query.view = "board";
-	router.replace({ path: route.path, query });
+	return query;
+}
+
+function writeUrl() {
+	router.replace({ path: route.path, query: urlQuery() });
 }
 
 async function setView(next) {
@@ -928,6 +980,19 @@ watch(
 	(request) => {
 		if (!request) return;
 		search.value = request.q;
+		load();
+	}
+);
+
+// A stat tile or a link opens this page with a filter in the address: read it and load again (writeUrl writes the same
+// query, so a change that came from this page is ignored).
+watch(
+	() => route.fullPath,
+	() => {
+		const wanted = JSON.stringify(Object.entries(route.query).sort());
+		const current = JSON.stringify(Object.entries(urlQuery()).sort());
+		if (wanted === current) return;
+		readUrl();
 		load();
 	}
 );

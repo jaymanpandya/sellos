@@ -54,7 +54,7 @@
 		</div>
 		<LoadingSkeleton v-else-if="!reports || !result" />
 		<div v-else class="space-y-ui-md">
-			<p class="text-sm text-ink-muted" data-testid="sellos-platform-reports-about">
+			<p class="ui-text-muted" data-testid="sellos-platform-reports-about">
 				{{ result.report.description }}
 				<span v-if="result.report.dated" data-testid="sellos-platform-reports-months">
 					Months from {{ result.first_month.slice(0, 7) }} to

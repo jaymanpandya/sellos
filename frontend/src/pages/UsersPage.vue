@@ -91,12 +91,7 @@
 					data-testid="sellos-users-mobile"
 				/>
 			</FormSection>
-			<p
-				v-if="error"
-				role="alert"
-				data-testid="sellos-users-error"
-				class="text-sm text-danger"
-			>
+			<p v-if="error" role="alert" data-testid="sellos-users-error" class="ui-text-error">
 				{{ error }}
 			</p>
 		</FormDrawer>
@@ -105,7 +100,7 @@
 			v-if="error && !inviting"
 			role="alert"
 			data-testid="sellos-users-error"
-			class="mb-ui-md text-sm text-danger"
+			class="mb-ui-md ui-text-error"
 		>
 			{{ error }}
 		</p>
@@ -113,41 +108,38 @@
 			v-if="notice"
 			role="status"
 			data-testid="sellos-users-notice"
-			class="mb-ui-md text-sm text-ink"
+			class="mb-ui-md ui-text-small"
 		>
 			{{ notice }}
 		</p>
 		<div v-if="loadError" class="mb-ui-md" data-testid="sellos-users-load-error">
 			<LoadError :message="loadError" @retry="load" />
 		</div>
-		<p
-			v-if="!mailReady"
-			data-testid="sellos-users-mail-note"
-			class="mb-ui-md text-sm text-ink-muted"
-		>
+		<p v-if="!mailReady" data-testid="sellos-users-mail-note" class="mb-ui-md ui-text-muted">
 			This company can not send email yet, so an invitation is saved but not sent. Use Send
 			invitation again once email is set up.
 		</p>
 
 		<!-- Deactivating a user: who takes their open work. A deactivated user can not sign in. -->
-		<section
+		<SectionCard
 			v-if="work && workUser"
+			title="Open work"
 			data-testid="sellos-users-work"
-			class="ui-card mb-ui-md space-y-ui-sm text-sm"
+			class="mb-ui-md space-y-ui-sm ui-text-small"
 		>
-			<p v-if="work.needs_handover" class="font-medium text-ink">
+			<p v-if="work.needs_handover" class="ui-text-strong">
 				{{ leaving }} still has open work. Choose who takes it before you deactivate them:
 			</p>
-			<p v-else class="font-medium text-ink">
+			<p v-else class="ui-text-strong">
 				{{ leaving }} can no longer sign in.
 				<span v-if="handedOver" data-testid="sellos-users-handed-over">
 					{{ handedOver }}
 				</span>
 			</p>
-			<p v-if="!work.open_lead_count && !work.open_task_count" class="text-ink-muted">
+			<p v-if="!work.open_lead_count && !work.open_task_count" class="ui-text-muted">
 				No open leads or tasks.
 			</p>
-			<ul class="list-disc pl-5">
+			<ul class="list-disc ml-5">
 				<li
 					v-for="lead in work.open_leads"
 					:key="lead.name"
@@ -201,7 +193,7 @@
 			>
 				Close
 			</AppButton>
-		</section>
+		</SectionCard>
 
 		<DataTable
 			title="People"
@@ -220,13 +212,13 @@
 			row-testid="sellos-users-row"
 		>
 			<template #cell-full_name="{ row }">
-				<span class="block font-medium text-ink" data-testid="sellos-users-name">{{
+				<span class="block ui-text-strong" data-testid="sellos-users-name">{{
 					row.full_name || row.email
 				}}</span>
-				<span class="block text-sm font-normal text-ink-muted">{{ row.email }}</span>
+				<span class="block ui-text-muted">{{ row.email }}</span>
 			</template>
 			<template #cell-role="{ row }">
-				<span class="text-ink-body" data-testid="sellos-users-role-label">{{
+				<span class="ui-text-secondary" data-testid="sellos-users-role-label">{{
 					roleLabel(row.role)
 				}}</span>
 			</template>
@@ -257,23 +249,19 @@
 				<p
 					v-if="row.click_to_call_note"
 					data-testid="sellos-users-no-click-to-call"
-					class="mt-1 text-sm text-danger"
+					class="mt-1 ui-text-error"
 				>
 					{{ row.click_to_call_note }}
 				</p>
-				<p
-					v-else
-					class="mt-1 text-sm text-ink-muted"
-					data-testid="sellos-users-click-to-call"
-				>
+				<p v-else class="mt-1 ui-text-muted" data-testid="sellos-users-click-to-call">
 					Click to call rings this number first.
 				</p>
 			</template>
 			<template #cell-work="{ row }">
-				<span class="block text-sm text-ink-muted" data-testid="sellos-users-open-leads"
+				<span class="block ui-text-muted" data-testid="sellos-users-open-leads"
 					>{{ row.open_leads }} open leads</span
 				>
-				<span class="block text-sm text-ink-muted" data-testid="sellos-users-open-tasks"
+				<span class="block ui-text-muted" data-testid="sellos-users-open-tasks"
 					>{{ row.open_tasks }} open tasks</span
 				>
 			</template>
@@ -322,6 +310,7 @@ import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { usersApi } from "../company/usersApi";
 import { serverMessage } from "../crm/crmApi";
