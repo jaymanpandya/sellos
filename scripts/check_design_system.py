@@ -34,6 +34,14 @@ HEADING = re.compile(r"<h[1-6](?=[\s/>])")
 STYLE_ATTR = re.compile(r"""\sstyle\s*=|:style\s*=""")
 COLOUR_LITERAL = re.compile(r"#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(")
 
+# A colour utility: text, background, border, ring... in an ink, brand, surface, status or palette colour, or an area.
+COLOUR_UTILITY = re.compile(
+	r"^!?(text|bg|border|ring|fill|stroke|divide|outline|decoration|from|to|via)-"
+	r"(ink|brand|surface|line|tone|danger|accent|link|ghost|on-brand|white|black|"
+	r"gray|grey|red|green|blue|amber|yellow|orange|slate|zinc|neutral|teal|indigo|purple|pink|"
+	r"area|sales|calls|inventory|money|company)(-.*)?$"
+)
+
 # Utility classes a page may not write: they decide how something looks.
 FORBIDDEN = [
 	("radius", re.compile(r"^!?rounded(-.*)?$")),
@@ -44,15 +52,7 @@ FORBIDDEN = [
 	),
 	("font weight", re.compile(r"^!?font-(thin|light|normal|medium|semibold|bold|extrabold|black|heading)$")),
 	("padding", re.compile(r"^!?-?p[xytblrse]?-.*$")),
-	(
-		"colour",
-		re.compile(
-			r"^!?(text|bg|border|ring|fill|stroke|divide|outline|decoration|from|to|via)-"
-			r"(ink|brand|surface|line|tone|danger|accent|link|ghost|on-brand|white|black|"
-			r"gray|grey|red|green|blue|amber|yellow|orange|slate|zinc|neutral|teal|indigo|purple|pink|"
-			r"area|sales|calls|inventory|money|company)(-.*)?$"
-		),
-	),
+	("colour", COLOUR_UTILITY),
 	(
 		"own card",
 		re.compile(r"^(ui-card|ui-card-heading|ui-table-card|ui-field|ui-button|ui-badge(-.*)?|btn)$"),
