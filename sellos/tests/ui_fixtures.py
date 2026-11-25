@@ -371,6 +371,12 @@ def remove_seeded_leads():
 		],
 		pluck="name",
 	)
+	return remove_clients(clients)
+
+
+def remove_clients(clients):
+	"""Remove these clients with their leads and everything that follows the leads (tests and the demo seed only).
+	The CRM refuses a delete through the app, so this goes to the tables. Returns the counts it removed."""
 	if not clients:
 		return {"clients": 0, "leads": 0}
 	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name")

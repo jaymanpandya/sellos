@@ -622,6 +622,7 @@ def setup_control():
 		).insert(ignore_permissions=True)
 	_ensure_user(PLATFORM_ADMIN_EMAIL, "Demo Platform Admin", [PLATFORM_ADMIN])
 	frappe.db.commit()  # nosemgrep  bench execute commits too
+	remove_regression_records()
 	return {"site": frappe.local.site, "users": [PLATFORM_ADMIN_EMAIL]}
 
 
@@ -885,6 +886,7 @@ def seed_company(index=0):
 		_tasks_and_visits(lead, agent, row[6], row[10], data)
 	_support_grants(users["admin"])
 	_seed_features(index, data, users)
+	_isolated("remove regression records", remove_regression_records)
 	frappe.db.commit()  # nosemgrep  bench execute commits too
 	return {
 		"site": site,
@@ -892,6 +894,172 @@ def seed_company(index=0):
 		"leads": frappe.db.count("Lead"),
 		"failed_steps": list(STEP_FAILURES),
 	}
+
+
+# --- The regression seed's "Regression ..." records, removed from the demo sites only ------------------------
+# The first demo sites were seeded on top of the regression data (sellos/tests/ui_fixtures.seed_regression_data),
+# so "Regression Partner Buyer" and the like showed beside the Mumbai content. remove_regression_records() takes
+# them out, on a demo site only (check_demo_site refuses sellos_test and every other site), and prints what it
+# removed. It is safe to repeat: the second run finds nothing. The CRM refuses a delete through the app, so, as the
+# test fixtures do, this goes to the tables. A record that a non Regression record still links to is kept and
+# reported, never deleted out from under it. The four regression_partner_* users are left: a user is linked from
+# the owner and modified by fields of every record.
+
+REGRESSION_LIKE = "Regression%"
+# The doctypes whose rows belong to a project (a project link field), removed with it.
+PROJECT_PARTS = (
+	"Project Tower",
+	"Price List",
+	"Payment Plan",
+	"Cost Sheet",
+	"Commission Payout",
+	"Commission Rate",
+	"Partner Share",
+)
+
+
+def _present(doctype):
+	import frappe
+
+	return frappe.db.table_exists(doctype)
+
+
+def _names(doctype, field, extra=None, like=REGRESSION_LIKE):
+	import frappe
+
+	if not _present(doctype):
+		return []
+	filters = {field: ["like", like]} if field else {}
+	filters.update(extra or {})
+	return frappe.get_all(doctype, filters=filters, pluck="name")
+
+
+def _regression_families(like=REGRESSION_LIKE):
+	"""[(label, {doctype: [names]})]: a Regression project with everything that belongs to it, and each Regression
+	property, listing and developer on its own."""
+	import frappe
+
+	families = []
+	for project in _names("Project", "project_name", like=like):
+		family = {"Project": [project]}
+		units = _names("Unit", None, {"project": project})
+		family["Unit"] = units
+		for doctype in PROJECT_PARTS:
+			family[doctype] = _names(doctype, None, {"project": project})
+		if units and _present("Cost Sheet"):
+			family["Cost Sheet"] = sorted(
+				set(family["Cost Sheet"])
+				| set(frappe.get_all("Cost Sheet", {"unit": ["in", units]}, pluck="name"))
+			)
+		families.append((f"Project {project}", {k: v for k, v in family.items() if v}))
+	for doctype, field in (("Property", "title"), ("Listing", "title"), ("Developer", "developer_name")):
+		for name in _names(doctype, field, like=like):
+			families.append((f"{doctype} {name}", {doctype: [name]}))
+	return families
+
+
+def _referrers(doctype, names, doomed):
+	"""[(doctype, name)] of every row outside `doomed` that links to one of these names. A row of a child table
+	counts as its parent."""
+	import frappe
+
+	found = []
+	docfield = frappe.qb.DocType("DocField")
+	fields = (
+		frappe.qb.from_(docfield)
+		.select(docfield.parent, docfield.fieldname)
+		.where((docfield.fieldtype == "Link") & (docfield.options == doctype))
+		.run(as_dict=True)
+	)
+	for field in fields:
+		referrer = field.parent
+		if not _present(referrer) or not frappe.db.exists("DocType", {"name": referrer, "module": "SellOS"}):
+			continue
+		table = frappe.qb.DocType(referrer)
+		if frappe.get_meta(referrer).istable:
+			rows = (
+				frappe.qb.from_(table)
+				.select(table.parenttype, table.parent)
+				.where(table[field.fieldname].isin(names))
+				.run()
+			)
+		else:
+			rows = [
+				(referrer, name)
+				for (name,) in frappe.qb.from_(table)
+				.select(table.name)
+				.where(table[field.fieldname].isin(names))
+				.run()
+			]
+		for rdoctype, rname in rows:
+			if rname not in doomed.get(rdoctype, set()):
+				found.append((rdoctype, rname))
+	return found
+
+
+def _delete_rows(doctype, names):
+	import frappe
+
+	for table_field in frappe.get_meta(doctype).get_table_fields():
+		frappe.db.delete(table_field.options, {"parent": ["in", names], "parenttype": doctype})
+	frappe.db.delete("Version", {"ref_doctype": doctype, "docname": ["in", names]})
+	frappe.db.delete(doctype, {"name": ["in", names]})
+
+
+def _purge_regression(like=REGRESSION_LIKE):
+	"""The removal itself, with no site check, for the records whose name matches `like`. remove_regression_records
+	calls it with the Regression pattern, on a demo site only; the tests call it with a pattern of their own, so
+	they can never touch the Regression records of sellos_test. Returns what it removed and what it kept."""
+	import frappe
+
+	from sellos.tests import ui_fixtures
+
+	removed = {}
+	if _present("Client"):
+		clients = _names("Client", "client_name", like=like)
+		counts = ui_fixtures.remove_clients(clients)
+		removed.update({k: v for k, v in counts.items() if v})
+	families = _regression_families(like)
+	kept = []
+	while True:
+		doomed = {}
+		for _, family in families:
+			for doctype, names in family.items():
+				doomed.setdefault(doctype, set()).update(names)
+		blocked = []
+		for label, family in families:
+			reasons = []
+			for doctype, names in family.items():
+				reasons += _referrers(doctype, names, doomed)
+			if reasons:
+				blocked.append((label, sorted(set(reasons))[:3]))
+		if not blocked:
+			break
+		labels = {label for label, _ in blocked}
+		kept += [f"{label} (still linked from {reasons})" for label, reasons in blocked]
+		families = [(label, family) for label, family in families if label not in labels]
+	for _, family in families:
+		for doctype in ("Cost Sheet", "Commission Payout", "Partner Share", "Listing", "Unit"):
+			if family.get(doctype):
+				_delete_rows(doctype, family[doctype])
+				removed[doctype] = removed.get(doctype, 0) + len(family[doctype])
+		for doctype, names in family.items():
+			if doctype not in ("Cost Sheet", "Commission Payout", "Partner Share", "Listing", "Unit"):
+				_delete_rows(doctype, names)
+				removed[doctype] = removed.get(doctype, 0) + len(names)
+	frappe.db.commit()  # nosemgrep  bench execute commits too
+	return {"removed": removed, "kept": kept}
+
+
+def remove_regression_records():
+	"""Remove the "Regression ..." records from a demo site (democontrol, demoalpha, demobeta) and print what went.
+	Refuses any other site. Safe to repeat."""
+	site = check_demo_site()
+	result = _purge_regression()
+	print(f"DEMO: removed from {site}: {json.dumps(result['removed']) if result['removed'] else 'nothing'}")
+	for line in result["kept"]:
+		print(f"DEMO: kept on {site}: {line}")
+	return {"site": site, **result}
 
 
 # --- Every feature built so far (SOS-DEMO-2) ---------------------------------------------------------
