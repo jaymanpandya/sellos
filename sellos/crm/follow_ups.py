@@ -19,7 +19,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, add_to_date, cint, get_datetime, getdate, now_datetime
 
-from sellos.crm import call_outcomes, pipeline
+from sellos.crm import call_outcomes, lead_labels, pipeline
 
 SETTINGS = "SellOS Settings"
 DEFAULT_UNTOUCHED_DAYS = 3
@@ -175,6 +175,7 @@ def list_follow_ups(user=None, status="Open", now=None, everyone=False) -> list[
 		row["lead_title"] = (leads.get(row.lead) or {}).get("lead_title")
 		row["due"] = str(row.due_at or row.due_date)
 		row["state"] = (due_state(row.due_at, row.due_date, now) or "") if status == "Open" else ""
+	lead_labels.add(rows)
 	rows.sort(key=lambda row: (due_moment(row.due_at, row.due_date), row.name))
 	return rows
 

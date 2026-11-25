@@ -114,6 +114,35 @@ class TestEndToEnd(CrmCase):
 		row = next(r for r in api.list_leads() if r["name"] == lead)
 		self.assertEqual((row["open_tasks"], row["overdue_tasks"]), (2, 1))
 
+	def test_the_lead_list_carries_the_phone_as_the_role_sees_it(self):
+		"""SOS-LOOP 25 Nov: a muted phone under the name, masked for every role but a Company Admin."""
+		_, lead = self.make_lead("agent")
+		as_user("agent")
+		self.assertEqual(next(r for r in api.list_leads() if r["name"] == lead)["phone"], MASKED)
+		as_user("company_admin")
+		self.assertEqual(next(r for r in api.list_leads() if r["name"] == lead)["phone"], PHONE)
+
+	def test_the_lead_list_is_not_cut_at_one_hundred(self):
+		"""SOS-LOOP 25 Nov: the screen pages the list, so it must hold every lead (Home counts them all)."""
+		client, _ = self.make_lead("company_admin")
+		for _i in range(100):
+			frappe.get_doc({"doctype": "Lead", "client": client["name"], "source": "Website"}).insert()
+		self.assertEqual(len(api.list_leads()), 101)
+		self.assertEqual(api.get_board()["total"], 101)
+
+	def test_rows_that_show_a_lead_carry_its_plain_name_and_source_apart(self):
+		"""SOS-LOOP 25 Nov: never "Asha Rao Website" in one field."""
+		from sellos.crm import follow_ups, lead_labels
+
+		_, lead = self.make_lead()
+		api.save_task(values={"lead": lead, "title": "Call back", "due_date": add_days(today(), -1)})
+		row = follow_ups.list_follow_ups(everyone=True)[0]
+		self.assertEqual((row["lead_name"], row["lead_source"]), ("Asha Rao", "Website"))
+		rows = [{"lead": lead}, {"lead": None}]
+		lead_labels.add(rows)
+		self.assertEqual(rows[0]["lead_name"], "Asha Rao")
+		self.assertNotIn("lead_name", rows[1])
+
 	def test_completing_a_task_clears_overdue(self):
 		_, lead = self.make_lead()
 		task = api.save_task(values={"lead": lead, "title": "x", "due_date": add_days(today(), -1)})

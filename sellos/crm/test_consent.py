@@ -188,6 +188,17 @@ class TestOptOutAndDnd(CrmCase):
 		self.assertEqual(api.record_dnd_result(self.lead, 1)["status"], "Registered DND")
 		self.assertEqual(api.record_opt_out(self.lead, "Website")["status"], "Opted out")
 
+	def test_a_record_made_before_a_stop_is_shown_as_withdrawn(self):
+		"""SOS-LOOP 25 Nov: the history must agree with the panel's Opted out status."""
+		api.record_consent(self.lead, "Consent", EVIDENCE)
+		before = api.get_lead(self.lead)["consent"]
+		self.assertEqual(before["status"], "Consented")
+		self.assertFalse(any(r["withdrawn"] for r in before["records"]))
+		view = api.record_opt_out(self.lead, "Phone call")
+		self.assertEqual(view["status"], "Opted out")
+		self.assertTrue(view["records"])
+		self.assertTrue(all(r["withdrawn"] for r in view["records"]))
+
 	def test_the_lead_list_and_detail_carry_the_status(self):
 		api.record_dnd_result(self.lead, 1)
 		row = next(r for r in api.list_leads() if r.name == self.lead)

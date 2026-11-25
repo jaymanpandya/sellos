@@ -21,7 +21,7 @@ from frappe import _
 from frappe.utils import add_days, cint, get_datetime, getdate, now_datetime
 
 from sellos.access import lead_permissions
-from sellos.crm import pipeline
+from sellos.crm import lead_labels, pipeline
 
 DOCTYPE = "Site Visit"
 SCHEDULED = "Scheduled"
@@ -169,6 +169,7 @@ def _rows(start, end, user=None, now=None) -> list[dict]:
 		row["lead_title"] = titles.get(row.lead)
 		row["agent_name"] = names.get(row.agent, "")
 		row["visit_datetime"] = str(row.visit_datetime)
+	lead_labels.add(rows)
 	return rows
 
 

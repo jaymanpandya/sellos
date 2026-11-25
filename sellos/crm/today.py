@@ -19,7 +19,7 @@ Consent never blocks: each lead row carries its consent status as a warning and 
 import frappe
 from frappe.utils import add_days, get_datetime, getdate, now_datetime
 
-from sellos.crm import consent, follow_ups, pipeline, site_visits
+from sellos.crm import consent, follow_ups, lead_labels, pipeline, site_visits
 
 SECTIONS = ("follow_ups", "new_leads", "visits_today", "visits_tomorrow")
 MAX_NEW_LEADS = 200
@@ -89,6 +89,7 @@ def _decorate(rows, key_agent) -> None:
 			level, message = consent.WARNINGS[status]
 			statuses[row.lead] = (status, level, message)
 		row["consent_status"], row["consent_warning"], row["consent_message"] = statuses[row.lead]
+	lead_labels.add(rows)
 
 
 def today_view(user=None, now=None) -> dict:

@@ -46,7 +46,10 @@
 				}}</span>
 			</template>
 			<template #cell-lead_title="{ row }">
-				<span data-testid="sellos-queue-lead">{{ row.lead_title }}</span>
+				<span data-testid="sellos-queue-lead">{{ row.lead_name || row.lead_title }}</span>
+				<span v-if="row.lead_source" class="block ui-text-muted">{{
+					row.lead_source
+				}}</span>
 			</template>
 			<template #cell-consent_status="{ row }">
 				<StatusBadge

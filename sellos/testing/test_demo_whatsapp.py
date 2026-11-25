@@ -76,6 +76,23 @@ class TestDemoWhatsApp(unittest.TestCase):
 		for kinds in dw.TEMPLATE_OF.values():
 			self.assertLessEqual(set(kinds), names)
 
+	def test_company_name_goes_in_and_placeholders_stay(self):
+		"""SOS-LOOP 25 Nov: str.format used to turn {{1}} into {1}, which no message could fill."""
+		for _name, _language, _category, body in dw.templates_for("amd"):
+			saved = dw.company_body(body, "Pandya Realtors")
+			self.assertNotIn("{company}", saved)
+			self.assertIn("{{1}}", saved)
+			self.assertIn("{{2}}", saved)
+
+	def test_a_sent_template_has_no_placeholder_left(self):
+		from sellos.whatsapp.conversations import _render
+
+		for body in ("Hello {{1}}, your visit is at {{2}}.", "Hello {1}, your visit is at {2}."):
+			self.assertEqual(_render(body, ["Asha", "11 am"]), "Hello Asha, your visit is at 11 am.")
+			shown = _render(body, ["Asha"])
+			self.assertNotRegex(shown, r"\{")
+			self.assertIn("Asha", shown)
+
 	def test_volume_and_kinds(self):
 		for word in ("bom", "amd"):
 			found = plans(word)

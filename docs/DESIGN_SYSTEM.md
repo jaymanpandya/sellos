@@ -65,6 +65,8 @@ state, and in each area's colours.
 | Page header | `PageHeader` | 44px round area icon chip, title (24px), one line (muted, at most 48rem), outline actions and at most one solid |
 | Record header | `RecordHeader` | Back link, sticky bar with title, status pill, one muted line, actions; Edit is solid |
 | Section card | `SectionCard` | card with the small uppercase heading, optional tag and help, a `FieldGrid`, optional footer |
+| Timeline | `Timeline` | a vertical history: a dot per event, strong title, muted time line and notes (the lead's stage history) |
+| Disclosure | `Disclosure` | a card closed until opened, for a rare action kept at the bottom of a page (merge a duplicate client) |
 | Read field | `ReadField` | muted label, ink value, a missing value reads "Not filled in" |
 | Stat tile | `StatCard` / `KpiStrip` | 3px top bar in the tile's colour, 32px round chip, 24px tabular number, helper line; the whole tile is the link |
 | Status pill | `StatusBadge` | round, 1px line, tint, icon and word, 14px |

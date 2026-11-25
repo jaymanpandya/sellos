@@ -434,3 +434,11 @@ FLOW SOS-P5-05-3 | agent | /sellos/client/overview | Sign in as the gate agent a
 FLOW SOS-P3-12-1 | company_admin | /sellos | Sign in as the gate company admin and call the party names method for a registration record that has a buyer and a seller. | The buyer and seller names are returned, and one Party Name Access Log row exists for the view, holding no name.
 FLOW SOS-P3-12-2 | agent | /sellos | Sign in as the gate agent and call the same method, then open the Party Name list through the generic calls. | The method is refused with no access, and no name appears in any answer.
 FLOW SOS-P3-12-3 | company_admin | /sellos | Search the Party Name records for a name through the generic list call, and call the method with a name instead of a record ID. | No name is returned: names are never searchable.
+
+## SOS-LOOP 25 Nov: lists that show a lead
+
+FLOW SOS-LOOP-25NOV-1 | company_admin | /sellos/crm/leads | Open Leads at 1440 wide, read the table and page to the last page. | Dates stay on one line, the phone sits muted under each name with the project interest under it, the budget reads Rs 2.3 crore or Rs 85 lakh, there is no empty Flags column, and Total leads equals the Leads number on Home.
+FLOW SOS-LOOP-25NOV-2 | agent | /sellos/crm/leads | Open Leads and read the phone under a name. | The phone is masked, only the last three digits show.
+FLOW SOS-LOOP-25NOV-3 | agent | /sellos | Open Home and read the follow ups, site visits and consent warning rows. | Each row shows the plain name with the source in its own muted field, never joined to the name.
+FLOW SOS-LOOP-25NOV-4 | company_admin | /sellos/crm/leads | Open a lead, read the stage history, the Assigned agent card and the consent panel, then open Merge a duplicate client at the bottom. | The history is a timeline, Now shows the agent's full name as the dropdown does, a record made before an opt out reads withdrawn, and the merge section is closed until opened.
+FLOW SOS-LOOP-25NOV-5 | company_admin | /sellos/whatsapp | Open the conversations of a demo site and read the template messages. | No message shows {1}, {2}, {{1}} or {{2}}.

@@ -71,6 +71,9 @@ context("SOS-P1-16: duplicates", () => {
 		cy.intercept("**/api/method/sellos.crm.api.merge_clients*").as("merge");
 		cy.intercept("**/api/method/sellos.crm.api.list_clients*").as("clients");
 		cy.visit(`/sellos/crm/leads/${seeded.twin_a_lead}`);
+		// The merge is rare, so it sits collapsed at the bottom of the lead page until it is opened.
+		cy.getByTestId("merge").should("not.be.visible");
+		cy.getByTestId("merge-toggle").click();
 		cy.getByTestId("merge").should("be.visible");
 		cy.getByTestId("merge-select").select(seeded.twin_b_client);
 		cy.getByTestId("merge-save").click();

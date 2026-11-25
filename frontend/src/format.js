@@ -51,3 +51,21 @@ export function formatMoney(value, decimals = 0) {
 		maximumFractionDigits: decimals,
 	}).format(number)}`;
 }
+
+// A budget the way people say it: 23000000 is "Rs 2.3 crore", 8500000 is "Rs 85 lakh". Below a lakh it is
+// the full amount with Indian grouping. An empty value is an empty cell.
+export function formatBudget(value) {
+	if (value === "" || value === null || value === undefined) return "";
+	const number = Number(value);
+	if (Number.isNaN(number)) return "";
+	const trim = (n) => String(Math.round(n * 100) / 100);
+	if (number >= 1e7) return `Rs ${trim(number / 1e7)} crore`;
+	if (number >= 1e5) return `Rs ${trim(number / 1e5)} lakh`;
+	return formatMoney(number);
+}
+
+// A short day and time for a table cell that must stay on one line: "24 Nov, 11:44".
+export function formatShortWhen(value) {
+	const text = formatWhen(value);
+	return typeof text === "string" ? text.replace(/ \d{4}/, "") : text;
+}

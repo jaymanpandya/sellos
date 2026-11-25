@@ -96,7 +96,10 @@
 			empty-testid="sellos-seller-empty"
 		>
 			<template #cell-lead_title="{ row }">
-				<span class="block" data-testid="sellos-seller-title">{{ row.lead_title }}</span>
+				<span class="block" data-testid="sellos-seller-title">{{
+					row.client_name || row.lead_title
+				}}</span>
+				<span v-if="row.source" class="block ui-text-muted">{{ row.source }}</span>
 			</template>
 			<template #cell-stage="{ row }">
 				<StatusBadge

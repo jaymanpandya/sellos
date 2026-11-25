@@ -14,8 +14,10 @@
 			aria-hidden="true"
 			>{{ initial }}</span
 		>
+		<!-- The full name shows over two lines, and as a tooltip when it is still cut off. -->
 		<span
-			class="truncate text-xs font-semibold uppercase tracking-[0.12em]"
+			class="line-clamp-2 break-words text-xs font-semibold uppercase tracking-[0.12em]"
+			:title="session.company.name || 'SellOS'"
 			data-testid="sellos-brand-name"
 			>{{ session.company.name || "SellOS" }}</span
 		>

@@ -242,7 +242,7 @@ def list_leads(
 	sort=None,
 	pipeline=None,
 ):
-	"""The leads the user may see, up to 100, narrowed by every filter given (SOS-P1-24 and SOS-P1-15):
+	"""The leads the user may see, all of them (the screen pages them), narrowed by every filter given (SOS-P1-24 and SOS-P1-15):
 	stage, agent, team, source, consent status, budget range, configuration, locality, timeline, last
 	contacted dates and untouched. See sellos.crm.board.visible_leads. Each lead says whether it is untouched.
 	SOS-P1-22: `follow_up` (overdue, open, none or untouched) filters by the lead's follow up, `sort`
@@ -266,17 +266,46 @@ def list_leads(
 		follow_up=follow_up,
 		sort=sort,
 		pipeline=pipeline,
-	)[:100]
-	for lead in leads:
-		tasks = frappe.get_all(
+	)
+	names = [lead.name for lead in leads]
+	tasks = (
+		frappe.get_all(
 			"Lead Task",
-			filters={"lead": lead.name, "archived": 0, "status": "Open"},
-			fields=["due_date", "due_at"],
+			filters={"lead": ["in", names], "archived": 0, "status": "Open"},
+			fields=["lead", "due_date", "due_at"],
+			limit_page_length=0,
 		)
-		lead["open_tasks"] = len(tasks)
+		if names
+		else []
+	)
+	by_lead = {}
+	for task in tasks:
+		by_lead.setdefault(task.lead, []).append(task)
+	# The phone as the role sees it: masked, except for a Company Admin (whose full numbers shown are logged, P1.06B).
+	clients = sorted({lead.client for lead in leads if lead.client})
+	full = _sees_phone()
+	phones = {
+		row.name: (row.phone if full else row.phone_masked) or ""
+		for row in (
+			frappe.get_all(
+				"Client",
+				filters={"name": ["in", clients]},
+				fields=["name", "phone", "phone_masked"] if full else ["name", "phone_masked"],
+				limit_page_length=0,
+			)
+			if clients
+			else []
+		)
+	}
+	if full:
+		log_full_number_shown([name for name in clients if phones.get(name)])
+	for lead in leads:
+		open_tasks = by_lead.get(lead.name, [])
+		lead["open_tasks"] = len(open_tasks)
 		lead["overdue_tasks"] = sum(
-			follow_ups.due_state(t.due_at, t.due_date) == follow_ups.OVERDUE for t in tasks
+			follow_ups.due_state(t.due_at, t.due_date) == follow_ups.OVERDUE for t in open_tasks
 		)
+		lead["phone"] = phones.get(lead.client, "")
 	return leads
 
 

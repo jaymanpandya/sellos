@@ -388,6 +388,12 @@ def templates_for(region):
 	return [t for t in TEMPLATES if region == "amd" or t[1] != "gu"]
 
 
+def company_body(body, company):
+	"""A template body with the company's name in. Only `{company}` is replaced: `str.format` would turn the
+	template's own `{{1}}` and `{{2}}` into `{1}` and `{2}`, which no message could fill."""
+	return body.replace("{company}", company)
+
+
 def all_texts():
 	"""Every message text of every style (for the tests)."""
 	for style in STYLES:
@@ -577,7 +583,7 @@ def _save_templates(ctx, admin):
 		is_new = not frappe.db.exists(settings.TEMPLATE, name)
 		with fx._as_user(admin):
 			settings.save_whatsapp_template(
-				name, body.format(company=ctx.company_name), language, category, status="Approved"
+				name, company_body(body, ctx.company_name), language, category, status="Approved"
 			)
 		if is_new:
 			ctx.count("created", settings.TEMPLATE)

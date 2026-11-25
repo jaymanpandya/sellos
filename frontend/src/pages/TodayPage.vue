@@ -64,8 +64,11 @@
 									:to="`/crm/leads/${row.lead}`"
 									class="ui-link ui-text-strong"
 									data-testid="sellos-today-lead"
-									>{{ row.lead_title }}</router-link
+									>{{ row.lead_name || row.lead_title }}</router-link
 								>
+								<span v-if="row.lead_source" class="block ui-text-muted">{{
+									row.lead_source
+								}}</span>
 							</template>
 							<template #cell-detail="{ row }">{{
 								row.title || row.project_name
@@ -103,8 +106,11 @@
 							:to="`/crm/leads/${row.lead}`"
 							class="ui-link ui-text-strong"
 							data-testid="sellos-today-lead"
-							>{{ row.lead_title }}</router-link
+							>{{ row.lead_name || row.lead_title }}</router-link
 						>
+						<span v-if="row.lead_source" class="block ui-text-muted">{{
+							row.lead_source
+						}}</span>
 					</template>
 					<template #cell-detail="{ row }">{{ row.title || row.project_name }}</template>
 					<template #cell-when="{ row }">{{ whenOf(row) }}</template>

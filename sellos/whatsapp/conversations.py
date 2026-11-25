@@ -192,8 +192,9 @@ def window_open(conversation, on=None) -> bool:
 
 def _render(body, parameters) -> str:
 	for index, value in enumerate(parameters or [], start=1):
-		body = body.replace("{{%d}}" % index, str(value))
-	return body
+		body = body.replace("{{%d}}" % index, str(value)).replace("{%d}" % index, str(value))
+	# A placeholder no parameter filled is never shown to a person: it is dropped.
+	return " ".join(re.sub(r"\{\{\d+\}\}|\{\d+\}", "", body).split())
 
 
 def _consent_view(check) -> dict:

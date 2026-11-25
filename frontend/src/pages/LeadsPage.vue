@@ -420,10 +420,18 @@
 		>
 			<template #cell-client_name="{ row }">
 				<span class="block">{{ row.client_name }}</span>
-				<span v-if="row.phone" class="block ui-text-muted">{{ row.phone }}</span>
-			</template>
-			<template #cell-project="{ row }">
-				<span class="ui-text-secondary">{{ projectInterest(row) }}</span>
+				<span
+					v-if="row.phone"
+					class="block ui-text-muted"
+					data-testid="sellos-lead-phone"
+					>{{ row.phone }}</span
+				>
+				<span
+					v-if="projectInterest(row)"
+					class="block ui-text-muted"
+					data-testid="sellos-lead-interest"
+					>{{ projectInterest(row) }}</span
+				>
 			</template>
 			<template #cell-source="{ row }">
 				<span class="ui-text-secondary" data-testid="sellos-lead-source">{{
@@ -442,7 +450,7 @@
 				<span class="ui-text-secondary">{{ agentName(row.assigned_to) }}</span>
 			</template>
 			<template #cell-budget="{ row }">
-				<span class="tabular-nums">{{ formatMoney(row.budget || "") }}</span>
+				<span class="tabular-nums">{{ formatBudget(row.budget || "") }}</span>
 			</template>
 			<template #cell-consent_status="{ row }">
 				<StatusBadge
@@ -454,7 +462,7 @@
 			</template>
 			<template #cell-last_contacted="{ row }">
 				<span class="ui-text-secondary">{{
-					row.last_contacted ? formatWhen(row.last_contacted) : "Never"
+					row.last_contacted ? formatShortWhen(row.last_contacted) : "Never"
 				}}</span>
 			</template>
 			<template #cell-next_follow_up="{ row }">
@@ -464,7 +472,7 @@
 					data-testid="sellos-lead-next-follow-up"
 					:data-state="row.follow_up_state"
 				>
-					{{ formatWhen(row.next_follow_up) }}
+					{{ formatShortWhen(row.next_follow_up) }}
 				</span>
 			</template>
 			<template #cell-flags="{ row }">
@@ -524,7 +532,7 @@ import Notice from "../components/Notice.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
-import { formatMoney, formatWhen } from "../format";
+import { formatBudget, formatMoney, formatShortWhen } from "../format";
 import { session } from "../session";
 import { shell } from "../shell";
 
@@ -589,7 +597,7 @@ const moreActive = computed(
 		(untouchedOnly.value ? 1 : 0)
 );
 
-// The KPI strip counts the leads in view, so it follows the filters (the list holds up to 100).
+// The KPI strip counts the leads in view, so it follows the filters. With none on it is every lead, the number Home shows.
 const kpis = computed(() => {
 	const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
 	const rows = leads.value;
@@ -632,15 +640,10 @@ const kpis = computed(() => {
 // it; the list call does not return phone numbers today, so no cell is invented.
 const agentName = (email) =>
 	options.agents.find((a) => a.name === email)?.full_name || email || "Unassigned";
-const columns = [
-	{ key: "client_name", label: "Name", primary: true, sortable: true },
-	{
-		key: "project",
-		label: "Project interest",
-		wrap: true,
-		class: "hidden 2xl:table-cell",
-		thClass: "hidden 2xl:table-cell",
-	},
+// The name cell holds the muted phone (masked for every role but a Company Admin, by the server) and the
+// project interest as its second line. Dates stay on one line. The Flags column shows only when a row has a flag.
+const columns = computed(() => [
+	{ key: "client_name", label: "Name", primary: true, sortable: true, wrap: true },
 	{ key: "source", wrap: true, label: "Source", sortable: true },
 	{ key: "stage", label: "Stage", sortable: true },
 	{
@@ -658,10 +661,14 @@ const columns = [
 		sortValue: (l) => Number(l.budget || 0),
 	},
 	{ key: "consent_status", label: "Consent", sortable: true },
-	{ key: "last_contacted", wrap: true, label: "Last activity", sortable: true },
-	{ key: "next_follow_up", wrap: true, label: "Next follow up", sortable: true },
-	{ key: "flags", wrap: true, label: "Flags" },
-];
+	{ key: "last_contacted", label: "Last activity", sortable: true },
+	{ key: "next_follow_up", label: "Next follow up", sortable: true },
+	...(leads.value.some(hasFlag) ? [{ key: "flags", wrap: true, label: "Flags" }] : []),
+]);
+const hasFlag = (l) =>
+	Boolean(
+		l.untouched || l.follow_up_state === "overdue" || l.follow_up_untouched || l.overdue_tasks
+	);
 const consentTone = (lead) =>
 	lead.consent_warning === "red"
 		? "danger"

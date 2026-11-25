@@ -16,9 +16,20 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 				.and("contain", "Overdue follow ups")
 				.and("contain", "Untouched");
 			cy.getByTestId("leads-list").should("contain", "All leads");
-			["Name", "Source", "Stage", "Next follow up", "Flags"].forEach((heading) =>
+			["Name", "Source", "Stage", "Next follow up"].forEach((heading) =>
 				cy.getByTestId("leads-list").find('[role="row"]').should("contain", heading)
 			);
+			// The Flags column is there only when a row has a flag, never as an empty column.
+			cy.getByTestId("leads-list").then(($list) => {
+				const flagged = $list.find(
+					'[data-testid="sellos-untouched"], [data-testid="sellos-follow-up-overdue"], [data-testid="sellos-follow-up-untouched"], [data-testid="sellos-lead-overdue"]'
+				).length;
+				expect($list.find("th:contains('Flags')").length > 0, "Flags column").to.eq(
+					flagged > 0
+				);
+			});
+			// SOS-LOOP 25 Nov: a muted phone under the name of a lead that has one.
+			cy.getByTestId("lead-phone").should("have.length.greaterThan", 0);
 			cy.getByTestId("nav")
 				.filter(":visible")
 				.find("a")
@@ -141,6 +152,7 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 			cy.getByTestId("leads-filter-clear").should("have.css", "border-top-style", "solid");
 			// A disabled button is 50 percent opacity (the merge button waits for a duplicate client to be chosen).
 			cy.getByTestId("lead-row").first().click();
+			cy.getByTestId("merge-toggle").click();
 			cy.getByTestId("merge-save").should("be.disabled").and("have.css", "opacity", "0.5");
 		});
 	});

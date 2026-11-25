@@ -4,7 +4,15 @@
 		:data-testid="testid || undefined"
 	>
 		<div class="min-w-0">
-			<p class="ui-text-strong truncate">{{ title }}</p>
+			<p class="truncate">
+				<span class="ui-text-strong">{{ title }}</span>
+				<span
+					v-if="source"
+					class="ml-ui-sm ui-text-muted"
+					data-testid="sellos-row-source"
+					>{{ source }}</span
+				>
+			</p>
 			<p v-if="line" class="ui-text-muted truncate">{{ line }}</p>
 		</div>
 		<div class="flex shrink-0 items-center gap-ui-sm">
@@ -22,6 +30,8 @@ import StatusBadge from "../StatusBadge.vue";
 defineProps({
 	title: { type: String, required: true },
 	line: { type: String, default: "" },
+	// A lead's source: its own muted field, never joined to the name.
+	source: { type: String, default: "" },
 	badge: { type: String, default: "" },
 	badgeTone: { type: String, default: "neutral" },
 	badgeTitle: { type: String, default: "" },

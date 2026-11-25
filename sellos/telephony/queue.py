@@ -19,7 +19,7 @@ team's, a Company Admin everyone's), so the queue never widens it.
 import frappe
 from frappe.utils import get_datetime, now_datetime
 
-from sellos.crm import consent
+from sellos.crm import consent, lead_labels
 
 # The order of the leads that are not Consented.
 _REST_ORDER = {consent.UNKNOWN: 0, consent.REGISTERED_DND: 1, consent.OPTED_OUT: 2}
@@ -125,4 +125,5 @@ def caller_queue(now=None) -> list[dict]:
 	for position, row in enumerate(rows, start=1):
 		row["position"] = position
 		del row["_creation"]
+	lead_labels.add(rows)
 	return rows

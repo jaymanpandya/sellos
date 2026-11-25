@@ -142,69 +142,58 @@
 					>
 						{{ stageError }}
 					</p>
-					<ul v-if="detail.pipeline.log.length" data-testid="sellos-lead-stage-log">
-						<li
-							v-for="(row, i) in detail.pipeline.log"
-							:key="i"
-							data-testid="sellos-lead-stage-change"
-							class="ui-text-muted"
-						>
-							{{ row.from_stage || "No stage" }} to {{ row.to_stage }},
-							{{ formatWhen(row.changed_on) }}, {{ row.changed_by }}
-							<span
-								v-if="row.lost_reason"
-								data-testid="sellos-lead-stage-change-reason"
-							>
-								. Lost reason: {{ row.lost_reason }}</span
-							>
-							<span
-								v-if="row.warning"
-								data-testid="sellos-lead-stage-change-warning"
-							>
-								. {{ row.warning }}</span
-							>
-						</li>
-					</ul>
+					<!-- The stage history as a timeline: one entry per move, the newest as the server sends it. -->
+					<Timeline
+						v-if="detail.pipeline.log.length"
+						:items="stageHistory"
+						label="Stage history"
+						testid="sellos-lead-stage-log"
+						item-testid="sellos-lead-stage-change"
+					/>
 				</SectionCard>
 
-				<SectionCard
+				<!-- Rare and not undoable by the screen, so it sits collapsed at the bottom of the page. -->
+				<Disclosure
 					v-if="detail.can_merge"
 					title="Merge a duplicate client"
-					data-testid="sellos-merge"
-					class="space-y-ui-sm"
+					testid="sellos-merge-section"
+					toggle-testid="sellos-merge-toggle"
 				>
-					<p class="ui-text-muted">
-						Move another client's leads, activities, tasks and site visits to
-						{{ detail.client.client_name }}. The other client is archived, not deleted.
-					</p>
-					<FormField
-						v-model="mergeFrom"
-						type="select"
-						label="Duplicate client"
-						:options="mergeOptions"
-						data-testid="sellos-merge-select"
-					/>
-					<p
-						v-if="mergeError"
-						role="alert"
-						data-testid="sellos-merge-error"
-						class="ui-text-error"
-					>
-						{{ mergeError }}
-					</p>
-					<p v-if="mergeDone" data-testid="sellos-merge-done" class="ui-text-muted">
-						{{ mergeDone }}
-					</p>
-					<AppButton
-						variant="primary"
-						type="button"
-						:disabled="!mergeFrom"
-						data-testid="sellos-merge-save"
-						@click="merge"
-					>
-						Merge into {{ detail.client.client_name }}
-					</AppButton>
-				</SectionCard>
+					<div data-testid="sellos-merge" class="space-y-ui-sm">
+						<p class="ui-text-muted">
+							Move another client's leads, activities, tasks and site visits to
+							{{ detail.client.client_name }}. The other client is archived, not
+							deleted.
+						</p>
+						<FormField
+							v-model="mergeFrom"
+							type="select"
+							label="Duplicate client"
+							:options="mergeOptions"
+							data-testid="sellos-merge-select"
+						/>
+						<p
+							v-if="mergeError"
+							role="alert"
+							data-testid="sellos-merge-error"
+							class="ui-text-error"
+						>
+							{{ mergeError }}
+						</p>
+						<p v-if="mergeDone" data-testid="sellos-merge-done" class="ui-text-muted">
+							{{ mergeDone }}
+						</p>
+						<AppButton
+							variant="primary"
+							type="button"
+							:disabled="!mergeFrom"
+							data-testid="sellos-merge-save"
+							@click="merge"
+						>
+							Merge into {{ detail.client.client_name }}
+						</AppButton>
+					</div>
+				</Disclosure>
 			</template>
 
 			<template v-if="tab === 'requirements'">
@@ -754,7 +743,7 @@
 				<p class="ui-text-muted">
 					Now:
 					<span data-testid="sellos-reassign-current">{{
-						detail.lead.assigned_to || "Nobody"
+						detail.lead.assigned_to ? agentLabel(detail.lead.assigned_to) : "Nobody"
 					}}</span>
 				</p>
 				<FormField
@@ -820,7 +809,9 @@
 					>
 						{{ record.basis }}, {{ formatWhen(record.recorded_on) }},
 						{{
-							record.expires_on
+							record.withdrawn
+								? "withdrawn when the lead opted out"
+								: record.expires_on
 								? (record.live ? "expires " : "expired ") +
 								  formatWhen(record.expires_on)
 								: "no expiry"
@@ -913,6 +904,8 @@ import { useRoute, useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
 import ClickToCall from "../components/ClickToCall.vue";
+import Disclosure from "../components/Disclosure.vue";
+import Timeline from "../components/Timeline.vue";
 import FormField from "../components/FormField.vue";
 import MoneyField from "../components/MoneyField.vue";
 import LeadBooking from "../inventory/LeadBooking.vue";
@@ -1338,6 +1331,23 @@ const visitOutcomeOptions = computed(() => [
 	{ label: "Choose the outcome", value: "" },
 	...asOptions(visitOptions.value.outcomes),
 ]);
+// An agent's full name, as the "Assign to" list shows it; the email stays when the list does not hold them.
+const agentLabel = (email) =>
+	assignees.value.find((a) => a.user === email)?.full_name || email || "";
+// The stage history as timeline entries: the move, when and by whom, and the lost reason and warning if any.
+const stageHistory = computed(() =>
+	(detail.value?.pipeline?.log || []).map((row) => ({
+		title: `${row.from_stage || "No stage"} to ${row.to_stage}`,
+		when: `${formatWhen(row.changed_on)}, ${agentLabel(row.changed_by)}`,
+		notes: [
+			row.lost_reason && {
+				text: `Lost reason: ${row.lost_reason}`,
+				testid: "sellos-lead-stage-change-reason",
+			},
+			row.warning && { text: row.warning, testid: "sellos-lead-stage-change-warning" },
+		].filter(Boolean),
+	}))
+);
 const assigneeOptions = computed(() => [
 	{ label: "Choose an agent", value: "" },
 	...asOptions(assignees.value, "user", "full_name"),

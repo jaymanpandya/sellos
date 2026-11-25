@@ -213,6 +213,10 @@ def consent_view(lead, on=None) -> dict:
 	)
 	for record in records:
 		record["live"] = bool(record.expires_on is None or get_datetime(record.expires_on) > now)
+		# A record made before the lead asked to stop is history: the stop withdrew it, whatever its expiry.
+		record["withdrawn"] = bool(
+			row.opted_out_on and get_datetime(record.recorded_on) <= get_datetime(row.opted_out_on)
+		)
 	return {
 		"status": status,
 		"warning": level,

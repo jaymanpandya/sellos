@@ -62,8 +62,11 @@
 		>
 			<template #cell-lead_title="{ row }">
 				<router-link :to="`/crm/leads/${row.lead}`" class="ui-link ui-text-strong">{{
-					row.lead_title
+					row.lead_name || row.lead_title
 				}}</router-link>
+				<span v-if="row.lead_source" class="block ui-text-muted">{{
+					row.lead_source
+				}}</span>
 			</template>
 			<template #cell-visit_datetime="{ row }">{{
 				formatDateTime(row.visit_datetime)
@@ -110,8 +113,11 @@
 							<span>
 								{{ timeOf(v.visit_datetime) }}
 								<router-link :to="`/crm/leads/${v.lead}`" class="ui-link">{{
-									v.lead_title
+									v.lead_name || v.lead_title
 								}}</router-link>
+								<span v-if="v.lead_source" class="ui-text-muted">{{
+									v.lead_source
+								}}</span>
 								, {{ v.project_name }}, {{ v.agent_name }}
 							</span>
 							<StatusBadge
