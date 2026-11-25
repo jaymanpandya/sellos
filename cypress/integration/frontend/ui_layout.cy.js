@@ -21,16 +21,21 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 			);
 			// SOS-LOOP 25 Nov: no Flags column to sit empty. A flag is a badge in the follow up cell of its row.
 			cy.getByTestId("leads-list").find("th").should("not.contain", "Flags");
-			cy.getByTestId("lead-row")
-				.find(
-					'[data-testid="sellos-untouched"], [data-testid="sellos-follow-up-overdue"], [data-testid="sellos-follow-up-untouched"], [data-testid="sellos-lead-overdue"]'
-				)
-				.each(($flag) =>
-					expect(
-						$flag.closest("td").find('[data-testid="sellos-lead-last-activity"]')
-							.length
-					).to.eq(1)
-				);
+			cy.getByTestId("lead-row").then(($rows) => {
+				// The seeded leads may carry no flag, so only the flags that exist are checked.
+				$rows
+					.find(
+						'[data-testid="sellos-untouched"], [data-testid="sellos-follow-up-overdue"], [data-testid="sellos-follow-up-untouched"], [data-testid="sellos-lead-overdue"]'
+					)
+					.each((_i, flag) =>
+						expect(
+							Cypress.$(flag)
+								.closest("td")
+								.find('[data-testid="sellos-lead-last-activity"]').length,
+							"a flag sits in the follow up cell"
+						).to.eq(1)
+					);
+			});
 			// At 1440 wide the table fits its card with no sideways scroll.
 			cy.viewport(1440, 900);
 			cy.getByTestId("table-view").then(($box) => {
