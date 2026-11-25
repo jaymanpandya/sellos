@@ -7,6 +7,7 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 
 	it("shows the Leads list with four stat cards, column headings and a sidebar icon on every item", () => {
 		cy.bench("sellos.tests.ui_fixtures.seed_agent_leads").then(() => {
+			cy.viewport(1440, 900);
 			cy.signInFresh("company_admin");
 			cy.visit("/sellos/crm/leads");
 			cy.getByTestId("leads-stats").find("[data-tone]").should("have.length", 4);
@@ -36,9 +37,9 @@ context("SOS-UI-2B: layout, buttons, budgets and icons", () => {
 						).to.eq(1)
 					);
 			});
-			// At 1440 wide the table fits its card with no sideways scroll.
-			cy.viewport(1440, 900);
-			cy.getByTestId("table-view").then(($box) => {
+			// At 1440 wide (set before the page loaded) the table fits its card with no sideways scroll.
+			// A retrying check, so a layout still settling is measured again.
+			cy.getByTestId("table-view").should(($box) => {
 				expect($box[0].scrollWidth, "table scroll width").to.be.at.most(
 					$box[0].clientWidth
 				);
