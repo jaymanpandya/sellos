@@ -6,7 +6,7 @@
 	>
 		<li v-for="(item, i) in items" :key="i" class="relative" :data-testid="itemTestid">
 			<span
-				class="absolute -left-[1.4rem] top-1.5 size-2 rounded-full bg-brand"
+				class="absolute -left-[1.4rem] top-1.5 size-2 rounded-round bg-brand"
 				aria-hidden="true"
 			/>
 			<p class="ui-text-strong">{{ item.title }}</p>

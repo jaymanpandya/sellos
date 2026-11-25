@@ -485,6 +485,7 @@ def build(ctx):
 	with _as(admin):
 		firms = _build_partners(ctx, rng, region, today)
 		_build_rates(ctx, firms)
+		_build_shares(ctx, firms)
 		_build_registrations(ctx, rng, region, today, firms)
 		plan = seller_plan(rng, region, today, ctx.used_names)
 		client_spec = client_seller_spec(rng, region, ctx.staff_names["client"], ctx.users["client"])
@@ -604,6 +605,25 @@ def _build_rates(ctx, firms):
 				}
 			)
 			ctx.count("created", "Commission Rate")
+
+
+def _build_shares(ctx, firms):
+	"""What the Company Admin shares with partners: the first project with every Approved firm (and its price
+	list), the next ones with one or two firms each. Through the sharing method; a project already shared is
+	left alone, so the seed can run again."""
+	import frappe
+
+	from sellos.inventory import partner_shares
+
+	approved = [f["name"] for f in firms if f["status"] == "Approved"]
+	if not approved:
+		return
+	for i, project in enumerate(ctx.projects[:4]):
+		if frappe.db.exists("Partner Share", {"project": project["name"]}):
+			continue
+		targets = "all" if i == 0 else approved[i - 1 : i + 1] or approved[:1]
+		partner_shares.share_project(project["name"], targets, share_price_list=1 if i % 2 == 0 else 0)
+		ctx.count("created", "Partner Share")
 
 
 def _build_registrations(ctx, rng, region, today, firms):
