@@ -44,6 +44,11 @@ context("SOS-P6-11: WhatsApp", () => {
 		cy.getByTestId("whatsapp-conversation")
 			.filter(`[data-lead="${seed.lead}"]`)
 			.should("be.visible")
+			.within(() => {
+				// SOS-LOOP: the lead's name as plain text, the phone under it masked, the state as a pill.
+				cy.getByTestId("whatsapp-row-name").should("not.be.empty");
+				cy.contains("***");
+			})
 			.click();
 		cy.getByTestId("whatsapp-thread").should("be.visible");
 	};

@@ -100,8 +100,8 @@ Every page is one of four shapes (`PageTemplate` with a `shape`):
 
 1. One h1 per page, drawn by the page header or the record header.
 2. Headings are the small uppercase style only; a page writes no `<h1>` to `<h6>`.
-3. Status is always a pill. Money is `Rs 12,50,000` (`formatMoney`) and dates are `24 Nov 2026, 11:44` (`formatWhen`) everywhere. A
-   missing value reads "Not filled in".
+3. Status is always a pill. Dates are `24 Nov 2026, 11:44` (`formatWhen`) everywhere. A missing value reads "Not filled in".
+   Money follows rule 8.
 4. Each area keeps its colour and icon everywhere.
 5. No page writes a radius, padding, shadow, font size, font weight or colour: pages use layout utilities (flex, grid, gap, margin,
    width, overflow), the pieces and the named text roles `ui-text-body`, `-secondary`, `-strong`, `-small`, `-muted`, `-error`,
@@ -110,6 +110,15 @@ Every page is one of four shapes (`PageTemplate` with a `shape`):
    the pass is under way; it only shrinks and ends empty.
 7. Every screen is checked at 1440 and 390 wide, for all four roles, for cut off content and sideways scroll
    (`cypress/integration/visual/walkthrough.cy.js`).
+
+8. **Money.** One format everywhere, written only in `frontend/src/format.js`: `Rs`, never the rupee sign, never paise.
+   - `formatBudget` is the default, for every figure read at a glance (a budget, a price, a total, a spend): `Rs 2.3 crore`,
+     `Rs 95 lakh`, and below a lakh the full amount with Indian grouping, `Rs 45,000`.
+   - `formatMoney` is for an amount that must be exact: a payout, an invoice, a cost sheet line, a commission split. It is the full
+     figure with Indian grouping, `Rs 12,50,000`, rounded to the rupee.
+   - A page never formats money itself. `scripts/check_design_system.py` fails on the rupee sign, `Intl.NumberFormat`, a currency
+     style, fraction digits, a paise argument and a rupee figure typed into a file, anywhere under `frontend/src` but `format.js`
+     (and the typing field `MoneyField`). There is no backlog for it.
 
 ## 5. What replaced what
 

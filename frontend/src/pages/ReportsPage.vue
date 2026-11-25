@@ -102,13 +102,37 @@
 			<LoadError :message="error" @retry="start" />
 		</div>
 		<LoadingSkeleton v-else-if="!reports" />
-		<EmptyState
-			v-else-if="!reports.length"
-			title="No reports for you"
-			text="No report has been made visible to your role."
-			icon="lucide-chart-column"
-		/>
+		<div v-else-if="!reports.length" class="space-y-ui-md">
+			<SectionCard v-if="otherReports.length" title="Reports you can open">
+				<ul class="ui-list" data-testid="sellos-reports-list">
+					<HomeRow
+						v-for="item in otherReports"
+						:key="item.key"
+						:testid="`sellos-reports-link-${item.key}`"
+						:title="item.label"
+						:to="item.to"
+					/>
+				</ul>
+			</SectionCard>
+			<EmptyState
+				v-else
+				title="No reports for you"
+				text="No report has been made visible to your role."
+				icon="lucide-chart-column"
+			/>
+		</div>
 		<div v-else class="space-y-ui-md">
+			<SectionCard v-if="otherReports.length" title="Other reports you can open">
+				<ul class="ui-list" data-testid="sellos-reports-list">
+					<HomeRow
+						v-for="item in otherReports"
+						:key="item.key"
+						:testid="`sellos-reports-link-${item.key}`"
+						:title="item.label"
+						:to="item.to"
+					/>
+				</ul>
+			</SectionCard>
 			<p
 				v-if="!savingView && viewNote"
 				class="ui-text-muted"
@@ -417,13 +441,21 @@ import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
+import HomeRow from "../components/home/HomeRow.vue";
 import SectionCard from "../components/SectionCard.vue";
+import { navFor, personaFor } from "../personas";
+import { session } from "../session";
 import { serverMessage } from "../crm/crmApi";
 import { formatDateTime } from "../format";
 import { rupees, talkTime } from "../reports/callsApi";
 import { exportsApi, reportsApi, saveFile } from "../reports/engineApi";
 
 const reports = ref(null);
+// The other report pages this role's menu holds (Call reports, Business reports, Team report), so the page
+// names every report the role may open (SOS-LOOP).
+const otherReports = computed(() =>
+	navFor(personaFor(session.roles)).filter((item) => item.area === "reports")
+);
 const scope = ref("own");
 const key = ref("");
 const range = reactive({ from_date: "", to_date: "" });

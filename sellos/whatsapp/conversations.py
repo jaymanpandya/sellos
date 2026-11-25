@@ -25,6 +25,7 @@ from frappe.utils import add_to_date, cint, get_datetime, now_datetime
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, COMPANY_ADMIN, SALES_MANAGER
 from sellos.crm import consent, intake, lead_sources, notifications
+from sellos.crm.base import mask_phone
 from sellos.telephony import call_log
 from sellos.whatsapp import settings
 from sellos.whatsapp.base import STATUS_RANK, InboundMessage, ProviderError, StatusEvent
@@ -347,8 +348,25 @@ def _title(lead) -> str:
 	return (client and frappe.db.get_value("Client", client, "client_name")) or lead
 
 
+def _last_messages(conversations) -> dict:
+	"""The first 90 characters of each conversation's newest message, one query."""
+	if not conversations:
+		return {}
+	newest = {}
+	for m in frappe.get_all(
+		MESSAGE,
+		filters={"conversation": ["in", conversations]},
+		fields=["conversation", "body"],
+		order_by="sent_on asc, creation asc",
+	):
+		newest[m.conversation] = " ".join(str(m.body or "").split())[:90]
+	return newest
+
+
 def list_for_screen(state=None, limit=50) -> list[dict]:
-	"""The conversations the user may see (a Frappe permission query on the lead), newest first. No number."""
+	"""The conversations the user may see (a Frappe permission query on the lead), newest first. Each row has the
+	lead's phone number masked for every role (the full number is on the lead page, where it is logged), the last
+	message's start and the time of it (SOS-LOOP)."""
 	filters = {"state": state} if state in STATES else {}
 	rows = frappe.get_list(
 		CONVERSATION,
@@ -357,8 +375,13 @@ def list_for_screen(state=None, limit=50) -> list[dict]:
 		order_by="last_message_on desc, creation desc",
 		limit_page_length=min(cint(limit) or 50, 100),
 	)
+	last = _last_messages([row.name for row in rows])
 	for row in rows:
 		row["title"] = _title(row.lead)
+		client = frappe.db.get_value("Lead", row.lead, "client")
+		phone = (client and frappe.db.get_value("Client", client, "phone")) or ""
+		row["phone"] = mask_phone(phone)
+		row["last_message"] = last.get(row.name, "")
 		row["window_open"] = window_open(row.name)
 		row["consent_status"] = consent.compute_status(row.lead)
 		level = consent.WARNINGS[row["consent_status"]][0]

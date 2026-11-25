@@ -105,6 +105,7 @@
 			loading-label="Loading payouts."
 			:row-name="(row) => row.firm_name"
 			:row-attrs="payoutAttrs"
+			:actions="payoutActions"
 			empty-title="No payouts yet"
 			empty-text="A payout is made when a deal with a channel partner share is approved and a rate applies."
 			empty-icon="lucide-badge-indian-rupee"
@@ -123,77 +124,35 @@
 					:label="row.status"
 					data-testid="sellos-commission-payout-status"
 				/>
-			</template>
-			<template #cell-booking_date="{ row }">
-				<span class="ui-text-secondary">{{ formatDate(row.booking_date) }}</span>
-			</template>
-			<template #cell-agreement_value="{ row }">
-				<span class="tabular-nums">{{ formatMoney(row.agreement_value, 2) }}</span>
-			</template>
-			<template #cell-commission_total="{ row }">
-				<span class="block tabular-nums">{{ formatMoney(row.commission_total, 2) }}</span>
-				<span class="block ui-text-muted">
-					{{ row.rate_basis }}, firm's share {{ row.partner_percent }}%
-				</span>
-			</template>
-			<template #cell-commission_due="{ row }">
-				<span class="tabular-nums" data-testid="sellos-commission-payout-due">{{
-					formatMoney(row.commission_due, 2)
-				}}</span>
-			</template>
-			<template #cell-notes="{ row }">
 				<p
 					v-if="row.status === 'Paid'"
-					class="ui-text-small"
+					class="mt-1 ui-text-small"
 					data-testid="sellos-commission-payout-paid"
 				>
 					Paid on {{ formatDate(row.paid_on) }}, reference {{ row.payment_reference }}.
 				</p>
 				<p
 					v-if="row.status === 'On hold'"
-					class="ui-text-small"
+					class="mt-1 ui-text-small"
 					data-testid="sellos-commission-payout-hold"
 				>
 					On hold: {{ row.hold_reason }}
 				</p>
 			</template>
-			<template #cell-actions="{ row }">
-				<div v-if="row.status !== 'Paid'" class="flex flex-wrap gap-ui-sm">
-					<AppButton
-						v-if="row.status === 'Due'"
-						type="button"
-						variant="primary"
-						data-testid="sellos-commission-approve"
-						@click="move(row, 'Approved')"
-					>
-						Approve
-					</AppButton>
-					<AppButton
-						v-if="row.status === 'Approved'"
-						type="button"
-						variant="primary"
-						data-testid="sellos-commission-pay"
-						@click="openPayout(row, 'pay')"
-					>
-						Record payment
-					</AppButton>
-					<AppButton
-						v-if="row.status !== 'On hold'"
-						type="button"
-						data-testid="sellos-commission-hold"
-						@click="openPayout(row, 'hold')"
-					>
-						Put on hold
-					</AppButton>
-					<AppButton
-						v-else
-						type="button"
-						data-testid="sellos-commission-release"
-						@click="move(row, row.held_from || 'Due')"
-					>
-						Release the hold
-					</AppButton>
-				</div>
+			<template #cell-booking_date="{ row }">
+				<span class="ui-text-secondary">{{ formatDate(row.booking_date) }}</span>
+			</template>
+			<template #cell-commission_total="{ row }">
+				<span class="block tabular-nums">{{ formatMoney(row.commission_total) }}</span>
+				<span class="block ui-text-muted">
+					{{ row.rate_basis }} on {{ formatBudget(row.agreement_value) }}, firm's share
+					{{ row.partner_percent }}%
+				</span>
+			</template>
+			<template #cell-commission_due="{ row }">
+				<span class="tabular-nums" data-testid="sellos-commission-payout-due">{{
+					formatMoney(row.commission_due)
+				}}</span>
 			</template>
 		</DataTable>
 
@@ -221,9 +180,7 @@
 				</template>
 				<template #cell-value="{ row }">
 					<span class="tabular-nums">{{
-						row.rate_type === "Percentage"
-							? `${row.value}%`
-							: formatMoney(row.value, 2)
+						row.rate_type === "Percentage" ? `${row.value}%` : formatMoney(row.value)
 					}}</span>
 				</template>
 				<template #cell-start_date="{ row }">
@@ -430,7 +387,7 @@ import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { commissionApi } from "../crm/commissionApi";
 import { serverMessage } from "../crm/crmApi";
-import { formatDate, formatMoney } from "../format";
+import { formatBudget, formatDate, formatMoney } from "../format";
 
 // Commission rates and payouts (SOS-P7-04). Every change is made on the server and the lists read back. The
 // server works out each payout from the rate in force on the booking date; nothing here calculates money.
@@ -519,7 +476,7 @@ const KPI_CAPTIONS = {
 const kpis = computed(() =>
 	STATUSES.map((status) => ({
 		label: status,
-		value: formatMoney(totals.value.by_status?.[status] || 0, 2),
+		value: formatMoney(totals.value.by_status?.[status] || 0),
 		caption: KPI_CAPTIONS[status],
 		icon: KPI_ICONS[status],
 		tone: TONES[status],
@@ -532,15 +489,8 @@ const payoutColumns = [
 	{ key: "status", label: "Status", sortable: true },
 	{ key: "booking_date", label: "Booked", sortable: true },
 	{
-		key: "agreement_value",
-		label: "Agreement value",
-		sortable: true,
-		align: "right",
-		sortValue: (p) => Number(p.agreement_value || 0),
-	},
-	{
 		key: "commission_total",
-		label: "Commission",
+		label: "Commission and basis",
 		sortable: true,
 		align: "right",
 		sortValue: (p) => Number(p.commission_total || 0),
@@ -552,9 +502,24 @@ const payoutColumns = [
 		align: "right",
 		sortValue: (p) => Number(p.commission_due || 0),
 	},
-	{ key: "notes", label: "Notes", wrap: true, class: "min-w-[12rem]" },
-	{ key: "actions", label: "Actions", wrap: true, class: "min-w-[12rem]" },
 ];
+// The payout's moves, in the row menu so the table keeps to the page width (SOS-LOOP).
+const payoutActions = (row) => {
+	if (row.status === "Paid") return [];
+	const items = [];
+	if (row.status === "Due")
+		items.push({ label: "Approve", onClick: () => move(row, "Approved") });
+	if (row.status === "Approved")
+		items.push({ label: "Record payment", onClick: () => openPayout(row, "pay") });
+	if (row.status !== "On hold")
+		items.push({ label: "Put on hold", onClick: () => openPayout(row, "hold") });
+	else
+		items.push({
+			label: "Release the hold",
+			onClick: () => move(row, row.held_from || "Due"),
+		});
+	return items;
+};
 const payoutAttrs = (p) => ({
 	"data-deal": p.deal,
 	"data-firm": p.firm_name,
@@ -692,7 +657,7 @@ async function exportStatement() {
 		drawer.value = "";
 		exported.value = `${data.firm_name}: ${data.totals.count} payouts from ${
 			data.from_date
-		} to ${data.to_date}, ${formatMoney(data.totals.total, 2)} in all. The export is logged.`;
+		} to ${data.to_date}, ${formatMoney(data.totals.total)} in all. The export is logged.`;
 	} catch (e) {
 		error.value = serverMessage(e, "The statement could not be exported.");
 	}

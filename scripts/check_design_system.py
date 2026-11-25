@@ -98,6 +98,39 @@ def findings(path):
 	return sorted(set(found))
 
 
+# Money (docs/DESIGN_SYSTEM.md, "Money"): one format, written only in frontend/src/format.js. No file may format
+# money itself, use the rupee sign, show paise, or write a rupee figure into the text. There is no backlog.
+MONEY_HOME = (SRC / "format.js", SRC / "components" / "MoneyField.vue")
+MONEY_RULES = [
+	("rupee sign", re.compile("\u20b9")),
+	("own money format", re.compile(r"Intl\.NumberFormat|style:\s*[\"']currency|minimumFractionDigits")),
+	("paise", re.compile(r"format(?:Money|Budget)\([^()]*(?:\([^()]*\))?[^()]*,\s*\d\s*\)")),
+	("written rupee figure", re.compile(r"\bRs\s?\d")),
+]
+MONEY_FIX = re.compile(r"^\s*(//|\*|/\*)")
+
+
+def money_findings(path):
+	"""[(line, rule, text)] for one .vue or .js file: money formatted anywhere but format.js."""
+	if path in MONEY_HOME:
+		return []
+	found = []
+	for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+		if MONEY_FIX.match(line):
+			continue
+		for rule, pattern in MONEY_RULES:
+			m = pattern.search(line)
+			if m:
+				found.append((number, rule, m.group(0)))
+	return found
+
+
+def money_files(files):
+	"""The source files the money check reads: every .vue and .js under frontend/src, or only the ones named."""
+	every = [p for p in sorted(SRC.rglob("*")) if p.suffix in (".vue", ".js") and "theme" not in p.parts]
+	return [p for p in every if p in files] if files else every
+
+
 def backlog():
 	if not BACKLOG.exists():
 		return set()
@@ -117,7 +150,7 @@ def main(argv):
 		if files
 		else list(pages())
 	)
-	if files and not targets:
+	if files and not targets and not money_files(set(files)):
 		return 0
 	listed = backlog()
 	failing = {}
@@ -139,6 +172,10 @@ def main(argv):
 					print(f"    {rel}:{line}: {rule}: {what}")
 		if not known:
 			bad += 1
+	for path in money_files(set(files)):
+		for line, rule, what in money_findings(path):
+			print(f"FAIL    {path.relative_to(ROOT).as_posix()}:{line}: {rule}: {what}")
+			bad += 1
 	if not files:
 		for rel in sorted(listed - set(failing)):
 			print(f"STALE   {rel}: passes now, remove it from docs/design-system-backlog.txt")
@@ -150,7 +187,8 @@ def main(argv):
 		print(
 			"GUARD FAILED: design system\nFix: build the page from the shared pieces in frontend/src/components "
 			"and the tokens (docs/DESIGN_SYSTEM.md). Never write a button, card, heading, radius, padding, shadow, "
-			"font size or colour on a page; extend the piece instead."
+			"font size or colour on a page; extend the piece instead. Money is formatted only by formatBudget and "
+			"formatMoney in frontend/src/format.js."
 		)
 		return 1
 	print(f"Design system check: {len(targets)} pages clean ({len(listed)} on the backlog).")

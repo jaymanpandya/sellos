@@ -99,6 +99,17 @@ context("SOS-P5-01: the report engine", () => {
 		);
 	});
 
+	it("names every other report the role may open beside the engine's (SOS-LOOP)", () => {
+		cy.signInFresh("company_admin");
+		cy.visit("/sellos/reports");
+		cy.getByTestId("reports-link-call-reports").should("be.visible");
+		cy.getByTestId("reports-link-business-reports").should("be.visible");
+		cy.signInFresh("sales_manager");
+		cy.visit("/sellos/reports");
+		cy.getByTestId("reports-link-team-report").should("be.visible");
+		cy.getByTestId("reports-link-call-reports").should("not.exist");
+	});
+
 	it("keeps the reports from a channel partner", () => {
 		cy.signInFresh("channel_partner");
 		cy.visit("/sellos/reports");

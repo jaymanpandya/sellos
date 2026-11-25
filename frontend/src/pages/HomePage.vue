@@ -1,6 +1,6 @@
 <template>
 	<!-- A Company Admin, Agent and Sales Manager: the dashboard reads what the role may already see. -->
-	<CrmDashboard v-if="showDashboard">
+	<CrmDashboard v-if="showDashboard" :worklist="showToday">
 		<template #header>
 			<PageHeader
 				:title="welcome"
@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import CrmDashboard from "../components/home/CrmDashboard.vue";
 import GoToCard from "../components/home/GoToCard.vue";
@@ -103,7 +103,9 @@ import PageTemplate from "../components/PageTemplate.vue";
 import SectionCard from "../components/SectionCard.vue";
 import { areaOfItem, areas } from "../areas";
 import { ICONS } from "../navIcons";
-import { navFor, personaFor } from "../personas";
+import { groupLabel, navFor, personaFor } from "../personas";
+import { partnerViewsApi } from "../crm/partnerViewsApi";
+import { formatMoney } from "../format";
 import { session } from "../session";
 import TodayPage from "./TodayPage.vue";
 
@@ -129,7 +131,12 @@ const groups = computed(() => {
 	const byArea = new Map();
 	for (const item of quickLinks.value) {
 		const key = areaOfItem(item);
-		if (!byArea.has(key)) byArea.set(key, { key, label: areas[key].label, items: [] });
+		if (!byArea.has(key))
+			byArea.set(key, {
+				key,
+				label: groupLabel(personaFor(session.roles), key, areas[key].label),
+				items: [],
+			});
 		byArea.get(key).items.push(item);
 	}
 	return [...byArea.values()];
@@ -144,16 +151,67 @@ const columns = computed(() => {
 	}
 	return cols;
 });
+// A Channel Partner's Home shows the firm's real figures (SOS-LOOP), read from the partner's own overview.
+const partner = ref(null);
+const isPartner = computed(() => has("SellOS Channel Partner") && !showDashboard.value);
+onMounted(async () => {
+	if (!isPartner.value) return;
+	try {
+		partner.value = await partnerViewsApi.overview();
+	} catch {
+		partner.value = null;
+	}
+});
+const partnerTiles = computed(() => {
+	const counts = partner.value?.counts;
+	if (!counts) return [];
+	return [
+		{
+			label: "Shared projects",
+			value: counts.shared_projects,
+			caption: "Shared with your firm",
+			icon: "lucide-share-2",
+			to: "/partner/shared",
+			valueTestid: "sellos-home-partner-shared",
+		},
+		{
+			label: "Registrations",
+			value: counts.registrations,
+			caption: "Buyers you registered",
+			icon: "lucide-user-plus",
+			to: "/partner/leads",
+			valueTestid: "sellos-home-partner-registrations",
+		},
+		{
+			label: "Deals",
+			value: counts.deals,
+			caption: "With a share for your firm",
+			icon: "lucide-handshake",
+			to: "/partner/earnings",
+			valueTestid: "sellos-home-partner-deals",
+		},
+		{
+			label: "Earned so far",
+			value: formatMoney(partner.value.earned),
+			caption: "Commission paid to you",
+			icon: "lucide-wallet",
+			to: "/partner/commission",
+			valueTestid: "sellos-home-partner-earned",
+		},
+	];
+});
 const tiles = computed(() =>
-	groups.value.slice(0, 4).map((group) => ({
-		label: group.label,
-		value: group.items.length,
-		caption: group.items
-			.slice(0, 2)
-			.map((item) => item.label)
-			.join(", "),
-		icon: areas[group.key].icon,
-		to: group.items[0].to,
-	}))
+	isPartner.value && partnerTiles.value.length
+		? partnerTiles.value
+		: groups.value.slice(0, 4).map((group) => ({
+				label: group.label,
+				value: group.items.length,
+				caption: group.items
+					.slice(0, 2)
+					.map((item) => item.label)
+					.join(", "),
+				icon: areas[group.key].icon,
+				to: group.items[0].to,
+		  }))
 );
 </script>

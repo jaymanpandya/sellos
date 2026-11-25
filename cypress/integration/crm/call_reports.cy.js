@@ -41,7 +41,7 @@ context("SOS-P2-11: the call reports", () => {
 			"contain",
 			`${Math.round((seed.totals.connected * 1000) / seed.totals.calls) / 10}%`
 		);
-		cy.getByTestId("callreports-total-cost").should("contain", "₹");
+		cy.getByTestId("callreports-total-cost").should("contain", "Rs");
 		// The sums of the rows are the totals.
 		cy.getByTestId("callreports-agent").then(($rows) => {
 			const calls = [...$rows].reduce(

@@ -85,7 +85,7 @@
 			</template>
 			<template #cell-asking_price="{ row }">
 				<span data-testid="sellos-listing-price">
-					{{ row.asking_price ? formatMoney(row.asking_price) : "No price yet" }}
+					{{ row.asking_price ? formatBudget(row.asking_price) : "No price yet" }}
 				</span>
 			</template>
 			<template #cell-target="{ row }">
@@ -258,7 +258,7 @@ import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
-import { formatMoney, formatWhen } from "../format";
+import { formatBudget, formatWhen } from "../format";
 import ListCard from "../components/ListCard.vue";
 import ListingMedia from "../inventory/ListingMedia.vue";
 import SuitedLeads from "../inventory/SuitedLeads.vue";

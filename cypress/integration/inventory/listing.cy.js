@@ -46,7 +46,7 @@ context("SOS-P4-02: listings", () => {
 			cy.getByTestId("listing-description").type("A resale flat near the market.");
 			cy.getByTestId("listing-save").click();
 			cy.wait("@save").its("response.statusCode").should("eq", 200);
-			row(title).should("contain", "Rs 82,00,000");
+			row(title).should("contain", "Rs 82 lakh");
 			row(title).find('[data-testid="sellos-listing-publish"]').click();
 			cy.wait("@publish").its("response.statusCode").should("eq", 200);
 			row(title).should("have.attr", "data-published", "1").and("contain", "Published");

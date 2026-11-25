@@ -81,12 +81,12 @@
 				/>
 				<MoneyField
 					v-model="price"
-					label="Agreed price (₹)"
+					label="Agreed price (Rs)"
 					data-testid="sellos-booking-price"
 				/>
 				<MoneyField
 					v-model="amount"
-					label="Booking amount (₹)"
+					label="Booking amount (Rs)"
 					data-testid="sellos-booking-amount"
 				/>
 			</div>

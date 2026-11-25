@@ -202,3 +202,12 @@ export function navLabel(persona, key) {
 export function navFor(persona) {
 	return (persona?.nav || []).filter((item) => inAreas(persona, item.area));
 }
+
+// What a menu group is called for a persona. The shared area names ("Leads and Sales") describe a company's
+// work; a Client and a Channel Partner see names for what the group is to them (SOS-LOOP).
+const GROUP_LABELS = {
+	client: { sales: "Your dealings" },
+	channel_partner: { sales: "Your firm", money: "Your earnings" },
+};
+export const groupLabel = (persona, areaKey, fallback) =>
+	GROUP_LABELS[persona?.key]?.[areaKey] || fallback;

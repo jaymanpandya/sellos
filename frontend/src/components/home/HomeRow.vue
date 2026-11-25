@@ -4,16 +4,13 @@
 		:data-testid="testid || undefined"
 	>
 		<div class="min-w-0">
-			<p class="truncate">
+			<p class="flex flex-wrap items-baseline gap-x-ui-sm">
 				<span class="ui-text-strong">{{ title }}</span>
-				<span
-					v-if="source"
-					class="ml-ui-sm ui-text-muted"
-					data-testid="sellos-row-source"
-					>{{ source }}</span
-				>
+				<span v-if="source" class="ui-text-muted" data-testid="sellos-row-source">{{
+					source
+				}}</span>
 			</p>
-			<p v-if="line" class="ui-text-muted truncate">{{ line }}</p>
+			<p v-if="line" class="ui-text-muted">{{ line }}</p>
 		</div>
 		<div class="flex shrink-0 items-center gap-ui-sm">
 			<StatusBadge v-if="badge" :tone="badgeTone" :label="badge" :title="badgeTitle" />

@@ -561,6 +561,22 @@ class TestOutboundMessages(WhatsAppCase):
 		self.assertEqual(thread["messages"][-1]["consent_status"], "Unknown")
 		self.assertEqual(thread["consent_warning"], "amber")
 
+	def test_the_list_row_has_a_masked_phone_and_the_last_message_for_every_role(self):
+		# SOS-LOOP: the conversation list shows the lead name, the phone below it (masked, last three digits),
+		# the last message and its time. The full number is never in the list, even for a Company Admin.
+		lead = self.lead_with_window()
+		conversations.send(lead, text="First hello")
+		conversations.send(lead, text="Second hello, with   odd\n spacing")
+		for role in ("administrator", "company_admin"):
+			if role == "company_admin":
+				as_user(role)
+			row = conversations.list_for_screen()[0]
+			self.assertTrue(row["phone"].endswith(STRANGER[-3:]))
+			self.assertEqual(set(row["phone"]) - {"*"}, set(STRANGER[-3:]))
+			self.assertNotIn(STRANGER[-10:], repr(row))
+			self.assertEqual(row["last_message"], "Second hello, with odd spacing")
+			self.assertTrue(row["last_message_on"])
+
 
 class TestStatuses(WhatsAppCase):
 	"""SOS-P6-11: delivery statuses arrive through the webhook and are applied in order."""

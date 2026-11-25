@@ -99,7 +99,7 @@
 			<dl>
 				<FieldGrid>
 					<ReadField label="Name" value="Asha Rao" />
-					<ReadField label="Budget" :value="formatMoney(12500000)" />
+					<ReadField label="Budget" :value="formatBudget(12500000)" />
 					<ReadField label="Last contacted" :value="formatWhen('2026-11-24 11:44:00')" />
 					<ReadField label="Email" value="" />
 				</FieldGrid>
@@ -228,7 +228,7 @@ import RecordHeader from "../components/RecordHeader.vue";
 import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { areas } from "../areas";
-import { formatMoney, formatWhen } from "../format";
+import { formatBudget, formatWhen } from "../format";
 import { showToast } from "../shell";
 
 const area = ref("sales");

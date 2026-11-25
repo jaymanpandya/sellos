@@ -33,7 +33,7 @@
 					<div class="flex flex-wrap items-center gap-3">
 						<span class="ui-text-strong"> {{ item.position }}. {{ item.title }} </span>
 						<span class="ui-text-muted">
-							{{ item.price ? formatMoney(item.price) : "Price on request" }}
+							{{ item.price ? formatBudget(item.price) : "Price on request" }}
 						</span>
 						<StatusBadge
 							v-if="item.unavailable"
@@ -126,7 +126,7 @@ import RecordHeader from "../components/RecordHeader.vue";
 import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
-import { formatMoney } from "../format";
+import { formatBudget } from "../format";
 import { shortlistApi } from "../inventory/inventoryApi";
 
 // One of the client's shortlists. Opening a home tells the agent which one and when (SOS-P7-09).

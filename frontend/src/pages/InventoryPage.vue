@@ -91,12 +91,20 @@
 					>
 						{{ row.project_name }}
 					</router-link>
-				</template>
-				<template #cell-rera_number="{ row }">
-					<span data-testid="sellos-inventory-rera">RERA {{ row.rera_number }}</span>
+					<span v-if="row.developer" class="block ui-text-muted">{{
+						row.developer
+					}}</span>
 				</template>
 				<template #cell-location="{ row }">
-					{{ [row.locality, row.city].filter(Boolean).join(", ") }}
+					<span class="block">{{
+						[row.locality, row.city].filter(Boolean).join(", ")
+					}}</span>
+					<span
+						v-if="row.rera_number"
+						class="block ui-text-muted"
+						data-testid="sellos-inventory-rera"
+						>RERA {{ row.rera_number }}</span
+					>
 				</template>
 				<template #cell-project_status="{ row }">
 					<StatusBadge tone="neutral" :label="row.project_status" />
@@ -135,10 +143,15 @@
 				<template #cell-details="{ row }">
 					{{ row.property_type }}{{ row.configuration ? `, ${row.configuration}` : "" }},
 					floor {{ row.floor ?? "-" }}, {{ row.parking }} parking
+					<span class="block ui-text-muted">{{ row.carpet_area }} sq ft carpet</span>
 				</template>
-				<template #cell-carpet_area="{ row }">{{ row.carpet_area }} sq ft</template>
 				<template #cell-location="{ row }">
-					{{ [row.locality, row.city].filter(Boolean).join(", ") }}
+					<span class="block">{{
+						[row.locality, row.city].filter(Boolean).join(", ")
+					}}</span>
+					<span v-if="row.rera_number" class="block ui-text-muted"
+						>RERA {{ row.rera_number }}</span
+					>
 				</template>
 			</DataTable>
 
@@ -454,26 +467,22 @@ const kpis = computed(() => {
 
 const projectTo = (p) => ({ name: "project", params: { name: p.name } });
 const projectColumns = [
-	{ key: "project_name", label: "Project", primary: true, sortable: true },
-	{ key: "developer", label: "Developer", sortable: true },
-	{ key: "rera_number", label: "RERA number" },
-	{ key: "location", label: "Location", wrap: true },
+	{
+		key: "project_name",
+		label: "Project and developer",
+		primary: true,
+		sortable: true,
+		wrap: true,
+	},
+	{ key: "location", label: "Location and RERA", wrap: true },
 	{ key: "project_status", label: "Status", sortable: true },
 	{ key: "units", label: "Units", wrap: true },
 ];
 const propertyColumns = [
-	{ key: "title", label: "Property", primary: true, sortable: true },
+	{ key: "title", label: "Property", primary: true, sortable: true, wrap: true },
 	{ key: "status", label: "Status", sortable: true },
-	{ key: "details", label: "Details", wrap: true },
-	{
-		key: "carpet_area",
-		label: "Carpet area",
-		align: "right",
-		sortable: true,
-		sortValue: (p) => Number(p.carpet_area || 0),
-	},
-	{ key: "location", label: "Location", wrap: true },
-	{ key: "rera_number", label: "RERA number" },
+	{ key: "details", label: "Details and area", wrap: true },
+	{ key: "location", label: "Location and RERA", wrap: true },
 ];
 const developerColumns = [
 	{ key: "developer_name", label: "Developer", primary: true, sortable: true },

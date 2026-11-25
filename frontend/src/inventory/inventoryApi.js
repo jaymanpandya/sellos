@@ -1,4 +1,5 @@
 import { apiRequest } from "../api";
+import { formatBudget } from "../format";
 
 // Developers, projects, units and properties (SOS-P4-01). Each call is one whitelisted method; the server
 // checks the role and saves through the record's own checks.
@@ -115,9 +116,8 @@ export const costSheetApi = {
 		`/api/method/sellos.inventory.cost_sheet.cost_sheet_pdf?name=${encodeURIComponent(name)}`,
 };
 
-// Rupees with Indian grouping: 10155600 is Rs 1,01,55,600.
-export const rupees = (n) =>
-	`Rs ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Number(n || 0))}`;
+// Rupees the one way (format.js): 10155600 is "Rs 1.02 crore".
+export const rupees = (n) => formatBudget(Number(n || 0));
 
 // Listings: Primary, Direct or Partner, published only when complete (SOS-P4-02).
 const listing = (method, params = {}) =>

@@ -41,11 +41,7 @@
 			@retry="load"
 		/>
 
-		<div
-			v-else
-			class="grid grid-cols-1 gap-ui-md"
-			:class="rows && rows.length ? 'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]' : ''"
-		>
+		<div v-else class="space-y-ui-md">
 			<DataTable
 				title="Conversations"
 				caption="Conversations"
@@ -64,15 +60,30 @@
 				empty-testid="sellos-whatsapp-empty"
 				@row-click="(row) => open(row.name)"
 			>
+				<!-- The lead's name is plain text, the masked phone under it; the row opens the conversation. -->
 				<template #cell-title="{ row }">
-					<AppButton
-						type="button"
-						:active="selected === row.name"
-						:aria-pressed="selected === row.name"
-						@click="open(row.name)"
-					>
-						{{ row.title }}
-					</AppButton>
+					<span class="block ui-text-strong" data-testid="sellos-whatsapp-row-name">{{
+						row.title
+					}}</span>
+					<span v-if="row.phone" class="block ui-text-muted tabular-nums">{{
+						row.phone
+					}}</span>
+				</template>
+				<template #cell-last_message="{ row }">
+					<span class="block max-w-prose truncate ui-text-secondary">{{
+						row.last_message || "No messages yet"
+					}}</span>
+				</template>
+				<template #cell-last_message_on="{ row }">
+					<span class="ui-text-secondary">{{
+						formatShortWhen(row.last_message_on)
+					}}</span>
+				</template>
+				<template #cell-state="{ row }">
+					<StatusBadge
+						:tone="row.state === 'With a human' ? 'info' : 'neutral'"
+						:label="row.state"
+					/>
 				</template>
 				<template #cell-consent_status="{ row }">
 					<StatusBadge
@@ -276,6 +287,7 @@ import PageTemplate from "../components/PageTemplate.vue";
 import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
+import { formatShortWhen } from "../format";
 import { whatsappApi } from "../whatsapp/whatsappApi";
 
 // The WhatsApp inbox (SOS-P6-11). Red is an explicit stop request and amber is consent not established.
@@ -297,9 +309,11 @@ const search = ref("");
 const stateFilter = ref("");
 
 const columns = [
-	{ key: "title", label: "Lead", primary: true, wrap: true },
+	{ key: "title", label: "Lead", primary: true, sortable: true },
+	{ key: "last_message", label: "Last message", wrap: true },
+	{ key: "last_message_on", label: "Time", sortable: true },
 	{ key: "consent_status", label: "Consent" },
-	{ key: "state", label: "State" },
+	{ key: "state", label: "State", sortable: true },
 ];
 const stateOptions = computed(() => [
 	{ label: "Any state", value: "" },

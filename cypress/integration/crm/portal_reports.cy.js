@@ -15,11 +15,14 @@ context("SOS-P5-03: the Channel Partner and Platform reports", () => {
 		cy.bench("sellos.tests.ui_fixtures.remove_portal_reports");
 	});
 
-	const rupees = (value) =>
-		`₹${Number(value).toLocaleString("en-IN", {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		})}`;
+	// The one money format (frontend/src/format.js): "Rs 1.2 lakh", and the full amount below a lakh, no paise.
+	const rupees = (value) => {
+		const n = Number(value);
+		const trim = (x) => String(Math.round(x * 100) / 100);
+		if (n >= 1e7) return `Rs ${trim(n / 1e7)} crore`;
+		if (n >= 1e5) return `Rs ${trim(n / 1e5)} lakh`;
+		return `Rs ${Math.round(n).toLocaleString("en-IN")}`;
+	};
 	const sum = (figures) => Object.values(figures).reduce((n, c) => n + c, 0);
 
 	context("a channel partner", () => {
@@ -131,7 +134,7 @@ context("SOS-P5-03: the Channel Partner and Platform reports", () => {
 				cells(tenant).find("[data-col=calls]").should("have.text", String(calls));
 				cells(tenant).find("[data-col=call_cost]").should("have.text", rupees(cost));
 			});
-			cy.get('[data-stat="Calling spend"]').should("contain", "₹");
+			cy.get('[data-stat="Calling spend"]').should("contain", "Rs");
 			cy.get('[data-stat="Calls"]').should("exist");
 		});
 

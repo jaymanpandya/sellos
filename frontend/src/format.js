@@ -40,20 +40,20 @@ export function formatWhen(value) {
 	return formatDateTime(text);
 }
 
-// Rupees with Indian digit grouping: 1250000 is "Rs 12,50,000". An empty value is an empty cell.
-// A second argument gives the decimals to keep (a payout shows paise: formatMoney(3200000, 2)).
-export function formatMoney(value, decimals = 0) {
+// MONEY (docs/DESIGN_SYSTEM.md, "Money"): one format everywhere, "Rs", no paise, never the rupee sign.
+// formatBudget is the default, for every figure that is read at a glance: 23000000 is "Rs 2.3 crore",
+// 8500000 is "Rs 85 lakh", and below a lakh the full amount with Indian grouping ("Rs 45,000").
+// formatMoney is for an amount that must be exact (a payout, an invoice, a cost sheet line, a commission
+// split): 1250000 is "Rs 12,50,000". Both round to the rupee. An empty value is an empty cell.
+export function formatMoney(value) {
 	if (value === "" || value === null || value === undefined) return "";
 	const number = Number(value);
 	if (Number.isNaN(number)) return "";
-	return `Rs ${new Intl.NumberFormat("en-IN", {
-		minimumFractionDigits: decimals,
-		maximumFractionDigits: decimals,
-	}).format(number)}`;
+	return `Rs ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
+		Math.round(number)
+	)}`;
 }
 
-// A budget the way people say it: 23000000 is "Rs 2.3 crore", 8500000 is "Rs 85 lakh". Below a lakh it is
-// the full amount with Indian grouping. An empty value is an empty cell.
 export function formatBudget(value) {
 	if (value === "" || value === null || value === undefined) return "";
 	const number = Number(value);

@@ -95,6 +95,18 @@ class TestEndToEnd(CrmCase):
 		self.assertEqual(view["timeline"][0]["title"], "Call")
 		self.assertEqual(view["lead"]["lead_title"], "Asha Rao Website")
 
+	def test_the_lead_names_its_agent_by_full_name_for_the_header(self):
+		# SOS-LOOP: the lead page header shows the agent's full name, never the email.
+		_, lead = self.make_lead()
+		self.assertEqual(api.get_lead(lead)["lead"]["assigned_to_name"], "")
+		agent = frappe.session.user
+		frappe.db.set_value("Lead", lead, "assigned_to", agent)
+		full_name = frappe.db.get_value("User", agent, "full_name")
+		self.assertTrue(full_name)
+		self.assertNotEqual(full_name, agent)
+		self.assertEqual(api.get_lead(lead)["lead"]["assigned_to"], agent)
+		self.assertEqual(api.get_lead(lead)["lead"]["assigned_to_name"], full_name)
+
 	def test_the_timeline_holds_activities_tasks_and_visits_with_overdue_marked(self):
 		_, lead = self.make_lead()
 		api.add_activity(lead, "Note", "first")

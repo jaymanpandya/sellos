@@ -148,7 +148,7 @@
 				</details>
 			</template>
 			<template #cell-actions="{ row: f }">
-				<div class="flex flex-wrap items-center gap-ui-sm">
+				<div class="flex flex-col items-start gap-ui-sm">
 					<AppButton
 						v-if="f.status === 'Pending approval'"
 						type="button"
@@ -307,9 +307,9 @@ function removeChip(key) {
 const columns = [
 	{ key: "firm_name", label: "Firm", primary: true, sortable: true },
 	{ key: "status", label: "Status", sortable: true },
-	{ key: "contact_person", label: "Contact", wrap: true },
-	{ key: "details", label: "Details", wrap: true },
-	{ key: "actions", label: "Actions", wrap: true },
+	{ key: "contact_person", label: "Contact", wrap: true, class: "max-w-[14rem] break-words" },
+	{ key: "details", label: "Details", wrap: true, class: "max-w-[22rem]" },
+	{ key: "actions", label: "Actions", wrap: true, class: "w-44" },
 ];
 
 const kpis = computed(() => [

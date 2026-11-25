@@ -66,7 +66,7 @@
 						<ReadField label="Unit or property" :value="deal.target" />
 						<ReadField
 							label="Price"
-							:value="deal.price ? formatMoney(deal.price) : ''"
+							:value="deal.price ? formatBudget(deal.price) : ''"
 							data-testid="sellos-deal-money"
 						/>
 						<ReadField
@@ -149,7 +149,7 @@ import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { dealApi } from "../crm/dealsApi";
-import { formatDate, formatDateTime, formatMoney } from "../format";
+import { formatBudget, formatDate, formatDateTime, formatMoney } from "../format";
 
 // One deal (SOS-P4-06). There is no call that returns a single deal, so the page loads the list the Deals page
 // loads and picks its record by name. Approving and reopening the split are made on the server and read back.
@@ -161,7 +161,7 @@ const loadError = ref("");
 const loaded = ref(false);
 
 const line = computed(() =>
-	deal.value && deal.value.price ? `Price ${formatMoney(deal.value.price)}` : ""
+	deal.value && deal.value.price ? `Price ${formatBudget(deal.value.price)}` : ""
 );
 
 async function load() {

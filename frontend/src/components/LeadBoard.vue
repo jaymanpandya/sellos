@@ -128,6 +128,7 @@ import FormField from "./FormField.vue";
 import StatusBadge from "./StatusBadge.vue";
 import { logBackgroundError, logRequestError } from "../api";
 import { crmApi, serverMessage } from "../crm/crmApi";
+import { formatBudget } from "../format";
 
 // The pipeline board (SOS-P1-24). A card drags to any column, or moves with the box on the card, and
 // the move is move_lead_stage: any stage, whatever the consent status, with its warning shown here.
@@ -155,12 +156,7 @@ const stageOptions = computed(() =>
 const CONSENT_TONE = { "Opted out": "danger", "Registered DND": "warning" };
 const noticeTone = (level) => (level === "error" ? "danger" : "warning");
 
-const rupees = (value) =>
-	new Intl.NumberFormat("en-IN", {
-		style: "currency",
-		currency: "INR",
-		maximumFractionDigits: 0,
-	}).format(value || 0);
+const rupees = (value) => formatBudget(value || 0);
 
 function onDragStart(lead, event) {
 	event.dataTransfer?.setData("text/plain", lead.name);

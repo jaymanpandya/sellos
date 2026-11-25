@@ -28,7 +28,7 @@
 						>
 						· Assigned to
 						<span data-testid="sellos-lead-summary-agent">{{
-							detail.lead.assigned_to || "nobody"
+							detail.lead.assigned_to_name || detail.lead.assigned_to || "nobody"
 						}}</span>
 					</p>
 				</template>
@@ -927,7 +927,7 @@ import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import VisitConfirm from "../components/VisitConfirm.vue";
-import { formatDate, formatMoney, formatWhen } from "../format";
+import { formatBudget, formatDate, formatWhen } from "../format";
 import { setPageTitle } from "../shell";
 import { teamsApi } from "../company/teamsApi";
 import { session } from "../session";
@@ -1010,8 +1010,8 @@ const req = reactive({
 	possession: "",
 });
 const requirementsError = ref("");
-// Budgets show as rupees with Indian grouping: Rs 50,00,000.
-const rupees = (n) => (n ? formatMoney(n) : "");
+// Budgets show as "Rs 50 lakh" (format.js).
+const rupees = (n) => (n ? formatBudget(n) : "");
 const requirementRows = computed(() => {
 	const r = detail.value?.requirements || {};
 	return [

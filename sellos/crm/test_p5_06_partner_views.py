@@ -44,6 +44,23 @@ class TestPartnerOverview(CommissionCase):
 		self.assertEqual(result["potential"], 80000.0)
 		self.assertEqual(result["firm"]["name"], self.firm)
 
+	def test_the_home_counts_are_the_partners_own_and_the_deals_panel_reads_the_same_deals(self):
+		# SOS-LOOP: Partner Home shows real figures, and the Your results Deals panel is live with them.
+		from sellos.crm import partner_panels
+
+		mine = self.overview()["counts"]
+		self.assertEqual(mine["deals"], 3)
+		for key in ("shared_projects", "registrations", "leads"):
+			self.assertIsInstance(mine[key], int)
+		theirs = self.overview(OTHER_MAIL)["counts"]
+		self.assertEqual(theirs["deals"], 1)
+		panel = partner_panels.deals("2026-01-01", "2026-12-31", firm=self.firm)
+		self.assertEqual({r["key"] for r in panel["rows"]}, {self.paid, self.due, self.pending})
+		self.assertEqual(panel["stats"], [{"label": "Deals", "value": 3, "unit": "count"}])
+		self.assertEqual(partner_panels.deals("2026-01-01", "2026-12-31", firm=None)["rows"], [])
+		narrow = partner_panels.deals("2026-06-01", "2026-06-30", firm=self.firm)
+		self.assertEqual([r["key"] for r in narrow["rows"]], [self.due])
+
 	def test_an_on_hold_payout_is_still_potential(self):
 		self.move(self.payout_of(self.due), "On hold", reason="Agreement copy")
 		self.assertEqual(self.overview()["potential"], 80000.0)

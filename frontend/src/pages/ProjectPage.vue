@@ -100,10 +100,13 @@
 					/>
 				</template>
 				<template #cell-configuration="{ row }">
-					{{ row.configuration || "No configuration" }}
+					<span class="block">{{ row.configuration || "No configuration" }}</span>
+					<span class="block ui-text-muted">
+						{{ row.carpet_area }} sq ft, floor {{ row.floor ?? "-" }},
+						{{ row.parking }}
+						parking
+					</span>
 				</template>
-				<template #cell-carpet_area="{ row }">{{ row.carpet_area }} sq ft</template>
-				<template #cell-floor="{ row }">{{ row.floor ?? "-" }}</template>
 				<template #cell-cost_sheet="{ row }">
 					<router-link
 						:to="{ name: 'cost-sheet', params: { unit: row.name } }"
@@ -114,11 +117,11 @@
 					</router-link>
 				</template>
 				<template #cell-change="{ row }">
-					<div class="flex flex-wrap items-end gap-ui-sm">
+					<div class="flex w-44 flex-col items-start gap-ui-sm">
 						<FormField
 							v-model="reasons[row.name]"
 							label="Reason (optional)"
-							class="w-56"
+							class="w-full"
 							data-testid="sellos-unit-reason"
 						/>
 						<AppButton
@@ -362,22 +365,7 @@ const kpis = computed(() => {
 const columns = computed(() => [
 	{ key: "unit_number", label: "Unit", primary: true, sortable: true },
 	{ key: "status", label: "Status", sortable: true },
-	{ key: "configuration", label: "Configuration", sortable: true },
-	{
-		key: "carpet_area",
-		label: "Carpet area",
-		align: "right",
-		sortable: true,
-		sortValue: (u) => Number(u.carpet_area || 0),
-	},
-	{
-		key: "floor",
-		label: "Floor",
-		align: "right",
-		sortable: true,
-		sortValue: (u) => Number(u.floor ?? -1),
-	},
-	{ key: "parking", label: "Parking", align: "right" },
+	{ key: "configuration", label: "Configuration and area", sortable: true, wrap: true },
 	...(canEdit.value
 		? [
 				{ key: "cost_sheet", label: "Cost sheet" },

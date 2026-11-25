@@ -598,8 +598,15 @@ def get_lead(name):
 	"""The lead, its client and a timeline of activities, tasks and visits, newest first."""
 	lead = frappe.get_doc("Lead", name)
 	lead.check_permission("read")
+	lead_dict = lead.as_dict(no_nulls=True)
+	# The agent's full name for the page header, never the email (SOS-LOOP).
+	lead_dict["assigned_to_name"] = (
+		(frappe.db.get_value("User", lead.assigned_to, "full_name") if lead.assigned_to else "")
+		or lead.assigned_to
+		or ""
+	)
 	return {
-		"lead": lead.as_dict(no_nulls=True),
+		"lead": lead_dict,
 		"requirements": requirements_view(lead),
 		"client": client_view(frappe.get_doc("Client", lead.client)),
 		"can_merge": COMPANY_ADMIN in frappe.get_roles(),

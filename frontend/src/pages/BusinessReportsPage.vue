@@ -164,7 +164,7 @@
 					</template>
 					<template #cell-asking="{ row }">
 						<span class="tabular-nums" data-col="asking">{{
-							formatMoney(row.asking)
+							formatBudget(row.asking)
 						}}</span>
 					</template>
 				</DataTable>
@@ -206,7 +206,7 @@ import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import { serverMessage } from "../crm/crmApi";
-import { formatMoney } from "../format";
+import { formatBudget } from "../format";
 import { businessApi } from "../reports/businessApi";
 import { talkTime } from "../reports/callsApi";
 

@@ -105,7 +105,7 @@
 			</template>
 			<template #cell-price="{ row }">
 				<span class="tabular-nums" data-testid="sellos-deal-money">{{
-					formatMoney(row.price)
+					formatBudget(row.price)
 				}}</span>
 			</template>
 			<template #cell-commission_amount="{ row }">
@@ -270,7 +270,7 @@ import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { dealApi } from "../crm/dealsApi";
-import { formatDateTime, formatMoney } from "../format";
+import { formatBudget, formatDateTime, formatMoney } from "../format";
 
 // Deals (SOS-P4-06). Every change is made on the server and the list read back. The server checks that the
 // shares add up to 100, so the total shown here only helps the person typing.

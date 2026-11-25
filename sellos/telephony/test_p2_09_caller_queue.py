@@ -114,6 +114,13 @@ class TestCallerQueue(TodayCase):
 		self.assertEqual(row["consent_warning"], "amber")
 		self.assertIsNone(row["time_left"])
 
+	def test_each_row_names_its_pipeline_so_the_dashboard_counts_one_population(self):
+		# SOS-LOOP: the Home consent card counts the same buyer leads as the Leads tile.
+		lead = self.lead_for(self.agent, "P209 Pipeline")
+		as_user("agent")
+		row = next(r for r in queue.caller_queue() if r["lead"] == lead)
+		self.assertEqual(row["pipeline"], "Buyer")
+
 	def test_the_longest_live_record_sets_the_window(self):
 		lead = self.lead_for(self.agent, "P209 Two Records")
 		make_record(lead, "Inquiry", now_datetime())

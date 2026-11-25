@@ -3,8 +3,16 @@
 		<template #header><slot name="header" /></template>
 		<template v-if="$slots.notice" #notice><slot name="notice" /></template>
 
-		<template v-if="loaded" #kpis>
-			<KpiStrip :items="kpis" data-testid="sellos-dash-kpis" />
+		<template #kpis>
+			<KpiStrip v-if="loaded" :items="kpis" data-testid="sellos-dash-kpis" />
+			<!-- The first load: tiles in the shape of the numbers, at every width including 390 (SOS-LOOP). -->
+			<LoadingSkeleton
+				v-else-if="!error"
+				variant="cards"
+				:rows="4"
+				label="Getting your numbers"
+				data-testid="sellos-dash-loading"
+			/>
 		</template>
 
 		<template #left>
@@ -15,7 +23,7 @@
 					:message="error"
 					@retry="load"
 				/>
-				<LoadingSkeleton v-else-if="!loaded" variant="cards" :rows="4" />
+				<LoadingSkeleton v-else-if="!loaded" :rows="4" />
 			</div>
 			<template v-if="loaded">
 				<SectionCard title="Leads by stage" data-testid="sellos-dash-stages">
@@ -31,11 +39,14 @@
 					</template>
 				</SectionCard>
 
-				<SectionCard title="Consent warnings" data-testid="sellos-dash-consent">
+				<SectionCard
+					title="Consent warnings, buyer leads"
+					data-testid="sellos-dash-consent"
+				>
 					<EmptyState
 						v-if="!warned.length"
 						title="No consent warnings."
-						text="Every lead you can see has a live consent record."
+						text="Every buyer lead you can see has a live consent record."
 						icon="lucide-shield-check"
 					/>
 					<template v-else>
@@ -43,8 +54,8 @@
 							<b class="ui-text-strong" data-testid="sellos-dash-consent-count">{{
 								warned.length
 							}}</b>
-							of {{ queue.total }} leads carry a warning. Calls and SMS still go
-							ahead. After a WhatsApp STOP nothing is sent on WhatsApp unprompted.
+							of {{ buyers.length }} buyer leads carry a warning. Calls and SMS still
+							go ahead. After a WhatsApp STOP nothing is sent on WhatsApp unprompted.
 						</p>
 						<ul class="ui-list">
 							<HomeRow
@@ -66,7 +77,8 @@
 		</template>
 
 		<template #right>
-			<template v-if="loaded">
+			<!-- With the Today worklist below (Agent, Sales Manager) these two cards would repeat it. -->
+			<template v-if="loaded && !worklist">
 				<SectionCard title="Follow ups overdue" data-testid="sellos-dash-overdue">
 					<EmptyState
 						v-if="!overdue.length"
@@ -137,6 +149,10 @@ import StageBars from "./StageBars.vue";
 import { crmApi, serverMessage } from "../../crm/crmApi";
 import { formatDateTime, formatWhen } from "../../format";
 
+defineProps({
+	// True when the page shows the Today worklist below, which already holds follow ups and visits.
+	worklist: { type: Boolean, default: false },
+});
 const loaded = ref(false);
 const error = ref("");
 const board = ref({ columns: [], total: 0 });
@@ -144,15 +160,17 @@ const today = ref({ counts: {}, follow_ups: [], visits_today: [] });
 const queue = ref({ total: 0, leads: [] });
 
 const overdue = computed(() => today.value.follow_ups.filter((row) => row.state === "overdue"));
-const warned = computed(() => queue.value.leads.filter((row) => row.consent_warning));
+// One population for the Leads tile and the consent card: the buyer leads (the Buyer pipeline).
+const buyers = computed(() => queue.value.leads.filter((row) => row.pipeline !== "Seller"));
+const warned = computed(() => buyers.value.filter((row) => row.consent_warning));
 const kpis = computed(() => [
 	{
 		key: "leads",
 		testid: "sellos-dash-kpi-leads",
 		valueTestid: "sellos-dash-kpi-leads",
-		label: "Leads",
+		label: "Buyer leads",
 		value: board.value.total,
-		caption: "In the pipeline",
+		caption: "In the buyer pipeline",
 		icon: "lucide-users",
 		tone: "",
 		to: "/crm/leads",

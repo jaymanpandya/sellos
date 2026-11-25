@@ -29,6 +29,7 @@ from sellos.access.partner_firms import FIRM, firm_of, is_pure_partner, partner_
 from sellos.access.registry import sellos_api
 from sellos.access.roles import CHANNEL_PARTNER
 from sellos.inventory.commissions import _dec, _target
+from sellos.inventory.partner_shares import shared_with
 from sellos.sellos.doctype.commission_payout.commission_payout import APPROVED, DUE, HOLD, PAID
 
 PARTNER_PARTY = "Channel Partner"
@@ -101,11 +102,27 @@ def partner_overview():
 		frappe.throw(_("This page is for a channel partner login."), frappe.PermissionError)
 	firm = firm_of(user)
 	if not firm or not partner_may_work(user):
-		return {"firm": None, "deals": [], "earned": 0.0, "potential": 0.0, "link": "", "qr": ""}
+		return {
+			"firm": None,
+			"deals": [],
+			"counts": {"shared_projects": 0, "registrations": 0, "leads": 0, "deals": 0},
+			"earned": 0.0,
+			"potential": 0.0,
+			"link": "",
+			"qr": "",
+		}
 	link = partner_link(firm)
+	deals = _deal_rows(firm)
 	return {
 		"firm": {"name": firm, "firm_name": frappe.db.get_value(FIRM, firm, "firm_name")},
-		"deals": _deal_rows(firm),
+		"deals": deals,
+		# The partner Home figures (SOS-LOOP): counts of the firm's own records, nothing of anyone else's.
+		"counts": {
+			"shared_projects": len(shared_with(firm)),
+			"registrations": frappe.db.count("Partner Registration", {"partner_firm": firm}),
+			"leads": frappe.db.count("Lead", {"partner": firm, "archived": 0}),
+			"deals": len(deals),
+		},
 		**_earnings(firm),
 		"link": link,
 		"qr": qr_image(link),

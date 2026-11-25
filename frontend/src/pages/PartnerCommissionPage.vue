@@ -57,7 +57,7 @@
 				<b
 					class="tabular-nums ui-text-body"
 					data-testid="sellos-partner-commission-total"
-					>{{ formatMoney(result.totals.total, 2) }}</b
+					>{{ formatMoney(result.totals.total) }}</b
 				>.
 			</p>
 			<DataTable
@@ -82,7 +82,7 @@
 					<span class="ui-text-secondary">{{ formatDate(row.booking_date) }}</span>
 				</template>
 				<template #cell-agreement_value="{ row }">
-					<span class="tabular-nums">{{ formatMoney(row.agreement_value, 2) }}</span>
+					<span class="tabular-nums">{{ formatMoney(row.agreement_value) }}</span>
 				</template>
 				<template #cell-partner_percent="{ row }">
 					<span class="block tabular-nums">{{ row.partner_percent }}%</span>
@@ -90,7 +90,7 @@
 				</template>
 				<template #cell-commission_due="{ row }">
 					<span class="tabular-nums" data-testid="sellos-partner-commission-due">{{
-						formatMoney(row.commission_due, 2)
+						formatMoney(row.commission_due)
 					}}</span>
 				</template>
 				<template #cell-notes="{ row }">
@@ -147,7 +147,7 @@ const slug = (s) => s.toLowerCase().replace(/ /g, "-");
 const kpis = computed(() =>
 	STATUSES.map((status) => ({
 		label: status,
-		value: formatMoney(result.value?.totals.by_status[status] || 0, 2),
+		value: formatMoney(result.value?.totals.by_status[status] || 0),
 		caption: KPI_CAPTIONS[status],
 		icon: KPI_ICONS[status],
 		tone: TONES[status],

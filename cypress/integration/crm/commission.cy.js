@@ -3,6 +3,11 @@
 // Agent has no Commission page. The records the spec makes (the project is named "Gate Inventory ", the client
 // "Gate Deal ", the firm "Gate Firm ") are removed afterwards.
 context("SOS-P7-04: commission rates and payouts", () => {
+	// A payout's moves are in its row menu (SOS-LOOP): open the menu, then choose the move.
+	const payoutAction = (label) => {
+		cy.getByTestId("commission-payout").find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', label).click();
+	};
 	// Each test makes its own deal, project and firm, so each starts from a clean slate.
 	beforeEach(() => cy.bench("sellos.tests.ui_fixtures.remove_gate_commission"));
 	after(() => cy.bench("sellos.tests.ui_fixtures.remove_gate_commission"));
@@ -39,16 +44,16 @@ context("SOS-P7-04: commission rates and payouts", () => {
 					.should("have.length", 1)
 					.and("have.attr", "data-status", "Due")
 					.and("contain", made.firm);
-				cy.getByTestId("commission-payout-due").should("contain", "32,000.00");
-				cy.getByTestId("commission-total-due").should("contain", "32,000.00");
+				cy.getByTestId("commission-payout-due").should("contain", "Rs 32,000");
+				cy.getByTestId("commission-total-due").should("contain", "Rs 32,000");
 
-				cy.getByTestId("commission-approve").click();
+				payoutAction("Approve");
 				cy.wait("@move").its("response.statusCode").should("eq", 200);
 				cy.getByTestId("commission-payout").should("have.attr", "data-status", "Approved");
 
 				// A payment needs its reference and date.
 				cy.expectApiStatus("sellos.inventory.commissions.move_payout", 417);
-				cy.getByTestId("commission-pay").click();
+				payoutAction("Record payment");
 				cy.getByTestId("commission-pay-save").click();
 				cy.wait("@move").its("response.statusCode").should("eq", 417);
 				cy.getByTestId("commission-error").should("contain", "payment reference");
@@ -62,7 +67,7 @@ context("SOS-P7-04: commission rates and payouts", () => {
 				cy.getByTestId("commission-payout-paid")
 					.should("contain", "UTR-SPEC-1")
 					.and("contain", "2 Apr 2026");
-				cy.getByTestId("commission-total-paid").should("contain", "32,000.00");
+				cy.getByTestId("commission-total-paid").should("contain", "Rs 32,000");
 				cy.getByTestId("commission-total-due").should("contain", "0.00");
 			}
 		);
@@ -74,7 +79,7 @@ context("SOS-P7-04: commission rates and payouts", () => {
 		cy.intercept("POST", "**/sellos.inventory.commissions.move_payout*").as("move");
 		cy.visit("/sellos/crm/commission");
 		cy.getByTestId("commission-payout").should("have.attr", "data-status", "Due");
-		cy.getByTestId("commission-hold").click();
+		payoutAction("Put on hold");
 		cy.getByTestId("commission-hold-reason").type("Waiting for the agreement copy");
 		cy.getByTestId("commission-hold-save").click();
 		cy.wait("@move").its("response.statusCode").should("eq", 200);
@@ -83,7 +88,7 @@ context("SOS-P7-04: commission rates and payouts", () => {
 			"contain",
 			"Waiting for the agreement copy"
 		);
-		cy.getByTestId("commission-release").click();
+		payoutAction("Release the hold");
 		cy.wait("@move").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("commission-payout").should("have.attr", "data-status", "Due");
 	});
@@ -104,8 +109,8 @@ context("SOS-P7-04: commission rates and payouts", () => {
 					.and("have.attr", "data-deal", made.deal)
 					.and("contain", "32,000.00")
 					.and("contain", "UTR-GATE-704");
-				cy.getByTestId("partner-commission-total-paid").should("contain", "32,000.00");
-				cy.getByTestId("partner-commission-total").should("contain", "32,000.00");
+				cy.getByTestId("partner-commission-total-paid").should("contain", "Rs 32,000");
+				cy.getByTestId("partner-commission-total").should("contain", "Rs 32,000");
 
 				// A range that holds no booking has no payout.
 				cy.getByTestId("partner-commission-from").clear().type("2025-01-01");

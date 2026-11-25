@@ -1,4 +1,5 @@
 import { apiRequest } from "../api";
+import { formatBudget } from "../format";
 
 // The call reports of a Company Admin (SOS-P2-11): the figures for a range of dates, and the calls behind
 // one figure. A filter that is not set is left out, so the server does not filter by it. An empty agent is
@@ -15,7 +16,7 @@ export const callsApi = {
 		call("sellos.reports.calls.call_report_calls", clean({ ...range, ...figure })),
 };
 
-// 125 seconds read as "2m 5s", and rupees as ₹3.00 in the Indian grouping.
+// 125 seconds read as "2m 5s", and rupees as "Rs 3" (format.js).
 export function talkTime(seconds) {
 	const total = Math.round(seconds || 0);
 	const hours = Math.floor(total / 3600);
@@ -26,8 +27,5 @@ export function talkTime(seconds) {
 }
 
 export function rupees(value) {
-	return `₹${Number(value || 0).toLocaleString("en-IN", {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	})}`;
+	return formatBudget(Number(value || 0));
 }

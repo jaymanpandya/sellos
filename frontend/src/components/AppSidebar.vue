@@ -114,7 +114,7 @@ import { logBackgroundError } from "../api";
 import { AREA_ORDER, areaOfItem, areas } from "../areas";
 import { ICONS } from "../navIcons";
 import { navCounts, refreshWhatsAppCount } from "../navCounts";
-import { navFor, personaFor } from "../personas";
+import { groupLabel, navFor, personaFor } from "../personas";
 import { loadNavState, saveNavState } from "../navState";
 import { session, signOut } from "../session";
 
@@ -126,7 +126,7 @@ const top = computed(() => items.value.filter((item) => item.key === "home"));
 const sections = computed(() =>
 	AREA_ORDER.map((key) => ({
 		key,
-		label: areas[key].label,
+		label: groupLabel(personaFor(session.roles), key, areas[key].label),
 		icon: areas[key].icon,
 		items: items.value.filter((item) => item.key !== "home" && areaOfItem(item) === key),
 	})).filter((section) => section.items.length)

@@ -532,7 +532,7 @@ import Notice from "../components/Notice.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
-import { formatBudget, formatMoney, formatShortWhen } from "../format";
+import { formatBudget, formatShortWhen } from "../format";
 import { session } from "../session";
 import { shell } from "../shell";
 
@@ -720,7 +720,7 @@ const chips = computed(() => {
 				key === "assigned_to"
 					? agentName(value)
 					: key.startsWith("budget")
-					? formatMoney(value)
+					? formatBudget(value)
 					: value;
 			return { key, label: `${CHIP_LABELS[key] || key}: ${shown}` };
 		});

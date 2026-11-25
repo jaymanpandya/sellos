@@ -65,7 +65,7 @@
 						v-if="row.commission_due !== null"
 						class="tabular-nums"
 						data-testid="sellos-partner-earnings-deal-amount"
-						>{{ formatMoney(row.commission_due, 2) }}</span
+						>{{ formatMoney(row.commission_due) }}</span
 					>
 				</template>
 			</DataTable>
@@ -119,7 +119,7 @@ const error = ref("");
 const kpis = computed(() => [
 	{
 		label: "Earned so far",
-		value: formatMoney(result.value?.earned || 0, 2),
+		value: formatMoney(result.value?.earned || 0),
 		caption: "Commission already paid to you",
 		icon: "lucide-wallet",
 		tone: "success",
@@ -127,7 +127,7 @@ const kpis = computed(() => [
 	},
 	{
 		label: "Potential earnings",
-		value: formatMoney(result.value?.potential || 0, 2),
+		value: formatMoney(result.value?.potential || 0),
 		caption: "Commission due, approved or on hold",
 		icon: "lucide-hourglass",
 		tone: "warning",
