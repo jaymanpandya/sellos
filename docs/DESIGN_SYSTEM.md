@@ -64,6 +64,7 @@ state, and in each area's colours.
 | Top bar | `AppTopBar` | breadcrumb (current page bold), search, help, bell with count, initials and name with a menu |
 | Page header | `PageHeader` | 44px round area icon chip, title (24px), one line (muted, at most 48rem), outline actions and at most one solid |
 | Record header | `RecordHeader` | Back link, sticky bar with title, status pill, one muted line, actions; Edit is solid |
+| Split table | `SplitTable` | a commission split: name, role, percent, amount per party, a total row that checks to 100 percent, and a proportion bar |
 | Section card | `SectionCard` | card with the small uppercase heading, optional tag and help, a `FieldGrid`, optional footer |
 | Timeline | `Timeline` | a vertical history: a dot per event, strong title, muted time line and notes (the lead's stage history) |
 | Disclosure | `Disclosure` | a card closed until opened, for a rare action kept at the bottom of a page (merge a duplicate client) |

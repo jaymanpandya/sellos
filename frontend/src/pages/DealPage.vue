@@ -17,16 +17,7 @@
 				</template>
 				<template v-if="deal" #actions>
 					<AppButton
-						v-if="deal.approval_status !== 'Approved'"
-						type="button"
-						variant="primary"
-						data-testid="sellos-deal-approve"
-						@click="approve"
-					>
-						Approve the split
-					</AppButton>
-					<AppButton
-						v-else
+						v-if="deal.approval_status === 'Approved'"
 						type="button"
 						data-testid="sellos-deal-reopen"
 						@click="reopen"
@@ -59,6 +50,43 @@
 				{{ notice }}
 			</p>
 
+			<SectionCard
+				title="Commission split"
+				help="The shares add up to 100 percent."
+				data-testid="sellos-deal-split-card"
+			>
+				<SplitTable
+					:rows="deal.splits"
+					testid="sellos-deal-splits"
+					row-testid="sellos-deal-split"
+				/>
+				<div class="mt-4 flex items-center gap-4">
+					<StatusBadge
+						:tone="deal.approval_status === 'Approved' ? 'success' : 'warning'"
+						:label="deal.approval_status"
+					/>
+					<p
+						v-if="deal.approval_status === 'Approved'"
+						class="ui-text-muted ui-text-small"
+					>
+						Approved by {{ deal.approved_by_name }} on
+						{{ formatDateTime(deal.approved_on) }}.
+					</p>
+					<p v-else class="ui-text-muted ui-text-small">
+						Waiting for a Company Admin to approve it.
+					</p>
+					<AppButton
+						v-if="deal.approval_status !== 'Approved'"
+						type="button"
+						variant="primary"
+						data-testid="sellos-deal-approve"
+						@click="approve"
+					>
+						Approve
+					</AppButton>
+				</div>
+			</SectionCard>
+
 			<SectionCard title="Deal">
 				<dl>
 					<FieldGrid>
@@ -66,7 +94,7 @@
 						<ReadField label="Unit or property" :value="deal.target" />
 						<ReadField
 							label="Price"
-							:value="deal.price ? formatBudget(deal.price) : ''"
+							:value="deal.price ? formatMoney(deal.price) : ''"
 							data-testid="sellos-deal-money"
 						/>
 						<ReadField
@@ -80,21 +108,8 @@
 				</dl>
 			</SectionCard>
 
-			<SectionCard title="Commission split" help="The shares add up to 100 percent.">
-				<p v-if="!deal.splits.length" class="ui-text-muted">Not filled in</p>
-				<ul class="space-y-1" data-testid="sellos-deal-splits">
-					<li
-						v-for="(s, n) in deal.splits"
-						:key="n"
-						data-testid="sellos-deal-split"
-						:data-party="s.party_type"
-						class="ui-text-small"
-					>
-						{{ s.party_type }}: {{ s.party }}, {{ s.percent }}% ({{
-							formatMoney(s.amount)
-						}})
-					</li>
-				</ul>
+			<SectionCard title="Documents">
+				<p class="ui-text-muted">No documents are attached to this deal.</p>
 			</SectionCard>
 		</template>
 
@@ -146,6 +161,7 @@ import PageTemplate from "../components/PageTemplate.vue";
 import ReadField from "../components/ReadField.vue";
 import RecordHeader from "../components/RecordHeader.vue";
 import SectionCard from "../components/SectionCard.vue";
+import SplitTable from "../components/SplitTable.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { dealApi } from "../crm/dealsApi";
@@ -167,8 +183,8 @@ const line = computed(() =>
 async function load() {
 	loadError.value = "";
 	try {
-		const result = await dealApi.overview();
-		deal.value = result.deals.find((d) => d.name === route.params.name) || null;
+		const result = await dealApi.get(route.params.name);
+		deal.value = result.deal;
 	} catch (e) {
 		loadError.value = serverMessage(e, "The deal could not be loaded.");
 	} finally {

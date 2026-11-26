@@ -7,13 +7,16 @@ and archives a deal. An Agent, a Sales Manager, a Client, a Channel Partner and 
 method. Every call saves through the Deal DocType, so its checks run on every call. Nothing is deleted.
 """
 
+from datetime import timedelta
+
 import frappe
 from frappe import _
+from frappe.utils import getdate, today
 
 from sellos.access.registry import sellos_api
 from sellos.access.roles import AGENT, COMPANY_ADMIN
 from sellos.sellos.doctype.channel_partner_firm.channel_partner_firm import APPROVED as FIRM_APPROVED
-from sellos.sellos.doctype.deal.deal import APPROVED, PARTIES, PENDING
+from sellos.sellos.doctype.deal.deal import APPROVED, CANCELLED, PARTIES, PENDING
 
 # What a caller may set on a deal. The approval and the archive are never in this list.
 FIELDS = ("client", "lead", "unit", "property", "price", "deal_date", "commission_amount")
@@ -26,6 +29,31 @@ def _values(values) -> dict:
 
 def _flag(value) -> bool:
 	return str(value).lower() in ("1", "true", "yes")
+
+
+PERIODS = {"day": "Day to date", "week": "Week to date", "month": "Month to date", "year": "Year to date"}
+PARTNER_SLOTS = 3
+
+
+def _today():
+	return getdate(today())
+
+
+def period_range(period):
+	"""The first and last day of a period that ends today: today for a day, since Monday for a week, since the
+	1st for a month, since 1 January for a year (SOS-LOOP). `all` is no limit. The dates are shown to the person."""
+	end = _today()
+	if period in (None, "", "all"):
+		return None, None
+	if period == "day":
+		return end, end
+	if period == "week":
+		return end - timedelta(days=end.weekday()), end
+	if period == "month":
+		return end.replace(day=1), end
+	if period == "year":
+		return end.replace(month=1, day=1), end
+	frappe.throw(_("The period is day, week, month, year or all."))
 
 
 def _deal(name, write=False):
@@ -54,8 +82,23 @@ def _target(doc) -> str:
 	return frappe.db.get_value("Property", doc.property, "title") or doc.property
 
 
+def _share(splits, party_type):
+	rows = [s for s in splits if s.party_type == party_type]
+	return {"percent": sum(s.percent for s in rows), "amount": sum(s.amount for s in rows)}
+
+
 def _row(doc, people, firms) -> dict:
+	partners = [
+		{"party": firms.get(s.partner_firm, s.partner_firm), "percent": s.percent, "amount": s.amount}
+		for s in doc.splits
+		if s.party_type == "Channel Partner"
+	]
 	return {
+		"has_commission_split": int(bool(partners)),
+		"partner_splits": partners,
+		"agent_share": _share(doc.splits, "Agent"),
+		"company_share": _share(doc.splits, "Company"),
+		"deal_status": doc.deal_status or "Active",
 		"name": doc.name,
 		"client": doc.client,
 		"client_name": frappe.db.get_value("Client", doc.client, "client_name") or doc.client,
@@ -126,18 +169,51 @@ def _options() -> dict:
 	}
 
 
-def _overview(include_archived=False) -> dict:
+def totals(rows) -> dict:
+	"""Total commission, what the channel partners are paid, the company share and the number of deals. A
+	cancelled deal counts for nothing."""
+	live = [r for r in rows if r["deal_status"] != CANCELLED]
+	return {
+		"total_commission": sum(r["commission_amount"] or 0 for r in live),
+		"partner_payout": sum(p["amount"] or 0 for r in live for p in r["partner_splits"]),
+		"company_share": sum(r["company_share"]["amount"] or 0 for r in live),
+		"count": len(rows),
+	}
+
+
+def _overview(include_archived=False, period="all") -> dict:
+	start, end = period_range(period)
 	filters = {} if include_archived else {"archived": 0}
+	if start:
+		filters["deal_date"] = ["between", [start, end]]
 	people, firms = _people(), _firms()
-	names = frappe.get_list("Deal", filters=filters, pluck="name", order_by="creation desc")
-	return {"deals": [_row(frappe.get_doc("Deal", n), people, firms) for n in names], **_options()}
+	names = frappe.get_list("Deal", filters=filters, pluck="name", order_by="deal_date desc, creation desc")
+	rows = [_row(frappe.get_doc("Deal", n), people, firms) for n in names]
+	return {
+		"deals": rows,
+		"totals": totals(rows),
+		"period": {
+			"key": period or "all",
+			"label": PERIODS.get(period, "All time"),
+			"start": str(start or ""),
+			"end": str(end or ""),
+		},
+		**_options(),
+	}
 
 
 @sellos_api(COMPANY_ADMIN)
-def deal_overview(include_archived=0):
+def deal_overview(include_archived=0, period="all"):
 	"""The deals with their commission splits, and what a deal and a split can be made from: the clients, units,
-	properties, agents and approved channel partner firms."""
-	return _overview(_flag(include_archived))
+	properties, agents and approved channel partner firms. `period` (day, week, month, year to date, or all)
+	limits the deals, and the totals, to those dated in it."""
+	return _overview(_flag(include_archived), period)
+
+
+@sellos_api(COMPANY_ADMIN)
+def get_deal(name):
+	"""One deal with its commission split, whatever its date."""
+	return {"deal": _row(_deal(name), _people(), _firms())}
 
 
 @sellos_api(COMPANY_ADMIN)

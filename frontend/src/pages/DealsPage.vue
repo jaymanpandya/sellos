@@ -21,6 +21,15 @@
 		</template>
 
 		<template v-if="!loadError" #kpis>
+			<PageTabs
+				v-model="period"
+				:tabs="periodTabs"
+				label="Period"
+				data-testid="sellos-deal-period"
+			/>
+			<p class="mb-ui-md ui-text-muted" data-testid="sellos-deal-period-dates">
+				{{ periodDates }}
+			</p>
 			<KpiStrip :items="kpis" data-testid="sellos-deal-stats" />
 		</template>
 
@@ -75,6 +84,7 @@
 		<DataTable
 			v-if="!loadError"
 			title="All deals"
+			dense
 			caption="Deals"
 			:columns="columns"
 			:rows="shown"
@@ -92,9 +102,52 @@
 			empty-testid="sellos-deal-empty"
 		>
 			<template #cell-client_name="{ row }">
-				<span class="block" data-testid="sellos-deal-title"
-					>{{ row.client_name }}, {{ row.target }}</span
+				<span class="block" data-testid="sellos-deal-title">{{ row.client_name }}</span>
+				<span class="block ui-text-muted ui-text-small">{{ row.target }}</span>
+			</template>
+			<template #cell-has_commission_split="{ row }">
+				<span data-testid="sellos-deal-has-split">{{
+					row.has_commission_split ? "Yes" : "No"
+				}}</span>
+			</template>
+			<template v-for="n in 3" :key="n" #[`cell-split${n}`]="{ row }">
+				<template v-if="row.partner_splits[n - 1]">
+					<span
+						class="block"
+						data-testid="sellos-deal-split"
+						data-party="Channel Partner"
+						>{{ row.partner_splits[n - 1].party }}</span
+					>
+					<span class="block ui-text-muted ui-text-small tabular-nums"
+						>{{ row.partner_splits[n - 1].percent }}% ·
+						{{ formatBudget(row.partner_splits[n - 1].amount) }}</span
+					>
+				</template>
+				<span v-else class="ui-text-muted">-</span>
+			</template>
+			<template #cell-agent_share="{ row }">
+				<span class="block tabular-nums" data-testid="sellos-deal-split" data-party="Agent"
+					>{{ row.agent_share.percent }}%</span
 				>
+				<span class="block ui-text-muted ui-text-small tabular-nums">{{
+					formatBudget(row.agent_share.amount)
+				}}</span>
+			</template>
+			<template #cell-company_share="{ row }">
+				<span
+					class="block tabular-nums"
+					data-testid="sellos-deal-split"
+					data-party="Company"
+					>{{ row.company_share.percent }}%</span
+				>
+				<span class="block ui-text-muted ui-text-small tabular-nums">{{
+					formatBudget(row.company_share.amount)
+				}}</span>
+			</template>
+			<template #cell-commission_amount="{ row }">
+				<span class="tabular-nums" data-testid="sellos-deal-money">{{
+					formatBudget(row.commission_amount)
+				}}</span>
 			</template>
 			<template #cell-approval_status="{ row }">
 				<StatusBadge
@@ -103,33 +156,10 @@
 					data-testid="sellos-deal-status"
 				/>
 			</template>
-			<template #cell-price="{ row }">
-				<span class="tabular-nums" data-testid="sellos-deal-money">{{
-					formatBudget(row.price)
-				}}</span>
-			</template>
-			<template #cell-commission_amount="{ row }">
-				<span class="tabular-nums">{{ formatMoney(row.commission_amount) }}</span>
-			</template>
-			<template #cell-splits="{ row }">
-				<ul class="space-y-1" data-testid="sellos-deal-splits">
-					<li
-						v-for="(s, n) in row.splits"
-						:key="n"
-						data-testid="sellos-deal-split"
-						:data-party="s.party_type"
-						class="ui-text-small"
-					>
-						{{ s.party_type }}: {{ s.party }}, {{ s.percent }}% ({{
-							formatMoney(s.amount)
-						}})
-					</li>
-				</ul>
-			</template>
 			<template #cell-approval="{ row }">
 				<p
 					v-if="row.approval_status === 'Approved'"
-					class="mb-ui-sm ui-text-muted"
+					class="mb-ui-sm ui-text-muted ui-text-small"
 					data-testid="sellos-deal-approved"
 				>
 					Approved by {{ row.approved_by_name }} on
@@ -140,17 +170,17 @@
 					type="button"
 					variant="primary"
 					data-testid="sellos-deal-approve"
-					@click="approve(row)"
+					@click.stop="approve(row)"
 				>
-					Approve the split
+					Approve
 				</AppButton>
 				<AppButton
 					v-else
 					type="button"
 					data-testid="sellos-deal-reopen"
-					@click="reopen(row)"
+					@click.stop="reopen(row)"
 				>
-					Reopen the split
+					Reopen
 				</AppButton>
 			</template>
 		</DataTable>
@@ -219,19 +249,34 @@
 					label="Agent share (%)"
 					data-testid="sellos-deal-agent-percent"
 				/>
-				<FormField
-					v-model="form.firm"
-					type="select"
-					label="Channel partner firm"
-					:options="firmOptions"
-					data-testid="sellos-deal-firm"
-				/>
-				<FormField
-					v-model="form.firm_percent"
-					type="number"
-					label="Channel partner share (%)"
-					data-testid="sellos-deal-firm-percent"
-				/>
+				<template v-for="(partner, i) in form.partners" :key="i">
+					<FormField
+						v-model="partner.firm"
+						type="select"
+						:label="i ? `Channel partner firm ${i + 1}` : 'Channel partner firm'"
+						:options="firmOptions"
+						:data-testid="i ? `sellos-deal-firm-${i + 1}` : 'sellos-deal-firm'"
+					/>
+					<FormField
+						v-model="partner.percent"
+						type="number"
+						:label="
+							i ? `Channel partner share ${i + 1} (%)` : 'Channel partner share (%)'
+						"
+						:data-testid="
+							i ? `sellos-deal-firm-percent-${i + 1}` : 'sellos-deal-firm-percent'
+						"
+					/>
+				</template>
+				<div v-if="form.partners.length < 3" class="md:col-span-2">
+					<AppButton
+						type="button"
+						data-testid="sellos-deal-add-partner"
+						@click="form.partners.push({ firm: '', percent: '' })"
+					>
+						Add another channel partner
+					</AppButton>
+				</div>
 				<FormField
 					v-model="form.company_percent"
 					type="number"
@@ -254,7 +299,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
@@ -266,11 +311,12 @@ import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import MoneyField from "../components/MoneyField.vue";
 import PageHeader from "../components/PageHeader.vue";
+import PageTabs from "../components/PageTabs.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { dealApi } from "../crm/dealsApi";
-import { formatBudget, formatDateTime, formatMoney } from "../format";
+import { formatBudget, formatDate, formatDateTime } from "../format";
 
 // Deals (SOS-P4-06). Every change is made on the server and the list read back. The server checks that the
 // shares add up to 100, so the total shown here only helps the person typing.
@@ -284,8 +330,7 @@ const blank = () => ({
 	commission_amount: "",
 	agent: "",
 	agent_percent: "",
-	firm: "",
-	firm_percent: "",
+	partners: [{ firm: "", percent: "" }],
 	company_percent: "",
 });
 const form = reactive(blank());
@@ -324,57 +369,87 @@ function removeChip(key) {
 
 const creating = ref(false);
 
-const kpis = computed(() => {
-	const rows = deals.value;
-	return [
-		{
-			label: "Deals",
-			value: rows.length,
-			caption: "recorded so far",
-			icon: "lucide-handshake",
-		},
-		{
-			label: "Pending approval",
-			value: rows.filter((d) => d.approval_status !== "Approved").length,
-			caption: "splits waiting for a Company Admin",
-			icon: "lucide-clock",
-			tone: "warning",
-		},
-		{
-			label: "Approved",
-			value: rows.filter((d) => d.approval_status === "Approved").length,
-			caption: "splits settled",
-			icon: "lucide-badge-check",
-			tone: "success",
-		},
-		{
-			label: "Commission",
-			value: formatMoney(rows.reduce((sum, d) => sum + Number(d.commission_amount || 0), 0)),
-			caption: "across these deals",
-			icon: "lucide-badge-indian-rupee",
-		},
-	];
+// The period (Month to date unless changed) limits the cards and the list, on the server.
+const periodTabs = [
+	{ key: "day", label: "Day to date" },
+	{ key: "week", label: "Week to date" },
+	{ key: "month", label: "Month to date" },
+	{ key: "year", label: "Year to date" },
+];
+const period = ref("month");
+const periodInfo = ref({ label: "", start: "", end: "" });
+const totals = ref({ total_commission: 0, partner_payout: 0, company_share: 0, count: 0 });
+const periodLabel = computed(() => periodInfo.value.label.toLowerCase());
+const periodDates = computed(() => {
+	const { start, end } = periodInfo.value;
+	if (!start) return "";
+	return start === end ? formatDate(start) : `${formatDate(start)} to ${formatDate(end)}`;
 });
+
+const kpis = computed(() => [
+	{
+		label: "Total commission",
+		value: formatBudget(totals.value.total_commission),
+		caption: period.value === "all" ? "all deals" : periodLabel.value,
+		icon: "lucide-badge-indian-rupee",
+	},
+	{
+		label: "Channel Partner payout",
+		value: formatBudget(totals.value.partner_payout),
+		caption: "paid out to partners",
+		icon: "lucide-users",
+	},
+	{
+		label: "Company share",
+		value: formatBudget(totals.value.company_share),
+		caption: "kept by the company",
+		icon: "lucide-landmark",
+		tone: "success",
+	},
+	{
+		label: "Deals",
+		value: totals.value.count,
+		caption: "in this period",
+		icon: "lucide-handshake",
+	},
+]);
 
 const columns = [
 	{ key: "client_name", label: "Deal", primary: true, sortable: true, wrap: true },
-	{ key: "approval_status", label: "Status", sortable: true },
 	{
-		key: "price",
-		label: "Price",
+		key: "has_commission_split",
+		label: "Commission split",
 		sortable: true,
-		align: "right",
-		sortValue: (d) => Number(d.price || 0),
+		sortValue: (d) => d.has_commission_split,
+	},
+	...[1, 2, 3].map((n) => ({
+		key: `split${n}`,
+		label: `Split ${n}`,
+		wrap: true,
+		sortable: true,
+		sortValue: (d) => Number(d.partner_splits[n - 1]?.amount || 0),
+	})),
+	{
+		key: "agent_share",
+		label: "Agent share",
+		sortable: true,
+		sortValue: (d) => Number(d.agent_share.amount || 0),
+	},
+	{
+		key: "company_share",
+		label: "Company share",
+		sortable: true,
+		sortValue: (d) => Number(d.company_share.amount || 0),
 	},
 	{
 		key: "commission_amount",
-		label: "Commission",
+		label: "Total commission",
 		sortable: true,
 		align: "right",
-		sortValue: (d) => Number(d.commission_amount || 0),
+		sortValue: amountOf,
 	},
-	{ key: "splits", label: "Commission split", wrap: true, class: "min-w-[14rem]" },
-	{ key: "approval", label: "Approval", wrap: true, class: "min-w-[14rem]" },
+	{ key: "approval_status", label: "Status", sortable: true },
+	{ key: "approval", label: "Approval", wrap: true },
 ];
 const rowAttrs = (d) => ({ "data-client": d.client_name, "data-status": d.approval_status });
 
@@ -401,7 +476,9 @@ const share = (v) => (v === "" || v == null ? 0 : Number(v));
 const total = computed(
 	() =>
 		Math.round(
-			(share(form.agent_percent) + share(form.firm_percent) + share(form.company_percent)) *
+			(share(form.agent_percent) +
+				form.partners.reduce((sum, p) => sum + share(p.percent), 0) +
+				share(form.company_percent)) *
 				100
 		) / 100
 );
@@ -409,8 +486,10 @@ const total = computed(
 async function load() {
 	loadError.value = "";
 	try {
-		const result = await dealApi.overview();
+		const result = await dealApi.overview(0, period.value);
 		deals.value = result.deals;
+		totals.value = result.totals;
+		periodInfo.value = result.period;
 		for (const key of Object.keys(options)) options[key] = result[key];
 	} catch (e) {
 		loadError.value = serverMessage(e, "The deals could not be loaded.");
@@ -435,12 +514,9 @@ function splits() {
 	const rows = [];
 	if (form.agent_percent !== "")
 		rows.push({ party_type: "Agent", agent: form.agent, percent: form.agent_percent });
-	if (form.firm_percent !== "")
-		rows.push({
-			party_type: "Channel Partner",
-			partner_firm: form.firm,
-			percent: form.firm_percent,
-		});
+	for (const p of form.partners)
+		if (p.percent !== "")
+			rows.push({ party_type: "Channel Partner", partner_firm: p.firm, percent: p.percent });
 	if (form.company_percent !== "")
 		rows.push({ party_type: "Company", percent: form.company_percent });
 	return rows;
@@ -483,5 +559,6 @@ const reopen = (d) =>
 		"The split could not be reopened."
 	);
 
+watch(period, load);
 onMounted(load);
 </script>

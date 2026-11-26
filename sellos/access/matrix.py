@@ -224,6 +224,7 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.mandates.set_mandate_archived": _ADMIN_ONLY,
 	# SOS-P4-06: deals and their commission splits. A Company Admin only.
 	"sellos.inventory.deals.deal_overview": _ADMIN_ONLY,
+	"sellos.inventory.deals.get_deal": _ADMIN_ONLY,
 	"sellos.inventory.deals.save_deal": _ADMIN_ONLY,
 	"sellos.inventory.deals.approve_splits": _ADMIN_ONLY,
 	"sellos.inventory.deals.reopen_splits": _ADMIN_ONLY,

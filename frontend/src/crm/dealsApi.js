@@ -10,7 +10,9 @@ const call = (method, params = {}) =>
 	});
 
 export const dealApi = {
-	overview: (include_archived = 0) => call("deal_overview", { include_archived }),
+	overview: (include_archived = 0, period = "all") =>
+		call("deal_overview", { include_archived, period }),
+	get: (name) => call("get_deal", { name }),
 	save: (values, name = null) => call("save_deal", { values, name }),
 	approve: (name) => call("approve_splits", { name }),
 	reopen: (name) => call("reopen_splits", { name }),
