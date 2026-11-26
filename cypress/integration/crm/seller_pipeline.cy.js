@@ -4,6 +4,10 @@
 // afterwards.
 context("SOS-P4-04: seller pipeline", () => {
 	const row = (title) => cy.get(`[data-testid="sellos-seller-row"][data-title^="${title}"]`);
+	const menu = (name, label) => {
+		row(name).find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', label).click();
+	};
 	const openSellers = () => {
 		cy.intercept("POST", "**/sellos.crm.api.list_leads*").as("sellers");
 		cy.visit("/sellos/crm/sellers");
@@ -18,7 +22,8 @@ context("SOS-P4-04: seller pipeline", () => {
 			const name = made.client_name;
 			cy.signInFresh("company_admin");
 			openSellers();
-			cy.getByTestId("seller-stage-count").should("have.length", 10);
+			// The stage block is gone: the Filters button carries the stage filter, one option per stage.
+			cy.getByTestId("seller-stage-count").should("not.exist");
 
 			cy.intercept("POST", "**/sellos.crm.api.save_lead*").as("save");
 			cy.getByTestId("seller-new").click();
@@ -29,23 +34,31 @@ context("SOS-P4-04: seller pipeline", () => {
 			row(name).should("have.attr", "data-stage", "New owner enquiry");
 
 			cy.intercept("POST", "**/sellos.crm.api.move_lead_stage*").as("move");
-			row(name).find('[data-testid="sellos-seller-move-to"]').select("Qualified");
-			row(name).find('[data-testid="sellos-seller-move"]').click();
+			// A row holds no button but its menu; moving a stage is in the menu and opens a small drawer.
+			row(name)
+				.find("button:not([data-testid='sellos-row-menu-button'])")
+				.should("not.exist");
+			menu(name, "Move stage");
+			cy.getByTestId("seller-move-to").select("Qualified");
+			cy.getByTestId("seller-move-note").type("Spoke to the owner");
+			cy.getByTestId("seller-move").click();
 			cy.wait("@move").its("response.statusCode").should("eq", 200);
 			row(name).should("have.attr", "data-stage", "Qualified");
 			cy.getByTestId("seller-notice").should("contain", "moved to Qualified");
 
 			// Closed lost needs a reason.
-			row(name).find('[data-testid="sellos-seller-move-to"]').select("Closed lost");
+			menu(name, "Move stage");
+			cy.getByTestId("seller-move-to").select("Closed lost");
 			cy.expectApiStatus("sellos.crm.api.move_lead_stage", 417);
-			row(name).find('[data-testid="sellos-seller-move"]').click();
+			cy.getByTestId("seller-move").click();
 			cy.wait("@move").its("response.statusCode").should("eq", 417);
 			cy.getByTestId("seller-error").should("contain", "lost reason");
+			cy.contains("button", "Cancel").click();
 			row(name).should("have.attr", "data-stage", "Qualified");
 
 			// The history names both moves' stages.
-			row(name).find('[data-testid="sellos-seller-log-toggle"]').click();
-			row(name)
+			menu(name, "Stage history");
+			cy.getByTestId("seller-log")
 				.find('[data-testid="sellos-seller-log-row"]')
 				.should("have.length", 1)
 				.and("contain", "New owner enquiry")

@@ -173,7 +173,7 @@
    "fieldtype": "Select",
    "in_list_view": 0,
    "label": "Signing status",
-   "options": "Not sent\nSent\nViewed\nSigned\nDeclined\nExpired",
+   "options": "Not sent\nSent\nViewed\nSigned\nSigned offline\nDeclined\nExpired",
    "read_only": 1
   },
   {

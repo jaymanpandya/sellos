@@ -20,6 +20,12 @@ context("SOS-P1-26: the Today screen", () => {
 			.get(`[data-testid="sellos-today-section-${section}"]`)
 			.contains("[data-testid=sellos-today-row]", name);
 
+	// Every row action is in the row menu (kebab) of the row.
+	const menu = (rowEl, label) => {
+		rowEl.find("[data-testid=sellos-row-menu-button]").click();
+		cy.contains("[role=menuitem]", label).click();
+	};
+
 	it("lands an agent on Today with their own lists, and counts that match", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos");
@@ -51,9 +57,8 @@ context("SOS-P1-26: the Today screen", () => {
 	it("shows an agent the masked number and never the full one", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos");
-		rowFor("new_leads", seed.mine_new).find("[data-testid=sellos-today-call]").click();
-		rowFor("new_leads", seed.mine_new)
-			.find("[data-testid=sellos-today-number]")
+		menu(rowFor("new_leads", seed.mine_new), "Call");
+		cy.get("[data-testid=sellos-today-number]")
 			.should("be.visible")
 			.invoke("text")
 			.then((text) => {
@@ -65,7 +70,7 @@ context("SOS-P1-26: the Today screen", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos");
 		cy.intercept("POST", "**/api/method/sellos.crm.api.log_call*").as("logCall");
-		rowFor("new_leads", seed.mine_new).find("[data-testid=sellos-today-log]").click();
+		menu(rowFor("new_leads", seed.mine_new), "Log a call");
 		cy.getByTestId("today-log-outcome").select("Wrong number");
 		cy.getByTestId("today-log-notes").type("Gate Today call");
 		cy.getByTestId("today-log-save").click();
@@ -73,7 +78,7 @@ context("SOS-P1-26: the Today screen", () => {
 		cy.getByTestId("today-log-form").should("not.exist");
 
 		cy.intercept("POST", "**/api/method/sellos.crm.api.complete_follow_up*").as("done");
-		rowFor("follow_ups", "Gate Today day only").find("[data-testid=sellos-today-log]").click();
+		menu(rowFor("follow_ups", "Gate Today day only"), "Log a call");
 		cy.getByTestId("today-log-notes").type("Gate Today done in place");
 		cy.getByTestId("today-log-outcome").select("Wrong number");
 		cy.getByTestId("today-log-save").click();

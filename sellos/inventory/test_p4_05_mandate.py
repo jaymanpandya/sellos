@@ -130,6 +130,44 @@ class TestTheSignedDocument(MandateCase):
 			mandates.sign_mandate(name, "p405_signed.pdf", "not base64 !!")
 		self.assertEqual(frappe.db.get_value("Mandate", name, "status"), "Draft")
 
+	def test_a_mandate_signed_by_an_uploaded_copy_is_signed_offline_not_not_sent(self):
+		"""SOS-LOOP (26 Nov 2026): a Signed mandate never reads "Not sent". Uploaded on paper it is "Signed offline"
+		with its copy; a draft that was never sent offers no signed copy."""
+		name = self.mandate(self.agent_seller())
+		draft = self.row(name)
+		self.assertEqual(
+			(draft["signing_status"], draft["signed_document"], draft["signed_copy"]), ("Not sent", "", "")
+		)
+		self.sign(name)
+		row = self.row(name)
+		self.assertEqual((row["status"], row["signing_status"]), ("Signed", "Signed offline"))
+		self.assertTrue(row["signed_document"])
+
+	def test_no_mandate_is_signed_with_the_signing_state_not_sent(self):
+		"""SOS-LOOP (26 Nov 2026): over every mandate of the site, the seeds included. A Signed mandate has a signed
+		document and a true signing state: "Signed" through DocuSeal with a submission record, or "Signed offline"
+		with the uploaded copy. A mandate that is not signed has no signed document."""
+		for m in frappe.get_all(
+			"Mandate",
+			fields=["name", "status", "signing_status", "signed_document", "docuseal_submission_id"],
+			limit_page_length=0,
+		):
+			state = m.signing_status or "Not sent"
+			if m.status == "Signed":
+				self.assertNotEqual(
+					state, "Not sent", f"{m.name} is Signed but its signing state is Not sent"
+				)
+				self.assertTrue(m.signed_document, f"{m.name} is Signed with no signed document")
+				if state == "Signed":
+					self.assertTrue(
+						m.docuseal_submission_id, f"{m.name} is Signed with no DocuSeal submission"
+					)
+				else:
+					self.assertEqual(state, "Signed offline", m.name)
+			else:
+				self.assertFalse(m.signed_document, f"{m.name} is a draft with a signed document")
+				self.assertNotIn(state, ("Signed", "Signed offline"), m.name)
+
 	def test_the_record_itself_refuses_signed_with_no_document(self):
 		name = self.mandate(self.agent_seller())
 		doc = frappe.get_doc("Mandate", name)

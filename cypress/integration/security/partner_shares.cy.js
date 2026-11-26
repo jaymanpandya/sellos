@@ -6,6 +6,11 @@ context("SOS-P7-03: share projects, units and collateral with channel partners",
 
 	const row = (project) =>
 		cy.get(`[data-testid="sellos-shares-row"][data-project="${project}"]`);
+	// A row action is in the row menu (three dots), the only control in a row.
+	const menu = (project, label) => {
+		row(project).find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', label).click();
+	};
 	const openShares = () => {
 		cy.signInFresh("company_admin");
 		cy.intercept("POST", "**/sellos.inventory.partner_shares.partner_share_options*").as(
@@ -49,11 +54,10 @@ context("SOS-P7-03: share projects, units and collateral with channel partners",
 		cy.getByTestId("shares-submit").click();
 		cy.wait("@share").its("response.statusCode").should("eq", 200);
 		cy.getByTestId("shares-notice").should("contain", "was shared");
-		row(shared)
-			.should("have.attr", "data-status", "Active")
-			.within(() => {
-				cy.getByTestId("shares-log-row").should("have.length", 1);
-			});
+		row(shared).should("have.attr", "data-status", "Active");
+		menu(shared, "Log");
+		cy.getByTestId("shares-log-row").should("have.length", 1);
+		cy.getByTestId("shares-log-close").click();
 
 		openShared();
 		cy.getByTestId("partner-shared-row").should("have.length", 1);
@@ -61,7 +65,10 @@ context("SOS-P7-03: share projects, units and collateral with channel partners",
 		cy.get(`[data-testid="sellos-partner-shared-row"][data-name="${other}"]`).should(
 			"not.exist"
 		);
-		cy.getByTestId("partner-shared-open").click();
+		cy.getByTestId("partner-shared-row")
+			.find('[data-testid="sellos-row-menu-button"]')
+			.click();
+		cy.contains('[role="menuitem"]', "Open").click();
 		cy.getByTestId("partner-shared-unit").should("have.length", 1);
 		cy.getByTestId("partner-shared-price").should("contain", "12000");
 		cy.getByTestId("partner-shared-brochure").should("have.length", 1);
@@ -86,13 +93,14 @@ context("SOS-P7-03: share projects, units and collateral with channel partners",
 		cy.intercept("POST", "**/sellos.inventory.partner_shares.withdraw_partner_share*").as(
 			"withdraw"
 		);
-		row(shared).find('[data-testid="sellos-shares-reason"]').type("Sold out");
-		row(shared).find('[data-testid="sellos-shares-withdraw"]').click();
+		menu(shared, "Withdraw");
+		cy.getByTestId("shares-reason").type("Sold out");
+		cy.getByTestId("shares-withdraw").click();
 		cy.wait("@withdraw").its("response.statusCode").should("eq", 200);
-		row(shared)
-			.should("have.attr", "data-status", "Withdrawn")
-			.find('[data-testid="sellos-shares-log-row"]')
-			.should("have.length", 2);
+		row(shared).should("have.attr", "data-status", "Withdrawn");
+		menu(shared, "Log");
+		cy.getByTestId("shares-log-row").should("have.length", 2);
+		cy.getByTestId("shares-log-close").click();
 		cy.bench("sellos.tests.ui_fixtures.gate_partner_shares_state", { project: shared }).then(
 			(state) => {
 				expect(state[0][0]).to.eq("Withdrawn");

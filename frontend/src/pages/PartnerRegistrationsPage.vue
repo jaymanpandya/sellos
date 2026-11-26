@@ -46,7 +46,7 @@
 		</template>
 
 		<p
-			v-if="error && !editingSettings"
+			v-if="error && !editingSettings && !rejecting"
 			role="alert"
 			data-testid="sellos-registrations-error"
 			class="mb-ui-md ui-text-error"
@@ -70,6 +70,7 @@
 			title="Registrations"
 			:columns="columns"
 			:rows="shown"
+			:actions="rowActions"
 			:loading="!loaded"
 			:row-attrs="(r) => ({ 'data-status': r.status })"
 			empty-title="No registrations yet"
@@ -80,12 +81,12 @@
 			empty-testid="sellos-registrations-empty"
 		>
 			<template #cell-buyer_name="{ row: r }">
-				<span class="ui-text-strong" data-testid="sellos-registrations-buyer">
-					{{ r.buyer_name }}
-				</span>
-				<span class="block ui-text-muted" data-testid="sellos-registrations-phone">
-					{{ r.phone }}
-				</span>
+				<NameCell
+					:name="r.buyer_name"
+					:identifier="r.phone"
+					:detail="r.project_of_interest"
+					data-testid="sellos-registrations-buyer"
+				/>
 			</template>
 			<template #cell-status="{ row: r }">
 				<StatusBadge
@@ -95,75 +96,96 @@
 				/>
 			</template>
 			<template #cell-firm_name="{ row: r }">
-				<p class="ui-text-muted">
-					Registered by {{ r.firm_name }} ({{ r.partner_user }}).
-					<span v-if="r.project_of_interest">Project: {{ r.project_of_interest }}.</span>
-					<span data-testid="sellos-registrations-consent">
-						Consent: {{ r.consent.status }}.
-					</span>
-				</p>
-				<p v-if="r.note" class="ui-text-muted">{{ r.note }}</p>
-				<p v-if="r.protected_until" class="ui-text-muted">
-					<span v-if="r.protected">Protected until</span>
-					<span v-else>Protection ended</span>
-					{{ formatDate(r.protected_until) }}.
-				</p>
-				<p
-					v-if="r.rejection_reason"
-					class="ui-text-muted"
-					data-testid="sellos-registrations-reason"
-				>
-					Rejected: {{ r.rejection_reason }}
-				</p>
-				<details class="mt-1" data-testid="sellos-registrations-log">
-					<summary class="cursor-pointer ui-text-muted">Log</summary>
-					<ul class="mt-1 space-y-1 ui-text-muted">
-						<li
-							v-for="(l, i) in r.log"
-							:key="i"
-							data-testid="sellos-registrations-log-row"
-						>
-							{{ formatWhen(l.changed_on) }}: {{ l.changed_by }}
-							<span v-if="l.from_status !== l.to_status">
-								moved it
-								<span v-if="l.from_status">from {{ l.from_status }}</span>
-								to {{ l.to_status }}
-							</span>
-							<span v-if="l.note"> ({{ l.note }})</span>
-						</li>
-					</ul>
-				</details>
+				<CellText :value="r.firm_name" />
+				<CellText :value="r.partner_user" muted blank />
 			</template>
-			<template #cell-actions="{ row: r }">
-				<div
-					v-if="r.status === 'Registered'"
-					class="flex flex-wrap items-center gap-ui-sm"
-				>
-					<AppButton
-						type="button"
-						variant="primary"
-						data-testid="sellos-registrations-approve"
-						@click="act(() => api.approve(r.name), `${r.buyer_name} was approved.`)"
-					>
-						Approve
-					</AppButton>
-					<FormField
-						v-model="reasons[r.name]"
-						compact
-						label="Reason for a rejection"
-						data-testid="sellos-registrations-reason-input"
-					/>
-					<AppButton
-						type="button"
-						variant="danger"
-						data-testid="sellos-registrations-reject"
-						@click="reject(r)"
-					>
-						Reject
-					</AppButton>
-				</div>
+			<template #cell-consent="{ row: r }">
+				<CellText
+					:value="`Consent: ${r.consent.status}`"
+					data-testid="sellos-registrations-consent"
+				/>
+			</template>
+			<template #cell-protection="{ row: r }">
+				<CellText
+					v-if="r.protected_until"
+					:value="`${r.protected ? 'Protected until' : 'Protection ended'} ${formatDate(
+						r.protected_until
+					)}`"
+					:lines="2"
+				/>
+			</template>
+			<template #cell-note="{ row: r }">
+				<CellText
+					v-if="r.rejection_reason"
+					:value="`Rejected: ${r.rejection_reason}`"
+					:lines="2"
+					muted
+					data-testid="sellos-registrations-reason"
+				/>
+				<CellText v-else :value="r.note" :lines="2" muted blank />
 			</template>
 		</DataTable>
+
+		<!-- Rejecting a registration needs a reason: a small drawer opened from the row menu. -->
+		<FormDrawer
+			:open="Boolean(rejecting)"
+			:title="rejecting ? `Reject ${rejecting.buyer_name}` : 'Reject registration'"
+			text="The partner sees the reason."
+			submit-label="Reject"
+			testid="sellos-registrations-reject-drawer"
+			submit-testid="sellos-registrations-reject"
+			@close="closeReject"
+			@submit="reject"
+		>
+			<FormSection title="Reason">
+				<FormField
+					v-model="reason"
+					label="Reason for a rejection"
+					class="md:col-span-2"
+					data-testid="sellos-registrations-reason-input"
+				/>
+			</FormSection>
+			<p
+				v-if="error"
+				role="alert"
+				data-testid="sellos-registrations-error"
+				class="ui-text-error"
+			>
+				{{ error }}
+			</p>
+		</FormDrawer>
+
+		<!-- The log of one registration: read only, opened from the row menu. -->
+		<FormDrawer
+			:open="Boolean(viewing)"
+			:title="viewing ? `${viewing.buyer_name}: log` : 'Log'"
+			submit-label="Close"
+			testid="sellos-registrations-log-drawer"
+			submit-testid="sellos-registrations-log-close"
+			@close="viewing = null"
+			@submit="viewing = null"
+		>
+			<FormSection v-if="viewing" title="Log">
+				<ul
+					class="space-y-1 ui-text-muted md:col-span-2"
+					data-testid="sellos-registrations-log"
+				>
+					<li
+						v-for="(l, i) in viewing.log"
+						:key="i"
+						data-testid="sellos-registrations-log-row"
+					>
+						{{ formatWhen(l.changed_on) }}: {{ l.changed_by }}
+						<span v-if="l.from_status !== l.to_status">
+							moved it
+							<span v-if="l.from_status">from {{ l.from_status }}</span>
+							to {{ l.to_status }}
+						</span>
+						<span v-if="l.note"> ({{ l.note }})</span>
+					</li>
+				</ul>
+			</FormSection>
+		</FormDrawer>
 
 		<!-- The programme's settings are a drawer, not a form under the list. -->
 		<FormDrawer
@@ -223,6 +245,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
+import CellText from "../components/CellText.vue";
+import NameCell from "../components/NameCell.vue";
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
@@ -255,7 +279,9 @@ const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
 const editingSettings = ref(false);
-const reasons = reactive({});
+const rejecting = ref(null);
+const viewing = ref(null);
+const reason = ref("");
 const settings = reactive({
 	partner_lead_limit: "",
 	partner_protection_days: "",
@@ -296,8 +322,10 @@ function removeChip(key) {
 const columns = [
 	{ key: "buyer_name", label: "Buyer", primary: true, sortable: true },
 	{ key: "status", label: "Status", sortable: true },
-	{ key: "firm_name", label: "Registered by", wrap: true },
-	{ key: "actions", label: "Decision", wrap: true },
+	{ key: "firm_name", label: "Registered by" },
+	{ key: "consent", label: "Consent" },
+	{ key: "protection", label: "Protection" },
+	{ key: "note", label: "Note" },
 ];
 
 // Four cards at most: the stages a registration passes through. Expired and Rejected stay in the table.
@@ -362,14 +390,41 @@ async function act(action, message, fallback = "The change could not be made.") 
 	}
 }
 
-const reject = async (r) => {
+function openReject(r) {
+	error.value = "";
+	notice.value = "";
+	reason.value = "";
+	rejecting.value = r;
+}
+function closeReject() {
+	rejecting.value = null;
+	error.value = "";
+}
+
+const reject = async () => {
+	const r = rejecting.value;
+	if (!r) return;
 	const done = await act(
-		() => api.reject(r.name, reasons[r.name] || ""),
+		() => api.reject(r.name, reason.value || ""),
 		`${r.buyer_name} was rejected.`,
 		"The registration could not be rejected."
 	);
-	if (done) delete reasons[r.name];
+	if (done) rejecting.value = null;
 };
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rowActions = (r) => [
+	...(r.status === "Registered"
+		? [
+				{
+					label: "Approve",
+					onClick: () => act(() => api.approve(r.name), `${r.buyer_name} was approved.`),
+				},
+				{ label: "Reject", onClick: () => openReject(r) },
+		  ]
+		: []),
+	{ label: "Log", onClick: () => (viewing.value = r) },
+];
 
 async function saveSettings() {
 	error.value = "";

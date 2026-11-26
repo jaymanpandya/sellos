@@ -4,11 +4,21 @@
 // (names start with "Gate Seller ") are removed afterwards.
 context("SOS-P4-05: mandates and the Private Sale Dossier", () => {
 	const row = (title) => cy.get(`[data-testid="sellos-mandate-row"][data-title="${title}"]`);
-	// Signing and the Dossier are in a drawer opened from the row (design system pass).
+	// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists"): the signature and the Dossier are in a
+	// drawer opened from "Record signature manually", and a seller moves stage from "Move stage".
 	const drawer = () => cy.get('[data-testid="sellos-mandate-drawer"]');
-	const openDrawer = (title) => row(title).find('[data-testid="sellos-mandate-manage"]').click();
+	const menu = (rowEl, label) => {
+		rowEl.find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', label).click();
+	};
+	const openDrawer = (title) => menu(row(title), "Record signature manually");
 	const sellerRow = (title) =>
 		cy.get(`[data-testid="sellos-seller-row"][data-title="${title}"]`);
+	const moveSeller = (title, stage) => {
+		menu(sellerRow(title), "Move stage");
+		cy.getByTestId("seller-move-to").select(stage);
+		cy.getByTestId("seller-move").click();
+	};
 	const openMandates = () => {
 		cy.intercept("POST", "**/sellos.inventory.mandates.mandate_overview*").as("overview");
 		cy.visit("/sellos/crm/mandates");
@@ -36,7 +46,13 @@ context("SOS-P4-05: mandates and the Private Sale Dossier", () => {
 			row(title).should("have.attr", "data-status", "Draft");
 			row(title)
 				.find('[data-testid="sellos-mandate-terms"]')
-				.should("contain", "Open, 12 months");
+				.should("contain", "Open")
+				.and("contain", "12 months")
+				.and("contain", "2%");
+			// A draft that is not sent offers no signed copy, and no button sits in the row but the menu.
+			row(title)
+				.find("button:not([data-testid='sellos-row-menu-button'])")
+				.should("not.exist");
 
 			// The Dossier is hidden until it is signed: a note can be kept, but is not shown.
 			openDrawer(title);
@@ -72,8 +88,7 @@ context("SOS-P4-05: mandates and the Private Sale Dossier", () => {
 			cy.wait("@sellers");
 			cy.intercept("POST", "**/sellos.crm.api.move_lead_stage*").as("move");
 			cy.expectApiStatus("sellos.crm.api.move_lead_stage", 417);
-			sellerRow(title).find('[data-testid="sellos-seller-move-to"]').select("Listed");
-			sellerRow(title).find('[data-testid="sellos-seller-move"]').click();
+			moveSeller(title, "Listed");
 			cy.wait("@move").its("response.statusCode").should("eq", 417);
 			cy.getByTestId("seller-error").should("contain", "signed mandate");
 			sellerRow(title).should("have.attr", "data-stage", "New owner enquiry");
@@ -109,8 +124,7 @@ context("SOS-P4-05: mandates and the Private Sale Dossier", () => {
 			// Now the seller reaches Listed.
 			cy.visit("/sellos/crm/sellers");
 			cy.wait("@sellers");
-			sellerRow(title).find('[data-testid="sellos-seller-move-to"]').select("Listed");
-			sellerRow(title).find('[data-testid="sellos-seller-move"]').click();
+			moveSeller(title, "Listed");
 			cy.wait("@move").its("response.statusCode").should("eq", 200);
 			sellerRow(title).should("have.attr", "data-stage", "Listed");
 		});

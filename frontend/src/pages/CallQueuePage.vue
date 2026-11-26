@@ -88,10 +88,17 @@
 				}}</span>
 			</template>
 			<template #cell-lead_title="{ row }">
-				<span data-testid="sellos-queue-lead">{{ row.lead_name || row.lead_title }}</span>
-				<span v-if="row.lead_source" class="block ui-text-muted">{{
-					row.lead_source
-				}}</span>
+				<NameCell
+					:name="row.lead_name || row.lead_title"
+					:identifier="row.phone"
+					data-testid="sellos-queue-lead"
+				/>
+			</template>
+			<template #cell-source="{ row }">
+				<CellText :value="row.lead_source" />
+			</template>
+			<template #cell-stage="{ row }">
+				<CellText :value="row.stage" />
 			</template>
 			<template #cell-consent_status="{ row }">
 				<StatusBadge
@@ -101,14 +108,12 @@
 					:data-level="row.consent_warning || 'none'"
 					:title="row.consent_message"
 				/>
-				<p
+				<CellText
 					v-if="row.consent_message"
-					class="mt-1 ui-text-small"
+					:value="row.consent_message"
 					:class="row.consent_warning === 'red' ? 'ui-text-error' : 'ui-text-muted'"
 					data-testid="sellos-queue-warning"
-				>
-					{{ row.consent_message }}
-				</p>
+				/>
 			</template>
 			<template #cell-time_left="{ row }">
 				<span
@@ -124,48 +129,45 @@
 					>No expiry</span
 				>
 			</template>
-			<template #cell-call="{ row }">
-				<AppButton
-					type="button"
-					variant="primary"
-					data-testid="sellos-queue-call"
-					:aria-expanded="shown.has(row.lead)"
-					@click="toggle(row.lead)"
-				>
-					<template #prefix
-						><span class="lucide-phone icon-inherit size-4" aria-hidden="true"
-					/></template>
-					Call
-				</AppButton>
-				<p
-					v-if="shown.has(row.lead)"
-					class="mt-ui-sm ui-text-small"
-					data-testid="sellos-queue-number"
-				>
-					<template v-if="row.phone">
-						<a v-if="view.full_numbers" :href="`tel:${row.phone}`" class="ui-link">{{
-							row.phone
-						}}</a>
-						<span v-else>{{ row.phone }}</span>
-						<span v-if="row.overseas_phone"> · {{ row.overseas_phone }}</span>
-					</template>
-					<template v-else>No phone</template>
-				</p>
-			</template>
 		</DataTable>
+
+		<!-- Calling a lead: the number to dial, from the row menu. A warning never stops a call. -->
+		<FormDrawer
+			:open="Boolean(calling)"
+			:title="calling ? `Call ${calling.lead_name || calling.lead_title}` : 'Call'"
+			text="The number to dial. A consent warning never stops a call."
+			submit-label="Done"
+			testid="sellos-queue-call-drawer"
+			submit-testid="sellos-queue-call-done"
+			@close="calling = null"
+			@submit="calling = null"
+		>
+			<p v-if="calling" class="ui-text-body" data-testid="sellos-queue-number">
+				<template v-if="calling.phone">
+					<a v-if="view.full_numbers" :href="`tel:${calling.phone}`" class="ui-link">{{
+						calling.phone
+					}}</a>
+					<span v-else>{{ calling.phone }}</span>
+					<span v-if="calling.overseas_phone"> · {{ calling.overseas_phone }}</span>
+				</template>
+				<template v-else>No phone</template>
+			</p>
+		</FormDrawer>
 	</PageTemplate>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
-import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import FilterBar from "../components/FilterBar.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
+import NameCell from "../components/NameCell.vue";
 import Notice from "../components/Notice.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
@@ -177,7 +179,7 @@ import { setQueueCount } from "../navCounts";
 // explicit stop request, amber is consent not established. Neither hides a lead or disables Call.
 const view = ref(null);
 const error = ref("");
-const shown = reactive(new Set());
+const calling = ref(null);
 
 const rows = computed(() => view.value?.leads || []);
 const router = useRouter();
@@ -238,6 +240,7 @@ function removeChip(key) {
 	refs[key].value = "";
 }
 const rowActions = (row) => [
+	{ label: "Call", onClick: () => (calling.value = row) },
 	{ label: "Open lead", onClick: () => router.push(`/crm/leads/${row.lead}`) },
 ];
 const toneOf = (level) => (level === "red" ? "danger" : level === "amber" ? "warning" : "neutral");
@@ -245,10 +248,10 @@ const toneOf = (level) => (level === "red" ? "danger" : level === "amber" ? "war
 const columns = [
 	{ key: "position", label: "#" },
 	{ key: "lead_title", label: "Lead", primary: true },
+	{ key: "source", label: "Source" },
 	{ key: "stage", label: "Stage" },
 	{ key: "consent_status", label: "Consent", wrap: true },
 	{ key: "time_left", label: "Consent time left" },
-	{ key: "call", label: "Call", wrap: true },
 ];
 
 const kpis = computed(() => {
@@ -283,11 +286,6 @@ const kpis = computed(() => {
 
 const rowTo = (row) => `/crm/leads/${row.lead}`;
 const rowAttrs = (row) => ({ "data-lead": row.lead, "data-status": row.consent_status });
-
-function toggle(lead) {
-	if (shown.has(lead)) shown.delete(lead);
-	else shown.add(lead);
-}
 
 async function load() {
 	error.value = "";

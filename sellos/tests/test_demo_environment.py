@@ -387,7 +387,54 @@ class TestDemoSeedAndReset(unittest.TestCase):
 			0,
 		)
 		signing = {r[0] for r in self.query(site, "select distinct signing_status from tabMandate")}
-		self.assertGreaterEqual(signing, {"Signed", "Sent", "Viewed"})
+		self.assertGreaterEqual(
+			signing, {"Signed", "Signed offline", "Sent", "Viewed", "Declined", "Expired"}
+		)
+		self.assertGreaterEqual(signing, {"Not sent"})
+		# SOS-LOOP (26 Nov 2026): a Signed mandate has a signed document and a true signing state, and never
+		# reads "Not sent". Signed through DocuSeal it has a submission record; signed offline it has none.
+		self.assertEqual(
+			self.query(
+				site,
+				"select name from tabMandate where status = 'Signed' and (signing_status in ('Not sent', '') "
+				"or signing_status is null or signed_document is null or signed_document = '')",
+			),
+			[],
+		)
+		self.assertEqual(
+			self.query(
+				site,
+				"select name from tabMandate where signing_status = 'Signed' "
+				"and (docuseal_submission_id is null or docuseal_submission_id = '')",
+			),
+			[],
+		)
+		self.assertEqual(
+			self.query(
+				site,
+				"select name from tabMandate where status != 'Signed' and signed_document is not null "
+				"and signed_document != ''",
+			),
+			[],
+		)
+		# A person is a plain name. The source is its own field: no Client or Lead name ends in a source word.
+		sources = [r[0] for r in self.query(site, "select name from `tabLead Source`")]
+		sources += ["Referral", "Walk in", "Portal", "Website", "Facebook", "Instagram", "Walk-in"]
+		names = [r[0] or "" for r in self.query(site, "select client_name from tabClient")]
+		names += [r[0] or "" for r in self.query(site, "select lead_title from tabLead")]
+		self.assertGreater(len(names), 100)
+		for name in names:
+			self.assertRegex(name, r"^[A-Za-z][A-Za-z .'-]*$", name)
+			for source in sources:
+				self.assertFalse(name.lower().endswith(" " + source.lower()), f"{name!r} ends in {source!r}")
+		self.assertEqual(
+			self.query(
+				site,
+				"select l.name from tabLead l join tabClient c on c.name = l.client "
+				"where l.lead_title != c.client_name",
+			),
+			[],
+		)
 		self.assertGreater(
 			self.query(site, "select count(*) from tabMandate where dossier_version > 0")[0][0], 0
 		)

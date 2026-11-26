@@ -81,6 +81,7 @@
 					})
 				"
 				:row-name="(u) => `unit ${u.unit_number}`"
+				:actions="unitActions"
 				empty-title="No units yet"
 				empty-text="Add the first unit."
 				empty-icon="lucide-door-open"
@@ -88,9 +89,7 @@
 				row-testid="sellos-unit-row"
 			>
 				<template #cell-unit_number="{ row }">
-					<span class="ui-text-strong" data-testid="sellos-unit-number">{{
-						row.unit_number
-					}}</span>
+					<NameCell :name="String(row.unit_number)" data-testid="sellos-unit-number" />
 				</template>
 				<template #cell-status="{ row }">
 					<StatusBadge
@@ -100,61 +99,72 @@
 					/>
 				</template>
 				<template #cell-configuration="{ row }">
-					<span class="block">{{ row.configuration || "No configuration" }}</span>
-					<span class="block ui-text-muted">
-						{{ row.carpet_area }} sq ft, floor {{ row.floor ?? "-" }},
-						{{ row.parking }}
-						parking
-					</span>
-				</template>
-				<template #cell-cost_sheet="{ row }">
-					<router-link
-						:to="{ name: 'cost-sheet', params: { unit: row.name } }"
-						class="ui-link ui-text-strong"
-						data-testid="sellos-unit-cost-sheet"
-					>
-						Cost sheet
-					</router-link>
-				</template>
-				<template #cell-change="{ row }">
-					<div class="flex w-44 flex-col items-start gap-ui-sm">
-						<FormField
-							v-model="reasons[row.name]"
-							label="Reason (optional)"
-							class="w-full"
-							data-testid="sellos-unit-reason"
-						/>
-						<AppButton
-							v-for="s in otherStatuses(row.status)"
-							:key="s"
-							type="button"
-							:data-testid="`sellos-unit-set-${s.toLowerCase()}`"
-							@click="changeStatus(row, s)"
-						>
-							Mark {{ s }}
-						</AppButton>
-					</div>
-				</template>
-				<template #cell-log="{ row }">
-					<details data-testid="sellos-unit-log">
-						<summary class="cursor-pointer ui-text-muted">Status log</summary>
-						<ul class="mt-1 space-y-1 ui-text-muted">
-							<li
-								v-for="(l, i) in row.log"
-								:key="i"
-								data-testid="sellos-unit-log-row"
-							>
-								{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}
-								<span v-if="l.from_status"
-									>moved it from {{ l.from_status }} to</span
-								>
-								<span v-else>set it</span>
-								{{ l.to_status }}<span v-if="l.reason"> ({{ l.reason }})</span>
-							</li>
-						</ul>
-					</details>
+					<CellText :value="row.configuration" />
+					<CellText
+						muted
+						:value="
+							[
+								`${row.carpet_area} sq ft`,
+								row.floor === null || row.floor === undefined || row.floor === ''
+									? ''
+									: `floor ${row.floor}`,
+								`${row.parking} parking`,
+							]
+								.filter(Boolean)
+								.join(', ')
+						"
+					/>
 				</template>
 			</DataTable>
+
+			<!-- Marking a unit Held, Sold and so on: a small drawer with the optional reason. -->
+			<FormDrawer
+				:open="Boolean(changing)"
+				:title="
+					changing
+						? `Mark unit ${changing.row.unit_number} ${changing.status}`
+						: 'Mark unit'
+				"
+				text="The reason is kept in the unit's status log."
+				:submit-label="changing ? `Mark ${changing.status}` : 'Mark'"
+				:busy="saving"
+				testid="sellos-unit-status-form"
+				submit-testid="sellos-unit-status-save"
+				@close="changing = null"
+				@submit="confirmStatus"
+			>
+				<FormSection title="Status">
+					<FormField
+						v-model="changeReason"
+						label="Reason (optional)"
+						data-testid="sellos-unit-reason"
+					/>
+				</FormSection>
+			</FormDrawer>
+
+			<!-- The status log of one unit, from the row menu. -->
+			<FormDrawer
+				:open="Boolean(logging)"
+				:title="logging ? `Status log: unit ${logging.unit_number}` : 'Status log'"
+				submit-label="Done"
+				testid="sellos-unit-log-drawer"
+				submit-testid="sellos-unit-log-done"
+				@close="logging = null"
+				@submit="logging = null"
+			>
+				<ul class="space-y-1 ui-text-muted" data-testid="sellos-unit-log">
+					<li
+						v-for="(l, i) in logging ? logging.log : []"
+						:key="i"
+						data-testid="sellos-unit-log-row"
+					>
+						{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}
+						<span v-if="l.from_status">moved it from {{ l.from_status }} to</span>
+						<span v-else>set it</span>
+						{{ l.to_status }}<span v-if="l.reason"> ({{ l.reason }})</span>
+					</li>
+				</ul>
+			</FormDrawer>
 		</template>
 
 		<ProjectStructure
@@ -267,15 +277,17 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import FieldGrid from "../components/FieldGrid.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import KpiStrip from "../components/KpiStrip.vue";
+import NameCell from "../components/NameCell.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageTabs from "../components/PageTabs.vue";
@@ -293,6 +305,7 @@ import UnitGrid from "../inventory/UnitGrid.vue";
 
 // One project and its units (SOS-P4-01). Every change is made on the server and the project read back.
 const route = useRoute();
+const router = useRouter();
 const project = ref(null);
 const units = ref([]);
 const statuses = ref([]);
@@ -302,7 +315,6 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
-const reasons = reactive({});
 const unitOpen = ref(false);
 const tab = ref("units");
 const tabs = [
@@ -362,18 +374,33 @@ const kpis = computed(() => {
 		},
 	];
 });
-const columns = computed(() => [
+const columns = [
 	{ key: "unit_number", label: "Unit", primary: true, sortable: true },
 	{ key: "status", label: "Status", sortable: true },
 	{ key: "configuration", label: "Configuration and area", sortable: true, wrap: true },
+];
+// Every unit action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const changing = ref(null);
+const changeReason = ref("");
+const logging = ref(null);
+const unitActions = (row) => [
 	...(canEdit.value
 		? [
-				{ key: "cost_sheet", label: "Cost sheet" },
-				{ key: "change", label: "Change status", wrap: true },
+				{
+					label: "Cost sheet",
+					onClick: () => router.push({ name: "cost-sheet", params: { unit: row.name } }),
+				},
+				...otherStatuses(row.status).map((s) => ({
+					label: `Mark ${s}`,
+					onClick: () => {
+						changeReason.value = "";
+						changing.value = { row, status: s };
+					},
+				})),
 		  ]
 		: []),
-	{ key: "log", label: "Log", wrap: true },
-]);
+	{ label: "Status log", onClick: () => (logging.value = row) },
+];
 function openUnitForm() {
 	error.value = "";
 	unitOpen.value = true;
@@ -428,12 +455,13 @@ const addUnit = async () => {
 	}
 };
 
-const changeStatus = async (row, status) => {
+const confirmStatus = async () => {
+	const { row, status } = changing.value;
 	const done = await act(
-		() => inventoryApi.setStatus("Unit", row.name, status, reasons[row.name] || ""),
+		() => inventoryApi.setStatus("Unit", row.name, status, changeReason.value || ""),
 		`Unit ${row.unit_number} is now ${status}.`
 	);
-	if (done) delete reasons[row.name];
+	if (done) changing.value = null;
 };
 
 onMounted(load);

@@ -64,10 +64,59 @@ def _people() -> dict:
 	return {u.name: u.full_name for u in frappe.get_all("User", fields=["name", "full_name"])}
 
 
-def _row(doc, people) -> dict:
-	lead = frappe.db.get_value("Lead", doc.lead, ["lead_title", "client"], as_dict=True) or {}
+def _seller_columns(lead, people, shown) -> dict:
+	"""SOS-LOOP: what the Mandates list shows about the seller: the phone as the role sees it (masked for everyone
+	but a Company Admin, whose full number shown is logged, as in the lead list), the city, the property in plain
+	words and the agent. No id of the property."""
+	from sellos.crm.api import _sees_phone
+
+	client = (
+		frappe.db.get_value("Client", lead.get("client"), ["city", "phone", "phone_masked"], as_dict=True)
+		if lead.get("client")
+		else None
+	) or {}
+	full = _sees_phone()
+	phone = (client.get("phone") if full else client.get("phone_masked")) or ""
+	if full and phone:
+		shown.append(lead.get("client"))  # logged once for the whole list, by the caller
+	prop = (
+		frappe.db.get_value(
+			"Property",
+			lead.get("property"),
+			["property_type", "configuration", "carpet_area", "locality"],
+			as_dict=True,
+		)
+		if lead.get("property")
+		else None
+	) or {}
+	return {
+		"seller_phone": phone,
+		"seller_city": client.get("city") or "",
+		"owned_type": prop.get("configuration") or prop.get("property_type") or "",
+		"owned_size": f"{prop['carpet_area']:g} sq ft" if prop.get("carpet_area") else "",
+		"owned_locality": prop.get("locality") or "",
+		"agent_name": people.get(lead.get("assigned_to"), lead.get("assigned_to") or ""),
+	}
+
+
+def _row(doc, people, shown=None) -> dict:
+	"""One mandate for the list and the page. `shown` collects the clients whose full phone number is in the answer."""
+	if shown is None:
+		from sellos.crm.api import log_full_number_shown
+
+		shown = []
+		row = _row(doc, people, shown)
+		log_full_number_shown(shown)
+		return row
+	lead = (
+		frappe.db.get_value(
+			"Lead", doc.lead, ["lead_title", "client", "assigned_to", "property"], as_dict=True
+		)
+		or {}
+	)
 	released = is_released(doc)
 	return {
+		**_seller_columns(lead, people, shown),
 		"name": doc.name,
 		"lead": doc.lead,
 		"lead_title": lead.get("lead_title") or doc.lead,
@@ -142,8 +191,14 @@ def _overview(include_archived=False) -> dict:
 	filters = {} if include_archived else {"archived": 0}
 	people = _people()
 	names = frappe.get_list("Mandate", filters=filters, pluck="name", order_by="creation desc")
+	shown = []
+	rows = [_row(frappe.get_doc("Mandate", n), people, shown) for n in names]
+	if shown:
+		from sellos.crm.api import log_full_number_shown
+
+		log_full_number_shown(shown)
 	return {
-		"mandates": [_row(frappe.get_doc("Mandate", n), people) for n in names],
+		"mandates": rows,
 		"sellers": _seller_leads(),
 		"mandate_types": list(TYPES),
 		"can_archive": COMPANY_ADMIN in frappe.get_roles(),

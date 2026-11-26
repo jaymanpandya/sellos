@@ -28,6 +28,12 @@ context("SOS-P1-25: site visits", () => {
 			.contains(project)
 			.closest("[data-testid=sellos-visits-tomorrow-item]");
 
+	// Every row action is in the row menu (kebab) of the row.
+	const menu = (rowEl, label) => {
+		rowEl.find("[data-testid=sellos-row-menu-button]").click();
+		cy.contains("[role=menuitem]", label).click();
+	};
+
 	const openLead = (role, key) => {
 		cy.signInFresh(role);
 		cy.visit(`/sellos/crm/leads/${seed.leads[key]}`);
@@ -75,15 +81,13 @@ context("SOS-P1-25: site visits", () => {
 			.find("[data-testid=sellos-visits-tomorrow-status]")
 			.should("have.text", "Not confirmed");
 		cy.intercept("POST", "**/api/method/sellos.crm.api.confirm_site_visit*").as("confirm");
-		cy.get("@row").find("[data-testid=sellos-visit-confirm-status]").select("Confirmed");
+		menu(cy.get("@row"), "Confirm visit");
 		cy.wait("@confirm").its("response.statusCode").should("eq", 200);
 		rowFor("Gate Tower")
 			.find("[data-testid=sellos-visits-tomorrow-status]")
 			.should("have.text", "Confirmed");
 		// Rescheduled asks for the new time first.
-		rowFor("Gate Tower")
-			.find("[data-testid=sellos-visit-confirm-status]")
-			.select("Rescheduled");
+		menu(rowFor("Gate Tower"), "Reschedule");
 		cy.getByTestId("visit-reschedule-form").should("be.visible");
 		cy.getByTestId("visit-reschedule-when").type("2030-06-14T15:00");
 		cy.getByTestId("visit-reschedule-save").click();
@@ -97,7 +101,7 @@ context("SOS-P1-25: site visits", () => {
 		book("Gate Tower");
 		cy.visit("/sellos/crm/visits");
 		cy.intercept("POST", "**/api/method/sellos.crm.api.confirm_site_visit*").as("confirm");
-		rowFor("Gate Tower").find("[data-testid=sellos-visit-confirm-status]").select("Cancelled");
+		menu(rowFor("Gate Tower"), "Cancel visit");
 		cy.wait("@confirm").its("response.statusCode").should("eq", 200);
 		rowFor("Gate Tower")
 			.find("[data-testid=sellos-visits-tomorrow-status]")

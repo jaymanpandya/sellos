@@ -9,6 +9,11 @@ context("SOS-P7-01: onboard and approve channel partners", () => {
 	let gate; // the firm of the gate channel partner, made by the backend fixture
 
 	const row = (name) => cy.get(`[data-testid="sellos-partners-row"][data-name="${name}"]`);
+	// A row action is in the row menu (three dots), the only control in a row.
+	const menu = (name, label) => {
+		row(name).find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', label).click();
+	};
 	const openPartners = () => {
 		cy.signInFresh("company_admin");
 		cy.intercept("POST", "**/sellos.access.partner_firms.list_partner_firms*").as("list");
@@ -46,10 +51,14 @@ context("SOS-P7-01: onboard and approve channel partners", () => {
 				cy.getByTestId("partners-code")
 					.invoke("text")
 					.should("match", /CP-\d{5}/);
-				cy.getByTestId("partners-approve").should("not.exist");
 				cy.getByTestId("partners-no-agreement").should("be.visible");
-				cy.getByTestId("partners-log-row").should("have.length", 1);
+				cy.get('[data-testid="sellos-row-menu-button"]').click();
 			});
+		// An Invited firm has nothing to approve yet; its status log is in a drawer.
+		cy.contains('[role="menuitem"]', "Approve").should("not.exist");
+		cy.contains('[role="menuitem"]', "Agreement and status log").click();
+		cy.getByTestId("partners-log-row").should("have.length", 1);
+		cy.getByTestId("partners-history-close").click();
 		// It is saved: a fresh load shows it.
 		cy.reload();
 		cy.contains('[data-testid="sellos-partners-row"]', firmName).should("be.visible");
@@ -63,15 +72,18 @@ context("SOS-P7-01: onboard and approve channel partners", () => {
 					.should("have.attr", "data-status", "Pending approval")
 					.within(() => {
 						cy.getByTestId("partners-pan").should("contain", state.pan);
-						cy.getByTestId("partners-agreement")
-							.should("have.attr", "href")
-							.and("include", "/private/files/");
+						cy.getByTestId("partners-has-agreement").should("be.visible");
 						cy.getByTestId("partners-phone").should("be.visible");
 					});
+				menu(gate.name, "Agreement and status log");
+				cy.getByTestId("partners-agreement")
+					.should("have.attr", "href")
+					.and("include", "/private/files/");
+				cy.getByTestId("partners-history-close").click();
 				cy.intercept("POST", "**/sellos.access.partner_firms.approve_partner_firm*").as(
 					"approve"
 				);
-				row(gate.name).find('[data-testid="sellos-partners-approve"]').click();
+				menu(gate.name, "Approve");
 				cy.wait("@approve").its("response.statusCode").should("eq", 200);
 				row(gate.name).should("have.attr", "data-status", "Approved");
 			}
@@ -90,14 +102,12 @@ context("SOS-P7-01: onboard and approve channel partners", () => {
 		openPartners();
 		cy.expectApiStatus("sellos.access.partner_firms.suspend_partner_firm", 417);
 		cy.intercept("POST", "**/sellos.access.partner_firms.suspend_partner_firm*").as("suspend");
-		row(gate.name).find('[data-testid="sellos-partners-suspend"]').click();
+		menu(gate.name, "Suspend");
+		cy.getByTestId("partners-suspend").click();
 		cy.wait("@suspend");
 		cy.getByTestId("partners-error").should("contain", "reason");
-		row(gate.name).should("have.attr", "data-status", "Pending approval");
-		row(gate.name)
-			.find('[data-testid="sellos-partners-reason-input"]')
-			.type("Left the business");
-		row(gate.name).find('[data-testid="sellos-partners-suspend"]').click();
+		cy.getByTestId("partners-reason-input").type("Left the business");
+		cy.getByTestId("partners-suspend").click();
 		cy.wait("@suspend").its("response.statusCode").should("eq", 200);
 		row(gate.name)
 			.should("have.attr", "data-status", "Suspended")
@@ -107,10 +117,11 @@ context("SOS-P7-01: onboard and approve channel partners", () => {
 		cy.intercept("POST", "**/sellos.access.partner_firms.reinstate_partner_firm*").as(
 			"reinstate"
 		);
-		row(gate.name).find('[data-testid="sellos-partners-reinstate"]').click();
+		menu(gate.name, "Reinstate");
 		cy.wait("@reinstate").its("response.statusCode").should("eq", 200);
 		row(gate.name).should("have.attr", "data-status", "Approved");
-		row(gate.name).find('[data-testid="sellos-partners-log-row"]').should("have.length", 4);
+		menu(gate.name, "Agreement and status log");
+		cy.getByTestId("partners-log-row").should("have.length", 4);
 	});
 
 	it("sends a partner whose firm is not Approved to a page that says so, and lets an approved one work", () => {
@@ -132,7 +143,7 @@ context("SOS-P7-01: onboard and approve channel partners", () => {
 
 		openPartners();
 		cy.intercept("POST", "**/sellos.access.partner_firms.approve_partner_firm*").as("approve");
-		row(gate.name).find('[data-testid="sellos-partners-approve"]').click();
+		menu(gate.name, "Approve");
 		cy.wait("@approve").its("response.statusCode").should("eq", 200);
 
 		cy.signInFresh("channel_partner");
@@ -141,10 +152,9 @@ context("SOS-P7-01: onboard and approve channel partners", () => {
 
 		// Suspended again: the page says so, with the reason.
 		openPartners();
-		row(gate.name)
-			.find('[data-testid="sellos-partners-reason-input"]')
-			.type("Agreement ended");
-		row(gate.name).find('[data-testid="sellos-partners-suspend"]').click();
+		menu(gate.name, "Suspend");
+		cy.getByTestId("partners-reason-input").type("Agreement ended");
+		cy.getByTestId("partners-suspend").click();
 		row(gate.name).should("have.attr", "data-status", "Suspended");
 		cy.signInFresh("channel_partner");
 		cy.visit("/sellos/partner/leads");

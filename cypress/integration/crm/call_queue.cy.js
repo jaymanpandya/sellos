@@ -57,8 +57,9 @@ context("SOS-P2-09: the caller queue", () => {
 	it("never blocks a call on a warned lead, and shows only the masked number", () => {
 		cy.signInFresh("agent");
 		cy.visit("/sellos/crm/queue");
-		row("opted").find("[data-testid=sellos-queue-call]").should("not.be.disabled").click();
-		row("opted").find("[data-testid=sellos-queue-number]").should("be.visible");
+		row("opted").find("[data-testid=sellos-row-menu-button]").click();
+		cy.contains("[role=menuitem]", "Call").should("be.visible").click();
+		cy.getByTestId("queue-number").should("be.visible");
 	});
 
 	it("is in the agent's navigation", () => {

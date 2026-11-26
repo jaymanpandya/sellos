@@ -173,7 +173,7 @@ context("SOS-P1-21: call outcomes and logging a call by hand", () => {
 			.filter(`[data-name="${outcome}"]`)
 			.should("have.length", 1)
 			.find("[data-testid=sellos-calllists-outcome-stage]")
-			.should("have.value", "Contacted");
+			.should("contain", "Contacted");
 		cy.getByTestId("calllists-new-reason-open").click();
 		cy.getByTestId("calllists-new-reason").type(reason);
 		cy.getByTestId("calllists-add-reason").click();

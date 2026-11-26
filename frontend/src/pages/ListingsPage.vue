@@ -60,6 +60,7 @@
 				})
 			"
 			:row-name="(l) => l.title"
+			:actions="listingActions"
 			empty-title="No listings yet"
 			empty-text="Make the first listing."
 			empty-icon="lucide-megaphone"
@@ -67,7 +68,7 @@
 			row-testid="sellos-listing-row"
 		>
 			<template #cell-title="{ row }">
-				<span class="ui-text-strong">{{ row.title }}</span>
+				<NameCell :name="row.title" data-testid="sellos-listing-name" />
 			</template>
 			<template #cell-listing_type="{ row }">
 				<StatusBadge
@@ -85,98 +86,56 @@
 			</template>
 			<template #cell-asking_price="{ row }">
 				<span data-testid="sellos-listing-price">
-					{{ row.asking_price ? formatBudget(row.asking_price) : "No price yet" }}
+					{{ row.asking_price ? formatBudget(row.asking_price) : "Not set" }}
 				</span>
 			</template>
 			<template #cell-target="{ row }">
-				<p data-testid="sellos-listing-target">
-					{{ row.target_label || "Nothing chosen to offer yet" }}
-				</p>
-				<p
+				<CellText :value="row.target_label" data-testid="sellos-listing-target" />
+				<CellText
 					v-if="!row.published && row.missing.length"
-					class="ui-text-muted"
+					muted
+					:value="`Needs ${row.missing.join(', ')} before it can be published.`"
 					data-testid="sellos-listing-missing"
-				>
-					Needs {{ row.missing.join(", ") }} before it can be published.
-				</p>
-			</template>
-			<template #cell-actions="{ row }">
-				<div class="flex flex-wrap gap-ui-sm">
-					<AppButton
-						type="button"
-						:active="shownMedia.has(row.name)"
-						data-testid="sellos-listing-media-toggle"
-						@click="toggleMedia(row.name)"
-					>
-						Photos and videos ({{ row.media_count }})
-					</AppButton>
-					<template v-if="canEdit">
-						<AppButton
-							v-if="!row.published"
-							type="button"
-							variant="primary"
-							data-testid="sellos-listing-publish"
-							@click="
-								act(
-									() => listingApi.publish(row.name),
-									`${row.title} is published.`
-								)
-							"
-						>
-							Publish
-						</AppButton>
-						<AppButton
-							v-else
-							type="button"
-							data-testid="sellos-listing-unpublish"
-							@click="
-								act(
-									() => listingApi.unpublish(row.name),
-									`${row.title} is withdrawn.`
-								)
-							"
-						>
-							Withdraw
-						</AppButton>
-						<AppButton
-							type="button"
-							data-testid="sellos-listing-edit"
-							@click="edit(row)"
-						>
-							Edit
-						</AppButton>
-						<AppButton
-							v-if="canArchive"
-							type="button"
-							data-testid="sellos-listing-archive"
-							@click="
-								act(
-									() => listingApi.setArchived(row.name, 1),
-									`${row.title} is archived.`
-								)
-							"
-						>
-							Archive
-						</AppButton>
-					</template>
-				</div>
-				<SuitedLeads v-if="row.published" kind="listing" :name="row.name" />
-				<details class="mt-ui-sm" data-testid="sellos-listing-history">
-					<summary class="cursor-pointer ui-text-muted">Change history</summary>
-					<ul class="mt-1 space-y-1 ui-text-muted">
-						<li
-							v-for="(c, i) in row.changes"
-							:key="i"
-							data-testid="sellos-listing-change"
-						>
-							{{ formatWhen(c.changed_on) }}: {{ c.changed_by_name }} set
-							{{ c.what.toLowerCase() }}
-							<span v-if="c.old">from {{ c.old }}</span> to {{ c.new }}
-						</li>
-					</ul>
-				</details>
+				/>
 			</template>
 		</DataTable>
+
+		<!-- The change history of one listing, from the row menu. -->
+		<FormDrawer
+			:open="Boolean(history)"
+			:title="history ? `Change history: ${history.title}` : 'Change history'"
+			submit-label="Done"
+			testid="sellos-listing-history-drawer"
+			submit-testid="sellos-listing-history-done"
+			@close="history = null"
+			@submit="history = null"
+		>
+			<ul class="space-y-1 ui-text-muted" data-testid="sellos-listing-history">
+				<li v-if="history && !history.changes.length">No changes yet.</li>
+				<li
+					v-for="(c, i) in history ? history.changes : []"
+					:key="i"
+					data-testid="sellos-listing-change"
+				>
+					{{ formatWhen(c.changed_on) }}: {{ c.changed_by_name }} set
+					{{ c.what.toLowerCase() }}
+					<span v-if="c.old">from {{ c.old }}</span> to {{ c.new }}
+				</li>
+			</ul>
+		</FormDrawer>
+
+		<!-- The leads a published listing suits, from the row menu. -->
+		<FormDrawer
+			:open="Boolean(suited)"
+			:title="suited ? `Leads this suits: ${suited.title}` : 'Leads this suits'"
+			submit-label="Done"
+			testid="sellos-listing-suited-drawer"
+			submit-testid="sellos-listing-suited-done"
+			@close="suited = null"
+			@submit="suited = null"
+		>
+			<SuitedLeads v-if="suited" kind="listing" :name="suited.name" />
+		</FormDrawer>
 
 		<!-- The photos and videos of a listing open under the table, full width, not inside a narrow cell. -->
 		<ListCard
@@ -247,11 +206,13 @@
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import KpiStrip from "../components/KpiStrip.vue";
+import NameCell from "../components/NameCell.vue";
 import LoadError from "../components/LoadError.vue";
 import MoneyField from "../components/MoneyField.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -316,7 +277,51 @@ const columns = [
 		sortValue: (l) => Number(l.asking_price || 0),
 	},
 	{ key: "target", label: "Offers", wrap: true, class: "min-w-[12rem]" },
-	{ key: "actions", label: "Actions", wrap: true, class: "min-w-[16rem]" },
+];
+// Every listing action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const history = ref(null);
+const suited = ref(null);
+const listingActions = (row) => [
+	{
+		label: `Photos and videos (${row.media_count})`,
+		onClick: () => toggleMedia(row.name),
+	},
+	...(canEdit.value
+		? [
+				row.published
+					? {
+							label: "Withdraw",
+							onClick: () =>
+								act(
+									() => listingApi.unpublish(row.name),
+									`${row.title} is withdrawn.`
+								),
+					  }
+					: {
+							label: "Publish",
+							onClick: () =>
+								act(
+									() => listingApi.publish(row.name),
+									`${row.title} is published.`
+								),
+					  },
+				{ label: "Edit", onClick: () => edit(row) },
+		  ]
+		: []),
+	...(row.published ? [{ label: "Leads this suits", onClick: () => (suited.value = row) }] : []),
+	{ label: "Change history", onClick: () => (history.value = row) },
+	...(canEdit.value && canArchive.value
+		? [
+				{
+					label: "Archive",
+					onClick: () =>
+						act(
+							() => listingApi.setArchived(row.name, 1),
+							`${row.title} is archived.`
+						),
+				},
+		  ]
+		: []),
 ];
 function startNew() {
 	error.value = "";

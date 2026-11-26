@@ -3,7 +3,7 @@
 A lead's stored title is the client's name followed by its source ("Asha Rao Website"). A screen that
 lists leads shows the plain name, with the source in its own muted field, never joined to the name.
 `add` puts `lead_name` and `lead_source` on every row that has a `lead` key, in two queries.
-`lead_title` is left as it was, because reports and tests read it.
+A lead's stored `lead_title` is now the plain name too (Lead._title and the patch lead_plain_title_signed_offline).
 """
 
 import frappe

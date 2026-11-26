@@ -107,12 +107,18 @@ context("SOS-P5-04: saved views, export and scheduling", () => {
 			cy.getByTestId("reports-schedule")
 				.should("have.length", 1)
 				.and("contain", "Gate P504 Weekly leads");
-			cy.getByTestId("reports-schedule-send").click();
+			cy.getByTestId("reports-schedule")
+				.find('[data-testid="sellos-row-menu-button"]')
+				.click();
+			cy.contains('[role="menuitem"]', "Send now").click();
 			cy.getByTestId("reports-schedule-note").should("contain", "of 1 sent");
 			cy.getByTestId("reports-schedule")
 				.find("[data-col=result]")
 				.should("contain", "of 1 sent");
-			cy.getByTestId("reports-schedule-delete").click();
+			cy.getByTestId("reports-schedule")
+				.find('[data-testid="sellos-row-menu-button"]')
+				.click();
+			cy.contains('[role="menuitem"]', "Delete").click();
 			cy.getByTestId("reports-schedule").should("not.exist");
 		});
 	});

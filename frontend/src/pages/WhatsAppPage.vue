@@ -49,6 +49,7 @@
 				caption="Conversations"
 				:columns="columns"
 				:rows="shownRows"
+				:actions="rowActions"
 				:loading="!rows"
 				loading-label="Loading conversations."
 				row-clickable
@@ -64,22 +65,17 @@
 			>
 				<!-- The lead's name is plain text, the masked phone under it; the row opens the conversation. -->
 				<template #cell-title="{ row }">
-					<span class="block ui-text-strong" data-testid="sellos-whatsapp-row-name">{{
-						row.title
-					}}</span>
-					<span v-if="row.phone" class="block ui-text-muted tabular-nums">{{
-						row.phone
-					}}</span>
+					<NameCell
+						:name="row.title"
+						:identifier="row.phone"
+						data-testid="sellos-whatsapp-row-name"
+					/>
 				</template>
 				<template #cell-last_message="{ row }">
-					<span class="block max-w-prose truncate ui-text-secondary">{{
-						row.last_message || "No messages yet"
-					}}</span>
+					<CellText :value="row.last_message || 'No messages yet'" :lines="2" />
 				</template>
 				<template #cell-last_message_on="{ row }">
-					<span class="ui-text-secondary">{{
-						formatShortWhen(row.last_message_on)
-					}}</span>
+					<CellText :value="formatShortWhen(row.last_message_on)" />
 				</template>
 				<template #cell-state="{ row }">
 					<StatusBadge
@@ -278,12 +274,14 @@
 import { computed, onMounted, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FilterBar from "../components/FilterBar.vue";
 import FormField from "../components/FormField.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
+import NameCell from "../components/NameCell.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import SectionCard from "../components/SectionCard.vue";
@@ -309,6 +307,9 @@ const sending = ref(false);
 
 const search = ref("");
 const stateFilter = ref("");
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rowActions = (row) => [{ label: "Open conversation", onClick: () => open(row.name) }];
 
 const columns = [
 	{ key: "title", label: "Lead", primary: true, sortable: true },

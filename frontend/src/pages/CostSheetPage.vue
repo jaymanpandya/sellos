@@ -142,18 +142,22 @@
 			:columns="sheetColumns"
 			:rows="options.sheets"
 			:row-name="(r) => r.name"
+			:actions="(r) => [{ label: 'Open', onClick: () => open(r.name) }]"
 			empty-title="No cost sheet yet"
 			empty-text="Make the first one above."
 			empty-icon="lucide-receipt-indian-rupee"
 			testid="sellos-cost-sheets"
 			row-testid="sellos-cost-sheet-row"
 		>
-			<template #cell-total="{ row }">{{ formatMoney(row.total) }}</template>
-			<template #cell-open="{ row }">
-				<AppButton type="button" data-testid="sellos-cost-open" @click="open(row.name)">
-					Open
-				</AppButton>
+			<template #cell-name="{ row }">
+				<NameCell :name="row.name" />
 			</template>
+			<template #cell-total="{ row }">{{ formatMoney(row.total) }}</template>
+			<template #cell-plan_name="{ row }"><CellText :value="row.plan_name" /></template>
+			<template #cell-price_list_title="{ row }">
+				<CellText :value="row.price_list_title" />
+			</template>
+			<template #cell-made_by="{ row }"><CellText :value="row.made_by" /></template>
 		</DataTable>
 
 		<template #side>
@@ -193,11 +197,13 @@ import { useRoute } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
 import AppCheckbox from "../components/AppCheckbox.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FieldGrid from "../components/FieldGrid.vue";
 import FormField from "../components/FormField.vue";
 import KpiStrip from "../components/KpiStrip.vue";
+import NameCell from "../components/NameCell.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import Notice from "../components/Notice.vue";
@@ -256,7 +262,6 @@ const sheetColumns = [
 	{ key: "plan_name", label: "Payment plan" },
 	{ key: "price_list_title", label: "Price list" },
 	{ key: "made_by", label: "Made by" },
-	{ key: "open", label: "" },
 ];
 
 const optional = computed(() =>

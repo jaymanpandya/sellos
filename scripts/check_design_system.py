@@ -131,6 +131,49 @@ def money_files(files):
 	return [p for p in every if p in files] if files else every
 
 
+# Lists (docs/DESIGN_SYSTEM.md, "Lists", rules a to d): every table is a DataTable, its first column is a
+# NameCell, no cell holds a button, a field or a link styled as one (every row action is in the row menu), and an
+# empty value is "Not set" or nothing, never a bare dash. There is no backlog for it. Rules e (1440 and 390 wide, at
+# most two lines a cell) and the name cell of a real row are checked in the walkthrough
+# (cypress/integration/visual/walkthrough.cy.js), which reads the drawn tables.
+TABLE_BLOCK = re.compile(r"<DataTable\b.*?</DataTable>", re.S)
+EMPTY_SLOT = re.compile(r"<template\s+#empty-action\b.*?</template>", re.S)
+CELL_CONTROL = re.compile(
+	r"<(AppButton|button|FormField|MoneyField|AppCheckbox|input|select|textarea|a|router-link)(?=[\s/>])"
+)
+CELL_BUTTON_CLASS = re.compile(r"ui-button|ui-link|btn\b")
+NAME_CELL = re.compile(r"<NameCell\b[^>]*?:name\s*=\s*\"([^\"]*)\"", re.S)
+NAME_JOINED = re.compile(r"source|campaign|status|property|stage", re.I)
+BARE_DASH = re.compile(
+	r"""(>\s*[-\u2013\u2014]\s*<)|(\?\s*[\"'][-\u2013\u2014][\"']\s*:)|(:\s*[\"'][-\u2013\u2014][\"']\s*\})|(\|\|\s*[\"'][-\u2013\u2014][\"'])"""
+)
+
+
+def list_findings(path):
+	"""[(line, rule, text)] for one page: the list rules of docs/DESIGN_SYSTEM.md."""
+	text = path.read_text(encoding="utf-8")
+	template = blank(text)
+	found = []
+
+	def line_of(pos):
+		return template.count("\n", 0, pos) + 1
+
+	for table in TABLE_BLOCK.finditer(template):
+		body = EMPTY_SLOT.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), table.group(0))
+		base = table.start()
+		for m in CELL_CONTROL.finditer(body):
+			found.append((line_of(base + m.start()), "control in a row", f"<{m.group(1)}>"))
+		for attr in CLASS_ATTR.finditer(body):
+			if CELL_BUTTON_CLASS.search(attr.group(1)):
+				found.append((line_of(base + attr.start()), "control in a row", "a link styled as a button"))
+		for m in NAME_CELL.finditer(body):
+			if NAME_JOINED.search(m.group(1)):
+				found.append((line_of(base + m.start()), "name joined to a detail", m.group(1)))
+		for m in BARE_DASH.finditer(body):
+			found.append((line_of(base + m.start()), "bare dash", m.group(0).strip()))
+	return sorted(set(found))
+
+
 def backlog():
 	if not BACKLOG.exists():
 		return set()
@@ -171,6 +214,10 @@ def main(argv):
 				for line, rule, what in hits[:12]:
 					print(f"    {rel}:{line}: {rule}: {what}")
 		if not known:
+			bad += 1
+	for path in targets:
+		for line, rule, what in list_findings(path):
+			print(f"FAIL    {path.relative_to(ROOT).as_posix()}:{line}: {rule}: {what}")
 			bad += 1
 	for path in money_files(set(files)):
 		for line, rule, what in money_findings(path):

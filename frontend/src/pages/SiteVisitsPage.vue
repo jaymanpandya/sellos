@@ -83,6 +83,7 @@
 			:columns="tomorrowColumns"
 			dense
 			:rows="tomorrowShown"
+			:actions="rowActions"
 			:loading="!tomorrow && !error"
 			loading-label="Loading tomorrow's visits."
 			:row-name="(v) => v.lead_title"
@@ -94,16 +95,21 @@
 			empty-testid="sellos-visits-tomorrow-empty"
 		>
 			<template #cell-lead_title="{ row }">
-				<router-link :to="`/crm/leads/${row.lead}`" class="ui-link ui-text-strong">{{
-					row.lead_name || row.lead_title
-				}}</router-link>
-				<span v-if="row.lead_source" class="block ui-text-muted">{{
-					row.lead_source
-				}}</span>
+				<NameCell
+					:name="row.lead_name || row.lead_title"
+					:detail="row.lead_source"
+					data-testid="sellos-visits-tomorrow-lead"
+				/>
 			</template>
-			<template #cell-visit_datetime="{ row }">{{
-				formatDateTime(row.visit_datetime)
-			}}</template>
+			<template #cell-project_name="{ row }">
+				<CellText :value="row.project_name" />
+			</template>
+			<template #cell-agent_name="{ row }">
+				<CellText :value="row.agent_name" />
+			</template>
+			<template #cell-visit_datetime="{ row }">
+				<CellText :value="formatDateTime(row.visit_datetime)" />
+			</template>
 			<template #cell-confirmation_status="{ row }">
 				<StatusBadge
 					data-testid="sellos-visits-tomorrow-status"
@@ -111,15 +117,40 @@
 					:label="row.confirmation_status"
 				/>
 			</template>
-			<template #cell-confirm="{ row }">
-				<VisitConfirm
-					compact
-					:visit="row"
-					:confirmations="options.confirmations"
-					@changed="loadAll"
-				/>
-			</template>
 		</DataTable>
+
+		<!-- Rescheduling asks for the new date and time. -->
+		<FormDrawer
+			:open="Boolean(rescheduling)"
+			:title="
+				rescheduling
+					? `Reschedule ${rescheduling.lead_name || rescheduling.lead_title}`
+					: 'Reschedule'
+			"
+			text="Choose the new date and time of the visit."
+			submit-label="Reschedule"
+			testid="sellos-visit-reschedule-form"
+			submit-testid="sellos-visit-reschedule-save"
+			cancel-testid="sellos-visit-reschedule-cancel"
+			@close="closeReschedule"
+			@submit="reschedule"
+		>
+			<FormField
+				v-model="rescheduleWhen"
+				required
+				type="datetime-local"
+				label="New date and time"
+				data-testid="sellos-visit-reschedule-when"
+			/>
+			<p
+				v-if="actionError"
+				role="alert"
+				class="ui-text-error"
+				data-testid="sellos-visit-confirm-error"
+			>
+				{{ actionError }}
+			</p>
+		</FormDrawer>
 
 		<SectionCard title="Calendar">
 			<p class="mb-ui-sm ui-text-muted" data-testid="sellos-visits-range">
@@ -169,25 +200,29 @@
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import FilterBar from "../components/FilterBar.vue";
+import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import NameCell from "../components/NameCell.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
-import VisitConfirm from "../components/VisitConfirm.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
 import { formatDate, formatDateTime } from "../format";
 import { session } from "../session";
 
 // SOS-P1-25: the calendar of visits by day and week, and tomorrow's visits to confirm. The server
 // decides whose visits are listed: an Agent's own, a Sales Manager's team's, a Company Admin's everyone's.
+const router = useRouter();
 const view = ref("week");
 const date = ref(null); // a day of the window shown. null is today.
 const calendar = ref(null);
@@ -201,8 +236,65 @@ const tomorrowColumns = [
 	{ key: "visit_datetime", label: "When" },
 	{ key: "agent_name", label: "Agent" },
 	{ key: "confirmation_status", label: "Status" },
-	{ key: "confirm", label: "Confirm", wrap: true },
 ];
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c): the confirmation of a visit.
+const rescheduling = ref(null);
+const rescheduleWhen = ref("");
+const actionError = ref("");
+const rowActions = (row) => {
+	const items = [{ label: "Open lead", onClick: () => router.push(`/crm/leads/${row.lead}`) }];
+	if (row.status === "Done") return items;
+	const labels = {
+		"Not confirmed": "Mark not confirmed",
+		Confirmed: "Confirm visit",
+		Rescheduled: "Reschedule",
+		Cancelled: "Cancel visit",
+	};
+	for (const status of options.value.confirmations) {
+		if (status === row.confirmation_status) continue;
+		items.push({
+			label: labels[status] || status,
+			onClick: () =>
+				status === "Rescheduled" ? openReschedule(row) : confirmVisit(row, status),
+		});
+	}
+	return items;
+};
+function openReschedule(row) {
+	actionError.value = "";
+	rescheduleWhen.value = "";
+	rescheduling.value = row;
+}
+function closeReschedule() {
+	actionError.value = "";
+	rescheduling.value = null;
+}
+async function confirmVisit(row, status, datetime = null) {
+	actionError.value = "";
+	try {
+		await crmApi.confirmSiteVisit(row.name, status, datetime);
+		return true;
+	} catch (e) {
+		error.value = serverMessage(e, "The confirmation could not be saved.");
+		return false;
+	} finally {
+		await loadAll();
+	}
+}
+async function reschedule() {
+	const row = rescheduling.value;
+	if (!row || !rescheduleWhen.value) return;
+	actionError.value = "";
+	try {
+		await crmApi.confirmSiteVisit(row.name, "Rescheduled", rescheduleWhen.value);
+		rescheduling.value = null;
+	} catch (e) {
+		actionError.value = serverMessage(e, "The visit could not be rescheduled.");
+		return;
+	}
+	await loadAll();
+}
 
 const scopeNote = computed(() => {
 	if (session.roles.includes("SellOS Company Admin")) return "Everyone's site visits.";

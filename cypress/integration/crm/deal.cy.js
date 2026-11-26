@@ -4,6 +4,11 @@
 // and property are named "Gate Deal ") are removed afterwards.
 context("SOS-P4-06: deals and the commission split", () => {
 	const row = (client) => cy.get(`[data-testid="sellos-deal-row"][data-client="${client}"]`);
+	// Approve and Reopen are in the row menu (docs/DESIGN_SYSTEM.md, "Lists"): open it, then choose the move.
+	const rowAction = (client, label) => {
+		row(client).find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', label).click();
+	};
 
 	before(() => cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads"));
 	after(() => cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads"));
@@ -63,16 +68,20 @@ context("SOS-P4-06: deals and the commission split", () => {
 			cy.getByTestId("deal-stats").should("contain", "Company share");
 
 			// A Company Admin approves the split, then reopens it.
-			row(made.client).find('[data-testid="sellos-deal-approve"]').click();
+			row(made.client)
+				.find('button:not([data-testid="sellos-row-menu-button"])')
+				.should("not.exist");
+			rowAction(made.client, "Approve the split");
 			cy.wait("@approve").its("response.statusCode").should("eq", 200);
 			row(made.client).should("have.attr", "data-status", "Approved");
 			row(made.client).find('[data-testid="sellos-deal-approved"]').should("be.visible");
-			// The approval time reads "24 Nov 2026, 11:44", never the raw timestamp.
+			// One line: the date, then who approved it. The long sentence is on the deal page, not in the cell.
 			row(made.client)
 				.find('[data-testid="sellos-deal-approved"]')
 				.invoke("text")
-				.should("match", /on \d{1,2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2}\. The split/);
-			row(made.client).find('[data-testid="sellos-deal-reopen"]').click();
+				.should("match", /^\d{1,2} [A-Z][a-z]{2} \d{4} \u00b7 \S/)
+				.and("not.contain", "The split is kept");
+			rowAction(made.client, "Reopen the split");
 			cy.wait("@reopen").its("response.statusCode").should("eq", 200);
 			row(made.client).should("have.attr", "data-status", "Pending approval");
 		});

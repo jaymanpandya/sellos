@@ -79,6 +79,8 @@ state, and in each area's colours.
 | Stat tile | `StatCard` / `KpiStrip` | 3px top bar in the tile's colour, 32px round chip, 24px tabular number, helper line; the whole tile is the link |
 | Status pill | `StatusBadge` | round, 1px line, tint, icon and word, 14px |
 | Table | `DataTable` | uppercase muted header, 10px row padding, soft divider, hover tint, Enter opens; phone rows become cards; `dense` tightens the cell padding for a wide table that must fit 1440 |
+| Name cell | `NameCell` | the first column of a list: name as plain text, the muted phone or key identifier, one muted detail line; each line cut with an ellipsis and a tooltip |
+| Cell text | `CellText` | one value of a cell: cut with an ellipsis (one line, or two), the full text in the tooltip, an empty value reads a muted "Not set" (or nothing with `blank`) |
 | Empty state | `EmptyState` | dashed tinted box, 44px area chip, bold title, one muted sentence, the action |
 | Notice | `Notice` | white card, 4px coloured left edge, bold title, a short list; several notes are one notice |
 | Tabs | `PageTabs` | 44px text tabs on a line; open tab has a 2px area line and bold ink |
@@ -104,8 +106,28 @@ Every page is one of four shapes (`PageTemplate` with a `shape`):
 4. **Form or settings** (company settings, setup wizard, Import leads, Import inventory): one notice area; section cards with a
    two column grid; sticky footer with Save and Undo changes.
 
+### Lists
+
+Every list follows the anatomy of the Leads list (decided by Jayman, 26 November 2026). `scripts/check_design_system.py` and the
+walkthrough enforce it.
+
+a. **The first column is the name cell** (`NameCell`): the name as plain text, the muted phone or key identifier under it, and one
+   muted detail line. Nothing else is joined to a name. Source, property and status never go in the name.
+b. **The other columns are plain values or status pills.** A cell holds at most two short lines. Long text is cut with an ellipsis
+   (`CellText`) and shows in full in a tooltip.
+c. **No button, field or link styled as a button in a table row, except the row menu** (three dots, far right, `actions` of
+   `DataTable`). Every row action goes in that menu: view, edit, approve, reopen, move stage, stage history, send for signing, open
+   dossier, download signed copy, archive. A row may show one inline action only if it is the single next step and Jayman has said so
+   (none does today).
+d. **An empty value shows nothing, or a muted "Not set".** Never a bare dash.
+e. **At 1440 wide no table clips, scrolls sideways or wraps a cell beyond two lines. At 390 each row becomes a card** (`DataTable`).
+f. **The check fails the build** for a button, field or link inside a row cell, a name cell joined to a source, property, status or
+   stage, a bare dash in a cell, and (in the walkthrough, on the drawn tables) a cell that wraps beyond two lines or a name that ends
+   in a source word. There is no backlog for it.
+
 ## 4. Rules
 
+0. Every list follows the Lists rules above.
 1. One h1 per page, drawn by the page header or the record header.
 2. Headings are the small uppercase style only; a page writes no `<h1>` to `<h6>`.
 3. Status is always a pill. Dates are `24 Nov 2026, 11:44` (`formatWhen`) everywhere. A missing value reads "Not filled in".

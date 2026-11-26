@@ -49,7 +49,7 @@
 		</template>
 
 		<p
-			v-if="error && !sharing"
+			v-if="error && !sharing && !withdrawing"
 			role="alert"
 			data-testid="sellos-shares-error"
 			class="mb-ui-md ui-text-error"
@@ -73,6 +73,7 @@
 			title="Shares"
 			:columns="columns"
 			:rows="shown"
+			:actions="rowActions"
 			:loading="!loaded"
 			:row-attrs="(s) => ({ 'data-status': s.status, 'data-project': s.project })"
 			empty-title="Nothing is shared yet"
@@ -83,12 +84,10 @@
 			empty-testid="sellos-shares-empty"
 		>
 			<template #cell-project_name="{ row: s }">
-				<span class="ui-text-strong" data-testid="sellos-shares-row-project">
-					{{ s.project_name }}
-				</span>
+				<NameCell :name="s.project_name" data-testid="sellos-shares-row-project" />
 			</template>
 			<template #cell-firm_name="{ row: s }">
-				<span data-testid="sellos-shares-row-firm">with {{ s.firm_name }}</span>
+				<CellText :value="s.firm_name" data-testid="sellos-shares-row-firm" />
 			</template>
 			<template #cell-status="{ row: s }">
 				<StatusBadge
@@ -98,41 +97,67 @@
 				/>
 			</template>
 			<template #cell-what="{ row: s }">
-				<p class="ui-text-muted">
-					{{ s.all_units ? "All units" : `${s.units.length} chosen units` }};
-					{{ s.share_price_list ? "price list" : "no price list" }};
-					{{ s.brochures.length }} brochures.
-					<span v-if="s.withdrawn_reason">Withdrawn: {{ s.withdrawn_reason }}</span>
-				</p>
-				<details class="mt-1">
-					<summary class="cursor-pointer ui-text-muted">Log</summary>
-					<ul class="mt-1 space-y-1 ui-text-muted">
-						<li v-for="(l, i) in s.log" :key="i" data-testid="sellos-shares-log-row">
-							{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}, {{ l.action }}
-							<span v-if="l.detail">({{ l.detail }})</span>
-						</li>
-					</ul>
-				</details>
+				<CellText :value="s.all_units ? 'All units' : `${s.units.length} chosen units`" />
+				<CellText
+					:value="`${s.share_price_list ? 'Price list' : 'No price list'}; ${
+						s.brochures.length
+					} brochures`"
+					muted
+				/>
 			</template>
-			<template #cell-actions="{ row: s }">
-				<div v-if="s.status === 'Active'" class="flex flex-wrap items-center gap-ui-sm">
-					<FormField
-						v-model="reasons[s.name]"
-						compact
-						label="Reason for a withdrawal (optional)"
-						data-testid="sellos-shares-reason"
-					/>
-					<AppButton
-						type="button"
-						variant="danger"
-						data-testid="sellos-shares-withdraw"
-						@click="withdraw(s)"
-					>
-						Withdraw
-					</AppButton>
-				</div>
+			<template #cell-note="{ row: s }">
+				<CellText
+					v-if="s.withdrawn_reason"
+					:value="`Withdrawn: ${s.withdrawn_reason}`"
+					:lines="2"
+					muted
+				/>
 			</template>
 		</DataTable>
+
+		<!-- Withdrawing a share, with an optional reason: a small drawer opened from the row menu. -->
+		<FormDrawer
+			:open="Boolean(withdrawing)"
+			:title="withdrawing ? `Withdraw ${withdrawing.project_name}` : 'Withdraw share'"
+			text="The firm stops seeing it at once."
+			submit-label="Withdraw"
+			testid="sellos-shares-withdraw-drawer"
+			submit-testid="sellos-shares-withdraw"
+			@close="closeWithdraw"
+			@submit="withdraw"
+		>
+			<FormSection title="Reason">
+				<FormField
+					v-model="reason"
+					label="Reason for a withdrawal (optional)"
+					class="md:col-span-2"
+					data-testid="sellos-shares-reason"
+				/>
+			</FormSection>
+			<p v-if="error" role="alert" data-testid="sellos-shares-error" class="ui-text-error">
+				{{ error }}
+			</p>
+		</FormDrawer>
+
+		<!-- The log of one share: read only, opened from the row menu. -->
+		<FormDrawer
+			:open="Boolean(viewing)"
+			:title="viewing ? `${viewing.project_name}: log` : 'Log'"
+			submit-label="Close"
+			testid="sellos-shares-log-drawer"
+			submit-testid="sellos-shares-log-close"
+			@close="viewing = null"
+			@submit="viewing = null"
+		>
+			<FormSection v-if="viewing" title="Log">
+				<ul class="space-y-1 ui-text-muted md:col-span-2">
+					<li v-for="(l, i) in viewing.log" :key="i" data-testid="sellos-shares-log-row">
+						{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }}, {{ l.action }}
+						<span v-if="l.detail">({{ l.detail }})</span>
+					</li>
+				</ul>
+			</FormSection>
+		</FormDrawer>
 
 		<!-- Sharing a project is a drawer, not a form above the list. -->
 		<FormDrawer
@@ -231,6 +256,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
+import CellText from "../components/CellText.vue";
+import NameCell from "../components/NameCell.vue";
 import AppButton from "../components/AppButton.vue";
 import AppCheckbox from "../components/AppCheckbox.vue";
 import DataTable from "../components/DataTable.vue";
@@ -256,7 +283,9 @@ const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
 const sharing = ref(false);
-const reasons = reactive({});
+const withdrawing = ref(null);
+const viewing = ref(null);
+const reason = ref("");
 const form = reactive({
 	project: "",
 	every: false,
@@ -301,8 +330,8 @@ const columns = [
 	{ key: "project_name", label: "Project", primary: true, sortable: true },
 	{ key: "firm_name", label: "Firm", sortable: true },
 	{ key: "status", label: "Status", sortable: true },
-	{ key: "what", label: "What is shared", wrap: true },
-	{ key: "actions", label: "Actions", wrap: true },
+	{ key: "what", label: "What is shared" },
+	{ key: "note", label: "Note" },
 ];
 
 const kpis = computed(() => [
@@ -379,18 +408,37 @@ async function share() {
 	}
 }
 
-async function withdraw(s) {
+function openWithdraw(s) {
+	error.value = "";
+	notice.value = "";
+	reason.value = "";
+	withdrawing.value = s;
+}
+function closeWithdraw() {
+	withdrawing.value = null;
+	error.value = "";
+}
+
+async function withdraw() {
+	const s = withdrawing.value;
+	if (!s) return;
 	error.value = "";
 	notice.value = "";
 	try {
-		await partnerSharesApi.withdraw(s.name, reasons[s.name] || "");
-		delete reasons[s.name];
+		await partnerSharesApi.withdraw(s.name, reason.value || "");
+		withdrawing.value = null;
 		notice.value = "The share was withdrawn.";
 		await load();
 	} catch (e) {
 		error.value = serverMessage(e, "The share could not be withdrawn.");
 	}
 }
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rowActions = (s) => [
+	...(s.status === "Active" ? [{ label: "Withdraw", onClick: () => openWithdraw(s) }] : []),
+	{ label: "Log", onClick: () => (viewing.value = s) },
+];
 
 onMounted(load);
 </script>

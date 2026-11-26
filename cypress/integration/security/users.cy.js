@@ -12,6 +12,12 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 	const row = (email) =>
 		cy.get(`[data-testid="sellos-users-row"][data-email="${email}"]`).scrollIntoView();
 
+	// A row action is in the row menu (three dots), the only control in a row.
+	const menu = (email, label) => {
+		row(email).find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', label).click();
+	};
+
 	before(() => {
 		cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads");
 		cy.bench("sellos.tests.ui_fixtures.remove_gate_users");
@@ -56,7 +62,7 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 		row(agent)
 			.should("have.attr", "data-status", "Invited")
 			.within(() => {
-				cy.getByTestId("users-row-mobile").should("have.value", mobile);
+				cy.getByTestId("users-row-mobile").should("contain", mobile);
 				cy.getByTestId("users-click-to-call").should("be.visible");
 				cy.getByTestId("users-no-click-to-call").should("not.exist");
 				cy.getByTestId("users-role-label").should("contain", "Agent");
@@ -79,21 +85,18 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 	it("refuses a mobile number that is not +91 and ten digits, and saves a good one", () => {
 		open();
 		cy.expectApiStatus("sellos.access.users.save_user", 417);
-		row(noMobile).within(() => {
-			cy.getByTestId("users-row-mobile").clear().type("12345");
-			cy.getByTestId("users-save-mobile").click();
-		});
+		menu(noMobile, "Change mobile number");
+		cy.getByTestId("users-mobile-input").clear().type("12345");
+		cy.getByTestId("users-save-mobile").click();
 		cy.getByTestId("users-error").should("contain", "+91 and ten digits");
 		row(noMobile).find('[data-testid="sellos-users-no-click-to-call"]').should("exist");
 		cy.bench("sellos.tests.ui_fixtures.fresh_phone", { seed: 1702 }).then(({ phone }) => {
-			row(noMobile).within(() => {
-				cy.getByTestId("users-row-mobile").clear().type(phone);
-				cy.getByTestId("users-save-mobile").click();
-			});
+			cy.getByTestId("users-mobile-input").clear().type(phone);
+			cy.getByTestId("users-save-mobile").click();
 			cy.getByTestId("users-notice").should("contain", "Saved the number");
 			row(noMobile).within(() => {
 				cy.getByTestId("users-no-click-to-call").should("not.exist");
-				cy.getByTestId("users-row-mobile").should("have.value", phone);
+				cy.getByTestId("users-row-mobile").should("contain", phone);
 			});
 		});
 	});
@@ -117,7 +120,7 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 			cy.getByTestId("users-open-tasks").should("contain", "1 open tasks");
 		});
 		cy.intercept("POST", "**/sellos.access.users.deactivate_user*").as("deactivate");
-		row(agent).find('[data-testid="sellos-users-deactivate"]').click();
+		menu(agent, "Deactivate");
 		// SOS-P1-19: an agent with open work is asked where it goes, and nothing is deactivated yet.
 		cy.wait("@deactivate").its("response.statusCode").should("eq", 200);
 		// The open work and the handover choice sit in a panel above the table, not inside the row.
@@ -129,12 +132,12 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 		cy.getByTestId("users-handover-agent").select(noMobile);
 		cy.getByTestId("users-handover-confirm").click();
 		cy.wait("@deactivate").its("response.statusCode").should("eq", 200);
-		row(agent)
-			.should("have.attr", "data-status", "Deactivated")
-			.within(() => {
-				cy.getByTestId("users-deactivate").should("not.exist");
-				cy.getByTestId("users-reactivate").should("be.visible");
-			});
+		row(agent).should("have.attr", "data-status", "Deactivated");
+		// The menu now offers Turn back on and no Deactivate.
+		row(agent).find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', "Turn back on").should("be.visible");
+		cy.contains('[role="menuitem"]', "Deactivate").should("not.exist");
+		cy.get("body").type("{esc}");
 		cy.getByTestId("users-work").should("be.visible");
 		cy.getByTestId("users-handed-over").should("contain", "1 leads");
 		cy.getByTestId("users-work-lead").should("not.exist");
@@ -161,7 +164,9 @@ context("SOS-P1-17: manage users as a Company Admin", () => {
 		open();
 		cy.get('[data-testid="sellos-users-row"]').should("have.length.greaterThan", 1);
 		cy.roleUser("company_admin").then(({ user }) => {
-			row(user).find('[data-testid="sellos-users-deactivate"]').should("not.exist");
+			row(user).find('[data-testid="sellos-row-menu-button"]').click();
+			cy.contains('[role="menuitem"]', "Change mobile number").should("be.visible");
+			cy.contains('[role="menuitem"]', "Deactivate").should("not.exist");
 		});
 	});
 

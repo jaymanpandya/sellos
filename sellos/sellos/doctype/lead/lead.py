@@ -36,7 +36,8 @@ class Lead(ArchiveOnly):
 
 	def _title(self):
 		name = frappe.db.get_value("Client", self.client, "client_name") if self.client else None
-		return f"{name} {self.source}".strip() if self.source else (name or "")
+		# SOS-LOOP (25 Nov 2026): a person's plain name. The source is its own field, never joined to the name.
+		return name or ""
 
 	def _check_assignee(self):
 		if not (set(frappe.get_roles(self.assigned_to)) & CAN_BE_ASSIGNED):

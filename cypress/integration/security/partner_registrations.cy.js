@@ -43,6 +43,11 @@ context("SOS-P7-02: register a lead as a channel partner", () => {
 		cy.wait("@list");
 		cy.getByTestId("registrations-page").should("be.visible");
 	};
+	// A row action is in the row menu (three dots), the only control in a row.
+	const menu = (name, label) => {
+		row(name).find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', label).click();
+	};
 	const row = (name) => cy.contains('[data-testid="sellos-registrations-row"]', name);
 
 	beforeEach(() => {
@@ -111,7 +116,7 @@ context("SOS-P7-02: register a lead as a channel partner", () => {
 		row(newName)
 			.should("have.attr", "data-status", "Registered")
 			.within(() => {
-				cy.getByTestId("registrations-phone").should("be.visible");
+				cy.getByTestId("name-cell-key").should("be.visible");
 				cy.getByTestId("registrations-consent").should("contain", "Unknown");
 			});
 		// A rejection needs a reason.
@@ -120,16 +125,20 @@ context("SOS-P7-02: register a lead as a channel partner", () => {
 			"POST",
 			"**/sellos.access.partner_registrations.reject_partner_registration*"
 		).as("reject");
-		row(newName).find('[data-testid="sellos-registrations-reject"]').click();
+		menu(newName, "Reject");
+		cy.getByTestId("registrations-reject").click();
 		cy.wait("@reject").its("response.statusCode").should("eq", 417);
 		cy.getByTestId("registrations-error").should("contain", "reason");
+		cy.getByTestId("registrations-reject-drawer")
+			.find('[data-testid="sellos-drawer-close"]')
+			.click();
 		row(newName).should("have.attr", "data-status", "Registered");
 
 		cy.intercept(
 			"POST",
 			"**/sellos.access.partner_registrations.approve_partner_registration*"
 		).as("approve");
-		row(newName).find('[data-testid="sellos-registrations-approve"]').click();
+		menu(newName, "Approve");
 		cy.wait("@approve").its("response.statusCode").should("eq", 200);
 		row(newName)
 			.should("have.attr", "data-status", "Approved")
@@ -155,14 +164,13 @@ context("SOS-P7-02: register a lead as a channel partner", () => {
 		fillBuyer(newName, numbers.new_phone);
 		submit();
 		openRegistrations();
-		row(newName)
-			.find('[data-testid="sellos-registrations-reason-input"]')
-			.type("Not a genuine buyer");
+		menu(newName, "Reject");
+		cy.getByTestId("registrations-reason-input").type("Not a genuine buyer");
 		cy.intercept(
 			"POST",
 			"**/sellos.access.partner_registrations.reject_partner_registration*"
 		).as("reject");
-		row(newName).find('[data-testid="sellos-registrations-reject"]').click();
+		cy.getByTestId("registrations-reject").click();
 		cy.wait("@reject").its("response.statusCode").should("eq", 200);
 		row(newName).should("have.attr", "data-status", "Rejected");
 		openRegister();

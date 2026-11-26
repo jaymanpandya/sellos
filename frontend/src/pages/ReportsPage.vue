@@ -187,6 +187,8 @@
 					:rows="result.rows"
 					row-key="group"
 					:row-attrs="(row) => ({ 'data-group': row.group })"
+					:actions="groupActions"
+					:row-name="(row) => String(row.label ?? '')"
 					:page-size="200"
 					empty-title="Nothing in these dates"
 					empty-text="No record falls between these dates. Choose other dates."
@@ -195,6 +197,9 @@
 					row-testid="sellos-reports-row"
 					empty-testid="sellos-reports-rows-empty"
 				>
+					<template #cell-label="{ row }">
+						<NameCell :name="String(row.label ?? '')" />
+					</template>
 					<template #cell-count="{ row }">
 						<span class="tabular-nums" data-col="count">{{ row.count }}</span>
 					</template>
@@ -202,14 +207,6 @@
 						<span class="tabular-nums" data-col="total">{{
 							show(result.report.unit, row.total)
 						}}</span>
-					</template>
-					<template #cell-open="{ row }">
-						<AppButton
-							data-testid="sellos-reports-open"
-							@click="open(row.label, row.group)"
-						>
-							Records
-						</AppButton>
 					</template>
 				</DataTable>
 
@@ -225,6 +222,8 @@
 						:rows="drillRows"
 						row-key="name"
 						:row-attrs="(row) => ({ 'data-record': row.name })"
+						:actions="recordActions"
+						:row-name="(row) => row.name"
 						:page-size="200"
 						empty-title="No records"
 						empty-text="No record matches this figure."
@@ -238,14 +237,8 @@
 							:key="column.field"
 							#[drillSlot(at)]="{ row }"
 						>
-							<router-link
-								v-if="column.field === leadColumn && row.lead"
-								class="ui-link"
-								:to="`/crm/leads/${row.lead}`"
-							>
-								{{ row[drillKey(at)] }}
-							</router-link>
-							<span v-else>{{ row[drillKey(at)] }}</span>
+							<NameCell v-if="at === 0" :name="String(row[drillKey(at)] ?? '')" />
+							<CellText v-else :value="row[drillKey(at)]" />
 						</template>
 					</DataTable>
 				</div>
@@ -273,31 +266,26 @@
 					empty-icon="lucide-calendar-clock"
 					testid="sellos-reports-schedules"
 					row-testid="sellos-reports-schedule"
+					:actions="scheduleActions"
+					:row-name="(row) => row.title"
 					empty-testid="sellos-reports-schedules-empty"
 				>
+					<template #cell-title="{ row }">
+						<NameCell :name="row.title" />
+					</template>
+					<template #cell-report_title="{ row }">
+						<CellText :value="row.report_title" />
+					</template>
 					<template #cell-when="{ row }">{{ whenLabel(row) }}</template>
 					<template #cell-next_run="{ row }">{{
 						row.next_run ? formatDateTime(row.next_run) : "Off"
 					}}</template>
 					<template #cell-last_result="{ row }">
-						<span data-col="result">{{ row.last_result || "Not sent yet" }}</span>
-					</template>
-					<template #cell-actions="{ row }">
-						<div class="flex gap-ui-xs">
-							<AppButton
-								data-testid="sellos-reports-schedule-send"
-								@click="sendSchedule(row)"
-							>
-								Send now
-							</AppButton>
-							<AppButton
-								variant="danger"
-								data-testid="sellos-reports-schedule-delete"
-								@click="deleteSchedule(row)"
-							>
-								Delete
-							</AppButton>
-						</div>
+						<CellText
+							:value="row.last_result || 'Not sent yet'"
+							:lines="2"
+							data-col="result"
+						/>
 					</template>
 				</DataTable>
 			</div>
@@ -428,8 +416,10 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FilterBar from "../components/FilterBar.vue";
@@ -438,6 +428,7 @@ import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
+import NameCell from "../components/NameCell.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
@@ -456,6 +447,7 @@ const reports = ref(null);
 const otherReports = computed(() =>
 	navFor(personaFor(session.roles)).filter((item) => item.area === "reports")
 );
+const router = useRouter();
 const scope = ref("own");
 const key = ref("");
 const range = reactive({ from_date: "", to_date: "" });
@@ -522,11 +514,6 @@ const scopeText = computed(
 			own: "Your own records only.",
 		}[scope.value] || "")
 );
-// The column that holds the lead's name opens the lead.
-const leadColumn = computed(
-	() => drill.value?.columns.find((c) => ["lead", "lead_title"].includes(c.field))?.field
-);
-
 const kpis = computed(() => {
 	const r = result.value;
 	const items = [
@@ -561,8 +548,15 @@ const groupColumns = computed(() => [
 	...(isSum.value
 		? [{ key: "total", label: result.value.report.measure_label, align: "right" }]
 		: []),
-	{ key: "open", label: "" },
 ]);
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const groupActions = (row) => [{ label: "Records", onClick: () => open(row.label, row.group) }];
+const recordActions = (row) =>
+	row.lead ? [{ label: "Open lead", onClick: () => router.push(`/crm/leads/${row.lead}`) }] : [];
+const scheduleActions = (row) => [
+	{ label: "Send now", onClick: () => sendSchedule(row) },
+	{ label: "Delete", onClick: () => deleteSchedule(row) },
+];
 
 // The records behind a figure: one column for each the server names.
 const drillKey = (at) => `c${at}`;
@@ -586,7 +580,6 @@ const scheduleColumns = [
 	{ key: "when", label: "When" },
 	{ key: "next_run", label: "Next" },
 	{ key: "last_result", label: "Last result" },
-	{ key: "actions", label: "" },
 ];
 
 function show(unit, value) {

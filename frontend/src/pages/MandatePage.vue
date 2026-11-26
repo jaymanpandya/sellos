@@ -296,7 +296,9 @@ const fileLimit = ref(5);
 const dossier = ref(null);
 const noteTitle = ref("");
 const noteText = ref("");
-const tab = ref("overview");
+const tab = ref(
+	["overview", "dossier", "notes"].includes(route.query.tab) ? route.query.tab : "overview"
+);
 const error = ref("");
 const notice = ref("");
 const loadError = ref("");

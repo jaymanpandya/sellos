@@ -34,6 +34,61 @@ function noSidewaysScroll(what) {
 	});
 }
 
+// Lists (docs/DESIGN_SYSTEM.md, "Lists", rules a to f), read from the tables that are drawn. At 1440 a table does
+// not clip or scroll sideways; no cell holds a button, a field or a link styled as a button but the row menu; no
+// text wraps beyond two lines; no name ends in a source word; no cell is a bare dash. At 390 a table is cards.
+const SOURCE_WORDS =
+	/\b(Referral|Walk in|Walk-in|Website|Portal|Facebook|Instagram|Google|99acres|MagicBricks|Housing)\s*$/i;
+function listRules(what, width) {
+	cy.get("body").then(($body) => {
+		const tables = $body.find('[data-testid="sellos-table-view"] table');
+		const cards = $body.find('[data-testid="sellos-card-view"]');
+		if (width >= 1024) {
+			expect(cards.length, `${what}: card view at ${width}`).to.eq(0);
+		} else {
+			expect(tables.length, `${what}: table at ${width}`).to.eq(0);
+		}
+		tables.each((_, table) => {
+			const box = table.closest(".ui-table-scroll");
+			expect(box.scrollWidth, `${what}: the table scrolls sideways`).to.be.at.most(
+				box.clientWidth + 1
+			);
+			const cells = Array.from(table.querySelectorAll("tbody td"));
+			cells.forEach((td) => {
+				const label = `${what}: "${td.innerText.trim().slice(0, 40)}"`;
+				const bad = td.querySelectorAll(
+					'button:not([data-testid="sellos-row-menu-button"]):not([role="checkbox"]), select, textarea, input:not([type="checkbox"]), a.ui-button, [class*="ui-button"]'
+				);
+				expect(bad.length, `${label}: a control in a row`).to.eq(0);
+				expect(td.innerText.trim(), `${label}: a bare dash`).not.to.match(
+					/^[-\u2013\u2014]$/
+				);
+				expect(td.scrollWidth, `${label}: the cell is clipped`).to.be.at.most(
+					td.clientWidth + 1
+				);
+				td.querySelectorAll("*").forEach((el) => {
+					const own = Array.from(el.childNodes).some(
+						(n) => n.nodeType === 3 && n.textContent.trim()
+					);
+					if (!own) return;
+					const style = getComputedStyle(el);
+					if (style.display === "inline") return;
+					const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.4;
+					expect(
+						el.getBoundingClientRect().height / line,
+						`${label}: wraps beyond two lines`
+					).to.be.at.most(2.1);
+				});
+			});
+			table.querySelectorAll('[data-testid="sellos-name-cell-name"]').forEach((el) => {
+				expect(el.textContent.trim(), "a name carries a source").not.to.match(
+					SOURCE_WORDS
+				);
+			});
+		});
+	});
+}
+
 // The menu links of the signed in role: [{ href, label, icons }], read from the sidebar that is on screen.
 function menuLinks() {
 	return cy
@@ -67,7 +122,7 @@ ROLES.forEach(({ role, label }) => {
 		});
 
 		it("opens every page in the menu and saves a screenshot of each", () => {
-			cy.viewport(1400, 960);
+			cy.viewport(1440, 960);
 			cy.signInFresh(role);
 			cy.visit("/sellos");
 			pageDrawn();
@@ -82,6 +137,7 @@ ROLES.forEach(({ role, label }) => {
 					pageDrawn();
 					// At 1440 nothing is cut off or scrolls sideways either (docs/DESIGN_SYSTEM.md, rule 7).
 					noSidewaysScroll(`${link.label} at 1440`);
+					listRules(`${link.label} at 1440`, 1440);
 					cy.screenshot(`${label}/${n}-${slug(link.label)}`, {
 						capture: "viewport",
 						overwrite: true,
@@ -102,6 +158,7 @@ ROLES.forEach(({ role, label }) => {
 					cy.visit(link.href);
 					pageDrawn();
 					noSidewaysScroll(`${link.label} at 390`);
+					listRules(`${link.label} at 390`, 390);
 					if (index === 0) cy.getByTestId("phone-nav").should("be.visible");
 					cy.screenshot(`${label}/phone-${n}-${slug(link.label)}`, {
 						capture: "viewport",

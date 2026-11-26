@@ -94,17 +94,20 @@ context("SOS-P2-11: the call reports", () => {
 		);
 		cy.getByTestId("callreports-purpose").each(($row) => {
 			const count = $row.find("[data-col=calls]").text();
-			cy.wrap($row).find("[data-testid=sellos-callreports-purpose-open]").click();
+			cy.wrap($row).find("[data-testid=sellos-row-menu-button]").click();
+			cy.contains("[role=menuitem]", "Show calls").click();
 			cy.getByTestId("callreports-drill").should("have.attr", "data-count", count);
 		});
 		cy.getByTestId("callreports-agent").each(($row) => {
 			const count = $row.find("[data-col=calls]").text();
-			cy.wrap($row).find("[data-testid=sellos-callreports-agent-open]").click();
+			cy.wrap($row).find("[data-testid=sellos-row-menu-button]").click();
+			cy.contains("[role=menuitem]", "Show calls").click();
 			cy.getByTestId("callreports-drill").should("have.attr", "data-count", count);
 		});
 		cy.getByTestId("callreports-consent").each(($row) => {
 			const count = $row.find("[data-col=calls]").text().trim().split(" ")[0];
-			cy.wrap($row).find("[data-testid=sellos-callreports-consent-open]").click();
+			cy.wrap($row).find("[data-testid=sellos-row-menu-button]").click();
+			cy.contains("[role=menuitem]", "Show calls").click();
 			cy.getByTestId("callreports-drill").should("have.attr", "data-count", count);
 		});
 	});
@@ -118,8 +121,9 @@ context("SOS-P2-11: the call reports", () => {
 			.should("contain", "1 (");
 		cy.getByTestId("callreports-consent")
 			.filter('[data-status="Consented"]')
-			.find("[data-testid=sellos-callreports-consent-open]")
+			.find("[data-testid=sellos-row-menu-button]")
 			.click();
+		cy.contains("[role=menuitem]", "Show calls").click();
 		cy.getByTestId("callreports-call").each(($row) => {
 			expect($row.text()).to.contain("Consented");
 		});

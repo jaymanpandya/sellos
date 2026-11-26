@@ -76,6 +76,7 @@
 				:loading="!loaded"
 				loading-label="Loading projects."
 				:row-to="projectTo"
+				:actions="projectActions"
 				:row-name="(p) => p.project_name"
 				empty-title="No projects yet"
 				empty-text="Add a developer, then the first project."
@@ -84,36 +85,30 @@
 				row-testid="sellos-inventory-project-row"
 			>
 				<template #cell-project_name="{ row }">
-					<router-link
-						:to="projectTo(row)"
-						class="no-underline hover:underline ui-text-body"
+					<NameCell
+						:name="row.project_name"
+						:detail="row.developer"
 						data-testid="sellos-inventory-project-link"
-					>
-						{{ row.project_name }}
-					</router-link>
-					<span v-if="row.developer" class="block ui-text-muted">{{
-						row.developer
-					}}</span>
+					/>
 				</template>
 				<template #cell-location="{ row }">
-					<span class="block">{{
-						[row.locality, row.city].filter(Boolean).join(", ")
-					}}</span>
-					<span
+					<CellText :value="[row.locality, row.city].filter(Boolean).join(', ')" />
+					<CellText
 						v-if="row.rera_number"
-						class="block ui-text-muted"
+						muted
+						:value="`RERA ${row.rera_number}`"
 						data-testid="sellos-inventory-rera"
-						>RERA {{ row.rera_number }}</span
-					>
+					/>
 				</template>
 				<template #cell-project_status="{ row }">
 					<StatusBadge tone="neutral" :label="row.project_status" />
 				</template>
 				<template #cell-units="{ row }">
-					<span data-testid="sellos-inventory-unit-counts">
-						{{ row.units.total }} units: {{ row.units.Available }} available,
-						{{ row.units.Held }} held, {{ row.units.Sold }} sold.
-					</span>
+					<CellText
+						:lines="2"
+						:value="`${row.units.total} units: ${row.units.Available} available, ${row.units.Held} held, ${row.units.Sold} sold.`"
+						data-testid="sellos-inventory-unit-counts"
+					/>
 				</template>
 			</DataTable>
 
@@ -132,6 +127,9 @@
 				testid="sellos-inventory-properties"
 				row-testid="sellos-inventory-property-row"
 			>
+				<template #cell-title="{ row }">
+					<NameCell :name="row.title" />
+				</template>
 				<template #cell-status="{ row }">
 					<StatusBadge
 						:tone="STATUS_TONE[row.status] || 'neutral'"
@@ -141,17 +139,25 @@
 					/>
 				</template>
 				<template #cell-details="{ row }">
-					{{ row.property_type }}{{ row.configuration ? `, ${row.configuration}` : "" }},
-					floor {{ row.floor ?? "-" }}, {{ row.parking }} parking
-					<span class="block ui-text-muted">{{ row.carpet_area }} sq ft carpet</span>
+					<CellText
+						:value="
+							[
+								row.property_type +
+									(row.configuration ? `, ${row.configuration}` : ''),
+								row.floor === null || row.floor === undefined || row.floor === ''
+									? ''
+									: `floor ${row.floor}`,
+								`${row.parking} parking`,
+							]
+								.filter(Boolean)
+								.join(', ')
+						"
+					/>
+					<CellText muted :value="`${row.carpet_area} sq ft carpet`" />
 				</template>
 				<template #cell-location="{ row }">
-					<span class="block">{{
-						[row.locality, row.city].filter(Boolean).join(", ")
-					}}</span>
-					<span v-if="row.rera_number" class="block ui-text-muted"
-						>RERA {{ row.rera_number }}</span
-					>
+					<CellText :value="[row.locality, row.city].filter(Boolean).join(', ')" />
+					<CellText v-if="row.rera_number" muted :value="`RERA ${row.rera_number}`" />
 				</template>
 			</DataTable>
 
@@ -168,7 +174,14 @@
 				empty-icon="lucide-hard-hat"
 				testid="sellos-inventory-developers"
 				row-testid="sellos-inventory-developer-row"
-			/>
+			>
+				<template #cell-developer_name="{ row }">
+					<NameCell :name="row.developer_name" />
+				</template>
+				<template #cell-contact_person="{ row }">
+					<CellText :value="row.contact_person" />
+				</template>
+			</DataTable>
 
 			<MatchWeights />
 		</div>
@@ -370,13 +383,16 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 import { Dialog } from "frappe-ui";
+import { useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import KpiStrip from "../components/KpiStrip.vue";
+import NameCell from "../components/NameCell.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
@@ -388,6 +404,7 @@ import MatchWeights from "../inventory/MatchWeights.vue";
 
 // Developers, projects and secondary properties (SOS-P4-01). Every change is made on the server and the
 // overview read back, so what is shown is what is saved. The three add forms are drawers.
+const router = useRouter();
 const developers = ref([]);
 const projects = ref([]);
 const properties = ref([]);
@@ -487,6 +504,10 @@ const propertyColumns = [
 const developerColumns = [
 	{ key: "developer_name", label: "Developer", primary: true, sortable: true },
 	{ key: "contact_person", label: "Contact person" },
+];
+
+const projectActions = (p) => [
+	{ label: "Open project", onClick: () => router.push(projectTo(p)) },
 ];
 
 function propertyActions(p) {

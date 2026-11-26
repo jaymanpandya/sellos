@@ -17,7 +17,8 @@ context("SOS-P4-03: photos and videos of a listing", () => {
 		cy.intercept("POST", "**/sellos.inventory.media.listing_media*").as("media");
 		cy.visit("/sellos/inventory/listings");
 		cy.wait("@overview");
-		row(title).find('[data-testid="sellos-listing-media-toggle"]').click();
+		row(title).find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', "Photos and videos").click();
 		cy.wait("@media");
 	};
 	const titles = () =>
@@ -51,9 +52,9 @@ context("SOS-P4-03: photos and videos of a listing", () => {
 			cy.getByTestId("media-file").selectFile(picture("second.png"));
 			cy.wait("@upload").its("response.statusCode").should("eq", 200);
 			mediaRow(second).should("have.attr", "data-position", "2");
-			row(listing)
-				.find('[data-testid="sellos-listing-media-toggle"]')
-				.should("contain", "(2)");
+			row(listing).find('[data-testid="sellos-row-menu-button"]').click();
+			cy.contains('[role="menuitem"]', "Photos and videos").should("contain", "(2)");
+			cy.get("body").type("{esc}");
 
 			// Invalid files are refused, with the reason, and nothing is added.
 			cy.expectApiStatus("sellos.inventory.media.upload_listing_media", 417);

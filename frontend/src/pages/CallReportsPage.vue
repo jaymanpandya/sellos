@@ -83,6 +83,7 @@
 					:title="drill.title"
 					:columns="drillColumns"
 					:rows="drill.calls"
+					:actions="callActions"
 					:page-size="200"
 					empty-title="No calls"
 					empty-text="No call matches this figure."
@@ -96,9 +97,7 @@
 						formatDateTime(row.started_on)
 					}}</template>
 					<template #cell-lead="{ row }">
-						<router-link class="ui-link" :to="`/crm/leads/${row.lead}`">
-							{{ row.lead }}
-						</router-link>
+						<CellText :value="row.lead" />
 					</template>
 					<template #cell-duration="{ row }">{{ talkTime(row.duration) }}</template>
 					<template #cell-cost="{ row }">{{ rupees(row.cost) }}</template>
@@ -110,6 +109,7 @@
 					title="By agent"
 					:columns="agentColumns"
 					:rows="report.by_agent"
+					:actions="agentActions"
 					row-key="agent"
 					:row-attrs="(row) => ({ 'data-agent': row.agent })"
 					:page-size="200"
@@ -135,20 +135,13 @@
 					<template #cell-cost="{ row }">
 						<span class="tabular-nums" data-col="cost">{{ rupees(row.cost) }}</span>
 					</template>
-					<template #cell-open="{ row }">
-						<AppButton
-							data-testid="sellos-callreports-agent-open"
-							@click="open(`Calls by ${row.agent_name}`, { agent: row.agent })"
-						>
-							Calls
-						</AppButton>
-					</template>
 				</DataTable>
 
 				<DataTable
 					title="By purpose"
 					:columns="purposeColumns"
 					:rows="report.by_purpose"
+					:actions="purposeActions"
 					row-key="purpose"
 					:row-attrs="(row) => ({ 'data-purpose': row.purpose })"
 					:page-size="200"
@@ -174,14 +167,6 @@
 					<template #cell-cost="{ row }">
 						<span class="tabular-nums" data-col="cost">{{ rupees(row.cost) }}</span>
 					</template>
-					<template #cell-open="{ row }">
-						<AppButton
-							data-testid="sellos-callreports-purpose-open"
-							@click="open(`${row.purpose} calls`, { purpose: row.purpose })"
-						>
-							Calls
-						</AppButton>
-					</template>
 				</DataTable>
 
 				<p class="ui-text-muted">
@@ -192,6 +177,7 @@
 					:title="`Consent coverage, ${report.totals.consent_coverage}% of calls to Consented leads`"
 					:columns="consentColumns"
 					:rows="report.consent"
+					:actions="consentActions"
 					row-key="status"
 					:row-attrs="(row) => ({ 'data-status': row.status })"
 					:page-size="200"
@@ -205,14 +191,6 @@
 							>{{ row.calls }} ({{ row.share }}%)</span
 						>
 					</template>
-					<template #cell-open="{ row }">
-						<AppButton
-							data-testid="sellos-callreports-consent-open"
-							@click="open(`${row.status} calls`, { consent_status: row.status })"
-						>
-							Calls
-						</AppButton>
-					</template>
 				</DataTable>
 			</template>
 		</div>
@@ -221,8 +199,10 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FilterBar from "../components/FilterBar.vue";
@@ -237,6 +217,7 @@ import { serverMessage } from "../crm/crmApi";
 import { formatDateTime } from "../format";
 import { callsApi, rupees, talkTime } from "../reports/callsApi";
 
+const router = useRouter();
 const range = reactive({ from_date: "", to_date: "" });
 const report = ref(null);
 const drill = ref(null);
@@ -268,14 +249,12 @@ const rateColumns = [
 	{ key: "connect_rate", label: "Connect rate", align: "right" },
 	{ key: "talk_seconds", label: "Talk time", align: "right" },
 	{ key: "cost", label: "Cost", align: "right" },
-	{ key: "open", label: "" },
 ];
 const agentColumns = [{ key: "agent_name", label: "Agent", primary: true }, ...rateColumns];
 const purposeColumns = [{ key: "purpose", label: "Purpose", primary: true }, ...rateColumns];
 const consentColumns = [
 	{ key: "status", label: "Consent status", primary: true },
 	{ key: "calls", label: "Calls", align: "right" },
-	{ key: "open", label: "" },
 ];
 const drillColumns = [
 	{ key: "started_on", label: "Started" },
@@ -370,6 +349,26 @@ async function open(title, figure) {
 		error.value = serverMessage(e, "The calls could not be loaded.");
 	}
 }
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c): the calls behind a row, or its lead.
+const agentActions = (row) => [
+	{
+		label: "Show calls",
+		onClick: () => open(`Calls by ${row.agent_name}`, { agent: row.agent }),
+	},
+];
+const purposeActions = (row) => [
+	{ label: "Show calls", onClick: () => open(`${row.purpose} calls`, { purpose: row.purpose }) },
+];
+const consentActions = (row) => [
+	{
+		label: "Show calls",
+		onClick: () => open(`${row.status} calls`, { consent_status: row.status }),
+	},
+];
+const callActions = (row) => [
+	{ label: "Open lead", onClick: () => router.push(`/crm/leads/${row.lead}`) },
+];
 
 onMounted(load);
 </script>

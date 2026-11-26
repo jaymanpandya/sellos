@@ -94,5 +94,9 @@ class Mandate(InventoryRecord):
 	def sign(self, file_url):
 		self.status = SIGNED
 		self.signed_document = file_url
+		if self.signing_status != "Signed":
+			# SOS-LOOP: a mandate signed on paper and uploaded is "Signed offline", never "Not sent"; DocuSeal has
+			# already set "Signed" when the signature came through it.
+			self.signing_status = "Signed offline"
 		self.signed_on = now_datetime()
 		self.signed_by = frappe.session.user

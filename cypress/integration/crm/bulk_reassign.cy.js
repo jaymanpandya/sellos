@@ -95,7 +95,8 @@ context("SOS-P1-19: bulk reassignment", () => {
 		const rule = () =>
 			cy.get('[data-testid="sellos-assignment-rule"][data-name="Gate Assign Rule"]');
 		rule().should("contain", "Locality Gate Assign Locality").and("contain", seed.team);
-		rule().find('[data-testid="sellos-assignment-rule-remove"]').click();
+		rule().find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', "Remove").click();
 		rule().should("not.exist");
 	});
 });

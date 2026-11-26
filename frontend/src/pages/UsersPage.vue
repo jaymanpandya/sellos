@@ -106,8 +106,38 @@
 			</p>
 		</FormDrawer>
 
+		<!-- Changing a user's mobile number: a small drawer opened from the row menu. -->
+		<FormDrawer
+			:open="Boolean(editing)"
+			:title="
+				editing
+					? `Mobile number of ${editing.full_name || editing.email}`
+					: 'Mobile number'
+			"
+			text="Click to call rings this number first."
+			submit-label="Save number"
+			testid="sellos-users-mobile-drawer"
+			submit-testid="sellos-users-save-mobile"
+			@close="closeEdit"
+			@submit="saveMobile"
+		>
+			<FormSection title="Number">
+				<FormField
+					v-model="mobileDraft"
+					type="tel"
+					label="Mobile number"
+					hint="+91 and ten digits."
+					class="md:col-span-2"
+					data-testid="sellos-users-mobile-input"
+				/>
+			</FormSection>
+			<p v-if="error" role="alert" data-testid="sellos-users-error" class="ui-text-error">
+				{{ error }}
+			</p>
+		</FormDrawer>
+
 		<p
-			v-if="error && !inviting"
+			v-if="error && !inviting && !editing"
 			role="alert"
 			data-testid="sellos-users-error"
 			class="mb-ui-md ui-text-error"
@@ -210,6 +240,7 @@
 			caption="Users"
 			:columns="columns"
 			:rows="shown"
+			:actions="rowActions"
 			row-key="email"
 			:row-attrs="rowAttrs"
 			:row-name="(u) => u.full_name || u.email"
@@ -222,15 +253,14 @@
 			row-testid="sellos-users-row"
 		>
 			<template #cell-full_name="{ row }">
-				<span class="block ui-text-strong" data-testid="sellos-users-name">{{
-					row.full_name || row.email
-				}}</span>
-				<span class="block ui-text-muted">{{ row.email }}</span>
+				<NameCell
+					:name="row.full_name || row.email"
+					:identifier="row.full_name ? row.email : ''"
+					data-testid="sellos-users-name"
+				/>
 			</template>
 			<template #cell-role="{ row }">
-				<span class="ui-text-secondary" data-testid="sellos-users-role-label">{{
-					roleLabel(row.role)
-				}}</span>
+				<CellText :value="roleLabel(row.role)" data-testid="sellos-users-role-label" />
 			</template>
 			<template #cell-status="{ row }">
 				<StatusBadge
@@ -240,32 +270,20 @@
 				/>
 			</template>
 			<template #cell-mobile_no="{ row }">
-				<div class="flex flex-wrap items-end gap-ui-sm">
-					<FormField
-						v-model="mobiles[row.email]"
-						type="tel"
-						label="Mobile number"
-						class="w-52"
-						data-testid="sellos-users-row-mobile"
-					/>
-					<AppButton
-						type="button"
-						data-testid="sellos-users-save-mobile"
-						@click="saveMobile(row)"
-					>
-						Save number
-					</AppButton>
-				</div>
-				<p
+				<CellText :value="row.mobile_no" data-testid="sellos-users-row-mobile" />
+				<span
 					v-if="row.click_to_call_note"
+					class="block truncate ui-text-error"
+					:title="row.click_to_call_note"
 					data-testid="sellos-users-no-click-to-call"
-					class="mt-1 ui-text-error"
+					>{{ row.click_to_call_note }}</span
 				>
-					{{ row.click_to_call_note }}
-				</p>
-				<p v-else class="mt-1 ui-text-muted" data-testid="sellos-users-click-to-call">
-					Click to call rings this number first.
-				</p>
+				<span
+					v-else
+					class="block truncate ui-text-muted"
+					data-testid="sellos-users-click-to-call"
+					>Click to call rings this number first.</span
+				>
 			</template>
 			<template #cell-work="{ row }">
 				<span class="block ui-text-muted" data-testid="sellos-users-open-leads"
@@ -275,34 +293,6 @@
 					>{{ row.open_tasks }} open tasks</span
 				>
 			</template>
-			<template #cell-actions="{ row }">
-				<div class="flex flex-wrap items-center gap-ui-sm">
-					<AppButton
-						v-if="row.status === 'Invited'"
-						type="button"
-						data-testid="sellos-users-resend"
-						@click="resend(row)"
-					>
-						Send invitation again
-					</AppButton>
-					<AppButton
-						v-if="row.enabled && row.email !== session.user"
-						type="button"
-						data-testid="sellos-users-deactivate"
-						@click="deactivate(row)"
-					>
-						Deactivate
-					</AppButton>
-					<AppButton
-						v-if="!row.enabled"
-						type="button"
-						data-testid="sellos-users-reactivate"
-						@click="reactivate(row)"
-					>
-						Turn back on
-					</AppButton>
-				</div>
-			</template>
 		</DataTable>
 	</PageTemplate>
 </template>
@@ -310,6 +300,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
+import CellText from "../components/CellText.vue";
+import NameCell from "../components/NameCell.vue";
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
 import FilterBar from "../components/FilterBar.vue";
@@ -339,7 +331,8 @@ const work = ref(null);
 const inviting = ref(false);
 const search = ref("");
 const statusFilter = ref("");
-const mobiles = reactive({});
+const editing = ref(null);
+const mobileDraft = ref("");
 const form = reactive({
 	email: "",
 	first_name: "",
@@ -354,7 +347,6 @@ function take(state) {
 	users.value = state.users;
 	roles.value = state.roles;
 	mailReady.value = state.mail_ready;
-	for (const u of state.users) mobiles[u.email] = u.mobile_no || "";
 }
 
 const roleOptions = computed(() => roles.value.map((r) => ({ label: roleLabel(r), value: r })));
@@ -439,9 +431,19 @@ const columns = [
 	},
 	{ key: "role", label: "Role", sortable: true, sortValue: (u) => roleLabel(u.role) },
 	{ key: "status", label: "Status", sortable: true },
-	{ key: "mobile_no", label: "Mobile number", wrap: true, class: "min-w-[16rem]" },
+	{ key: "mobile_no", label: "Mobile number" },
 	{ key: "work", label: "Open work" },
-	{ key: "actions", label: "Actions" },
+];
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rowActions = (u) => [
+	{ label: "Change mobile number", onClick: () => openEdit(u) },
+	...(u.status === "Invited"
+		? [{ label: "Send invitation again", onClick: () => resend(u) }]
+		: []),
+	...(u.enabled && u.email !== session.user
+		? [{ label: "Deactivate", onClick: () => deactivate(u) }]
+		: []),
+	...(!u.enabled ? [{ label: "Turn back on", onClick: () => reactivate(u) }] : []),
 ];
 const rowAttrs = (u) => ({ "data-email": u.email, "data-status": u.status });
 const workUser = computed(() => users.value.find((u) => u.email === work.value?.email) || null);
@@ -502,14 +504,28 @@ async function resend(u) {
 		: "The invitation was not sent because email is not set up yet.";
 }
 
-async function saveMobile(u) {
+function openEdit(u) {
+	error.value = "";
+	notice.value = "";
+	mobileDraft.value = u.mobile_no || "";
+	editing.value = u;
+}
+function closeEdit() {
+	editing.value = null;
+	error.value = "";
+}
+
+async function saveMobile() {
+	const u = editing.value;
+	if (!u) return;
 	const result = await run(
-		() => usersApi.save(u.email, { mobile_no: mobiles[u.email] }),
+		() => usersApi.save(u.email, { mobile_no: mobileDraft.value }),
 		"The number could not be saved."
 	);
 	if (result) {
 		take(result);
 		notice.value = `Saved the number for ${u.full_name || u.email}.`;
+		editing.value = null;
 	}
 }
 

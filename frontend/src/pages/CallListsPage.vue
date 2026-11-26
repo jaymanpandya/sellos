@@ -47,6 +47,7 @@
 			caption="Call outcomes"
 			:columns="outcomeColumns"
 			:rows="outcomes"
+			:actions="outcomeActions"
 			:page-size="50"
 			:row-name="(o) => o.name"
 			empty-title="No call outcomes yet."
@@ -54,31 +55,27 @@
 			testid="sellos-calllists-outcomes"
 			row-testid="sellos-calllists-outcome"
 		>
+			<template #cell-name="{ row }">
+				<NameCell :name="row.name" />
+			</template>
 			<template #cell-needs_follow_up="{ row }">
-				<AppCheckbox
-					:model-value="Boolean(row.needs_follow_up)"
-					aria-label="Needs a follow up"
+				<StatusBadge
+					:tone="row.needs_follow_up ? 'info' : 'neutral'"
+					:label="row.needs_follow_up ? 'Follow up' : 'No follow up'"
 					data-testid="sellos-calllists-outcome-followup"
-					@update:model-value="saveOutcome(row, { needs_follow_up: $event ? 1 : 0 })"
 				/>
 			</template>
 			<template #cell-suggested_stage="{ row }">
-				<FormField
-					compact
-					:model-value="row.suggested_stage || ''"
-					type="select"
-					label="Suggested stage"
-					:options="stageOptions"
+				<CellText
+					:value="row.suggested_stage"
 					data-testid="sellos-calllists-outcome-stage"
-					@update:model-value="saveOutcome(row, { suggested_stage: $event })"
 				/>
 			</template>
 			<template #cell-enabled="{ row }">
-				<AppCheckbox
-					:model-value="Boolean(row.enabled)"
-					aria-label="Enabled"
+				<StatusBadge
+					:tone="row.enabled ? 'success' : 'neutral'"
+					:label="row.enabled ? 'Enabled' : 'Disabled'"
 					data-testid="sellos-calllists-outcome-enabled"
-					@update:model-value="saveOutcome(row, { enabled: $event ? 1 : 0 })"
 				/>
 			</template>
 		</DataTable>
@@ -89,6 +86,7 @@
 			caption="Lost reasons"
 			:columns="reasonColumns"
 			:rows="reasons"
+			:actions="reasonActions"
 			:page-size="50"
 			:row-name="(r) => r.name"
 			empty-title="No lost reasons yet."
@@ -96,12 +94,14 @@
 			testid="sellos-calllists-reasons"
 			row-testid="sellos-calllists-reason"
 		>
+			<template #cell-name="{ row }">
+				<NameCell :name="row.name" />
+			</template>
 			<template #cell-enabled="{ row }">
-				<AppCheckbox
-					:model-value="Boolean(row.enabled)"
-					aria-label="Enabled"
+				<StatusBadge
+					:tone="row.enabled ? 'success' : 'neutral'"
+					:label="row.enabled ? 'Enabled' : 'Disabled'"
 					data-testid="sellos-calllists-reason-enabled"
-					@update:model-value="saveReason(row, $event ? 1 : 0)"
 				/>
 			</template>
 		</DataTable>
@@ -142,6 +142,38 @@
 				/>
 			</form>
 		</SectionCard>
+
+		<!-- Editing an outcome: the follow up, the suggested stage and whether it is enabled. -->
+		<FormDrawer
+			:open="Boolean(editing)"
+			:title="editing ? `Edit ${editing.name}` : 'Edit outcome'"
+			text="An outcome that has been used is disabled, never deleted."
+			submit-label="Save outcome"
+			testid="sellos-calllists-edit-form"
+			submit-testid="sellos-calllists-edit-save"
+			@close="editing = null"
+			@submit="saveEdit"
+		>
+			<FormSection title="Outcome">
+				<FormField
+					v-model="editForm.suggested_stage"
+					type="select"
+					label="Suggested stage"
+					:options="stageOptions"
+					data-testid="sellos-calllists-edit-stage"
+				/>
+				<AppCheckbox
+					v-model="editForm.needs_follow_up"
+					label="Needs a follow up"
+					data-testid="sellos-calllists-edit-followup"
+				/>
+				<AppCheckbox
+					v-model="editForm.enabled"
+					label="Enabled"
+					data-testid="sellos-calllists-edit-enabled"
+				/>
+			</FormSection>
+		</FormDrawer>
 
 		<!-- The two add forms are drawers: nothing is an open form under a list. -->
 		<FormDrawer
@@ -208,12 +240,14 @@ import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import AppCheckbox from "../components/AppCheckbox.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
+import NameCell from "../components/NameCell.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import SectionCard from "../components/SectionCard.vue";
@@ -232,6 +266,9 @@ const untouchedSaved = ref(false);
 const outcomeOpen = ref(false);
 const reasonOpen = ref(false);
 const formError = ref("");
+
+const editing = ref(null);
+const editForm = reactive({ needs_follow_up: false, suggested_stage: "", enabled: true });
 
 const outcomeColumns = [
 	{ key: "name", label: "Outcome", primary: true },
@@ -319,6 +356,39 @@ async function saveUntouched() {
 	} catch (e) {
 		error.value = serverMessage(e, "The number of days could not be saved.");
 	}
+}
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const outcomeActions = (row) => [
+	{
+		label: "Edit outcome",
+		onClick: () => {
+			Object.assign(editForm, {
+				needs_follow_up: Boolean(row.needs_follow_up),
+				suggested_stage: row.suggested_stage || "",
+				enabled: Boolean(row.enabled),
+			});
+			editing.value = row;
+		},
+	},
+	row.enabled
+		? { label: "Disable", onClick: () => saveOutcome(row, { enabled: 0 }) }
+		: { label: "Enable", onClick: () => saveOutcome(row, { enabled: 1 }) },
+];
+const reasonActions = (row) => [
+	row.enabled
+		? { label: "Disable", onClick: () => saveReason(row, 0) }
+		: { label: "Enable", onClick: () => saveReason(row, 1) },
+];
+async function saveEdit() {
+	const outcome = editing.value;
+	if (!outcome) return;
+	editing.value = null;
+	await saveOutcome(outcome, {
+		needs_follow_up: editForm.needs_follow_up ? 1 : 0,
+		suggested_stage: editForm.suggested_stage,
+		enabled: editForm.enabled ? 1 : 0,
+	});
 }
 
 const saveReason = (reason, enabled) =>

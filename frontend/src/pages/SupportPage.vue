@@ -89,6 +89,7 @@
 			caption="Support access grants"
 			:columns="columns"
 			:rows="grants"
+			:actions="rowActions"
 			:loading="loading"
 			loading-label="Loading support access."
 			empty-title="Support has no access"
@@ -99,16 +100,14 @@
 			empty-testid="sellos-support-empty"
 		>
 			<template #cell-support_user_name="{ row }">
-				<span class="block ui-text-strong">{{ row.support_user_name }}</span>
+				<NameCell :name="row.support_user_name" />
 			</template>
 			<template #cell-period="{ row }">
-				<span class="ui-text-secondary"
-					>{{ formatDateTime(row.starts_at) }} to
-					{{ formatDateTime(row.expires_at) }}</span
-				>
+				<CellText :value="formatDateTime(row.starts_at)" />
+				<CellText :value="`to ${formatDateTime(row.expires_at)}`" muted />
 			</template>
 			<template #cell-reason="{ row }">
-				<span class="ui-text-secondary">{{ row.reason }}</span>
+				<CellText :value="row.reason" :lines="2" />
 			</template>
 			<template #cell-status="{ row }">
 				<StatusBadge
@@ -116,25 +115,6 @@
 					:label="row.status"
 					data-testid="sellos-support-status"
 				/>
-			</template>
-			<template #cell-actions="{ row }">
-				<div class="flex flex-wrap items-center gap-ui-sm">
-					<AppButton
-						v-if="row.status === 'Active'"
-						type="button"
-						data-testid="sellos-support-revoke"
-						@click="revoke(row)"
-					>
-						End now
-					</AppButton>
-					<AppButton
-						type="button"
-						data-testid="sellos-support-show-log"
-						@click="toggleLog(row)"
-					>
-						{{ open === row.name ? "Hide log" : "Show log" }}
-					</AppButton>
-				</div>
 			</template>
 		</DataTable>
 
@@ -158,6 +138,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
+import CellText from "../components/CellText.vue";
+import NameCell from "../components/NameCell.vue";
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
@@ -208,9 +190,8 @@ const kpis = computed(() => [
 const columns = [
 	{ key: "support_user_name", label: "Support user", primary: true },
 	{ key: "period", label: "Period" },
-	{ key: "reason", label: "Reason", wrap: true },
+	{ key: "reason", label: "Reason" },
 	{ key: "status", label: "Status" },
-	{ key: "actions", label: "Actions" },
 ];
 
 async function load() {
@@ -266,6 +247,12 @@ async function toggleLog(g) {
 		error.value = serverMessage(e, "The log could not be loaded.");
 	}
 }
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rowActions = (g) => [
+	...(g.status === "Active" ? [{ label: "End now", onClick: () => revoke(g) }] : []),
+	{ label: open.value === g.name ? "Hide log" : "Show log", onClick: () => toggleLog(g) },
+];
 
 onMounted(load);
 </script>

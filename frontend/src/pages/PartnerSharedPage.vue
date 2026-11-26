@@ -37,6 +37,7 @@
 				title="Projects"
 				:columns="columns"
 				:rows="projects"
+				:actions="rowActions"
 				:loading="!loaded"
 				empty-title="Nothing is shared with your firm yet"
 				empty-text="The company will share projects with you here."
@@ -46,19 +47,14 @@
 				empty-testid="sellos-partner-shared-empty"
 			>
 				<template #cell-project_name="{ row: p }">
-					<span class="ui-text-strong" data-testid="sellos-partner-shared-name">
-						{{ p.project_name }}
-					</span>
+					<NameCell
+						:name="p.project_name"
+						:detail="[p.locality, p.city].filter(Boolean).join(' ')"
+						data-testid="sellos-partner-shared-name"
+					/>
 				</template>
-				<template #cell-place="{ row: p }">{{ p.locality }} {{ p.city }}</template>
-				<template #cell-open="{ row: p }">
-					<AppButton
-						type="button"
-						data-testid="sellos-partner-shared-open"
-						@click="open(p.name)"
-					>
-						Open
-					</AppButton>
+				<template #cell-place="{ row: p }">
+					<CellText :value="[p.locality, p.city].filter(Boolean).join(' ')" />
 				</template>
 			</DataTable>
 
@@ -127,9 +123,10 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 
-import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import KpiStrip from "../components/KpiStrip.vue";
+import NameCell from "../components/NameCell.vue";
 import ListCard from "../components/ListCard.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -148,7 +145,6 @@ const columns = [
 	{ key: "project_name", label: "Project", primary: true, sortable: true },
 	{ key: "place", label: "Place" },
 	{ key: "units", label: "Units", align: "right", sortable: true },
-	{ key: "open", label: "" },
 ];
 const unitColumns = [
 	{ key: "unit_number", label: "Unit", primary: true },
@@ -178,6 +174,9 @@ async function open(name) {
 		loadError.value = serverMessage(e, "That project could not be loaded.");
 	}
 }
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rowActions = (p) => [{ label: "Open", onClick: () => open(p.name) }];
 
 onMounted(load);
 </script>

@@ -286,18 +286,25 @@ def _cover_every_type(ctx, types):
 
 
 def _signing(ctx):
-	"""A DocuSeal state on mandates: two signed through DocuSeal, one waiting for the seller (Sent) and one the seller
-	has opened but not signed (Viewed). Seeded as if DocuSeal had answered: no real submission exists."""
+	"""A DocuSeal state on mandates: two signed through DocuSeal, one waiting for the seller (Sent), one the seller
+	has opened but not signed (Viewed), one declined and one expired. Every other signed mandate is "Signed offline"
+	with its uploaded copy (Mandate.sign), a draft is "Not sent". Seeded as if DocuSeal had answered: no real
+	submission exists, but each has a submission record."""
 	import frappe
 	from frappe.utils import get_datetime
 
 	signed = [m for m in ctx.mandates if m["status"] == "Signed" and not m["archived"]][:2]
-	drafts = [m for m in ctx.mandates if m["status"] == "Draft" and not m["archived"]][:2]
+	drafts = [m for m in ctx.mandates if m["status"] == "Draft" and not m["archived"]][:4]
 	plan = [(m, "Signed") for m in signed] + [
-		(m, state) for m, state in zip(drafts, ("Sent", "Viewed"), strict=False)
+		(m, state) for m, state in zip(drafts, ("Sent", "Viewed", "Declined", "Expired"), strict=False)
 	]
 	for index, (m, state) in enumerate(plan):
-		if frappe.db.get_value("Mandate", m["name"], "signing_status") not in (None, "", "Not sent"):
+		if frappe.db.get_value("Mandate", m["name"], "signing_status") not in (
+			None,
+			"",
+			"Not sent",
+			"Signed offline",
+		):
 			continue
 		doc = frappe.get_doc("Mandate", m["name"])
 		client = frappe.db.get_value("Lead", doc.lead, "client")
@@ -315,9 +322,12 @@ def _signing(ctx):
 		doc.signing_sent_on = sent
 		doc.signing_viewed_on = viewed if state != "Sent" else None
 		doc.signing_completed_on = done if state == "Signed" else None
+		doc.signing_declined_on = done if state == "Declined" else None
 		doc.set("signers", [])
 		for role, name, email in signers:
 			status = state if role == "Seller" else ("Signed" if state == "Signed" else "Sent")
+			if status in ("Declined", "Expired") and role != "Seller":
+				status = "Sent"
 			doc.append(
 				"signers",
 				{
@@ -397,6 +407,7 @@ def _split_deals(ctx):
 				"splits": splits,
 			}
 		)["name"]
-		deals.approve_splits(name)
+		if row["ordinal"] % 5 or row["date"] == ctx.today:  # every fifth deal still waits for approval
+			deals.approve_splits(name)
 		inventory.set_inventory_status("Property", prop, "Sold", "Sold through the deal")
 		ctx.count("created", "Deal")

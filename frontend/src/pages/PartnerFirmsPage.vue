@@ -49,7 +49,7 @@
 		</template>
 
 		<p
-			v-if="error && !inviting"
+			v-if="error && !inviting && !suspending"
 			role="alert"
 			data-testid="sellos-partners-error"
 			class="mb-ui-md ui-text-error"
@@ -73,6 +73,7 @@
 			title="Partner firms"
 			:columns="columns"
 			:rows="shown"
+			:actions="rowActions"
 			:loading="!loaded"
 			:row-attrs="(f) => ({ 'data-status': f.status })"
 			empty-title="No partner firms yet"
@@ -83,12 +84,12 @@
 			empty-testid="sellos-partners-empty"
 		>
 			<template #cell-firm_name="{ row: f }">
-				<span class="ui-text-strong" data-testid="sellos-partners-firm-name">
-					{{ f.firm_name }}
-				</span>
-				<span class="block ui-text-muted" data-testid="sellos-partners-code">
-					{{ f.partner_code }}
-				</span>
+				<NameCell
+					:name="f.firm_name"
+					:identifier="f.partner_code"
+					:detail="f.email"
+					data-testid="sellos-partners-firm-name"
+				/>
 			</template>
 			<template #cell-status="{ row: f }">
 				<StatusBadge
@@ -98,95 +99,106 @@
 				/>
 			</template>
 			<template #cell-contact_person="{ row: f }">
-				<span class="block ui-text-body">{{ f.contact_person }}</span>
-				<span class="block ui-text-muted">
-					{{ f.email }}
-					<span v-if="f.phone" data-testid="sellos-partners-phone">, {{ f.phone }}</span>
-				</span>
+				<CellText :value="f.contact_person" />
+				<CellText :value="f.phone" muted blank data-testid="sellos-partners-phone" />
 			</template>
-			<template #cell-details="{ row: f }">
-				<p class="ui-text-muted">
-					RERA: {{ f.rera_number || "not given" }}. PAN:
-					<span data-testid="sellos-partners-pan">{{ f.pan || "not given" }}</span
-					>.
+			<template #cell-rera="{ row: f }">
+				<CellText :value="f.rera_number" />
+			</template>
+			<template #cell-pan="{ row: f }">
+				<CellText :value="f.pan" data-testid="sellos-partners-pan" />
+			</template>
+			<template #cell-agreement="{ row: f }">
+				<span v-if="f.agreement" class="block" data-testid="sellos-partners-has-agreement"
+					>Signed</span
+				>
+				<span v-else class="block ui-text-muted" data-testid="sellos-partners-no-agreement"
+					>Not signed yet</span
+				>
+			</template>
+			<template #cell-note="{ row: f }">
+				<CellText
+					v-if="f.status === 'Suspended' && f.status_reason"
+					:value="`Suspended: ${f.status_reason}`"
+					:lines="2"
+					muted
+					data-testid="sellos-partners-reason"
+				/>
+				<CellText
+					v-else-if="f.status === 'Pending approval' && f.missing.length"
+					:value="`Still missing: ${f.missing.join(', ')}`"
+					:lines="2"
+					muted
+				/>
+			</template>
+		</DataTable>
+
+		<!-- Suspending a firm needs a reason: a small drawer opened from the row menu. -->
+		<FormDrawer
+			:open="Boolean(suspending)"
+			:title="suspending ? `Suspend ${suspending.firm_name}` : 'Suspend firm'"
+			text="The firm may not register leads until you reinstate it. The reason is kept on the firm."
+			submit-label="Suspend"
+			testid="sellos-partners-suspend-drawer"
+			submit-testid="sellos-partners-suspend"
+			@close="closeSuspend"
+			@submit="suspend"
+		>
+			<FormSection title="Reason">
+				<FormField
+					v-model="reason"
+					label="Reason for a suspension"
+					class="md:col-span-2"
+					data-testid="sellos-partners-reason-input"
+				/>
+			</FormSection>
+			<p v-if="error" role="alert" data-testid="sellos-partners-error" class="ui-text-error">
+				{{ error }}
+			</p>
+		</FormDrawer>
+
+		<!-- The signed agreement and the status log of one firm: read only, opened from the row menu. -->
+		<FormDrawer
+			:open="Boolean(viewing)"
+			:title="viewing ? `${viewing.firm_name}: agreement and status log` : 'Agreement'"
+			submit-label="Close"
+			testid="sellos-partners-history-drawer"
+			submit-testid="sellos-partners-history-close"
+			@close="viewing = null"
+			@submit="viewing = null"
+		>
+			<template v-if="viewing">
+				<FormSection title="Agreement">
 					<a
-						v-if="f.agreement"
-						:href="f.agreement"
+						v-if="viewing.agreement"
+						:href="viewing.agreement"
 						target="_blank"
 						rel="noopener"
-						class="underline ui-text-error"
+						class="underline ui-text-error md:col-span-2"
 						data-testid="sellos-partners-agreement"
 					>
 						Signed agreement
 					</a>
-					<span v-else data-testid="sellos-partners-no-agreement">
-						No signed agreement yet.
-					</span>
-				</p>
-				<p
-					v-if="f.status === 'Suspended' && f.status_reason"
-					class="ui-text-muted"
-					data-testid="sellos-partners-reason"
-				>
-					Suspended: {{ f.status_reason }}
-				</p>
-				<p
-					v-if="f.status === 'Pending approval' && f.missing.length"
-					class="ui-text-muted"
-				>
-					Still missing: {{ f.missing.join(", ") }}.
-				</p>
-				<details class="mt-1" data-testid="sellos-partners-log">
-					<summary class="cursor-pointer ui-text-muted">Status log</summary>
-					<ul class="mt-1 space-y-1 ui-text-muted">
-						<li v-for="(l, i) in f.log" :key="i" data-testid="sellos-partners-log-row">
+					<p v-else class="ui-text-muted md:col-span-2">No signed agreement yet.</p>
+				</FormSection>
+				<FormSection title="Status log">
+					<ul
+						class="space-y-1 ui-text-muted md:col-span-2"
+						data-testid="sellos-partners-log"
+					>
+						<li
+							v-for="(l, i) in viewing.log"
+							:key="i"
+							data-testid="sellos-partners-log-row"
+						>
 							{{ formatWhen(l.changed_on) }}: {{ l.changed_by_name }} moved it
 							<span v-if="l.from_status">from {{ l.from_status }}</span>
 							to {{ l.to_status }}<span v-if="l.reason"> ({{ l.reason }})</span>
 						</li>
 					</ul>
-				</details>
+				</FormSection>
 			</template>
-			<template #cell-actions="{ row: f }">
-				<div class="flex flex-col items-start gap-ui-sm">
-					<AppButton
-						v-if="f.status === 'Pending approval'"
-						type="button"
-						variant="primary"
-						data-testid="sellos-partners-approve"
-						@click="act(() => partnersApi.approve(f.name), 'The firm was approved.')"
-					>
-						Approve
-					</AppButton>
-					<AppButton
-						v-if="f.status === 'Suspended'"
-						type="button"
-						data-testid="sellos-partners-reinstate"
-						@click="
-							act(() => partnersApi.reinstate(f.name), 'The firm was reinstated.')
-						"
-					>
-						Reinstate
-					</AppButton>
-					<template v-if="f.status !== 'Suspended'">
-						<FormField
-							v-model="reasons[f.name]"
-							compact
-							label="Reason for a suspension"
-							data-testid="sellos-partners-reason-input"
-						/>
-						<AppButton
-							type="button"
-							variant="danger"
-							data-testid="sellos-partners-suspend"
-							@click="suspend(f)"
-						>
-							Suspend
-						</AppButton>
-					</template>
-				</div>
-			</template>
-		</DataTable>
+		</FormDrawer>
 
 		<!-- Inviting a firm is a drawer, not a form under the list. -->
 		<FormDrawer
@@ -240,6 +252,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
+import CellText from "../components/CellText.vue";
+import NameCell from "../components/NameCell.vue";
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
@@ -271,7 +285,9 @@ const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
 const inviting = ref(false);
-const reasons = reactive({});
+const suspending = ref(null);
+const viewing = ref(null);
+const reason = ref("");
 const form = reactive({ firm_name: "", contact_person: "", email: "", phone: "" });
 
 const search = ref("");
@@ -307,9 +323,11 @@ function removeChip(key) {
 const columns = [
 	{ key: "firm_name", label: "Firm", primary: true, sortable: true },
 	{ key: "status", label: "Status", sortable: true },
-	{ key: "contact_person", label: "Contact", wrap: true, class: "max-w-[14rem] break-words" },
-	{ key: "details", label: "Details", wrap: true, class: "max-w-[22rem]" },
-	{ key: "actions", label: "Actions", wrap: true, class: "w-44" },
+	{ key: "contact_person", label: "Contact" },
+	{ key: "rera", label: "RERA" },
+	{ key: "pan", label: "PAN" },
+	{ key: "agreement", label: "Agreement" },
+	{ key: "note", label: "Note" },
 ];
 
 const kpis = computed(() => [
@@ -384,14 +402,50 @@ const invite = async () => {
 	}
 };
 
-const suspend = async (firm) => {
+function openSuspend(firm) {
+	error.value = "";
+	notice.value = "";
+	reason.value = "";
+	suspending.value = firm;
+}
+function closeSuspend() {
+	suspending.value = null;
+	error.value = "";
+}
+
+const suspend = async () => {
+	const firm = suspending.value;
+	if (!firm) return;
 	const done = await act(
-		() => partnersApi.suspend(firm.name, reasons[firm.name] || ""),
+		() => partnersApi.suspend(firm.name, reason.value || ""),
 		`${firm.firm_name} was suspended.`,
 		"The firm could not be suspended."
 	);
-	if (done) delete reasons[firm.name];
+	if (done) suspending.value = null;
 };
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rowActions = (f) => [
+	...(f.status === "Pending approval"
+		? [
+				{
+					label: "Approve",
+					onClick: () =>
+						act(() => partnersApi.approve(f.name), "The firm was approved."),
+				},
+		  ]
+		: []),
+	...(f.status === "Suspended"
+		? [
+				{
+					label: "Reinstate",
+					onClick: () =>
+						act(() => partnersApi.reinstate(f.name), "The firm was reinstated."),
+				},
+		  ]
+		: [{ label: "Suspend", onClick: () => openSuspend(f) }]),
+	{ label: "Agreement and status log", onClick: () => (viewing.value = f) },
+];
 
 onMounted(load);
 </script>

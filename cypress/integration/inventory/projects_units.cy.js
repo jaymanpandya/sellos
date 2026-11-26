@@ -7,6 +7,11 @@ context("SOS-P4-01: developers, projects, units and properties", () => {
 	const projectName = `Gate Inventory Tower ${tag}`;
 	const rera = `P5180${String(tag).slice(-7)}`;
 	const unitRow = (number) => cy.get(`[data-testid="sellos-unit-row"][data-number="${number}"]`);
+	// A unit's actions are in its row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+	const unitAction = (number, label) => {
+		unitRow(number).find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', label).click();
+	};
 
 	before(() => cy.bench("sellos.tests.ui_fixtures.remove_gate_inventory"));
 	after(() => cy.bench("sellos.tests.ui_fixtures.remove_gate_inventory"));
@@ -97,18 +102,19 @@ context("SOS-P4-01: developers, projects, units and properties", () => {
 			.find('[data-testid="sellos-inventory-project-link"]')
 			.click();
 		cy.wait("@project");
-		unitRow("1201").find('[data-testid="sellos-unit-reason"]').type("Buyer needs two days");
-		unitRow("1201").find('[data-testid="sellos-unit-set-held"]').click();
+		unitAction("1201", "Mark Held");
+		cy.getByTestId("unit-reason").type("Buyer needs two days");
+		cy.getByTestId("unit-status-save").click();
 		cy.wait("@status").its("response.statusCode").should("eq", 200);
 		unitRow("1201").should("have.attr", "data-status", "Held");
-		unitRow("1201").find('[data-testid="sellos-unit-set-sold"]').click();
+		unitAction("1201", "Mark Sold");
+		cy.getByTestId("unit-status-save").click();
 		cy.wait("@status").its("response.statusCode").should("eq", 200);
 		unitRow("1201").should("have.attr", "data-status", "Sold");
-		unitRow("1201").find("summary").click();
-		unitRow("1201").find('[data-testid="sellos-unit-log-row"]').should("have.length", 3);
-		unitRow("1201")
-			.find('[data-testid="sellos-unit-log"]')
-			.should("contain", "Buyer needs two days");
+		unitAction("1201", "Status log");
+		cy.get('[data-testid="sellos-unit-log-row"]').should("have.length", 3);
+		cy.getByTestId("unit-log").should("contain", "Buyer needs two days");
+		cy.getByTestId("unit-log-done").click();
 		cy.getByTestId("project-counts").should("contain", "1 sold");
 		cy.bench("sellos.tests.ui_fixtures.gate_project_state", {
 			project_name: projectName,
@@ -127,7 +133,9 @@ context("SOS-P4-01: developers, projects, units and properties", () => {
 			.click();
 		unitRow("1201").should("be.visible");
 		cy.getByTestId("unit-form").should("not.exist");
-		cy.getByTestId("unit-set-held").should("not.exist");
+		unitRow("1201").find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', "Status log").should("be.visible");
+		cy.contains('[role="menuitem"]', "Mark Held").should("not.exist");
 	});
 
 	it("keeps inventory from a client and a channel partner", () => {

@@ -93,7 +93,7 @@ class TestEndToEnd(CrmCase):
 		self.assertEqual(view["lead"]["client"], client["name"])
 		self.assertEqual([i["kind"] for i in view["timeline"]], ["activity"])
 		self.assertEqual(view["timeline"][0]["title"], "Call")
-		self.assertEqual(view["lead"]["lead_title"], "Asha Rao Website")
+		self.assertEqual(view["lead"]["lead_title"], "Asha Rao")
 
 	def test_the_lead_names_its_agent_by_full_name_for_the_header(self):
 		# SOS-LOOP: the lead page header shows the agent's full name, never the email.

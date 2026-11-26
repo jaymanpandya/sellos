@@ -51,7 +51,11 @@ context("SOS-P1-13: support access grants", () => {
 		cy.signInFresh("company_admin");
 		cy.visit("/sellos/company/support");
 		cy.getByTestId("support-status").should("contain.text", "Expired");
-		cy.getByTestId("support-show-log").click();
+		cy.getByTestId("support-grant-row")
+			.first()
+			.find('[data-testid="sellos-row-menu-button"]')
+			.click();
+		cy.contains('[role="menuitem"]', "Show log").click();
 		cy.getByTestId("support-log-row").should("have.length.greaterThan", 2);
 		cy.getByTestId("support-log").should("contain.text", "Granted");
 		cy.getByTestId("support-log").should("contain.text", "Request");
@@ -66,7 +70,11 @@ context("SOS-P1-13: support access grants", () => {
 		cy.visit("/sellos/company/support");
 		cy.getByTestId("support-add").click();
 		cy.getByTestId("support-grant").click();
-		cy.getByTestId("support-revoke").click();
+		cy.getByTestId("support-grant-row")
+			.first()
+			.find('[data-testid="sellos-row-menu-button"]')
+			.click();
+		cy.contains('[role="menuitem"]', "End now").click();
 		cy.getByTestId("support-status").first().should("contain.text", "Revoked");
 
 		cy.signInFresh("platform_admin");

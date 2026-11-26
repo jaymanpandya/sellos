@@ -122,7 +122,7 @@
 			:row-to="(row) => `/crm/mandates/${row.name}`"
 			:loading="!loaded"
 			loading-label="Loading mandates."
-			:row-name="(row) => row.lead_title"
+			:row-name="(row) => row.client_name || row.lead_title"
 			:row-attrs="rowAttrs"
 			empty-title="No mandates yet"
 			empty-text="Record the first mandate to start a Dossier."
@@ -133,7 +133,33 @@
 			empty-testid="sellos-mandate-empty"
 		>
 			<template #cell-lead_title="{ row }">
-				<span class="block" data-testid="sellos-mandate-title">{{ row.lead_title }}</span>
+				<NameCell
+					:name="row.client_name || row.lead_title"
+					:identifier="row.seller_phone"
+					:detail="row.seller_city"
+					data-testid="sellos-mandate-title"
+				/>
+			</template>
+			<template #cell-property="{ row }">
+				<CellText :value="row.owned_type" />
+				<CellText
+					:value="[row.owned_size, row.owned_locality].filter(Boolean).join(' \u00b7 ')"
+					muted
+					blank
+				/>
+			</template>
+			<template #cell-terms="{ row }">
+				<span data-testid="sellos-mandate-terms">
+					<CellText :value="row.mandate_type" />
+					<CellText
+						:value="`${row.term_months} months \u00b7 fee ${row.fee_percent}%`"
+						muted
+					/>
+				</span>
+			</template>
+			<template #cell-signing="{ row }">
+				<SigningBadge :status="row.signing_status" />
+				<CellText :value="signingDate(row)" muted blank />
 			</template>
 			<template #cell-status="{ row }">
 				<StatusBadge
@@ -142,33 +168,11 @@
 					data-testid="sellos-mandate-status"
 				/>
 			</template>
-			<template #cell-signing="{ row }">
-				<SigningBadge :status="row.signing_status" />
-				<a
-					v-if="row.signed_document && row.status === 'Signed'"
-					:href="row.signed_document"
-					target="_blank"
-					rel="noopener"
-					class="mt-1 block ui-link ui-text-small"
-					data-testid="sellos-mandate-signed-copy"
-					@click.stop
-					>Download signed copy</a
-				>
+			<template #cell-agent_name="{ row }">
+				<CellText :value="row.agent_name" />
 			</template>
-			<template #cell-terms="{ row }">
-				<span class="ui-text-secondary" data-testid="sellos-mandate-terms">
-					{{ row.mandate_type }}, {{ row.term_months }} months from
-					{{ formatDate(row.start_date) }}, fee {{ row.fee_percent }}%
-				</span>
-			</template>
-			<template #cell-manage="{ row }">
-				<AppButton
-					type="button"
-					data-testid="sellos-mandate-manage"
-					@click="manageName = row.name"
-				>
-					{{ row.status === "Signed" ? "Dossier" : "Sign and Dossier" }}
-				</AppButton>
+			<template #cell-ends_on="{ row }">
+				<CellText :value="row.ends_on ? formatDate(row.ends_on) : ''" />
 			</template>
 		</DataTable>
 
@@ -366,7 +370,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
@@ -375,6 +379,8 @@ import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import BulkBar from "../components/BulkBar.vue";
+import CellText from "../components/CellText.vue";
+import NameCell from "../components/NameCell.vue";
 import FilterBar from "../components/FilterBar.vue";
 import SigningBadge from "../components/SigningBadge.vue";
 import KpiStrip from "../components/KpiStrip.vue";
@@ -385,6 +391,7 @@ import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { readFileBase64 } from "../company/partnersApi";
 import { serverMessage } from "../crm/crmApi";
+import { docusealApi } from "../crm/docusealApi";
 import { mandateApi } from "../crm/mandatesApi";
 import { session } from "../session";
 import { formatDate, formatWhen } from "../format";
@@ -407,6 +414,7 @@ const loaded = ref(false);
 const creating = ref(false);
 const manageName = ref("");
 const router = useRouter();
+const route = useRoute();
 const isAdmin = computed(() => session.roles.includes("SellOS Company Admin"));
 const selected = ref([]);
 const bulkNotice = ref("");
@@ -426,9 +434,28 @@ async function bulkArchive() {
 	selected.value = [];
 	await load();
 }
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
 const rowActions = (m) => [
 	{ label: "Open mandate", onClick: () => router.push(`/crm/mandates/${m.name}`) },
-	{ label: "Open the seller", onClick: () => router.push(`/crm/sellers/${m.lead}`) },
+	...(m.status !== "Signed" && !["Sent", "Viewed"].includes(m.signing_status)
+		? [{ label: "Send for signing", onClick: () => sendForSigning(m) }]
+		: []),
+	...(m.signed_document && m.status === "Signed"
+		? [
+				{
+					label: "Download signed copy",
+					onClick: () => window.open(m.signed_document, "_blank", "noopener"),
+				},
+		  ]
+		: []),
+	{
+		label: "Open dossier",
+		onClick: () => router.push({ path: `/crm/mandates/${m.name}`, query: { tab: "dossier" } }),
+	},
+	...(m.status !== "Signed"
+		? [{ label: "Record signature manually", onClick: () => (manageName.value = m.name) }]
+		: []),
+	...(isAdmin.value ? [{ label: "Archive", onClick: () => archive(m) }] : []),
 ];
 const search = ref("");
 const statusFilter = ref("");
@@ -442,10 +469,12 @@ const statusOptions = [
 ];
 const signingOptions = [
 	{ label: "Any signing state", value: "" },
-	...["Not sent", "Sent", "Viewed", "Signed", "Declined", "Expired"].map((s) => ({
-		label: s,
-		value: s,
-	})),
+	...["Not sent", "Sent", "Viewed", "Signed", "Signed offline", "Declined", "Expired"].map(
+		(s) => ({
+			label: s,
+			value: s,
+		})
+	),
 ];
 const typeFilterOptions = [
 	{ label: "Any type", value: "" },
@@ -456,7 +485,7 @@ const shownMandates = computed(() => {
 	const q = search.value.trim().toLowerCase();
 	return mandates.value.filter(
 		(m) =>
-			(!q || (m.lead_title || "").toLowerCase().includes(q)) &&
+			(!q || `${m.client_name} ${m.lead_title}`.toLowerCase().includes(q)) &&
 			(!statusFilter.value || m.status === statusFilter.value) &&
 			(!signingFilter.value || m.signing_status === signingFilter.value) &&
 			(!typeFilter.value || m.mandate_type === typeFilter.value)
@@ -507,15 +536,25 @@ const kpis = computed(() => {
 	];
 });
 
+// The date under the signing pill: when it was signed, or else when it was sent.
+const signingDate = (m) => {
+	const when =
+		m.signing_status === "Signed offline"
+			? m.signed_on
+			: m.signing_completed_on || m.signing_sent_on || "";
+	return when ? formatDate(when.slice(0, 10)) : "";
+};
 const columns = [
-	{ key: "lead_title", label: "Seller", primary: true, sortable: true },
-	{ key: "status", label: "Status", sortable: true },
+	{ key: "lead_title", label: "Seller", primary: true, sortable: true, class: "w-[14rem]" },
+	{ key: "property", label: "Property", sortable: true, sortValue: (m) => m.owned_type },
+	{ key: "terms", label: "Mandate", sortable: true, sortValue: (m) => m.mandate_type },
 	{ key: "signing", label: "Signing", sortable: true, sortValue: (m) => m.signing_status },
-	{ key: "terms", label: "Terms", wrap: true, class: "min-w-[12rem]" },
-	{ key: "manage", label: "Signature and Dossier", wrap: true },
+	{ key: "status", label: "Status", sortable: true },
+	{ key: "agent_name", label: "Agent", sortable: true },
+	{ key: "ends_on", label: "Ends on", sortable: true },
 ];
 const rowAttrs = (m) => ({
-	"data-title": m.lead_title,
+	"data-title": m.client_name || m.lead_title,
 	"data-status": m.status,
 });
 
@@ -580,6 +619,20 @@ const save = () => {
 	);
 };
 
+const archive = (m) =>
+	run(
+		() => mandateApi.setArchived(m.name, 1),
+		`${m.client_name || m.lead_title}: the mandate is archived. Nothing is deleted.`,
+		"The mandate could not be archived."
+	);
+
+const sendForSigning = (m) =>
+	run(
+		() => docusealApi.send(m.name),
+		`${m.client_name || m.lead_title}: the mandate is sent for signing.`,
+		"The mandate could not be sent for signing."
+	);
+
 async function chosen(event) {
 	const file = event.target.files?.[0];
 	if (!file) return null;
@@ -630,5 +683,13 @@ async function open(m) {
 	}
 }
 
-onMounted(load);
+onMounted(async () => {
+	await load();
+	// "Record mandate" in a seller's row menu opens the form for that seller.
+	const lead = route.query.lead;
+	if (lead && sellers.value.some((x) => x.value === lead)) {
+		form.lead = lead;
+		creating.value = true;
+	}
+});
 </script>

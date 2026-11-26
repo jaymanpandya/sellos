@@ -75,7 +75,7 @@
 		</template>
 
 		<p
-			v-if="error && !creating"
+			v-if="error && !creating && !moving"
 			role="alert"
 			data-testid="sellos-seller-error"
 			class="mb-ui-md ui-text-error"
@@ -97,19 +97,6 @@
 			data-testid="sellos-seller-load-error"
 			@retry="load"
 		/>
-
-		<SectionCard v-if="stages.length" title="Sellers by stage" class="mb-ui-md">
-			<div class="flex flex-wrap gap-ui-sm" data-testid="sellos-seller-stage-counts">
-				<StatusBadge
-					v-for="s in stages"
-					:key="s.name"
-					:tone="stageTone(s)"
-					:label="`${s.label}: ${counts[s.name] || 0}`"
-					data-testid="sellos-seller-stage-count"
-					:data-stage="s.label"
-				/>
-			</div>
-		</SectionCard>
 
 		<p
 			v-if="bulkNotice"
@@ -165,7 +152,7 @@
 			:row-to="(row) => `/crm/sellers/${row.name}`"
 			:loading="!loaded"
 			loading-label="Loading sellers."
-			:row-name="(row) => row.lead_title"
+			:row-name="(row) => row.client_name || row.lead_title"
 			:row-attrs="rowAttrs"
 			empty-title="No sellers yet"
 			empty-text="Add the first seller to start the pipeline."
@@ -176,30 +163,25 @@
 			empty-testid="sellos-seller-empty"
 		>
 			<template #cell-lead_title="{ row }">
-				<span class="block" data-testid="sellos-seller-title">{{
-					row.client_name || row.lead_title
-				}}</span>
-				<span
-					v-if="row.phone"
-					class="block ui-text-muted"
-					data-testid="sellos-seller-phone"
-					>{{ row.phone }}</span
-				>
-				<span v-if="row.source" class="block ui-text-muted"
-					>{{ row.source
-					}}<template v-if="row.assigned_to">
-						· {{ agentName(row.assigned_to) }}</template
-					></span
-				>
-			</template>
-			<template #cell-mandate="{ row }">
-				<StatusBadge
-					v-if="mandateOf(row.name)"
-					:tone="mandateOf(row.name) === 'Signed' ? 'success' : 'warning'"
-					:label="`Mandate ${mandateOf(row.name)}`"
-					data-testid="sellos-seller-mandate"
+				<NameCell
+					:name="row.client_name || row.lead_title"
+					:identifier="row.phone"
+					:detail="row.seller_city"
+					data-testid="sellos-seller-title"
 				/>
-				<span v-else class="ui-text-muted">No mandate</span>
+			</template>
+			<template #cell-property="{ row }">
+				<CellText :value="row.owned_type" />
+				<CellText
+					:value="[row.owned_size, row.owned_locality].filter(Boolean).join(' \u00b7 ')"
+					muted
+					blank
+				/>
+			</template>
+			<template #cell-budget="{ row }">
+				<span class="tabular-nums" data-testid="sellos-seller-price">{{
+					row.budget ? formatBudget(row.budget) : "Not set"
+				}}</span>
 			</template>
 			<template #cell-stage="{ row }">
 				<StatusBadge
@@ -208,58 +190,103 @@
 					data-testid="sellos-seller-stage"
 				/>
 			</template>
-			<template #cell-move="{ row }">
-				<div class="grid gap-ui-sm">
-					<FormField
-						v-model="target[row.name]"
-						type="select"
-						label="Move to"
-						:options="stageOptions"
-						data-testid="sellos-seller-move-to"
-					/>
-					<FormField
-						v-if="kindOf(target[row.name]) === 'Lost'"
-						v-model="reason[row.name]"
-						type="select"
-						label="Lost reason"
-						:options="reasonOptions"
-						required
-						data-testid="sellos-seller-lost-reason"
-					/>
-					<div>
-						<AppButton
-							type="button"
-							variant="primary"
-							data-testid="sellos-seller-move"
-							@click="move(row)"
-						>
-							Move
-						</AppButton>
-					</div>
-				</div>
+			<template #cell-mandate="{ row }">
+				<StatusBadge
+					v-if="mandateOf(row.name)"
+					:tone="mandateOf(row.name) === 'Signed' ? 'success' : 'warning'"
+					:label="mandateOf(row.name)"
+					data-testid="sellos-seller-mandate"
+				/>
+				<span v-else class="ui-text-muted">Not set</span>
 			</template>
-			<template #cell-history="{ row }">
-				<AppButton
-					type="button"
-					:active="shownLog === row.name"
-					data-testid="sellos-seller-log-toggle"
-					@click="toggleLog(row)"
+			<template #cell-source="{ row }">
+				<CellText :value="row.source" data-testid="sellos-seller-source-cell" />
+			</template>
+			<template #cell-assigned_to="{ row }">
+				<CellText :value="row.assigned_to ? agentName(row.assigned_to) : ''" />
+			</template>
+			<template #cell-next_follow_up="{ row }">
+				<span
+					v-if="row.next_follow_up"
+					class="block"
+					data-testid="sellos-seller-next-follow-up"
+					:data-state="row.follow_up_state"
+					>{{ formatShortWhen(row.next_follow_up) }}</span
 				>
-					Stage history
-				</AppButton>
-				<ul
-					v-if="shownLog === row.name"
-					class="mt-ui-sm space-y-1 ui-text-muted"
-					data-testid="sellos-seller-log"
-				>
-					<li v-if="!log.length">No stage changes yet.</li>
-					<li v-for="(c, i) in log" :key="i" data-testid="sellos-seller-log-row">
-						{{ formatWhen(c.changed_on) }}: {{ c.changed_by }} moved it from
-						{{ labelOf(c.from_stage) }} to {{ labelOf(c.to_stage) }}.
-					</li>
-				</ul>
+				<span v-else class="block ui-text-muted">Not set</span>
+				<StatusBadge
+					v-if="row.follow_up_state === 'overdue'"
+					tone="danger"
+					label="Overdue"
+					data-testid="sellos-seller-follow-up-overdue"
+				/>
+			</template>
+			<template #cell-last_contacted="{ row }">
+				<span class="block" data-testid="sellos-seller-last-activity">{{
+					row.last_contacted ? formatShortWhen(row.last_contacted) : "Never"
+				}}</span>
 			</template>
 		</DataTable>
+
+		<!-- Moving a seller to another stage: a small drawer with the stage list and a note. -->
+		<FormDrawer
+			:open="Boolean(moving)"
+			:title="moving ? `Move ${moving.client_name || moving.lead_title}` : 'Move stage'"
+			text="Choose the stage the seller is on now. A note is kept on the seller's activity."
+			submit-label="Move"
+			testid="sellos-seller-move-drawer"
+			submit-testid="sellos-seller-move"
+			@close="closeMove"
+			@submit="move"
+		>
+			<FormSection title="Stage">
+				<FormField
+					v-model="moveForm.stage"
+					type="select"
+					label="Move to"
+					:options="stageOptions"
+					data-testid="sellos-seller-move-to"
+				/>
+				<FormField
+					v-if="kindOf(moveForm.stage) === 'Lost'"
+					v-model="moveForm.reason"
+					type="select"
+					label="Lost reason"
+					:options="reasonOptions"
+					required
+					data-testid="sellos-seller-lost-reason"
+				/>
+				<FormField
+					v-model="moveForm.note"
+					type="textarea"
+					label="Note"
+					data-testid="sellos-seller-move-note"
+				/>
+			</FormSection>
+			<p v-if="error" role="alert" data-testid="sellos-seller-error" class="ui-text-error">
+				{{ error }}
+			</p>
+		</FormDrawer>
+
+		<!-- The stage history of one seller, from the row menu. -->
+		<FormDrawer
+			:open="Boolean(shownLog)"
+			:title="historyTitle"
+			text="Every move of this seller along the pipeline."
+			submit-label="Done"
+			testid="sellos-seller-history-drawer"
+			submit-testid="sellos-seller-history-done"
+			@close="shownLog = ''"
+			@submit="shownLog = ''"
+		>
+			<ul class="space-y-1 ui-text-muted" data-testid="sellos-seller-log">
+				<li v-if="!log.length">No stage changes yet.</li>
+				<li v-for="(c, i) in log" :key="i" data-testid="sellos-seller-log-row">
+					{{ formatWhen(c.changed_on) }}: {{ c.changed_by }} moved it from
+					{{ labelOf(c.from_stage) }} to {{ labelOf(c.to_stage) }}.
+				</li>
+			</ul>
+		</FormDrawer>
 
 		<!-- Adding a seller is a drawer: nothing is an open form under the list. -->
 		<FormDrawer
@@ -306,18 +333,19 @@ import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import BulkBar from "../components/BulkBar.vue";
+import CellText from "../components/CellText.vue";
+import NameCell from "../components/NameCell.vue";
 import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
-import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
 import { mandateApi } from "../crm/mandatesApi";
 import { useRouter } from "vue-router";
 import { session } from "../session";
-import { formatWhen } from "../format";
+import { formatBudget, formatShortWhen, formatWhen } from "../format";
 
 // The seller pipeline (SOS-P4-04). Every move is made on the server and the list read back, so what is shown
 // is what is saved. A move to Closed lost asks for a reason.
@@ -326,8 +354,8 @@ const stages = ref([]);
 const clients = ref([]);
 const sources = ref([]);
 const reasons = ref([]);
-const target = reactive({});
-const reason = reactive({});
+const moving = ref(null);
+const moveForm = reactive({ stage: "", reason: "", note: "" });
 const form = reactive({ client: "", source: "" });
 const shownLog = ref("");
 const log = ref([]);
@@ -446,10 +474,23 @@ async function bulkReassign() {
 		bulkError.value = serverMessage(e, "The sellers could not be reassigned.");
 	}
 }
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
 const rowActions = (row) => [
 	{ label: "Open seller", onClick: () => router.push(`/crm/sellers/${row.name}`) },
+	{ label: "Move stage", onClick: () => openMove(row) },
 	{ label: "Stage history", onClick: () => toggleLog(row) },
+	...(mandateOf(row.name)
+		? []
+		: [
+				{
+					label: "Record mandate",
+					onClick: () =>
+						router.push({ path: "/crm/mandates", query: { lead: row.name } }),
+				},
+		  ]),
+	...(isAdmin.value ? [{ label: "Archive", onClick: () => archive(row) }] : []),
 ];
+const isAdmin = computed(() => session.roles.includes("SellOS Company Admin"));
 
 // Where each seller's mandate stands. A Company Admin or Agent reads the mandates; a Sales Manager gets only the id
 // and status of its own team's mandates.
@@ -481,13 +522,6 @@ const reasonOptions = computed(() => [
 	{ label: "Choose a reason", value: "" },
 	...reasons.value.map((r) => ({ label: r.name, value: r.name })),
 ]);
-const counts = computed(() => {
-	const out = {};
-	for (const l of sellers.value) out[l.stage] = (out[l.stage] || 0) + 1;
-	return out;
-});
-const stageTone = (s) =>
-	s.stage_type === "Won" ? "success" : s.stage_type === "Lost" ? "danger" : "neutral";
 
 // The strip counts the sellers by the kind of stage they stand on.
 const kpis = computed(() => {
@@ -523,9 +557,17 @@ const kpis = computed(() => {
 	];
 });
 
-// The table: the title opens nothing, so every control sits in its own cell.
+// The table (docs/DESIGN_SYSTEM.md, "Lists"): the name cell, plain values and pills, no control in a row but the menu.
 const columns = [
-	{ key: "lead_title", label: "Seller", primary: true, sortable: true },
+	{ key: "lead_title", label: "Seller", primary: true, sortable: true, class: "w-[13rem]" },
+	{ key: "property", label: "Property", sortable: true, sortValue: (l) => l.owned_type || "" },
+	{
+		key: "budget",
+		label: "Expected price",
+		sortable: true,
+		align: "right",
+		sortValue: (l) => Number(l.budget || 0),
+	},
 	{
 		key: "stage",
 		label: "Stage",
@@ -533,11 +575,28 @@ const columns = [
 		sortValue: (l) => labelOf(l.stage),
 	},
 	{ key: "mandate", label: "Mandate", sortable: true, sortValue: (l) => mandateOf(l.name) },
-	{ key: "move", label: "Move to", wrap: true, class: "min-w-[14rem]" },
-	{ key: "history", label: "History", wrap: true, class: "min-w-[12rem]" },
+	{ key: "source", label: "Source", sortable: true },
+	{
+		key: "assigned_to",
+		label: "Agent",
+		sortable: true,
+		sortValue: (l) => agentName(l.assigned_to),
+	},
+	{
+		key: "next_follow_up",
+		label: "Next follow up",
+		sortable: true,
+		sortValue: (l) => l.next_follow_up || "",
+	},
+	{
+		key: "last_contacted",
+		label: "Last activity",
+		sortable: true,
+		sortValue: (l) => l.last_contacted || "",
+	},
 ];
 const rowAttrs = (l) => ({
-	"data-title": l.lead_title,
+	"data-title": l.client_name || l.lead_title,
 	"data-stage": labelOf(l.stage),
 });
 
@@ -568,9 +627,6 @@ async function load() {
 		clients.value = cl;
 		sources.value = so.sources;
 		reasons.value = lr.lost_reasons;
-		for (const l of list) {
-			if (!target[l.name]) target[l.name] = l.stage;
-		}
 		await loadMandates(list);
 		if (canReassign.value && !reassignAgents.value.length)
 			reassignAgents.value = (await crmApi.reassignOptions()).agents || [];
@@ -581,20 +637,47 @@ async function load() {
 	}
 }
 
-async function move(l) {
+function openMove(row) {
+	error.value = "";
+	Object.assign(moveForm, { stage: row.stage, reason: "", note: "" });
+	moving.value = row;
+}
+function closeMove() {
+	error.value = "";
+	moving.value = null;
+}
+async function move() {
+	const l = moving.value;
+	if (!l) return;
 	error.value = "";
 	notice.value = "";
 	try {
-		const result = await crmApi.moveLeadStage(l.name, target[l.name], reason[l.name] || null);
+		const result = await crmApi.moveLeadStage(l.name, moveForm.stage, moveForm.reason || null);
+		if (moveForm.note.trim()) await crmApi.addActivity(l.name, "Note", moveForm.note.trim());
 		notice.value = result.moved
-			? `${l.lead_title} moved to ${labelOf(result.stage)}.`
-			: `${l.lead_title} is already on ${labelOf(result.stage)}.`;
+			? `${l.client_name || l.lead_title} moved to ${labelOf(result.stage)}.`
+			: `${l.client_name || l.lead_title} is already on ${labelOf(result.stage)}.`;
+		moving.value = null;
 		await load();
-		if (shownLog.value === l.name) await showLog(l);
 	} catch (e) {
 		error.value = serverMessage(e, "The seller could not be moved.");
 	}
 }
+
+const archive = async (l) => {
+	error.value = notice.value = "";
+	try {
+		await crmApi.setArchived("Lead", l.name, 1);
+		notice.value = `${l.client_name || l.lead_title} is archived. Nothing is deleted.`;
+		await load();
+	} catch (e) {
+		error.value = serverMessage(e, "The seller could not be archived.");
+	}
+};
+const historyTitle = computed(() => {
+	const l = sellers.value.find((x) => x.name === shownLog.value);
+	return l ? `Stage history of ${l.client_name || l.lead_title}` : "Stage history";
+});
 
 async function showLog(l) {
 	const lead = await crmApi.getLead(l.name);

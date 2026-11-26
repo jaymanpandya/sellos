@@ -60,36 +60,23 @@
 							v-bind="tableProps(s.key)"
 						>
 							<template #cell-lead_title="{ row }">
-								<router-link
-									:to="`/crm/leads/${row.lead}`"
-									class="ui-link ui-text-strong"
+								<NameCell
+									:name="row.lead_name || row.lead_title"
+									:identifier="row.phone"
+									:detail="row.lead_source"
 									data-testid="sellos-today-lead"
-									>{{ row.lead_name || row.lead_title }}</router-link
-								>
-								<span v-if="row.lead_source" class="block ui-text-muted">{{
-									row.lead_source
-								}}</span>
+								/>
 							</template>
-							<template #cell-detail="{ row }">{{
-								row.title || row.project_name
-							}}</template>
-							<template #cell-when="{ row }">{{ whenOf(row) }}</template>
+							<template #cell-detail="{ row }">
+								<CellText :value="row.title || row.project_name" :lines="2" />
+							</template>
+							<template #cell-when="{ row }"
+								><CellText :value="whenOf(row)"
+							/></template>
+							<template #cell-agent_name="{ row }"
+								><CellText :value="row.agent_name"
+							/></template>
 							<template #cell-status="{ row }"><TodayBadges :row="row" /></template>
-							<template #cell-confirm="{ row }">
-								<VisitConfirm
-									compact
-									:visit="row"
-									:confirmations="confirmations"
-									@changed="load"
-								/>
-							</template>
-							<template #cell-actions="{ row }">
-								<TodayRow
-									:row="row"
-									:full-numbers="Boolean(view.full_numbers)"
-									@log="startLog($event, s.key)"
-								/>
-							</template>
 						</DataTable>
 					</div>
 				</template>
@@ -102,37 +89,80 @@
 					v-bind="tableProps(s.key)"
 				>
 					<template #cell-lead_title="{ row }">
-						<router-link
-							:to="`/crm/leads/${row.lead}`"
-							class="ui-link ui-text-strong"
+						<NameCell
+							:name="row.lead_name || row.lead_title"
+							:identifier="row.phone"
+							:detail="row.lead_source"
 							data-testid="sellos-today-lead"
-							>{{ row.lead_name || row.lead_title }}</router-link
-						>
-						<span v-if="row.lead_source" class="block ui-text-muted">{{
-							row.lead_source
-						}}</span>
+						/>
 					</template>
-					<template #cell-detail="{ row }">{{ row.title || row.project_name }}</template>
-					<template #cell-when="{ row }">{{ whenOf(row) }}</template>
+					<template #cell-detail="{ row }">
+						<CellText :value="row.title || row.project_name" :lines="2" />
+					</template>
+					<template #cell-when="{ row }"><CellText :value="whenOf(row)" /></template>
+					<template #cell-agent_name="{ row }"
+						><CellText :value="row.agent_name"
+					/></template>
 					<template #cell-status="{ row }"><TodayBadges :row="row" /></template>
-					<template #cell-confirm="{ row }">
-						<VisitConfirm
-							compact
-							:visit="row"
-							:confirmations="confirmations"
-							@changed="load"
-						/>
-					</template>
-					<template #cell-actions="{ row }">
-						<TodayRow
-							:row="row"
-							:full-numbers="Boolean(view.full_numbers)"
-							@log="startLog($event, s.key)"
-						/>
-					</template>
 				</DataTable>
 			</SectionCard>
 		</template>
+
+		<!-- Calling a lead: the number the person's role may see, from the row menu. Consent never stops a call. -->
+		<FormDrawer
+			:open="Boolean(calling)"
+			:title="calling ? `Call ${calling.lead_name || calling.lead_title}` : 'Call'"
+			text="The number to dial. A consent warning never stops a call."
+			submit-label="Done"
+			testid="sellos-today-call-drawer"
+			submit-testid="sellos-today-call-done"
+			@close="calling = null"
+			@submit="calling = null"
+		>
+			<p v-if="calling" class="ui-text-body" data-testid="sellos-today-number">
+				<template v-if="calling.phone">
+					<a v-if="view.full_numbers" :href="`tel:${calling.phone}`" class="ui-link">{{
+						calling.phone
+					}}</a>
+					<span v-else>{{ calling.phone }}</span>
+					<span v-if="calling.overseas_phone"> · {{ calling.overseas_phone }}</span>
+				</template>
+				<template v-else>No phone</template>
+			</p>
+		</FormDrawer>
+
+		<!-- Rescheduling a visit asks for the new date and time. -->
+		<FormDrawer
+			:open="Boolean(rescheduling)"
+			:title="
+				rescheduling
+					? `Reschedule ${rescheduling.lead_name || rescheduling.lead_title}`
+					: 'Reschedule'
+			"
+			text="Choose the new date and time of the visit."
+			submit-label="Reschedule"
+			testid="sellos-visit-reschedule-form"
+			submit-testid="sellos-visit-reschedule-save"
+			cancel-testid="sellos-visit-reschedule-cancel"
+			@close="closeReschedule"
+			@submit="reschedule"
+		>
+			<FormField
+				v-model="rescheduleWhen"
+				required
+				type="datetime-local"
+				label="New date and time"
+				data-testid="sellos-visit-reschedule-when"
+			/>
+			<p
+				v-if="visitError"
+				role="alert"
+				class="ui-text-error"
+				data-testid="sellos-visit-confirm-error"
+			>
+				{{ visitError }}
+			</p>
+		</FormDrawer>
 
 		<!-- Log a call: a drawer, so no form sits open under a list. -->
 		<FormDrawer
@@ -183,7 +213,9 @@
 
 <script setup>
 import { computed, defineComponent, h, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import EmptyState from "../components/EmptyState.vue";
 import FormDrawer from "../components/FormDrawer.vue";
@@ -191,10 +223,9 @@ import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import NameCell from "../components/NameCell.vue";
 import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
-import TodayRow from "../components/TodayRow.vue";
-import VisitConfirm from "../components/VisitConfirm.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
 import { formatWhen } from "../format";
 
@@ -294,8 +325,6 @@ function columnsFor(key) {
 			? [{ key: "agent_name", label: "Agent" }]
 			: []),
 		{ key: "status", label: "Status", wrap: true },
-		...(key === "visits_tomorrow" ? [{ key: "confirm", label: "Confirm", wrap: true }] : []),
-		{ key: "actions", label: "Call", wrap: true },
 	];
 }
 
@@ -304,9 +333,72 @@ function tableProps(key) {
 	return {
 		testid: `sellos-today-table-${key}`,
 		rowTestid: "sellos-today-row",
+		actions: (row) => actionsFor(key, row),
 		rowName: (row) => row.lead_title,
 		rowAttrs: (row) => ({ "data-lead": row.lead, "data-section": key }),
 	};
+}
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c): call, log, open the lead and,
+// on tomorrow's visits, the confirmation.
+const router = useRouter();
+const calling = ref(null);
+const rescheduling = ref(null);
+const rescheduleWhen = ref("");
+const visitError = ref("");
+function actionsFor(section, row) {
+	const items = [
+		{ label: "Call", onClick: () => (calling.value = row) },
+		{ label: "Log a call", onClick: () => startLog(row, section) },
+		{ label: "Open lead", onClick: () => router.push(`/crm/leads/${row.lead}`) },
+	];
+	if (section === "visits_tomorrow" && row.status !== "Done") {
+		const labels = {
+			"Not confirmed": "Mark not confirmed",
+			Confirmed: "Confirm visit",
+			Rescheduled: "Reschedule",
+			Cancelled: "Cancel visit",
+		};
+		for (const status of confirmations.value) {
+			if (status === row.confirmation_status) continue;
+			items.push({
+				label: labels[status] || status,
+				onClick: () =>
+					status === "Rescheduled" ? openReschedule(row) : confirmVisit(row, status),
+			});
+		}
+	}
+	return items;
+}
+function openReschedule(row) {
+	visitError.value = "";
+	rescheduleWhen.value = "";
+	rescheduling.value = row;
+}
+function closeReschedule() {
+	visitError.value = "";
+	rescheduling.value = null;
+}
+async function confirmVisit(row, status) {
+	try {
+		await crmApi.confirmSiteVisit(row.name, status, null);
+	} catch (e) {
+		error.value = serverMessage(e, "The confirmation could not be saved.");
+	}
+	await load();
+}
+async function reschedule() {
+	const row = rescheduling.value;
+	if (!row || !rescheduleWhen.value) return;
+	visitError.value = "";
+	try {
+		await crmApi.confirmSiteVisit(row.name, "Rescheduled", rescheduleWhen.value);
+		rescheduling.value = null;
+	} catch (e) {
+		visitError.value = serverMessage(e, "The visit could not be rescheduled.");
+		return;
+	}
+	await load();
 }
 
 function whenOf(row) {

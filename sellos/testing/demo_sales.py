@@ -464,6 +464,71 @@ def round_price(value):
 # --- the Frappe side ----------------------------------------------------------------------------------------
 
 
+# A seller's expected price: the carpet area at a rate per square foot, by city, to the nearest lakh.
+RATES = {"Mumbai": (24000, 46000), "Ahmedabad": (5200, 9400)}
+# What the next follow up of an open seller is, by the seller's number: overdue, soon, later or none.
+FOLLOW_UPS = (
+	(-3, "Call back about the asking price"),
+	(1, "Confirm the viewing with the owner"),
+	(6, "Ask for the society papers"),
+	None,
+)
+CLOSED_SELLER_STAGES = ("Sold", "Closed lost")
+
+
+def expected_price(spec):
+	"""The owner's asking price in rupees, in whole lakhs, from the property and the city. The same for a spec
+	every time."""
+	low, high = RATES.get(spec["city"], RATES["Mumbai"])
+	rate = low + (spec["phone_seed"] * 7919) % (high - low)
+	return round(spec["property"]["carpet_area"] * rate, -5)
+
+
+def _seller_activity(lead, spec, agent, ctx):
+	"""A call the agent logged some days ago, and the next follow up of a seller still open (see FOLLOW_UPS), so
+	the Sellers list shows a last activity and a next follow up that is overdue, soon, later or not set."""
+	from datetime import datetime, time
+
+	import frappe
+
+	if spec["stage"] not in CLOSED_SELLER_STAGES and spec["phone_seed"] % 5:
+		ago = min(1 + spec["phone_seed"] % 11, max(1, spec["created_days"] - 1))
+		at = datetime.combine(ctx.today - timedelta(days=ago), time(11 + spec["phone_seed"] % 6, 20))
+		doc = frappe.get_doc(
+			{
+				"doctype": "Lead Activity",
+				"lead": lead,
+				"activity_type": "Call",
+				"activity_date": at,
+				"notes": "Spoke to the owner about the asking price and the viewing times.",
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.set_value(
+			"Lead Activity", doc.name, {"creation": at, "modified": at}, update_modified=False
+		)
+		ctx.count("created", "Lead Activity")
+	follow = FOLLOW_UPS[spec["phone_seed"] % len(FOLLOW_UPS)]
+	if follow and spec["stage"] not in CLOSED_SELLER_STAGES:
+		due = datetime.combine(ctx.today + timedelta(days=follow[0]), time(10 + spec["phone_seed"] % 7, 30))
+		doc = frappe.get_doc(
+			{
+				"doctype": "Lead Task",
+				"lead": lead,
+				"title": follow[1],
+				"due_at": due,
+				"status": "Open",
+				"assigned_to": agent,
+			}
+		)
+		doc.flags.ignore_permissions = True
+		doc.insert()
+		stamp = datetime.combine(ctx.today - timedelta(days=5 + spec["phone_seed"] % 9), time(9, 40))
+		frappe.db.set_value(
+			"Lead Task", doc.name, {"creation": stamp, "modified": stamp}, update_modified=False
+		)
+		ctx.count("created", "Lead Task")
+
+
 def _as(email):
 	from sellos.tests import ui_fixtures
 
@@ -741,6 +806,7 @@ def _build_seller(ctx, spec, today, taken):
 				"source": spec["source"],
 				"assigned_to": agent,
 				"property": prop,
+				"budget_to": expected_price(spec),
 				"notes": f"Owner of {title}. Wants to sell.",
 			}
 		)["lead"]["name"]
@@ -780,6 +846,7 @@ def _build_seller(ctx, spec, today, taken):
 		frappe.db.set_value(
 			"Lead", lead, "creation", add_days(now_datetime(), -spec["created_days"]), update_modified=False
 		)
+		_seller_activity(lead, spec, agent, ctx)
 	if m["state"] == "archived" and not frappe.db.get_value("Mandate", mandate, "archived"):
 		mandates.set_mandate_archived(mandate, 1)
 	_add_enquiries(ctx, spec, prop, taken)

@@ -110,6 +110,7 @@
 			caption="Companies"
 			:columns="columns"
 			:rows="shown"
+			:actions="rowActions"
 			:loading="loading"
 			loading-label="Loading companies."
 			empty-title="No company has been requested yet"
@@ -120,9 +121,20 @@
 			empty-testid="sellos-tenant-empty"
 		>
 			<template #cell-company_name="{ row }">
-				<span class="block ui-text-strong" data-testid="sellos-tenant-name">{{
-					row.company_name
-				}}</span>
+				<NameCell
+					:name="row.company_name"
+					:identifier="row.site_name"
+					data-testid="sellos-tenant-name"
+				/>
+			</template>
+			<template #cell-site_name="{ row }">
+				<CellText :value="row.site_name" />
+			</template>
+			<template #cell-admin_email="{ row }">
+				<CellText :value="row.admin_email" />
+			</template>
+			<template #cell-plan="{ row }">
+				<CellText :value="row.plan" />
 			</template>
 			<template #cell-status="{ row }">
 				<StatusBadge
@@ -131,19 +143,6 @@
 					data-testid="sellos-tenant-status"
 				/>
 			</template>
-			<template #cell-actions="{ row }">
-				<div class="flex flex-wrap items-center gap-ui-sm">
-					<AppButton
-						v-for="next in NEXT_STATUSES[row.status] || []"
-						:key="next"
-						type="button"
-						:data-testid="`sellos-tenant-to-${next.toLowerCase()}`"
-						@click="move(row, next)"
-					>
-						Move to {{ next }}
-					</AppButton>
-				</div>
-			</template>
 		</DataTable>
 	</PageTemplate>
 </template>
@@ -151,6 +150,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
+import CellText from "../components/CellText.vue";
+import NameCell from "../components/NameCell.vue";
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
@@ -253,7 +254,6 @@ const columns = [
 	{ key: "admin_email", label: "Admin email", sortable: true },
 	{ key: "plan", label: "Plan", sortable: true },
 	{ key: "status", label: "Status", sortable: true },
-	{ key: "actions", label: "Actions" },
 ];
 function openCreate() {
 	error.value = "";
@@ -299,6 +299,13 @@ async function move(tenant, status) {
 		error.value = serverMessage(e, "The status could not be changed.");
 	}
 }
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rowActions = (row) =>
+	(NEXT_STATUSES[row.status] || []).map((next) => ({
+		label: `Move to ${next}`,
+		onClick: () => move(row, next),
+	}));
 
 onMounted(load);
 </script>

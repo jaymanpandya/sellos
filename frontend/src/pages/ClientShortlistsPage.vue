@@ -33,6 +33,8 @@
 			title="Shortlists"
 			:columns="columns"
 			:rows="rows"
+			:row-to="(row) => `/client/shortlists/${encodeURIComponent(row.name)}`"
+			:row-name="(row) => row.title"
 			:loading="!loaded"
 			empty-title="No shortlist has been shared with you yet"
 			empty-text="Your agent will share homes with you here."
@@ -42,15 +44,10 @@
 			empty-testid="sellos-client-shortlists-empty"
 		>
 			<template #cell-title="{ row }">
-				<router-link
-					:to="`/client/shortlists/${encodeURIComponent(row.name)}`"
-					class="ui-link ui-text-strong"
-					data-testid="sellos-client-shortlist-link"
-				>
-					{{ row.title }}
-				</router-link>
+				<NameCell :name="row.title" data-testid="sellos-client-shortlist-link" />
 			</template>
 			<template #cell-item_count="{ row }">{{ row.item_count }} homes</template>
+			<template #cell-agent_name="{ row }"><CellText :value="row.agent_name" /></template>
 			<template #cell-shared_on="{ row }">{{ formatWhen(row.shared_on) }}</template>
 		</DataTable>
 	</PageTemplate>
@@ -59,8 +56,10 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import KpiStrip from "../components/KpiStrip.vue";
+import NameCell from "../components/NameCell.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";

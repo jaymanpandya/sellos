@@ -102,6 +102,7 @@
 			caption="Sales teams"
 			:columns="columns"
 			:rows="shown"
+			:actions="rowActions"
 			:loading="!loaded"
 			loading-label="Loading teams."
 			empty-title="No teams yet"
@@ -110,20 +111,22 @@
 			testid="sellos-teams-list"
 			row-testid="sellos-teams-team"
 		>
+			<template #cell-team_name="{ row }">
+				<NameCell
+					:name="row.team_name"
+					:detail="`${row.members.length} agents`"
+					data-testid="sellos-teams-name-cell"
+				/>
+			</template>
 			<template #cell-manager_name="{ row }">
-				<span class="ui-text-secondary" data-testid="sellos-teams-manager">{{
-					row.manager_name
-				}}</span>
+				<CellText :value="row.manager_name" data-testid="sellos-teams-manager" />
 			</template>
 			<template #cell-members="{ row }">
-				<span class="ui-text-secondary" data-testid="sellos-teams-members">{{
-					row.members.map((m) => m.full_name).join(", ") || "None yet"
-				}}</span>
-			</template>
-			<template #cell-actions="{ row }">
-				<AppButton type="button" data-testid="sellos-teams-remove" @click="remove(row)">
-					Remove team
-				</AppButton>
+				<CellText
+					:value="row.members.map((m) => m.full_name).join(', ')"
+					:lines="2"
+					data-testid="sellos-teams-members"
+				/>
 			</template>
 		</DataTable>
 	</PageTemplate>
@@ -132,6 +135,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 
+import CellText from "../components/CellText.vue";
+import NameCell from "../components/NameCell.vue";
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
@@ -196,8 +201,7 @@ function removeChip(key) {
 const columns = [
 	{ key: "team_name", label: "Team", primary: true, sortable: true },
 	{ key: "manager_name", label: "Manager", sortable: true },
-	{ key: "members", label: "Agents", wrap: true, class: "min-w-[14rem]" },
-	{ key: "actions", label: "Actions" },
+	{ key: "members", label: "Agents" },
 ];
 function openAdd() {
 	error.value = "";
@@ -243,6 +247,9 @@ const add = () =>
 	}, "The team could not be saved.");
 
 const remove = (team) => run(() => teamsApi.remove(team.name), "The team could not be removed.");
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rowActions = (team) => [{ label: "Remove team", onClick: () => remove(team) }];
 
 onMounted(load);
 </script>

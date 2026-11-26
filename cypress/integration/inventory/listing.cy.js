@@ -3,6 +3,11 @@
 // makes (names start with "Gate Inventory ") are removed afterwards.
 context("SOS-P4-02: listings", () => {
 	const row = (title) => cy.get(`[data-testid="sellos-listing-row"][data-title="${title}"]`);
+	// A listing's actions are in its row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+	const rowAction = (title, label) => {
+		row(title).find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', label).click();
+	};
 	const openListings = () => {
 		cy.intercept("POST", "**/sellos.inventory.listings.listing_overview*").as("overview");
 		cy.visit("/sellos/inventory/listings");
@@ -35,33 +40,33 @@ context("SOS-P4-02: listings", () => {
 				.should("contain", "an asking price")
 				.and("contain", "a description");
 			cy.expectApiStatus("sellos.inventory.listings.publish_listing", 417);
-			row(title).find('[data-testid="sellos-listing-publish"]').click();
+			rowAction(title, "Publish");
 			cy.wait("@publish").its("response.statusCode").should("eq", 417);
 			cy.getByTestId("listing-error").should("contain", "an asking price");
 			row(title).should("have.attr", "data-published", "0");
 
 			// Completed, it publishes.
-			row(title).find('[data-testid="sellos-listing-edit"]').click();
+			rowAction(title, "Edit");
 			cy.getByTestId("listing-price-field").type("8200000");
 			cy.getByTestId("listing-description").type("A resale flat near the market.");
 			cy.getByTestId("listing-save").click();
 			cy.wait("@save").its("response.statusCode").should("eq", 200);
 			row(title).should("contain", "Rs 82 lakh");
-			row(title).find('[data-testid="sellos-listing-publish"]').click();
+			rowAction(title, "Publish");
 			cy.wait("@publish").its("response.statusCode").should("eq", 200);
 			row(title).should("have.attr", "data-published", "1").and("contain", "Published");
 			cy.getByTestId("listing-notice").should("contain", "is published");
 
 			// The change history says who published it.
-			row(title).find("summary").click();
-			row(title)
-				.find('[data-testid="sellos-listing-change"]')
+			rowAction(title, "Change history");
+			cy.get('[data-testid="sellos-listing-change"]')
 				.last()
 				.should("contain", "set published")
 				.and("contain", "to Yes");
+			cy.getByTestId("listing-history-done").click();
 
 			cy.getByTestId("listing-error").should("not.exist");
-			row(title).find('[data-testid="sellos-listing-unpublish"]').click();
+			rowAction(title, "Withdraw");
 			row(title).should("have.attr", "data-published", "0").and("contain", "Draft");
 
 			cy.bench("sellos.tests.ui_fixtures.gate_listing_state", { title }).then((state) => {
@@ -91,7 +96,7 @@ context("SOS-P4-02: listings", () => {
 			cy.getByTestId("listing-save").click();
 			cy.wait("@save").its("response.statusCode").should("eq", 200);
 			cy.intercept("POST", "**/sellos.inventory.listings.publish_listing*").as("publish");
-			row(title).find('[data-testid="sellos-listing-publish"]').click();
+			rowAction(title, "Publish");
 			cy.wait("@publish").its("response.statusCode").should("eq", 200);
 			row(title).should("have.attr", "data-published", "1").and("contain", "Primary");
 			row(title)
@@ -110,5 +115,14 @@ context("SOS-P4-02: listings", () => {
 		cy.getByTestId("listing-form").should("not.exist");
 		cy.getByTestId("listing-publish").should("not.exist");
 		cy.getByTestId("listing-edit").should("not.exist");
+		// Whatever rows there are, the row menu of a Sales Manager has no Publish, Edit or Archive.
+		cy.get("body").then(($body) => {
+			if (!$body.find('[data-testid="sellos-row-menu-button"]').length) return;
+			cy.get('[data-testid="sellos-row-menu-button"]').first().click();
+			cy.contains('[role="menuitem"]', "Change history").should("be.visible");
+			["Publish", "Withdraw", "Edit", "Archive"].forEach((label) =>
+				cy.contains('[role="menuitem"]', new RegExp(`^${label}$`)).should("not.exist")
+			);
+		});
 	});
 });

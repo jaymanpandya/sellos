@@ -16,3 +16,4 @@ sellos.patches.p4_05_mandate
 sellos.patches.p4_06_deal
 sellos.patches.p7_04_commissions
 sellos.patches.p5_05_lead_property
+sellos.patches.lead_plain_title_signed_offline

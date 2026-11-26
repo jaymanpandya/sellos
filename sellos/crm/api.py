@@ -306,7 +306,49 @@ def list_leads(
 			follow_ups.due_state(t.due_at, t.due_date) == follow_ups.OVERDUE for t in open_tasks
 		)
 		lead["phone"] = phones.get(lead.client, "")
+	if pipeline == "Seller":
+		_add_seller_property(leads)
 	return leads
+
+
+def _add_seller_property(leads) -> None:
+	"""SOS-LOOP: what a seller owns, in plain words for the Sellers list: the type, the size and the locality of the
+	property the seller lead points at. Never the property's id or address."""
+	links = {
+		row.name: row.property
+		for row in frappe.get_all(
+			"Lead",
+			filters={"name": ["in", [lead.name for lead in leads]]},
+			fields=["name", "property"],
+			limit_page_length=0,
+		)
+		if row.property
+	}
+	props = {
+		row.name: row
+		for row in frappe.get_all(
+			"Property",
+			filters={"name": ["in", sorted(set(links.values()))]},
+			fields=["name", "property_type", "configuration", "carpet_area", "locality"],
+			limit_page_length=0,
+		)
+		if links
+	}
+	cities = dict(
+		frappe.get_all(
+			"Client",
+			filters={"name": ["in", sorted({lead.client for lead in leads if lead.client})]},
+			fields=["name", "city"],
+			as_list=True,
+			limit_page_length=0,
+		)
+	)
+	for lead in leads:
+		lead["seller_city"] = cities.get(lead.client) or ""
+		prop = props.get(links.get(lead.name))
+		lead["owned_type"] = (prop.configuration or prop.property_type or "") if prop else ""
+		lead["owned_size"] = f"{prop.carpet_area:g} sq ft" if prop and prop.carpet_area else ""
+		lead["owned_locality"] = (prop.locality or "") if prop else ""
 
 
 @sellos_api(*READERS)

@@ -48,6 +48,7 @@
 			caption="Assignment rules"
 			:columns="columns"
 			:rows="rules"
+			:actions="rowActions"
 			:loading="loading"
 			loading-label="Loading rules."
 			empty-title="No rules yet."
@@ -56,28 +57,21 @@
 			testid="sellos-assignment-rules"
 			row-testid="sellos-assignment-rule"
 		>
+			<template #cell-rule_name="{ row }">
+				<NameCell :name="row.rule_name" :detail="row.rule_type" />
+			</template>
 			<template #cell-describe="{ row }">
-				<span class="ui-text-secondary">{{ describe(row) }}</span>
+				<CellText :value="describe(row)" />
 			</template>
 			<template #cell-team="{ row }">
-				<span class="ui-text-secondary">{{ teamName(row.team) }}</span>
+				<CellText :value="teamName(row.team)" />
 			</template>
 			<template #cell-enabled="{ row }">
-				<AppCheckbox
-					:model-value="Boolean(row.enabled)"
-					label="Enabled"
+				<StatusBadge
+					:tone="row.enabled ? 'success' : 'neutral'"
+					:label="row.enabled ? 'On' : 'Off'"
 					data-testid="sellos-assignment-rule-enabled"
-					@update:model-value="save(row.name, { enabled: $event ? 1 : 0 })"
 				/>
-			</template>
-			<template #cell-actions="{ row }">
-				<AppButton
-					type="button"
-					data-testid="sellos-assignment-rule-remove"
-					@click="remove(row)"
-				>
-					Remove
-				</AppButton>
 			</template>
 		</DataTable>
 
@@ -156,7 +150,9 @@
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
-import AppCheckbox from "../components/AppCheckbox.vue";
+import CellText from "../components/CellText.vue";
+import NameCell from "../components/NameCell.vue";
+import StatusBadge from "../components/StatusBadge.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
@@ -205,7 +201,6 @@ const columns = [
 	{ key: "team", label: "Team", sortable: true, sortValue: (r) => teamName(r.team) },
 	{ key: "priority", label: "Order", sortable: true, align: "right" },
 	{ key: "enabled", label: "Enabled" },
-	{ key: "actions", label: "Actions" },
 ];
 const blank = () => ({
 	rule_name: "",
@@ -274,6 +269,15 @@ const save = (name, values) =>
 	run(() => crmApi.saveAssignmentRule(values, name), "The rule could not be saved.");
 const remove = (r) =>
 	run(() => crmApi.deleteAssignmentRule(r.name), "The rule could not be removed.");
+
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rowActions = (r) => [
+	{
+		label: r.enabled ? "Switch off" : "Switch on",
+		onClick: () => save(r.name, { enabled: r.enabled ? 0 : 1 }),
+	},
+	{ label: "Remove", onClick: () => remove(r) },
+];
 
 // A frappe-ui select has no native "required", so the form checks what a rule needs before it saves.
 async function add() {

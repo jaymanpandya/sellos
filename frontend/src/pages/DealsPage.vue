@@ -144,27 +144,34 @@
 			empty-testid="sellos-deal-empty"
 		>
 			<template #cell-client_name="{ row }">
-				<span class="block" data-testid="sellos-deal-title">{{ row.client_name }}</span>
-				<span class="block ui-text-muted ui-text-small">{{ row.target }}</span>
+				<NameCell
+					:name="row.client_name"
+					:detail="row.target"
+					data-testid="sellos-deal-title"
+				/>
 			</template>
 			<template #cell-has_commission_split="{ row }">
-				<span data-testid="sellos-deal-has-split">{{
-					row.has_commission_split ? "Yes" : "No"
-				}}</span>
+				<StatusBadge
+					:tone="row.has_commission_split ? 'success' : 'neutral'"
+					:label="row.has_commission_split ? 'Yes' : 'No'"
+					data-testid="sellos-deal-has-split"
+				/>
 			</template>
-			<template v-for="n in 3" :key="n" #[`cell-split${n}`]="{ row }">
-				<div
-					v-if="row.partner_splits[n - 1]"
-					data-testid="sellos-deal-split"
-					data-party="Channel Partner"
-				>
-					<span class="block">{{ row.partner_splits[n - 1].party }}</span>
-					<span class="block ui-text-muted ui-text-small tabular-nums"
-						>{{ row.partner_splits[n - 1].percent }}% ·
-						{{ formatBudget(row.partner_splits[n - 1].amount) }}</span
+			<template #cell-partners="{ row }">
+				<div v-if="row.partner_splits.length" class="grid gap-0.5">
+					<div
+						v-for="(p, n) in row.partner_splits.slice(0, 3)"
+						:key="n"
+						class="flex min-w-0 items-baseline gap-ui-sm"
+						data-testid="sellos-deal-split"
+						data-party="Channel Partner"
 					>
+						<CellText :value="p.party" class="min-w-0 flex-1" />
+						<span class="shrink-0 ui-text-muted tabular-nums">{{ p.percent }}%</span>
+						<span class="shrink-0 tabular-nums">{{ formatBudget(p.amount) }}</span>
+					</div>
 				</div>
-				<span v-else class="ui-text-muted">-</span>
+				<span v-else class="ui-text-muted">Not set</span>
 			</template>
 			<template #cell-agent_share="{ row }">
 				<div data-testid="sellos-deal-split" data-party="Agent">
@@ -194,32 +201,9 @@
 					data-testid="sellos-deal-status"
 				/>
 			</template>
+			<!-- One line: the date and who. The full sentence is on the deal page. -->
 			<template #cell-approval="{ row }">
-				<p
-					v-if="row.approval_status === 'Approved'"
-					class="mb-ui-sm ui-text-muted ui-text-small"
-					data-testid="sellos-deal-approved"
-				>
-					Approved by {{ row.approved_by_name }} on
-					{{ formatDateTime(row.approved_on) }}. The split is kept unless it is reopened.
-				</p>
-				<AppButton
-					v-if="row.approval_status !== 'Approved'"
-					type="button"
-					variant="primary"
-					data-testid="sellos-deal-approve"
-					@click.stop="approve(row)"
-				>
-					Approve
-				</AppButton>
-				<AppButton
-					v-else
-					type="button"
-					data-testid="sellos-deal-reopen"
-					@click.stop="reopen(row)"
-				>
-					Reopen
-				</AppButton>
+				<CellText :value="approvedLine(row)" data-testid="sellos-deal-approved" />
 			</template>
 		</DataTable>
 
@@ -341,12 +325,14 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import BulkBar from "../components/BulkBar.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
+import NameCell from "../components/NameCell.vue";
 import LoadError from "../components/LoadError.vue";
 import MoneyField from "../components/MoneyField.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -456,11 +442,13 @@ async function bulkApprove() {
 	selected.value = [];
 	await load();
 }
+// Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).
 const rowActions = (d) => [
 	{ label: "Open deal", onClick: () => router.push(`/crm/deals/${d.name}`) },
 	d.approval_status === "Approved"
 		? { label: "Reopen the split", onClick: () => reopen(d) }
 		: { label: "Approve the split", onClick: () => approve(d) },
+	{ label: "Archive", onClick: () => archive(d) },
 ];
 
 const router = useRouter();
@@ -512,21 +500,26 @@ const kpis = computed(() => [
 ]);
 
 const amountOf = (d) => Number(d.commission_amount || 0);
+const approvedLine = (d) =>
+	d.approval_status === "Approved"
+		? `${formatDate(d.approved_on)} \u00b7 ${d.approved_by_name}`
+		: "";
 const columns = [
-	{ key: "client_name", label: "Deal", primary: true, sortable: true, wrap: true },
+	{ key: "client_name", label: "Deal", primary: true, sortable: true, class: "w-[13rem]" },
 	{
 		key: "has_commission_split",
 		label: "Commission split",
 		sortable: true,
 		sortValue: (d) => d.has_commission_split,
 	},
-	...[1, 2, 3].map((n) => ({
-		key: `split${n}`,
-		label: `Split ${n}`,
-		wrap: true,
+	{
+		key: "partners",
+		label: "Channel partners",
+		class: "w-[17rem]",
+		thClass: "w-[17rem]",
 		sortable: true,
-		sortValue: (d) => Number(d.partner_splits[n - 1]?.amount || 0),
-	})),
+		sortValue: (d) => d.partner_splits.reduce((sum, p) => sum + Number(p.amount || 0), 0),
+	},
 	{
 		key: "agent_share",
 		label: "Agent share",
@@ -547,7 +540,13 @@ const columns = [
 		sortValue: amountOf,
 	},
 	{ key: "approval_status", label: "Status", sortable: true },
-	{ key: "approval", label: "Approval", wrap: true },
+	{
+		key: "approval",
+		label: "Approved",
+		class: "max-w-[14rem]",
+		sortable: true,
+		sortValue: (d) => d.approved_on || "",
+	},
 ];
 const rowAttrs = (d) => ({ "data-client": d.client_name, "data-status": d.approval_status });
 
@@ -648,6 +647,13 @@ const approve = (d) =>
 		() => dealApi.approve(d.name),
 		`${d.client_name}: the split is approved.`,
 		"The split could not be approved."
+	);
+
+const archive = (d) =>
+	run(
+		() => dealApi.setArchived(d.name, 1),
+		`${d.client_name}: the deal is archived. Nothing is deleted.`,
+		"The deal could not be archived."
 	);
 
 const reopen = (d) =>

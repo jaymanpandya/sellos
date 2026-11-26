@@ -71,8 +71,10 @@ context("SOS-P7-05: towers, wings and floors for projects", () => {
 		// A Held unit stops the floor from being removed, and the message counts it.
 		cy.getByTestId("tab-units").click();
 		cy.get('[data-testid="sellos-unit-row"][data-number="1203"]')
-			.find('[data-testid="sellos-unit-set-held"]')
+			.find('[data-testid="sellos-row-menu-button"]')
 			.click();
+		cy.contains('[role="menuitem"]', "Mark Held").click();
+		cy.getByTestId("unit-status-save").click();
 		cy.get('[data-testid="sellos-unit-row"][data-number="1203"]').should(
 			"have.attr",
 			"data-status",

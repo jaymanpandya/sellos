@@ -45,15 +45,17 @@ context("SOS-P5-01: the report engine", () => {
 		);
 		cy.getByTestId("reports-row").each(($row) => {
 			const count = $row.find("[data-col=count]").text();
-			cy.wrap($row).find("[data-testid=sellos-reports-open]").click();
+			cy.wrap($row).find('[data-testid="sellos-row-menu-button"]').click();
+			cy.contains('[role="menuitem"]', "Records").click();
 			cy.getByTestId("reports-drill").should("have.attr", "data-count", count);
 			cy.getByTestId("reports-record").should("have.length", Number(count));
 		});
 		cy.getByTestId("reports-record")
 			.first()
-			.find("a")
-			.should("have.attr", "href")
-			.and("contain", "/crm/leads/");
+			.find('[data-testid="sellos-row-menu-button"]')
+			.click();
+		cy.contains('[role="menuitem"]', "Open lead").click();
+		cy.location("pathname").should("contain", "/crm/leads/");
 	});
 
 	it("filters by date: a range with no lead shows nothing", () => {

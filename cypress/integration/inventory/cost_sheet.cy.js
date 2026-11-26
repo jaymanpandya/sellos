@@ -17,8 +17,9 @@ context("SOS-P7-07: price lists, payment plans and cost sheets", () => {
 		cy.intercept("POST", "**/sellos.inventory.cost_sheet.cost_sheet_options*").as("options");
 		cy.getByTestId("tab-units").click();
 		cy.get(`[data-testid="sellos-unit-row"][data-number="1201"]`)
-			.find('[data-testid="sellos-unit-cost-sheet"]')
+			.find('[data-testid="sellos-row-menu-button"]')
 			.click();
+		cy.contains('[role="menuitem"]', "Cost sheet").click();
 		cy.wait("@options");
 		cy.location("pathname").should("contain", `/inventory/units/${made.unit}/cost-sheet`);
 	};
@@ -203,7 +204,13 @@ context("SOS-P7-07: price lists, payment plans and cost sheets", () => {
 			cy.getByTestId("pricelist-form").should("not.exist");
 			cy.getByTestId("plan-form").should("not.exist");
 			cy.getByTestId("rates-save").should("not.exist");
-			cy.getByTestId("unit-cost-sheet").should("not.exist");
+			cy.getByTestId("tab-units").click();
+			cy.get('[data-testid="sellos-unit-row"]')
+				.first()
+				.find('[data-testid="sellos-row-menu-button"]')
+				.click();
+			cy.contains('[role="menuitem"]', "Status log").should("be.visible");
+			cy.contains('[role="menuitem"]', "Cost sheet").should("not.exist");
 		});
 	});
 });

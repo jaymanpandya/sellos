@@ -115,8 +115,7 @@
 			empty-testid="sellos-commission-payouts-empty"
 		>
 			<template #cell-firm_name="{ row }">
-				<span class="block">{{ row.firm_name }}</span>
-				<span class="block ui-text-muted">{{ row.target }}</span>
+				<NameCell :name="row.firm_name" :detail="row.target" />
 			</template>
 			<template #cell-status="{ row }">
 				<StatusBadge
@@ -124,30 +123,32 @@
 					:label="row.status"
 					data-testid="sellos-commission-payout-status"
 				/>
-				<p
+				<CellText
 					v-if="row.status === 'Paid'"
-					class="mt-1 ui-text-small"
+					muted
+					:value="`Paid on ${formatDate(row.paid_on)}, reference ${
+						row.payment_reference
+					}.`"
 					data-testid="sellos-commission-payout-paid"
-				>
-					Paid on {{ formatDate(row.paid_on) }}, reference {{ row.payment_reference }}.
-				</p>
-				<p
+				/>
+				<CellText
 					v-if="row.status === 'On hold'"
-					class="mt-1 ui-text-small"
+					muted
+					:value="`On hold: ${row.hold_reason}`"
 					data-testid="sellos-commission-payout-hold"
-				>
-					On hold: {{ row.hold_reason }}
-				</p>
+				/>
 			</template>
 			<template #cell-booking_date="{ row }">
 				<span class="ui-text-secondary">{{ formatDate(row.booking_date) }}</span>
 			</template>
 			<template #cell-commission_total="{ row }">
 				<span class="block tabular-nums">{{ formatMoney(row.commission_total) }}</span>
-				<span class="block ui-text-muted">
-					{{ row.rate_basis }} on {{ formatBudget(row.agreement_value) }}, firm's share
-					{{ row.partner_percent }}%
-				</span>
+				<CellText
+					muted
+					:value="`${row.rate_basis} on ${formatBudget(
+						row.agreement_value
+					)}, firm's share ${row.partner_percent}%`"
+				/>
 			</template>
 			<template #cell-commission_due="{ row }">
 				<span class="tabular-nums" data-testid="sellos-commission-payout-due">{{
@@ -167,6 +168,7 @@
 				loading-label="Loading rates."
 				:row-name="(row) => row.project_name"
 				:row-attrs="rateAttrs"
+				:actions="rateActions"
 				empty-title="No rates yet"
 				empty-text="Add the first rate to start making payouts."
 				empty-icon="lucide-percent"
@@ -175,6 +177,9 @@
 				loading-testid="sellos-commission-rates-loading"
 				empty-testid="sellos-commission-rates-empty"
 			>
+				<template #cell-project_name="{ row }">
+					<NameCell :name="row.project_name" />
+				</template>
 				<template #cell-firm_name="{ row }">
 					<span class="ui-text-secondary">{{ row.firm_name || "All partners" }}</span>
 				</template>
@@ -185,15 +190,6 @@
 				</template>
 				<template #cell-start_date="{ row }">
 					<span class="ui-text-secondary">{{ formatDate(row.start_date) }}</span>
-				</template>
-				<template #cell-archive="{ row }">
-					<AppButton
-						type="button"
-						data-testid="sellos-commission-rate-archive"
-						@click="archive(row)"
-					>
-						Archive
-					</AppButton>
 				</template>
 			</DataTable>
 		</div>
@@ -374,12 +370,14 @@
 import { computed, onMounted, reactive, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
 import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
+import NameCell from "../components/NameCell.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
 import PageTemplate from "../components/PageTemplate.vue";
@@ -530,8 +528,9 @@ const rateColumns = [
 	{ key: "firm_name", label: "Partner firm", sortable: true },
 	{ key: "value", label: "Rate", align: "right" },
 	{ key: "start_date", label: "Starts", sortable: true },
-	{ key: "archive", label: "Archive" },
 ];
+// Archiving a rate is a row menu action (docs/DESIGN_SYSTEM.md, "Lists", rule c).
+const rateActions = (r) => [{ label: "Archive", onClick: () => archive(r) }];
 const rateAttrs = (r) => ({ "data-project": r.project_name, "data-start": r.start_date });
 
 function openForm(which) {
