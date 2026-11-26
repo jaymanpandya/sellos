@@ -159,9 +159,8 @@
 				<FormField
 					v-if="isOther"
 					v-model="form.custom_label"
-					label="Short label"
-					required
-					hint="Up to 40 characters."
+					label="Short label (needed for Other)"
+					hint="Up to 40 characters. The server asks for it when the type is Other."
 					data-testid="sellos-note-label"
 				/>
 				<FormField

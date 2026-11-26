@@ -153,38 +153,34 @@
 				}}</span>
 			</template>
 			<template v-for="n in 3" :key="n" #[`cell-split${n}`]="{ row }">
-				<template v-if="row.partner_splits[n - 1]">
-					<span
-						class="block"
-						data-testid="sellos-deal-split"
-						data-party="Channel Partner"
-						>{{ row.partner_splits[n - 1].party }}</span
-					>
+				<div
+					v-if="row.partner_splits[n - 1]"
+					data-testid="sellos-deal-split"
+					data-party="Channel Partner"
+				>
+					<span class="block">{{ row.partner_splits[n - 1].party }}</span>
 					<span class="block ui-text-muted ui-text-small tabular-nums"
 						>{{ row.partner_splits[n - 1].percent }}% ·
 						{{ formatBudget(row.partner_splits[n - 1].amount) }}</span
 					>
-				</template>
+				</div>
 				<span v-else class="ui-text-muted">-</span>
 			</template>
 			<template #cell-agent_share="{ row }">
-				<span class="block tabular-nums" data-testid="sellos-deal-split" data-party="Agent"
-					>{{ row.agent_share.percent }}%</span
-				>
-				<span class="block ui-text-muted ui-text-small tabular-nums">{{
-					formatBudget(row.agent_share.amount)
-				}}</span>
+				<div data-testid="sellos-deal-split" data-party="Agent">
+					<span class="block tabular-nums">{{ row.agent_share.percent }}%</span>
+					<span class="block ui-text-muted ui-text-small tabular-nums">{{
+						formatBudget(row.agent_share.amount)
+					}}</span>
+				</div>
 			</template>
 			<template #cell-company_share="{ row }">
-				<span
-					class="block tabular-nums"
-					data-testid="sellos-deal-split"
-					data-party="Company"
-					>{{ row.company_share.percent }}%</span
-				>
-				<span class="block ui-text-muted ui-text-small tabular-nums">{{
-					formatBudget(row.company_share.amount)
-				}}</span>
+				<div data-testid="sellos-deal-split" data-party="Company">
+					<span class="block tabular-nums">{{ row.company_share.percent }}%</span>
+					<span class="block ui-text-muted ui-text-small tabular-nums">{{
+						formatBudget(row.company_share.amount)
+					}}</span>
+				</div>
 			</template>
 			<template #cell-commission_amount="{ row }">
 				<span class="tabular-nums" data-testid="sellos-deal-money">{{
