@@ -70,6 +70,8 @@ context("SOS-P1-13: support access grants", () => {
 		cy.visit("/sellos/company/support");
 		cy.getByTestId("support-add").click();
 		cy.getByTestId("support-grant").click();
+		// The new grant is the first row and Active before its menu is opened: "End now" is only in an Active row's menu.
+		cy.getByTestId("support-status").first().should("contain.text", "Active");
 		cy.getByTestId("support-grant-row")
 			.first()
 			.find('[data-testid="sellos-row-menu-button"]')

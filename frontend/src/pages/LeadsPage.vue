@@ -450,7 +450,7 @@
 				/>
 			</template>
 			<template #cell-assigned_to="{ row }">
-				<span class="ui-text-secondary">{{ agentName(row.assigned_to) }}</span>
+				<CellText :value="agentName(row.assigned_to)" />
 			</template>
 			<template #cell-budget="{ row }">
 				<span class="tabular-nums">{{ formatBudget(row.budget || "") }}</span>
@@ -520,6 +520,7 @@ import { useRoute, useRouter } from "vue-router";
 import { CLIENT_TYPES, CONFIGURATIONS, TIMELINES, crmApi, serverMessage } from "../crm/crmApi";
 import { logBackgroundError } from "../api";
 import AppButton from "../components/AppButton.vue";
+import CellText from "../components/CellText.vue";
 import BulkBar from "../components/BulkBar.vue";
 import DataTable from "../components/DataTable.vue";
 import FilterBar from "../components/FilterBar.vue";
@@ -658,7 +659,7 @@ const columns = computed(() => [
 	{ key: "stage", label: "Stage", sortable: true },
 	{
 		key: "assigned_to",
-		wrap: true,
+		class: "w-[9rem] max-w-[9rem]",
 		label: "Agent",
 		sortable: true,
 		sortValue: (l) => agentName(l.assigned_to),
