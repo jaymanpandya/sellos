@@ -20,7 +20,9 @@
 				search-testid="sellos-whatsapp-search"
 				clear-testid="sellos-whatsapp-filter-clear"
 				:active="Boolean(search || stateFilter)"
+				:chips="chips"
 				@clear="clearFilters"
+				@remove-chip="removeChip"
 			>
 				<FormField
 					v-model="stateFilter"
@@ -354,9 +356,17 @@ const kpis = computed(() => {
 	];
 });
 const rowAttrs = (row) => ({ "data-lead": row.lead, "data-state": row.state });
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Lead: ${search.value}` }] : []),
+	...(stateFilter.value ? [{ key: "state", label: `State: ${stateFilter.value}` }] : []),
+]);
 function clearFilters() {
 	search.value = "";
 	stateFilter.value = "";
+}
+function removeChip(key) {
+	if (key === "search") search.value = "";
+	else stateFilter.value = "";
 }
 
 const toneOf = (level) => (level === "red" ? "danger" : level === "amber" ? "warning" : "neutral");

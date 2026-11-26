@@ -1,0 +1,78 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "role",
+  "signer_name",
+  "signer_email",
+  "status",
+  "submitter_id",
+  "sent_on",
+  "viewed_on",
+  "completed_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "role",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Role",
+   "options": "Seller\nCompany",
+   "reqd": 1
+  },
+  {
+   "fieldname": "signer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name"
+  },
+  {
+   "fieldname": "signer_email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nSent\nViewed\nSigned\nDeclined\nExpired"
+  },
+  {
+   "fieldname": "submitter_id",
+   "fieldtype": "Data",
+   "label": "DocuSeal signer id"
+  },
+  {
+   "fieldname": "sent_on",
+   "fieldtype": "Datetime",
+   "label": "Sent on"
+  },
+  {
+   "fieldname": "viewed_on",
+   "fieldtype": "Datetime",
+   "label": "Viewed on"
+  },
+  {
+   "fieldname": "completed_on",
+   "fieldtype": "Datetime",
+   "label": "Signed on"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-26 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Mandate Signer",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": []
+}

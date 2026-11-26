@@ -31,7 +31,7 @@
 				search-placeholder="Search by seller"
 				search-testid="sellos-mandate-search"
 				clear-testid="sellos-mandate-filter-clear"
-				:active="Boolean(search || statusFilter)"
+				:active="Boolean(search || statusFilter || signingFilter || typeFilter)"
 				:chips="chips"
 				data-testid="sellos-mandate-filters"
 				@clear="clearFilters"
@@ -44,6 +44,22 @@
 					label="Status"
 					:options="statusOptions"
 					data-testid="sellos-mandate-filter-status"
+				/>
+				<FormField
+					v-model="signingFilter"
+					compact
+					type="select"
+					label="Signing"
+					:options="signingOptions"
+					data-testid="sellos-mandate-filter-signing"
+				/>
+				<FormField
+					v-model="typeFilter"
+					compact
+					type="select"
+					label="Type"
+					:options="typeFilterOptions"
+					data-testid="sellos-mandate-filter-type"
 				/>
 			</FilterBar>
 		</template>
@@ -72,8 +88,33 @@
 			@retry="load"
 		/>
 
+		<p
+			v-if="bulkNotice"
+			role="status"
+			class="mb-ui-md ui-text-small"
+			data-testid="sellos-mandate-bulk-result"
+		>
+			{{ bulkNotice }}
+		</p>
+		<!-- The bulk bar exists only while rows are selected. -->
+		<BulkBar v-if="isAdmin" :count="selected.length" @clear="selected = []">
+			<AppButton
+				type="button"
+				:disabled="!selected.length"
+				data-testid="sellos-mandate-bulk-archive"
+				@click="bulkArchive"
+			>
+				Archive selected mandates
+			</AppButton>
+		</BulkBar>
+
 		<DataTable
 			v-if="!loadError"
+			v-model:selected="selected"
+			:selectable="isAdmin"
+			:actions="rowActions"
+			select-testid="sellos-mandate-select"
+			select-all-testid="sellos-mandate-select-all"
 			title="All mandates"
 			caption="Mandates"
 			:columns="columns"
@@ -100,6 +141,19 @@
 					:label="row.status"
 					data-testid="sellos-mandate-status"
 				/>
+			</template>
+			<template #cell-signing="{ row }">
+				<SigningBadge :status="row.signing_status" />
+				<a
+					v-if="row.signed_document && row.status === 'Signed'"
+					:href="row.signed_document"
+					target="_blank"
+					rel="noopener"
+					class="mt-1 block ui-link ui-text-small"
+					data-testid="sellos-mandate-signed-copy"
+					@click.stop
+					>Download signed copy</a
+				>
 			</template>
 			<template #cell-terms="{ row }">
 				<span class="ui-text-secondary" data-testid="sellos-mandate-terms">
@@ -312,6 +366,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
@@ -319,7 +374,9 @@ import FileField from "../components/FileField.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import BulkBar from "../components/BulkBar.vue";
 import FilterBar from "../components/FilterBar.vue";
+import SigningBadge from "../components/SigningBadge.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -329,6 +386,7 @@ import StatusBadge from "../components/StatusBadge.vue";
 import { readFileBase64 } from "../company/partnersApi";
 import { serverMessage } from "../crm/crmApi";
 import { mandateApi } from "../crm/mandatesApi";
+import { session } from "../session";
 import { formatDate, formatWhen } from "../format";
 
 // Mandates (SOS-P4-05). Every change is made on the server and the list read back, so what is shown is what is
@@ -348,32 +406,78 @@ const loadError = ref("");
 const loaded = ref(false);
 const creating = ref(false);
 const manageName = ref("");
+const router = useRouter();
+const isAdmin = computed(() => session.roles.includes("SellOS Company Admin"));
+const selected = ref([]);
+const bulkNotice = ref("");
+async function bulkArchive() {
+	error.value = "";
+	bulkNotice.value = "";
+	let done = 0;
+	try {
+		for (const name of selected.value) {
+			await mandateApi.setArchived(name, 1);
+			done += 1;
+		}
+	} catch (e) {
+		error.value = serverMessage(e, "A mandate could not be archived.");
+	}
+	bulkNotice.value = `${done} mandates archived. Nothing is deleted.`;
+	selected.value = [];
+	await load();
+}
+const rowActions = (m) => [
+	{ label: "Open mandate", onClick: () => router.push(`/crm/mandates/${m.name}`) },
+	{ label: "Open the seller", onClick: () => router.push(`/crm/sellers/${m.lead}`) },
+];
 const search = ref("");
 const statusFilter = ref("");
+const signingFilter = ref("");
+const typeFilter = ref("");
 const current = computed(() => mandates.value.find((m) => m.name === manageName.value) || null);
 const statusOptions = [
 	{ label: "All statuses", value: "" },
 	{ label: "Signed", value: "Signed" },
 	{ label: "Draft", value: "Draft" },
 ];
+const signingOptions = [
+	{ label: "Any signing state", value: "" },
+	...["Not sent", "Sent", "Viewed", "Signed", "Declined", "Expired"].map((s) => ({
+		label: s,
+		value: s,
+	})),
+];
+const typeFilterOptions = [
+	{ label: "Any type", value: "" },
+	{ label: "Exclusive", value: "Exclusive" },
+	{ label: "Open", value: "Open" },
+];
 const shownMandates = computed(() => {
 	const q = search.value.trim().toLowerCase();
 	return mandates.value.filter(
 		(m) =>
 			(!q || (m.lead_title || "").toLowerCase().includes(q)) &&
-			(!statusFilter.value || m.status === statusFilter.value)
+			(!statusFilter.value || m.status === statusFilter.value) &&
+			(!signingFilter.value || m.signing_status === signingFilter.value) &&
+			(!typeFilter.value || m.mandate_type === typeFilter.value)
 	);
 });
 const chips = computed(() => [
 	...(search.value ? [{ key: "search", label: `Seller: ${search.value}` }] : []),
 	...(statusFilter.value ? [{ key: "status", label: `Status: ${statusFilter.value}` }] : []),
+	...(signingFilter.value ? [{ key: "signing", label: `Signing: ${signingFilter.value}` }] : []),
+	...(typeFilter.value ? [{ key: "type", label: `Type: ${typeFilter.value}` }] : []),
 ]);
 function clearFilters() {
 	search.value = "";
 	statusFilter.value = "";
+	signingFilter.value = "";
+	typeFilter.value = "";
 }
 function removeChip(key) {
 	if (key === "search") search.value = "";
+	else if (key === "signing") signingFilter.value = "";
+	else if (key === "type") typeFilter.value = "";
 	else statusFilter.value = "";
 }
 
@@ -406,6 +510,7 @@ const kpis = computed(() => {
 const columns = [
 	{ key: "lead_title", label: "Seller", primary: true, sortable: true },
 	{ key: "status", label: "Status", sortable: true },
+	{ key: "signing", label: "Signing", sortable: true, sortValue: (m) => m.signing_status },
 	{ key: "terms", label: "Terms", wrap: true, class: "min-w-[12rem]" },
 	{ key: "manage", label: "Signature and Dossier", wrap: true },
 ];

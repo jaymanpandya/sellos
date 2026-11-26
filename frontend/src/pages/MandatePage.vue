@@ -14,6 +14,7 @@
 						:label="mandate.status"
 						data-testid="sellos-mandate-status"
 					/>
+					<SigningBadge :status="mandate.signing_status" />
 				</template>
 				<template v-if="mandate" #actions>
 					<AppButton
@@ -85,10 +86,18 @@
 					</dl>
 				</SectionCard>
 
+				<SectionCard
+					title="Electronic signing"
+					help="DocuSeal emails the seller and your signer. This is an electronic signature, not an Aadhaar eSign."
+				>
+					<MandateSigning :mandate="mandate" @changed="changed" />
+				</SectionCard>
+
 				<SectionCard title="Signature">
 					<div v-if="mandate.status !== 'Signed'">
 						<p class="mb-ui-sm ui-text-muted">
-							Upload the signed document to sign this mandate. It is required.
+							Or upload a signed document yourself to sign this mandate. It is
+							required.
 						</p>
 						<FileField
 							label="Signed document"
@@ -99,10 +108,21 @@
 							@change="sign"
 						/>
 					</div>
-					<p v-else class="ui-text-muted" data-testid="sellos-mandate-signed">
-						Signed on {{ formatWhen(mandate.signed_on) }} (recorded by
-						{{ mandate.signed_by_name }}). Its terms are kept.
-					</p>
+					<template v-else>
+						<p class="ui-text-muted" data-testid="sellos-mandate-signed">
+							Signed on {{ formatWhen(mandate.signed_on) }} (recorded by
+							{{ mandate.signed_by_name }}). Its terms are kept.
+						</p>
+						<a
+							v-if="mandate.signed_document"
+							:href="mandate.signed_document"
+							target="_blank"
+							rel="noopener"
+							class="ui-link"
+							data-testid="sellos-mandate-signed-copy"
+							>Download signed copy</a
+						>
+					</template>
 				</SectionCard>
 			</div>
 
@@ -167,6 +187,10 @@
 							</li>
 						</ul>
 					</div>
+				</SectionCard>
+
+				<SectionCard v-if="mandate.dossier_released" title="Dossier PDF">
+					<DossierPdf :mandate="mandate" :pdf="mandate.dossier_pdf" @changed="changed" />
 				</SectionCard>
 
 				<SectionCard title="Add to the Dossier">
@@ -244,14 +268,17 @@ import EmptyState from "../components/EmptyState.vue";
 import FieldGrid from "../components/FieldGrid.vue";
 import FileField from "../components/FileField.vue";
 import FormField from "../components/FormField.vue";
+import DossierPdf from "../components/DossierPdf.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import MandateSigning from "../components/MandateSigning.vue";
 import NotesPanel from "../components/NotesPanel.vue";
 import PageTabs from "../components/PageTabs.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import ReadField from "../components/ReadField.vue";
 import RecordHeader from "../components/RecordHeader.vue";
 import SectionCard from "../components/SectionCard.vue";
+import SigningBadge from "../components/SigningBadge.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { readFileBase64 } from "../company/partnersApi";
 import { serverMessage } from "../crm/crmApi";
@@ -310,6 +337,11 @@ async function run(action, done, failed) {
 	} catch (e) {
 		error.value = serverMessage(e, failed);
 	}
+}
+
+async function changed(message) {
+	notice.value = message;
+	await load();
 }
 
 async function chosen(event) {

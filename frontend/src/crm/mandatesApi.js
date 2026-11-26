@@ -18,5 +18,7 @@ export const mandateApi = {
 	addFile: (name, title, filename, content_base64) =>
 		call("add_dossier_file", { name, title, filename, content_base64 }),
 	openDossier: (name) => call("open_dossier", { name }),
+	status: (leads) => call("mandate_status", { leads }),
+	generateDossierPdf: (name) => call("generate_dossier_pdf", { name }),
 	setArchived: (name, archived) => call("set_mandate_archived", { name, archived }),
 };

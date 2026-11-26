@@ -65,6 +65,13 @@ state, and in each area's colours.
 | Page header | `PageHeader` | 44px round area icon chip, title (24px), one line (muted, at most 48rem), outline actions and at most one solid |
 | Record header | `RecordHeader` | Back link, sticky bar with title, status pill, one muted line, actions; Edit is solid |
 | Split table | `SplitTable` | a commission split: name, role, percent, amount per party, a total row that checks to 100 percent, and a proportion bar |
+| Notes | `NotesPanel` | the notes of a lead, seller or mandate: a timeline with the type as a pill, a type filter, an add and edit drawer with attachments, image thumbnails, a two step remove |
+| Signing badge | `SigningBadge` | the state of a mandate's electronic signing: Not sent, Sent, Viewed, Signed, Declined, Expired |
+| Mandate signing | `MandateSigning` | the signing card of a mandate: the state, each signer, Send for signing or Connect DocuSeal, the signed copy and audit trail |
+| Dossier PDF | `DossierPdf` | the version of the Dossier PDF, Download and Regenerate |
+| DocuSeal settings | `DocusealSettings` | the DocuSeal address, encrypted key and secret (never shown back), the company's signer and the webhook address |
+| Colour field | `ColourField` | a hex colour with a swatch and its contrast against white, checked live against a minimum |
+| Logo preview | `LogoPreview` | a small framed picture, such as the company logo |
 | Section card | `SectionCard` | card with the small uppercase heading, optional tag and help, a `FieldGrid`, optional footer |
 | Timeline | `Timeline` | a vertical history: a dot per event, strong title, muted time line and notes (the lead's stage history) |
 | Disclosure | `Disclosure` | a card closed until opened, for a rare action kept at the bottom of a page (merge a duplicate client) |

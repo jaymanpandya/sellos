@@ -388,6 +388,20 @@ SAMPLE_CALLS = {
 		"content_base64": tiny_pdf_base64(),
 	},
 	"sellos.inventory.mandates.open_dossier": {"name": "{spare_mandate}"},
+	"sellos.inventory.mandates.generate_dossier_pdf": {"name": "{spare_mandate}"},  # SOS-LOOP
+	"sellos.inventory.docuseal.docuseal_status": {},
+	"sellos.inventory.docuseal.send_for_signing": {"name": "{spare_mandate}"},
+	"sellos.inventory.docuseal.get_docuseal_settings": {},
+	"sellos.inventory.docuseal.save_docuseal_settings": {"values": {"signer_name": "P105 Signer"}},
+	"sellos.inventory.docuseal.check_docuseal_connection": {},
+	"sellos.inventory.branding.get_company_profile": {},
+	"sellos.inventory.branding.save_company_profile": {"values": {"footer_text": "p105 footer"}},
+	"sellos.inventory.branding.upload_company_logo": {
+		"filename": "p105.png",
+		"content_base64": (
+			"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+		),
+	},
 	"sellos.inventory.mandates.set_mandate_archived": {"name": "{spare_mandate}"},
 	# SOS-P4-06: one pending deal. In the matrix's order it is corrected, approved, reopened and archived.
 	"sellos.inventory.deals.deal_overview": {},
@@ -869,6 +883,22 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"status": "Draft",
 			}
 		).insert()
+		# SOS-LOOP: DocuSeal is a fake server on this machine, and the seller has an email to be sent the document.
+		from sellos.tests.fake_docuseal import KEY, FakeDocuSeal
+
+		fake_docuseal = FakeDocuSeal().start()
+		self.addCleanup(fake_docuseal.stop)
+		frappe.db.set_value("Client", seller.name, "email", "p105.seller@example.com")
+		docuseal_settings = frappe.get_doc("SellOS Settings")
+		docuseal_settings.update(
+			{
+				"docuseal_url": fake_docuseal.url,
+				"docuseal_api_key": KEY,
+				"docuseal_signer_name": "P105 Company Signer",
+				"docuseal_signer_email": "p105.signer@example.com",
+			}
+		)
+		docuseal_settings.save(ignore_permissions=True)
 		# SOS-LOOP: a note of the company admin's own lead, for the notes methods.
 		from sellos.crm import notes as loop_notes
 

@@ -13,6 +13,7 @@ OPEN = "Open"
 TYPES = (EXCLUSIVE, OPEN)
 DRAFT = "Draft"
 SIGNED = "Signed"
+OUT_FOR_SIGNING = ("Sent", "Viewed")  # SOS-LOOP: electronic signing in progress
 MAX_TERM_MONTHS = 120
 TERMS = ("lead", "mandate_type", "start_date", "term_months", "fee_percent")
 
@@ -49,6 +50,13 @@ class Mandate(InventoryRecord):
 			frappe.throw(_("A mandate is a Draft or Signed."))
 		if self.status == SIGNED and not self.signed_document:
 			frappe.throw(_("Upload the signed document to sign the mandate."))
+		if before and before.signing_status in OUT_FOR_SIGNING:
+			# SOS-LOOP: the document that went to the signers holds these terms, so they wait for the answer.
+			for field in TERMS:
+				if str(self.get(field) or "") != str(before.get(field) or ""):
+					frappe.throw(
+						_("This mandate is out for signing. Its terms can not change until it is answered.")
+					)
 		if not before or before.status != SIGNED:
 			return
 		if self.status != SIGNED or self.signed_document != before.signed_document:

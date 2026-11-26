@@ -52,6 +52,14 @@
 			</DataTable>
 		</SectionCard>
 
+		<SectionCard
+			title="DocuSeal"
+			help="Electronic signing of mandates."
+			data-testid="sellos-docuseal-card"
+		>
+			<DocusealSettings />
+		</SectionCard>
+
 		<FormDrawer
 			:open="drawer"
 			:title="editing ? 'Rename note type' : 'Add a note type'"
@@ -80,6 +88,7 @@ import { onMounted, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
+import DocusealSettings from "../components/DocusealSettings.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";

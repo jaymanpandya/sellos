@@ -1790,6 +1790,72 @@ def make_gate_mandate_seller():
 	}
 
 
+def make_gate_mandates():
+	"""A seller with a Draft mandate and another with a signed one, for the signing and Dossier PDF spec (tests only,
+	SOS-LOOP). The clients are named "Gate Seller Mandate <tag>", so remove_seeded_leads takes them away. Returns the two
+	mandates' names."""
+	import base64
+
+	from sellos.crm import api as crm
+	from sellos.inventory import mandates
+	from sellos.tests.files import tiny_pdf
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	made = {}
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		for kind, seed in (("draft", 145), ("signed", 146)):
+			client = crm.save_client(
+				values={
+					"client_name": f"Gate Seller Mandate {kind} {tag}",
+					"client_type": "Seller",
+					"phone": phones.in_mobile(seed),
+					"email": f"gate.{kind}.{tag}@example.com",
+				}
+			)
+			lead = crm.save_lead(
+				values={
+					"client": client["name"],
+					"source": "Referral",
+					"pipeline": "Seller",
+					"assigned_to": TEST_USERS["agent"]["email"],
+				}
+			)["lead"]
+			mandate = mandates.save_mandate(
+				{"lead": lead["name"], "mandate_type": "Exclusive", "term_months": 6, "fee_percent": 1.5}
+			)["name"]
+			if kind == "signed":
+				mandates.sign_mandate(mandate, "gate-signed.pdf", base64.b64encode(tiny_pdf()).decode())
+			made[kind] = mandate
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
+	return made
+
+
+def reset_company_profile_and_docuseal():
+	"""Clear the Company Profile fields and the DocuSeal settings a spec saved (tests only, SOS-LOOP)."""
+	doc = frappe.get_doc("SellOS Settings")
+	for field in (
+		"brand_color",
+		"accent_color",
+		"rera_number",
+		"website",
+		"footer_text",
+		"docuseal_url",
+		"docuseal_signer_name",
+		"docuseal_signer_email",
+	):
+		doc.set(field, None)
+	doc.flags.ignore_permissions = True
+	doc.save()
+	frappe.db.delete(
+		"__Auth",
+		{"doctype": "SellOS Settings", "fieldname": ["in", ["docuseal_api_key", "docuseal_webhook_secret"]]},
+	)
+	frappe.clear_document_cache("SellOS Settings", "SellOS Settings")
+	frappe.db.commit()  # nosemgrep
+	return {"reset": True}
+
+
 def _seed_pipeline_stages():
 	"""Move some regression leads along the buyer pipeline (SOS-P1-07), through the production API as
 	each lead's own agent. A lead that has left the first stage is left alone, so it is safe to run again."""

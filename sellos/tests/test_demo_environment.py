@@ -342,6 +342,75 @@ class TestDemoSeedAndReset(unittest.TestCase):
 		self.assertIsNotNone(line, result.stdout + result.stderr)
 		return json.loads(line[5:])
 
+	def loop_counts(self, site):
+		return {
+			table: self.query(site, f"select count(*) from `tab{table}`")[0][0]
+			for table in (
+				"Record Note",
+				"Record Note File",
+				"Deal",
+				"Mandate Signer",
+				"File",
+				"Commission Split",
+			)
+		}
+
+	def check_loop_data(self, site):
+		"""Branding, notes of every type with images, signing states, Dossier PDFs and deals with 1, 2 and 3 splits."""
+		singles = dict(
+			self.query(
+				site,
+				"select field, value from tabSingles where doctype = 'SellOS Settings' "
+				"and field in ('brand_color', 'accent_color', 'logo', 'rera_number', 'footer_text')",
+			)
+		)
+		for field in ("brand_color", "accent_color", "logo", "rera_number", "footer_text"):
+			self.assertTrue(singles.get(field), f"the company profile has no {field}")
+		types = {
+			r[0]
+			for r in self.query(
+				site,
+				"select nt.label from `tabRecord Note` n join `tabNote Type` nt on nt.name = n.note_type "
+				"where n.removed = 0",
+			)
+		}
+		every = {"Call", "Site visit", "Owner requirement", "Price discussion", "Legal and title"}
+		every |= {"Inspection", "Photos", "Document", "Follow up", "Other"}
+		self.assertGreaterEqual(types, every)
+		self.assertGreater(
+			self.query(site, "select count(*) from `tabRecord Note File` where kind = 'Image'")[0][0], 0
+		)
+		self.assertGreater(
+			self.query(site, "select count(*) from `tabRecord Note` where creation < now() - interval 1 day")[
+				0
+			][0],
+			0,
+		)
+		signing = {r[0] for r in self.query(site, "select distinct signing_status from tabMandate")}
+		self.assertGreaterEqual(signing, {"Signed", "Sent", "Viewed"})
+		self.assertGreater(
+			self.query(site, "select count(*) from tabMandate where dossier_version > 0")[0][0], 0
+		)
+		partners = {
+			r[0]
+			for r in self.query(
+				site,
+				"select count(*) from `tabCommission Split` where parenttype = 'Deal' "
+				"and party_type = 'Channel Partner' group by parent",
+			)
+		}
+		self.assertGreaterEqual(partners, {1, 2, 3})
+		for where in (
+			"deal_date = curdate()",
+			"deal_date >= date_sub(curdate(), interval weekday(curdate()) day) and deal_date <= curdate()",
+			"deal_date >= date_format(curdate(), '%Y-%m-01') and deal_date <= curdate()",
+			"deal_date >= date_format(curdate(), '%Y-01-01') and deal_date <= curdate()",
+			"deal_date < date_format(curdate(), '%Y-01-01')",
+		):
+			self.assertGreater(
+				self.query(site, f"select count(*) from tabDeal where {where}")[0][0], 0, where
+			)
+
 	def test_seed_is_idempotent_and_reset_rebuilds(self):
 		self.addCleanup(self.demo, "drop")
 		site = demo.site_of(self.COMPANY)
@@ -366,10 +435,15 @@ class TestDemoSeedAndReset(unittest.TestCase):
 		control = demo.site_of(self.CONTROL)
 		self.assertEqual(self.query(control, "select status from `tabTenant`"), [["Active"]])
 
+		# SOS-LOOP: what the Leads and Sales round added is there, and a second seed adds none of it.
+		self.check_loop_data(site)
+		loop = self.loop_counts(site)
+
 		again = self.demo("seed")
 		self.assertEqual(again.returncode, 0, again.stdout[-1500:] + again.stderr[-1500:])
 		self.assertEqual(self.query(site, "select count(*) from `tabLead`")[0][0], leads)
 		self.assertEqual(self.query(site, "select count(*) from `tabClient`")[0][0], clients)
+		self.assertEqual(self.loop_counts(site), loop)
 		counts = {
 			table: self.query(site, f"select count(*) from `tab{table}`")[0][0] for table in FEATURE_TABLES
 		}

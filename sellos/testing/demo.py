@@ -149,7 +149,14 @@ def _seed_features(index, data, users, ctx):
 	next one still runs (seed fails loudly at the end)."""
 	import frappe
 
-	from sellos.testing import demo_crm, demo_history, demo_inventory, demo_sales, demo_whatsapp
+	from sellos.testing import (
+		demo_crm,
+		demo_history,
+		demo_inventory,
+		demo_loop,
+		demo_sales,
+		demo_whatsapp,
+	)
 
 	admin, agents = users["admin"], users["agents"]
 	frappe.db.set_single_value(
@@ -165,6 +172,7 @@ def _seed_features(index, data, users, ctx):
 		("inventory holds and sales", demo_inventory.hold_and_sell),
 		("sales", demo_sales.build),
 		("whatsapp", demo_whatsapp.build),
+		("company profile, notes, signing and split deals", demo_loop.build),
 	):
 		_isolated(label, function, ctx)
 	# SOS-LOOP: consent, last activity, deal approvals and payouts match the stage history.

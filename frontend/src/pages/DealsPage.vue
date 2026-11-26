@@ -40,7 +40,7 @@
 				search-placeholder="Search deals"
 				search-testid="sellos-deal-search"
 				clear-testid="sellos-deal-filter-clear"
-				:active="Boolean(search || statusFilter)"
+				:active="Boolean(search || statusFilter || splitFilter || partnerFilter)"
 				:chips="chips"
 				data-testid="sellos-deal-filters"
 				@clear="clearFilters"
@@ -53,6 +53,22 @@
 					label="Status"
 					:options="statusOptions"
 					data-testid="sellos-deal-filter-status"
+				/>
+				<FormField
+					v-model="splitFilter"
+					compact
+					type="select"
+					label="Commission split"
+					:options="splitOptions"
+					data-testid="sellos-deal-filter-split"
+				/>
+				<FormField
+					v-model="partnerFilter"
+					compact
+					type="select"
+					label="Channel partner"
+					:options="partnerFilterOptions"
+					data-testid="sellos-deal-filter-partner"
 				/>
 			</FilterBar>
 		</template>
@@ -81,8 +97,34 @@
 			@retry="load"
 		/>
 
+		<p
+			v-if="bulkNotice"
+			role="status"
+			class="mb-ui-md ui-text-small"
+			data-testid="sellos-deal-bulk-result"
+		>
+			{{ bulkNotice }}
+		</p>
+		<!-- The bulk bar exists only while rows are selected. -->
+		<BulkBar :count="selected.length" @clear="selected = []">
+			<AppButton
+				type="button"
+				variant="primary"
+				:disabled="!selected.length"
+				data-testid="sellos-deal-bulk-approve"
+				@click="bulkApprove"
+			>
+				Approve selected splits
+			</AppButton>
+		</BulkBar>
+
 		<DataTable
 			v-if="!loadError"
+			v-model:selected="selected"
+			selectable
+			:actions="rowActions"
+			select-testid="sellos-deal-select"
+			select-all-testid="sellos-deal-select-all"
 			title="All deals"
 			dense
 			caption="Deals"
@@ -302,6 +344,7 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import AppButton from "../components/AppButton.vue";
+import BulkBar from "../components/BulkBar.vue";
 import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
@@ -314,6 +357,7 @@ import PageHeader from "../components/PageHeader.vue";
 import PageTabs from "../components/PageTabs.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import StatusBadge from "../components/StatusBadge.vue";
+import { useRouter } from "vue-router";
 import { serverMessage } from "../crm/crmApi";
 import { dealApi } from "../crm/dealsApi";
 import { formatBudget, formatDate, formatDateTime } from "../format";
@@ -346,27 +390,84 @@ const statusOptions = [
 	{ label: "Approved", value: "Approved" },
 	{ label: "Pending approval", value: "Pending approval" },
 ];
+const splitFilter = ref("");
+const partnerFilter = ref("");
+const splitOptions = [
+	{ label: "Any", value: "" },
+	{ label: "With a channel partner", value: "yes" },
+	{ label: "No channel partner", value: "no" },
+];
+const partnerFilterOptions = computed(() => [
+	{ label: "Any partner", value: "" },
+	...[...new Set(deals.value.flatMap((d) => d.partner_splits.map((p) => p.party)))]
+		.sort()
+		.map((p) => ({ label: p, value: p })),
+]);
 const shown = computed(() => {
 	const q = search.value.trim().toLowerCase();
 	return deals.value.filter(
 		(r) =>
 			(!q || `${r.client_name} ${r.target}`.toLowerCase().includes(q)) &&
-			(!statusFilter.value || r.approval_status === statusFilter.value)
+			(!statusFilter.value || r.approval_status === statusFilter.value) &&
+			(!splitFilter.value ||
+				(splitFilter.value === "yes") === Boolean(r.has_commission_split)) &&
+			(!partnerFilter.value || r.partner_splits.some((p) => p.party === partnerFilter.value))
 	);
 });
 const chips = computed(() => [
 	...(search.value ? [{ key: "search", label: `Search: ${search.value}` }] : []),
 	...(statusFilter.value ? [{ key: "status", label: `${statusFilter.value}` }] : []),
+	...(splitFilter.value
+		? [
+				{
+					key: "split",
+					label:
+						splitFilter.value === "yes"
+							? "With a channel partner"
+							: "No channel partner",
+				},
+		  ]
+		: []),
+	...(partnerFilter.value ? [{ key: "partner", label: `Partner: ${partnerFilter.value}` }] : []),
 ]);
 function clearFilters() {
-	search.value = "";
-	statusFilter.value = "";
+	search.value = statusFilter.value = splitFilter.value = partnerFilter.value = "";
 }
 function removeChip(key) {
-	if (key === "search") search.value = "";
-	else statusFilter.value = "";
+	const refs = { search, status: statusFilter, split: splitFilter, partner: partnerFilter };
+	refs[key].value = "";
 }
 
+// Rows can be selected: the bulk bar approves the splits of the selected deals that wait for approval.
+const selected = ref([]);
+const bulkNotice = ref("");
+async function bulkApprove() {
+	error.value = "";
+	bulkNotice.value = "";
+	const waiting = deals.value.filter(
+		(d) => selected.value.includes(d.name) && d.approval_status !== "Approved"
+	);
+	let done = 0;
+	try {
+		for (const d of waiting) {
+			await dealApi.approve(d.name);
+			done += 1;
+		}
+	} catch (e) {
+		error.value = serverMessage(e, "A split could not be approved.");
+	}
+	bulkNotice.value = `${done} of ${waiting.length} splits approved.`;
+	selected.value = [];
+	await load();
+}
+const rowActions = (d) => [
+	{ label: "Open deal", onClick: () => router.push(`/crm/deals/${d.name}`) },
+	d.approval_status === "Approved"
+		? { label: "Reopen the split", onClick: () => reopen(d) }
+		: { label: "Approve the split", onClick: () => approve(d) },
+];
+
+const router = useRouter();
 const creating = ref(false);
 
 // The period (Month to date unless changed) limits the cards and the list, on the server.
@@ -414,6 +515,7 @@ const kpis = computed(() => [
 	},
 ]);
 
+const amountOf = (d) => Number(d.commission_amount || 0);
 const columns = [
 	{ key: "client_name", label: "Deal", primary: true, sortable: true, wrap: true },
 	{

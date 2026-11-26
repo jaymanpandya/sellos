@@ -54,7 +54,7 @@
 				:data-type="note.type_label"
 			>
 				<span
-					class="absolute -left-[1.65rem] top-1.5 size-2 rounded-full bg-brand"
+					class="absolute -left-[1.65rem] top-1.5 size-2 rounded-round bg-brand"
 					aria-hidden="true"
 				/>
 				<div class="flex flex-wrap items-center gap-2">

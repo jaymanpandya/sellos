@@ -47,6 +47,12 @@ export const PERSONAS = [
 			},
 			{ key: "users", label: "Users", to: "/company/users", area: "company" },
 			{
+				key: "company-profile",
+				label: "Company profile",
+				to: "/company/profile",
+				area: "company",
+			},
+			{
 				key: "settings",
 				label: "Company settings",
 				to: "/company/settings",

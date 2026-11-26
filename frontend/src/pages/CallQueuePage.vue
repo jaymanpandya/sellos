@@ -8,6 +8,46 @@
 			<KpiStrip :items="kpis" data-testid="sellos-queue-stats" />
 		</template>
 
+		<template v-if="view" #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search the call queue"
+				search-placeholder="Search by lead"
+				search-testid="sellos-queue-search"
+				clear-testid="sellos-queue-filter-clear"
+				:active="Boolean(search || stageFilter || consentFilter || warningFilter)"
+				:chips="chips"
+				data-testid="sellos-queue-filters"
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+				<FormField
+					v-model="stageFilter"
+					compact
+					type="select"
+					label="Stage"
+					:options="stageOptions"
+					data-testid="sellos-queue-filter-stage"
+				/>
+				<FormField
+					v-model="consentFilter"
+					compact
+					type="select"
+					label="Consent"
+					:options="consentOptions"
+					data-testid="sellos-queue-filter-consent"
+				/>
+				<FormField
+					v-model="warningFilter"
+					compact
+					type="select"
+					label="Warning"
+					:options="warningOptions"
+					data-testid="sellos-queue-filter-warning"
+				/>
+			</FilterBar>
+		</template>
+
 		<Notice class="mb-ui-md" testid="sellos-queue-note">
 			Consented leads come first, the soonest expiry first, then the rest. Every lead you may
 			see is here, and a warning never stops a call.
@@ -25,7 +65,9 @@
 			title="Leads to call"
 			caption="Call queue"
 			:columns="columns"
-			:rows="rows"
+			dense
+			:rows="shownRows"
+			:actions="rowActions"
 			row-key="lead"
 			:loading="!view"
 			loading-label="Loading the call queue."
@@ -116,9 +158,12 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
+import FilterBar from "../components/FilterBar.vue";
+import FormField from "../components/FormField.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import Notice from "../components/Notice.vue";
@@ -135,6 +180,66 @@ const error = ref("");
 const shown = reactive(new Set());
 
 const rows = computed(() => view.value?.leads || []);
+const router = useRouter();
+const search = ref("");
+const stageFilter = ref("");
+const consentFilter = ref("");
+const warningFilter = ref("");
+const options = (label, values) => [
+	{ label, value: "" },
+	...[...new Set(values.filter(Boolean))].sort().map((v) => ({ label: v, value: v })),
+];
+const stageOptions = computed(() =>
+	options(
+		"Any stage",
+		rows.value.map((r) => r.stage)
+	)
+);
+const consentOptions = computed(() =>
+	options(
+		"Any consent",
+		rows.value.map((r) => r.consent_status)
+	)
+);
+const warningOptions = [
+	{ label: "Any", value: "" },
+	{ label: "With a warning", value: "yes" },
+	{ label: "No warning", value: "no" },
+];
+const shownRows = computed(() => {
+	const q = search.value.trim().toLowerCase();
+	return rows.value.filter(
+		(r) =>
+			(!q || `${r.lead_name || ""} ${r.lead_title || ""}`.toLowerCase().includes(q)) &&
+			(!stageFilter.value || r.stage === stageFilter.value) &&
+			(!consentFilter.value || r.consent_status === consentFilter.value) &&
+			(!warningFilter.value ||
+				(warningFilter.value === "yes") === Boolean(r.consent_warning))
+	);
+});
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Lead: ${search.value}` }] : []),
+	...(stageFilter.value ? [{ key: "stage", label: `Stage: ${stageFilter.value}` }] : []),
+	...(consentFilter.value ? [{ key: "consent", label: `Consent: ${consentFilter.value}` }] : []),
+	...(warningFilter.value
+		? [
+				{
+					key: "warning",
+					label: warningFilter.value === "yes" ? "With a warning" : "No warning",
+				},
+		  ]
+		: []),
+]);
+function clearFilters() {
+	search.value = stageFilter.value = consentFilter.value = warningFilter.value = "";
+}
+function removeChip(key) {
+	const refs = { search, stage: stageFilter, consent: consentFilter, warning: warningFilter };
+	refs[key].value = "";
+}
+const rowActions = (row) => [
+	{ label: "Open lead", onClick: () => router.push(`/crm/leads/${row.lead}`) },
+];
 const toneOf = (level) => (level === "red" ? "danger" : level === "amber" ? "warning" : "neutral");
 
 const columns = [

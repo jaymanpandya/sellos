@@ -20,6 +20,7 @@ const SiteVisitsPage = () => import("./pages/SiteVisitsPage.vue");
 const SupportPage = () => import("./pages/SupportPage.vue");
 const UsersPage = () => import("./pages/UsersPage.vue");
 const CompanySettingsPage = () => import("./pages/CompanySettingsPage.vue");
+const CompanyProfilePage = () => import("./pages/CompanyProfilePage.vue");
 const TelephonyPage = () => import("./pages/TelephonyPage.vue");
 const WhatsAppPage = () => import("./pages/WhatsAppPage.vue");
 const WhatsAppSetupPage = () => import("./pages/WhatsAppSetupPage.vue");
@@ -177,6 +178,12 @@ export function createAppRouter() {
 				name: "company-settings",
 				component: CompanySettingsPage,
 				meta: { area: "company", title: "Company settings" },
+			},
+			{
+				path: "/company/profile",
+				name: "company-profile",
+				component: CompanyProfilePage,
+				meta: { area: "company", title: "Company profile" },
 			},
 			{
 				path: "/company/telephony",

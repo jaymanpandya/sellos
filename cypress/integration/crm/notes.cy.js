@@ -23,7 +23,7 @@ context("Notes on a seller", () => {
 			// A note with a photo.
 			cy.getByTestId("note-new").click();
 			cy.getByTestId("note-type-select").select("Photos");
-			cy.getByTestId("note-text").type("Front of the building");
+			cy.get('textarea[data-testid="sellos-note-text"]').type("Front of the building");
 			cy.getByTestId("note-files").selectFile({
 				contents: Cypress.Buffer.from(PNG, "base64"),
 				fileName: "front.png",
@@ -43,7 +43,7 @@ context("Notes on a seller", () => {
 			// Other asks for a short label.
 			cy.getByTestId("note-new").click();
 			cy.getByTestId("note-type-select").select("Other");
-			cy.getByTestId("note-text").type("Parking is shared");
+			cy.get('textarea[data-testid="sellos-note-text"]').type("Parking is shared");
 			cy.expectApiStatus("sellos.crm.notes.add_note", 417);
 			cy.getByTestId("note-save").click();
 			cy.wait("@add").its("response.statusCode").should("eq", 417);
@@ -63,7 +63,9 @@ context("Notes on a seller", () => {
 			cy.get('[data-testid="sellos-note"][data-type="Photos"]')
 				.find('[data-testid="sellos-note-edit"]')
 				.click();
-			cy.getByTestId("note-text").clear().type("Front, seen from the road");
+			cy.get('textarea[data-testid="sellos-note-text"]')
+				.clear()
+				.type("Front, seen from the road");
 			cy.getByTestId("note-save").click();
 			cy.wait("@update").its("response.statusCode").should("eq", 200);
 			cy.get('[data-testid="sellos-note"][data-type="Photos"]')

@@ -7,6 +7,15 @@
   "company_name",
   "logo",
   "brand_color",
+  "accent_color",
+  "rera_number",
+  "website",
+  "footer_text",
+  "docuseal_url",
+  "docuseal_api_key",
+  "docuseal_webhook_secret",
+  "docuseal_signer_name",
+  "docuseal_signer_email",
   "contact_phone",
   "contact_email",
   "city",
@@ -233,6 +242,51 @@
    "label": "Match weight: property type",
    "default": "25",
    "description": "How much this part counts in the score of a buyer against a unit or listing, 0 to 100 (SOS-P7-08)."
+  },
+  {
+   "fieldname": "accent_color",
+   "fieldtype": "Color",
+   "label": "Accent colour"
+  },
+  {
+   "fieldname": "rera_number",
+   "fieldtype": "Data",
+   "label": "Company RERA number"
+  },
+  {
+   "fieldname": "website",
+   "fieldtype": "Data",
+   "label": "Website"
+  },
+  {
+   "fieldname": "footer_text",
+   "fieldtype": "Small Text",
+   "label": "Footer text"
+  },
+  {
+   "fieldname": "docuseal_url",
+   "fieldtype": "Data",
+   "label": "DocuSeal URL"
+  },
+  {
+   "fieldname": "docuseal_api_key",
+   "fieldtype": "Password",
+   "label": "DocuSeal API key"
+  },
+  {
+   "fieldname": "docuseal_webhook_secret",
+   "fieldtype": "Password",
+   "label": "DocuSeal webhook secret"
+  },
+  {
+   "fieldname": "docuseal_signer_name",
+   "fieldtype": "Data",
+   "label": "Company signer name"
+  },
+  {
+   "fieldname": "docuseal_signer_email",
+   "fieldtype": "Data",
+   "label": "Company signer email"
   }
  ],
  "index_web_pages_for_search": 0,

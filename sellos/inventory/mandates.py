@@ -34,6 +34,7 @@ FILE_LIMIT = 5 * 1024 * 1024
 _MAGIC = (b"%PDF", b"\x89PNG", b"\xff\xd8\xff")
 SIGNED_FIELD = "signed_document"
 DOSSIER_FIELD = "dossier_file"
+DOSSIER_PDF_FIELD = "dossier_pdf"  # SOS-LOOP: the branded PDF of the Dossier
 
 
 def _values(values) -> dict:
@@ -85,6 +86,45 @@ def _row(doc, people) -> dict:
 		# Nothing of the Dossier is shown before it is released, not even how many items it holds.
 		"dossier_released": int(released),
 		"dossier_count": len(doc.dossier) if released else None,
+		# The branded PDF is part of the Dossier: nothing of it shows before the mandate is signed.
+		"dossier_pdf": (
+			{
+				"version": doc.dossier_version,
+				"file": doc.dossier_pdf,
+				"generated_on": str(doc.dossier_generated_on or ""),
+			}
+			if released and doc.dossier_pdf
+			else None
+		),
+		**signing_row(doc),
+	}
+
+
+AUDIT_FIELD = "audit_trail"  # SOS-LOOP: DocuSeal's audit trail of a signed mandate
+SENT_FIELD = "mandate_document"  # SOS-LOOP: the document that went to the signers
+
+
+def signing_row(doc) -> dict:
+	"""Where electronic signing stands, for the list and the page (SOS-LOOP). The signed copy and the audit trail are
+	links only once the mandate is signed."""
+	signed = doc.status == SIGNED
+	return {
+		"signing_status": doc.signing_status or "Not sent",
+		"signing_sent_on": str(doc.signing_sent_on or ""),
+		"signing_completed_on": str(doc.signing_completed_on or ""),
+		"signers": [
+			{
+				"role": s.role,
+				"name": s.signer_name or "",
+				"status": s.status,
+				"sent_on": str(s.sent_on or ""),
+				"viewed_on": str(s.viewed_on or ""),
+				"completed_on": str(s.completed_on or ""),
+			}
+			for s in doc.signers
+		],
+		"signed_copy": doc.signed_document if signed and doc.signing_provider else "",
+		"audit_trail": doc.audit_trail if signed else "",
 	}
 
 
@@ -277,6 +317,18 @@ def open_dossier(name):
 	}
 
 
+@sellos_api(*ROLES)
+def generate_dossier_pdf(name):
+	"""Make the next version of the Dossier as a branded PDF (the company's logo and colours, a cover page, the seller
+	and property, the mandate and its signing status, the notes by type with their images, and page numbers) and keep
+	it on the mandate. Refused unless the mandate is signed and not archived. Every version is kept."""
+	from sellos.inventory import dossier_pdf
+
+	doc = _mandate(name, write=True)
+	dossier_pdf.generate(doc)
+	return {"name": doc.name, **_overview()}
+
+
 @sellos_api(COMPANY_ADMIN)
 def set_mandate_archived(name, archived=1):
 	"""Archive a mandate, or restore it. An archived mandate no longer counts as signed for the Listed stage and
@@ -295,6 +347,9 @@ def has_file_permission(doc, ptype=None, user=None, **kwargs):
 	if doc.get("attached_to_doctype") != "Mandate" or doc.get("attached_to_field") not in (
 		SIGNED_FIELD,
 		DOSSIER_FIELD,
+		DOSSIER_PDF_FIELD,
+		AUDIT_FIELD,
+		SENT_FIELD,
 	):
 		return None
 	user = user or frappe.session.user
@@ -305,6 +360,6 @@ def has_file_permission(doc, ptype=None, user=None, **kwargs):
 	)
 	if not mandate or not frappe.has_permission("Mandate", "read", doc=mandate.name, user=user):
 		return False
-	if doc.get("attached_to_field") == DOSSIER_FIELD:
+	if doc.get("attached_to_field") in (DOSSIER_FIELD, DOSSIER_PDF_FIELD):
 		return mandate.status == SIGNED and not mandate.archived
 	return True

@@ -226,10 +226,21 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.mandates.mandate_overview": _INVENTORY_EDITORS,
 	"sellos.inventory.mandates.mandate_status": frozenset({SALES_MANAGER}),
 	"sellos.inventory.mandates.save_mandate": _INVENTORY_EDITORS,
+	"sellos.inventory.docuseal.send_for_signing": _INVENTORY_EDITORS,  # SOS-LOOP, before the manual signature
 	"sellos.inventory.mandates.sign_mandate": _INVENTORY_EDITORS,
 	"sellos.inventory.mandates.add_dossier_note": _INVENTORY_EDITORS,
 	"sellos.inventory.mandates.add_dossier_file": _INVENTORY_EDITORS,
 	"sellos.inventory.mandates.open_dossier": _INVENTORY_EDITORS,
+	"sellos.inventory.mandates.generate_dossier_pdf": _INVENTORY_EDITORS,
+	# SOS-LOOP: the Company Profile (branding of the dossier and the mandate document). A Company Admin only.
+	# SOS-LOOP: DocuSeal signing of a mandate. Sending is the editors'; the settings are the admin's.
+	"sellos.inventory.docuseal.docuseal_status": _INVENTORY_EDITORS,
+	"sellos.inventory.docuseal.get_docuseal_settings": _ADMIN_ONLY,
+	"sellos.inventory.docuseal.save_docuseal_settings": _ADMIN_ONLY,
+	"sellos.inventory.docuseal.check_docuseal_connection": _ADMIN_ONLY,
+	"sellos.inventory.branding.get_company_profile": _ADMIN_ONLY,
+	"sellos.inventory.branding.save_company_profile": _ADMIN_ONLY,
+	"sellos.inventory.branding.upload_company_logo": _ADMIN_ONLY,
 	"sellos.inventory.mandates.set_mandate_archived": _ADMIN_ONLY,
 	# SOS-P4-06: deals and their commission splits. A Company Admin only.
 	"sellos.inventory.deals.deal_overview": _ADMIN_ONLY,

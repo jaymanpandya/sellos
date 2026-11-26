@@ -31,10 +31,20 @@
 				search-placeholder="Search by name or email"
 				search-testid="sellos-users-search"
 				clear-testid="sellos-users-filter-clear"
-				:active="Boolean(search || statusFilter)"
+				:active="Boolean(search || statusFilter || roleFilter)"
+				:chips="chips"
 				data-testid="sellos-users-filters"
 				@clear="clearFilters"
+				@remove-chip="removeChip"
 			>
+				<FormField
+					v-model="roleFilter"
+					compact
+					type="select"
+					label="Role"
+					:options="roleFilterOptions"
+					data-testid="sellos-users-filter-role"
+				/>
 				<FormField
 					v-model="statusFilter"
 					compact
@@ -387,17 +397,36 @@ const statusOptions = [
 	{ label: "Invited", value: "Invited" },
 	{ label: "Deactivated", value: "Deactivated" },
 ];
+const roleFilter = ref("");
+const roleFilterOptions = computed(() => [
+	{ label: "Any role", value: "" },
+	...[...new Set(users.value.map((u) => u.role).filter(Boolean))]
+		.sort()
+		.map((r) => ({ label: roleLabel(r), value: r })),
+]);
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Search: ${search.value}` }] : []),
+	...(statusFilter.value ? [{ key: "status", label: `Status: ${statusFilter.value}` }] : []),
+	...(roleFilter.value ? [{ key: "role", label: `Role: ${roleLabel(roleFilter.value)}` }] : []),
+]);
+function removeChip(key) {
+	if (key === "search") search.value = "";
+	else if (key === "role") roleFilter.value = "";
+	else statusFilter.value = "";
+}
 const shown = computed(() => {
 	const q = search.value.trim().toLowerCase();
 	return users.value.filter(
 		(u) =>
 			(!statusFilter.value || u.status === statusFilter.value) &&
+			(!roleFilter.value || u.role === roleFilter.value) &&
 			(!q || `${u.full_name || ""} ${u.email}`.toLowerCase().includes(q))
 	);
 });
 function clearFilters() {
 	search.value = "";
 	statusFilter.value = "";
+	roleFilter.value = "";
 }
 
 const columns = [

@@ -54,7 +54,7 @@
 			}}
 		</p>
 		<div
-			class="mt-2 flex h-3 w-full overflow-hidden rounded-full bg-surface-subtle"
+			class="mt-2 flex h-3 w-full overflow-hidden rounded-round bg-surface-subtle"
 			role="img"
 			aria-label="Proportion of each share"
 			data-testid="sellos-split-bar"

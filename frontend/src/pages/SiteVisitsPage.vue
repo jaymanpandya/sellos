@@ -33,6 +33,38 @@
 			<KpiStrip :items="kpis" data-testid="sellos-visits-stats" />
 		</template>
 
+		<template #filters>
+			<FilterBar
+				v-model:search="search"
+				search-label="Search site visits"
+				search-placeholder="Search by lead, project or agent"
+				search-testid="sellos-visits-search"
+				clear-testid="sellos-visits-filter-clear"
+				:active="Boolean(search || statusFilter || projectFilter)"
+				:chips="chips"
+				data-testid="sellos-visits-filters"
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+				<FormField
+					v-model="statusFilter"
+					compact
+					type="select"
+					label="Status"
+					:options="statusOptions"
+					data-testid="sellos-visits-filter-status"
+				/>
+				<FormField
+					v-model="projectFilter"
+					compact
+					type="select"
+					label="Project"
+					:options="projectOptions"
+					data-testid="sellos-visits-filter-project"
+				/>
+			</FilterBar>
+		</template>
+
 		<LoadError
 			v-if="error"
 			class="mb-ui-md"
@@ -49,7 +81,8 @@
 			title="Tomorrow's visits to confirm"
 			caption="Tomorrow's visits to confirm"
 			:columns="tomorrowColumns"
-			:rows="tomorrow?.visits || []"
+			dense
+			:rows="tomorrowShown"
 			:loading="!tomorrow && !error"
 			loading-label="Loading tomorrow's visits."
 			:row-name="(v) => v.lead_title"
@@ -95,7 +128,7 @@
 			<LoadingSkeleton v-if="!calendar && !error" :rows="3" />
 			<ul class="space-y-ui-md" data-testid="sellos-visits-calendar">
 				<li
-					v-for="d in calendar?.days || []"
+					v-for="d in shownDays"
 					:key="d.date"
 					data-testid="sellos-visits-day"
 					:data-date="d.date"
@@ -139,6 +172,8 @@ import { computed, onMounted, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
+import FilterBar from "../components/FilterBar.vue";
+import FormField from "../components/FormField.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
@@ -180,8 +215,57 @@ const rangeLabel = computed(() =>
 		: `${dayLabel(calendar.value.start)} to ${dayLabel(calendar.value.end)}`
 );
 
+// The filters apply to tomorrow's table and to the calendar alike.
+const search = ref("");
+const statusFilter = ref("");
+const projectFilter = ref("");
+const stateOf = (v) => (v.status === "Scheduled" ? v.confirmation_status : v.status);
+const allVisits = computed(() => [
+	...(tomorrow.value?.visits || []),
+	...(calendar.value?.days || []).flatMap((d) => d.visits),
+]);
+const choose = (label, values) => [
+	{ label, value: "" },
+	...[...new Set(values.filter(Boolean))].sort().map((v) => ({ label: v, value: v })),
+];
+const statusOptions = computed(() => choose("Any status", allVisits.value.map(stateOf)));
+const projectOptions = computed(() =>
+	choose(
+		"Any project",
+		allVisits.value.map((v) => v.project_name)
+	)
+);
+const matches = (v) => {
+	const q = search.value.trim().toLowerCase();
+	return (
+		(!q ||
+			`${v.lead_name || ""} ${v.lead_title || ""} ${v.project_name || ""} ${
+				v.agent_name || ""
+			}`
+				.toLowerCase()
+				.includes(q)) &&
+		(!statusFilter.value || stateOf(v) === statusFilter.value) &&
+		(!projectFilter.value || v.project_name === projectFilter.value)
+	);
+};
+const tomorrowShown = computed(() => (tomorrow.value?.visits || []).filter(matches));
+const shownDays = computed(() =>
+	(calendar.value?.days || []).map((d) => ({ ...d, visits: d.visits.filter(matches) }))
+);
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Search: ${search.value}` }] : []),
+	...(statusFilter.value ? [{ key: "status", label: `Status: ${statusFilter.value}` }] : []),
+	...(projectFilter.value ? [{ key: "project", label: `Project: ${projectFilter.value}` }] : []),
+]);
+function clearFilters() {
+	search.value = statusFilter.value = projectFilter.value = "";
+}
+function removeChip(key) {
+	const refs = { search, status: statusFilter, project: projectFilter };
+	refs[key].value = "";
+}
 const inView = computed(() =>
-	(calendar.value?.days || []).reduce((total, day) => total + day.visits.length, 0)
+	shownDays.value.reduce((total, day) => total + day.visits.length, 0)
 );
 const kpis = computed(() => [
 	{

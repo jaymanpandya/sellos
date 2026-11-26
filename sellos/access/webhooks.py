@@ -38,7 +38,11 @@ _WEBHOOKS: dict[str, dict] = {}
 
 # Modules that register webhooks. A fresh server process imports none of them when its first request
 # arrives, so the request guard imports them to know the method is a registered webhook.
-WEBHOOK_MODULES = ("sellos.telephony.webhook", "sellos.whatsapp.webhook")
+WEBHOOK_MODULES = (
+	"sellos.telephony.webhook",
+	"sellos.whatsapp.webhook",
+	"sellos.inventory.docuseal_webhook",  # SOS-LOOP
+)
 
 
 def declared_webhooks() -> dict[str, dict]:

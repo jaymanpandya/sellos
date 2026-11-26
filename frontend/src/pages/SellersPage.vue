@@ -31,12 +31,47 @@
 				search-placeholder="Search by seller"
 				search-testid="sellos-seller-search"
 				clear-testid="sellos-seller-filter-clear"
-				:active="Boolean(search)"
-				:chips="search ? [{ key: 'search', label: `Seller: ${search}` }] : []"
+				:active="
+					Boolean(search || stageFilter || sourceFilter || agentFilter || mandateFilter)
+				"
+				:chips="chips"
 				data-testid="sellos-seller-filters"
-				@clear="search = ''"
-				@remove-chip="search = ''"
-			/>
+				@clear="clearFilters"
+				@remove-chip="removeChip"
+			>
+				<FormField
+					v-model="stageFilter"
+					compact
+					type="select"
+					label="Stage"
+					:options="stageFilterOptions"
+					data-testid="sellos-seller-filter-stage"
+				/>
+				<FormField
+					v-model="sourceFilter"
+					compact
+					type="select"
+					label="Source"
+					:options="sourceFilterOptions"
+					data-testid="sellos-seller-filter-source"
+				/>
+				<FormField
+					v-model="agentFilter"
+					compact
+					type="select"
+					label="Agent"
+					:options="agentFilterOptions"
+					data-testid="sellos-seller-filter-agent"
+				/>
+				<FormField
+					v-model="mandateFilter"
+					compact
+					type="select"
+					label="Mandate"
+					:options="mandateFilterOptions"
+					data-testid="sellos-seller-filter-mandate"
+				/>
+			</FilterBar>
 		</template>
 
 		<p
@@ -76,11 +111,56 @@
 			</div>
 		</SectionCard>
 
+		<p
+			v-if="bulkNotice"
+			role="status"
+			class="mb-ui-md ui-text-small"
+			data-testid="sellos-seller-bulk-result"
+		>
+			{{ bulkNotice }}
+		</p>
+		<p
+			v-if="bulkError"
+			role="alert"
+			class="mb-ui-md ui-text-error"
+			data-testid="sellos-seller-bulk-error"
+		>
+			{{ bulkError }}
+		</p>
+		<!-- The bulk bar exists only while rows are selected. -->
+		<BulkBar v-if="canReassign" :count="selected.length" @clear="selected = []">
+			<form class="flex flex-wrap items-end gap-ui-md" @submit.prevent="bulkReassign">
+				<FormField
+					v-model="bulkAgent"
+					type="select"
+					label="Give the selected sellers to"
+					required
+					:options="reassignAgents.map((a) => ({ value: a.name, label: a.full_name }))"
+					class="min-w-[14rem]"
+					data-testid="sellos-seller-bulk-agent"
+				/>
+				<AppButton
+					type="submit"
+					variant="primary"
+					:disabled="!selected.length"
+					data-testid="sellos-seller-bulk-reassign"
+				>
+					Reassign selected
+				</AppButton>
+			</form>
+		</BulkBar>
+
 		<DataTable
 			v-if="!loadError"
+			v-model:selected="selected"
 			title="Seller pipeline"
 			caption="Sellers"
 			:columns="columns"
+			dense
+			:selectable="canReassign"
+			:actions="rowActions"
+			select-testid="sellos-seller-select"
+			select-all-testid="sellos-seller-select-all"
 			:rows="shownSellers"
 			:row-to="(row) => `/crm/sellers/${row.name}`"
 			:loading="!loaded"
@@ -99,7 +179,27 @@
 				<span class="block" data-testid="sellos-seller-title">{{
 					row.client_name || row.lead_title
 				}}</span>
-				<span v-if="row.source" class="block ui-text-muted">{{ row.source }}</span>
+				<span
+					v-if="row.phone"
+					class="block ui-text-muted"
+					data-testid="sellos-seller-phone"
+					>{{ row.phone }}</span
+				>
+				<span v-if="row.source" class="block ui-text-muted"
+					>{{ row.source
+					}}<template v-if="row.assigned_to">
+						· {{ agentName(row.assigned_to) }}</template
+					></span
+				>
+			</template>
+			<template #cell-mandate="{ row }">
+				<StatusBadge
+					v-if="mandateOf(row.name)"
+					:tone="mandateOf(row.name) === 'Signed' ? 'success' : 'warning'"
+					:label="`Mandate ${mandateOf(row.name)}`"
+					data-testid="sellos-seller-mandate"
+				/>
+				<span v-else class="ui-text-muted">No mandate</span>
 			</template>
 			<template #cell-stage="{ row }">
 				<StatusBadge
@@ -205,6 +305,7 @@ import DataTable from "../components/DataTable.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
+import BulkBar from "../components/BulkBar.vue";
 import FilterBar from "../components/FilterBar.vue";
 import KpiStrip from "../components/KpiStrip.vue";
 import LoadError from "../components/LoadError.vue";
@@ -213,6 +314,9 @@ import PageTemplate from "../components/PageTemplate.vue";
 import SectionCard from "../components/SectionCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { crmApi, serverMessage } from "../crm/crmApi";
+import { mandateApi } from "../crm/mandatesApi";
+import { useRouter } from "vue-router";
+import { session } from "../session";
 import { formatWhen } from "../format";
 
 // The seller pipeline (SOS-P4-04). Every move is made on the server and the list read back, so what is shown
@@ -231,13 +335,137 @@ const error = ref("");
 const notice = ref("");
 const loadError = ref("");
 const loaded = ref(false);
+const router = useRouter();
 const search = ref("");
+const stageFilter = ref("");
+const sourceFilter = ref("");
+const agentFilter = ref("");
+const mandateFilter = ref("");
+const mandates = reactive({}); // lead -> Draft or Signed
+const mandateOf = (lead) => mandates[lead] || "";
 const shownSellers = computed(() => {
 	const q = search.value.trim().toLowerCase();
-	return q
-		? sellers.value.filter((l) => (l.lead_title || "").toLowerCase().includes(q))
-		: sellers.value;
+	return sellers.value.filter(
+		(l) =>
+			(!q || `${l.lead_title} ${l.client_name}`.toLowerCase().includes(q)) &&
+			(!stageFilter.value || l.stage === stageFilter.value) &&
+			(!sourceFilter.value || l.source === sourceFilter.value) &&
+			(!agentFilter.value || l.assigned_to === agentFilter.value) &&
+			(!mandateFilter.value ||
+				(mandateFilter.value === "none"
+					? !mandateOf(l.name)
+					: mandateOf(l.name) === mandateFilter.value))
+	);
 });
+const stageFilterOptions = computed(() => [
+	{ label: "Any stage", value: "" },
+	...stages.value.map((s) => ({ label: s.label, value: s.name })),
+]);
+const sourceFilterOptions = computed(() => [
+	{ label: "Any source", value: "" },
+	...[...new Set(sellers.value.map((l) => l.source).filter(Boolean))]
+		.sort()
+		.map((s) => ({ label: s, value: s })),
+]);
+const agentFilterOptions = computed(() => [
+	{ label: "Any agent", value: "" },
+	...[
+		...new Map(
+			sellers.value
+				.filter((l) => l.assigned_to)
+				.map((l) => [l.assigned_to, agentName(l.assigned_to)])
+		),
+	].map(([value, label]) => ({ label, value })),
+]);
+const mandateFilterOptions = [
+	{ label: "Any mandate", value: "" },
+	{ label: "No mandate", value: "none" },
+	{ label: "Draft", value: "Draft" },
+	{ label: "Signed", value: "Signed" },
+];
+const chips = computed(() => [
+	...(search.value ? [{ key: "search", label: `Seller: ${search.value}` }] : []),
+	...(stageFilter.value
+		? [{ key: "stage", label: `Stage: ${labelOf(stageFilter.value)}` }]
+		: []),
+	...(sourceFilter.value ? [{ key: "source", label: `Source: ${sourceFilter.value}` }] : []),
+	...(agentFilter.value
+		? [{ key: "agent", label: `Agent: ${agentName(agentFilter.value)}` }]
+		: []),
+	...(mandateFilter.value
+		? [
+				{
+					key: "mandate",
+					label: `Mandate: ${
+						mandateFilter.value === "none" ? "none" : mandateFilter.value
+					}`,
+				},
+		  ]
+		: []),
+]);
+function clearFilters() {
+	search.value =
+		stageFilter.value =
+		sourceFilter.value =
+		agentFilter.value =
+		mandateFilter.value =
+			"";
+}
+function removeChip(key) {
+	const refs = {
+		search,
+		stage: stageFilter,
+		source: sourceFilter,
+		agent: agentFilter,
+		mandate: mandateFilter,
+	};
+	refs[key].value = "";
+}
+
+// Bulk reassignment (SOS-P1-19): a Company Admin or Sales Manager moves the selected sellers to one agent.
+const canReassign = computed(
+	() =>
+		session.roles.includes("SellOS Company Admin") ||
+		session.roles.includes("SellOS Sales Manager")
+);
+const selected = ref([]);
+const reassignAgents = ref([]);
+const agentName = (email) =>
+	reassignAgents.value.find((a) => a.name === email)?.full_name || email;
+const bulkAgent = ref("");
+const bulkNotice = ref("");
+const bulkError = ref("");
+async function bulkReassign() {
+	bulkNotice.value = bulkError.value = "";
+	try {
+		const result = await crmApi.bulkReassign(bulkAgent.value, selected.value);
+		bulkNotice.value = `${result.count} sellers reassigned.`;
+		selected.value = [];
+		await load();
+	} catch (e) {
+		bulkError.value = serverMessage(e, "The sellers could not be reassigned.");
+	}
+}
+const rowActions = (row) => [
+	{ label: "Open seller", onClick: () => router.push(`/crm/sellers/${row.name}`) },
+	{ label: "Stage history", onClick: () => toggleLog(row) },
+];
+
+// Where each seller's mandate stands. A Company Admin or Agent reads the mandates; a Sales Manager gets only the id
+// and status of its own team's mandates.
+async function loadMandates(list) {
+	for (const key of Object.keys(mandates)) delete mandates[key];
+	try {
+		if (session.roles.includes("SellOS Sales Manager")) {
+			for (const m of (await mandateApi.status(list.map((l) => l.name))).mandates)
+				mandates[m.lead] = m.status;
+		} else {
+			for (const m of (await mandateApi.overview()).mandates) mandates[m.lead] = m.status;
+		}
+	} catch {
+		// The column then reads "No mandate": a seller list does not fail because mandates could not be read.
+	}
+}
 const creating = ref(false);
 
 const stageOptions = computed(() => stages.value.map((s) => ({ label: s.label, value: s.name })));
@@ -304,6 +532,7 @@ const columns = [
 		sortable: true,
 		sortValue: (l) => labelOf(l.stage),
 	},
+	{ key: "mandate", label: "Mandate", sortable: true, sortValue: (l) => mandateOf(l.name) },
 	{ key: "move", label: "Move to", wrap: true, class: "min-w-[14rem]" },
 	{ key: "history", label: "History", wrap: true, class: "min-w-[12rem]" },
 ];
@@ -342,6 +571,9 @@ async function load() {
 		for (const l of list) {
 			if (!target[l.name]) target[l.name] = l.stage;
 		}
+		await loadMandates(list);
+		if (canReassign.value && !reassignAgents.value.length)
+			reassignAgents.value = (await crmApi.reassignOptions()).agents || [];
 	} catch (e) {
 		loadError.value = serverMessage(e, "The sellers could not be loaded.");
 	} finally {
