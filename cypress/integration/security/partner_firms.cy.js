@@ -48,7 +48,8 @@ context("SOS-P7-01: onboard and approve channel partners", () => {
 		cy.contains('[data-testid="sellos-partners-row"]', firmName)
 			.should("have.attr", "data-status", "Invited")
 			.within(() => {
-				cy.getByTestId("partners-code")
+				// The partner code is the muted key line of the name cell.
+				cy.get('[data-testid="sellos-name-cell-key"]')
 					.invoke("text")
 					.should("match", /CP-\d{5}/);
 				cy.getByTestId("partners-no-agreement").should("be.visible");

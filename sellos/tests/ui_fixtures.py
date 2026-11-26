@@ -2943,12 +2943,17 @@ def import_state(names):
 def assignment_state(names):
 	"""Where the leads of these clients, and their follow ups and future visits, are (tests only,
 	SOS-P1-19): the agent of each lead, and how many tasks and visits each agent holds."""
-	clients = frappe.get_all("Client", filters={"client_name": ["in", names]}, pluck="name")
+	by_client = dict(
+		frappe.get_all(
+			"Client", filters={"client_name": ["in", names]}, fields=["name", "client_name"], as_list=True
+		)
+	)
 	leads = frappe.get_all(
-		"Lead", filters={"client": ["in", clients or [""]]}, fields=["name", "lead_title", "assigned_to"]
+		"Lead", filters={"client": ["in", list(by_client) or [""]]}, fields=["name", "client", "assigned_to"]
 	)
 	ids = [lead.name for lead in leads] or [""]
-	state = {"leads": {lead.lead_title.rsplit(" ", 1)[0]: lead.assigned_to for lead in leads}}
+	# SOS-LOOP: a lead's title is the plain name now, so the leads are keyed by their client's name.
+	state = {"leads": {by_client[lead.client]: lead.assigned_to for lead in leads}}
 	for doctype, field in (("Lead Task", "assigned_to"), ("Site Visit", "agent")):
 		rows = frappe.get_all(doctype, filters={"lead": ["in", ids]}, pluck=field)
 		state[doctype] = {agent: rows.count(agent) for agent in set(rows)}

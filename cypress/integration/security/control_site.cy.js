@@ -19,14 +19,19 @@ context("SOS-P1-01: the control site", () => {
 		cy.getByTestId("tenant-row").should("have.length", 1);
 		cy.getByTestId("tenant-status").should("contain.text", "Requested");
 		cy.getByTestId("tenant-row").should("contain.text", "sellos_tenant_cyacme.localhost");
-		// Only the next step is offered.
-		cy.getByTestId("tenant-to-active").should("not.exist");
-		cy.getByTestId("tenant-to-provisioning").click();
+		// Every move is in the row menu (docs/DESIGN_SYSTEM.md, "Lists"), and only the next step is offered.
+		const menu = () =>
+			cy.getByTestId("tenant-row").find('[data-testid="sellos-row-menu-button"]').click();
+		menu();
+		cy.contains('[role="menuitem"]', "Move to Active").should("not.exist");
+		cy.contains('[role="menuitem"]', "Move to Provisioning").click();
 		cy.getByTestId("tenant-status").should("contain.text", "Provisioning");
-		cy.getByTestId("tenant-to-active").click();
+		menu();
+		cy.contains('[role="menuitem"]', "Move to Active").click();
 		cy.getByTestId("tenant-status").should("contain.text", "Active");
-		cy.getByTestId("tenant-to-provisioning").should("not.exist");
-		cy.getByTestId("tenant-to-failed").should("not.exist");
+		menu();
+		cy.contains('[role="menuitem"]', "Move to Provisioning").should("not.exist");
+		cy.contains('[role="menuitem"]', "Move to Failed").should("not.exist");
 	});
 
 	it("refuses an unsafe tenant ID with a clear message", () => {

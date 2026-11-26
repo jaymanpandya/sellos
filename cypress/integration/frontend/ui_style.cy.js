@@ -108,13 +108,18 @@ context("SOS-UI-3A: Home, Call queue and Site visits follow the style", () => {
 		});
 	});
 
-	it("Call queue: the Call button is solid button/bg with text/button", () => {
+	it("Call queue: a row holds only its menu, and the Call drawer's button is solid button/bg with text/button", () => {
 		cy.bench("sellos.tests.ui_fixtures.seed_caller_queue");
 		cy.signInFresh("agent");
 		cy.visit("/sellos/crm/queue");
 		cy.getByTestId("queue-stats", { timeout: 15000 }).should("be.visible");
-		cy.getByTestId("queue-call")
+		cy.getByTestId("queue-row")
 			.first()
+			.find("button:not([data-testid='sellos-row-menu-button'])")
+			.should("not.exist");
+		cy.getByTestId("queue-row").first().find('[data-testid="sellos-row-menu-button"]').click();
+		cy.contains('[role="menuitem"]', "Call").click();
+		cy.getByTestId("queue-call-done")
 			.should("have.css", "background-color", "rgb(15, 76, 53)")
 			.and("have.css", "color", "rgb(255, 255, 255)");
 		cy.bench("sellos.tests.ui_fixtures.remove_seeded_leads");

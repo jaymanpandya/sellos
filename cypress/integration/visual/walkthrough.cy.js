@@ -39,33 +39,28 @@ function noSidewaysScroll(what) {
 // text wraps beyond two lines; no name ends in a source word; no cell is a bare dash. At 390 a table is cards.
 const SOURCE_WORDS =
 	/\b(Referral|Walk in|Walk-in|Website|Portal|Facebook|Instagram|Google|99acres|MagicBricks|Housing)\s*$/i;
+// Every problem of every page is collected and reported together at the end of the walk, so one run shows them all.
+const problems = [];
 function listRules(what, width) {
 	cy.get("body").then(($body) => {
 		const tables = $body.find('[data-testid="sellos-table-view"] table');
 		const cards = $body.find('[data-testid="sellos-card-view"]');
-		if (width >= 1024) {
-			expect(cards.length, `${what}: card view at ${width}`).to.eq(0);
-		} else {
-			expect(tables.length, `${what}: table at ${width}`).to.eq(0);
-		}
+		const problem = (text) => problems.push(`${what}: ${text}`);
+		if (width >= 1024 && cards.length) problem(`a card view at ${width}`);
+		if (width < 1024 && tables.length) problem(`a table at ${width}`);
 		tables.each((_, table) => {
 			const box = table.closest(".ui-table-scroll");
-			expect(box.scrollWidth, `${what}: the table scrolls sideways`).to.be.at.most(
-				box.clientWidth + 1
-			);
-			const cells = Array.from(table.querySelectorAll("tbody td"));
-			cells.forEach((td) => {
-				const label = `${what}: "${td.innerText.trim().slice(0, 40)}"`;
+			if (box.scrollWidth > box.clientWidth + 1)
+				problem(`the table scrolls sideways (${box.scrollWidth} > ${box.clientWidth})`);
+			Array.from(table.querySelectorAll("tbody td")).forEach((td) => {
+				const label = `"${td.innerText.trim().slice(0, 40)}"`;
 				const bad = td.querySelectorAll(
 					'button:not([data-testid="sellos-row-menu-button"]):not([role="checkbox"]), select, textarea, input:not([type="checkbox"]), a.ui-button, [class*="ui-button"]'
 				);
-				expect(bad.length, `${label}: a control in a row`).to.eq(0);
-				expect(td.innerText.trim(), `${label}: a bare dash`).not.to.match(
-					/^[-\u2013\u2014]$/
-				);
-				expect(td.scrollWidth, `${label}: the cell is clipped`).to.be.at.most(
-					td.clientWidth + 1
-				);
+				if (bad.length) problem(`${label} holds a control in a row`);
+				if (/^[-\u2013\u2014]$/.test(td.innerText.trim()))
+					problem(`${label} is a bare dash`);
+				if (td.scrollWidth > td.clientWidth + 1) problem(`${label} is clipped`);
 				td.querySelectorAll("*").forEach((el) => {
 					const own = Array.from(el.childNodes).some(
 						(n) => n.nodeType === 3 && n.textContent.trim()
@@ -74,20 +69,22 @@ function listRules(what, width) {
 					const style = getComputedStyle(el);
 					if (style.display === "inline") return;
 					const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.4;
-					expect(
-						el.getBoundingClientRect().height / line,
-						`${label}: wraps beyond two lines`
-					).to.be.at.most(2.1);
+					if (el.getBoundingClientRect().height / line > 2.1)
+						problem(`${label} wraps beyond two lines`);
 				});
 			});
 			table.querySelectorAll('[data-testid="sellos-name-cell-name"]').forEach((el) => {
-				expect(el.textContent.trim(), "a name carries a source").not.to.match(
-					SOURCE_WORDS
-				);
+				if (SOURCE_WORDS.test(el.textContent.trim()))
+					problem(`the name "${el.textContent.trim()}" carries a source`);
 			});
 		});
 	});
 }
+const noListProblems = () =>
+	cy.then(() => {
+		const found = problems.splice(0);
+		expect(found.join("\n"), "list rule problems").to.eq("");
+	});
 
 // The menu links of the signed in role: [{ href, label, icons }], read from the sidebar that is on screen.
 function menuLinks() {
@@ -143,6 +140,7 @@ ROLES.forEach(({ role, label }) => {
 						overwrite: true,
 					});
 				});
+				noListProblems();
 			});
 		});
 
@@ -165,6 +163,7 @@ ROLES.forEach(({ role, label }) => {
 						overwrite: true,
 					});
 				});
+				noListProblems();
 			});
 		});
 	});

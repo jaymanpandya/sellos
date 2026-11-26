@@ -40,7 +40,7 @@ context("SOS-P4-04: seller pipeline", () => {
 				.should("not.exist");
 			menu(name, "Move stage");
 			cy.getByTestId("seller-move-to").select("Qualified");
-			cy.getByTestId("seller-move-note").type("Spoke to the owner");
+			cy.get('textarea[data-testid="sellos-seller-move-note"]').type("Spoke to the owner");
 			cy.getByTestId("seller-move").click();
 			cy.wait("@move").its("response.statusCode").should("eq", 200);
 			row(name).should("have.attr", "data-stage", "Qualified");
