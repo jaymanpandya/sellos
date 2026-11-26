@@ -420,16 +420,18 @@
 			empty-testid="sellos-leads-empty"
 		>
 			<template #cell-client_name="{ row }">
-				<span class="block whitespace-nowrap">{{ row.client_name }}</span>
+				<span class="block truncate" :title="row.client_name">{{ row.client_name }}</span>
 				<span
 					v-if="row.phone"
-					class="block whitespace-nowrap ui-text-muted"
+					class="block truncate ui-text-muted"
+					:title="row.phone"
 					data-testid="sellos-lead-phone"
 					>{{ row.phone }}</span
 				>
 				<span
 					v-if="projectInterest(row)"
-					class="block ui-text-muted"
+					class="block truncate ui-text-muted"
+					:title="projectInterest(row)"
 					data-testid="sellos-lead-interest"
 					>{{ projectInterest(row) }}</span
 				>
@@ -649,8 +651,8 @@ const columns = computed(() => [
 		primary: true,
 		sortable: true,
 		wrap: true,
-		class: "min-w-[10rem]",
-		thClass: "min-w-[10rem]",
+		class: "w-[12rem] max-w-[12rem]",
+		thClass: "w-[12rem]",
 	},
 	{ key: "source", wrap: true, label: "Source", sortable: true },
 	{ key: "stage", label: "Stage", sortable: true },

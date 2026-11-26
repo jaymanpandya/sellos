@@ -51,7 +51,18 @@ function listRules(what, width) {
 		tables.each((_, table) => {
 			const box = table.closest(".ui-table-scroll");
 			if (box.scrollWidth > box.clientWidth + 1)
-				problem(`the table scrolls sideways (${box.scrollWidth} > ${box.clientWidth})`);
+				problem(
+					`the table scrolls sideways (${box.scrollWidth} > ${
+						box.clientWidth
+					}; columns ${Array.from(table.querySelectorAll("thead th"))
+						.map(
+							(th) =>
+								`${th.textContent.trim()} ${Math.round(
+									th.getBoundingClientRect().width
+								)}`
+						)
+						.join(", ")})`
+				);
 			Array.from(table.querySelectorAll("tbody td")).forEach((td) => {
 				const label = `"${td.innerText.trim().slice(0, 40)}"`;
 				const bad = td.querySelectorAll(
