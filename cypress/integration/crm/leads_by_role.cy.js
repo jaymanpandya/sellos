@@ -29,9 +29,15 @@ context("SOS-P1-06A: leads by role", () => {
 			cy.visit("/sellos/crm/leads");
 			pageCallsAnswered();
 			cy.fillNewLead({ name, phone });
+			// Saving opens the new lead's page, which asks for the lead, the visit lists and the teams. Wait for
+			// all three, so none is still in flight when the next test signs in (SOS-LOOP).
+			cy.intercept("**/sellos.crm.api.get_lead*").as("leadPage");
+			cy.intercept("**/sellos.crm.api.site_visit_options*").as("visitOptions");
+			cy.intercept("**/sellos.access.teams.list_teams*").as("teams");
 			cy.getByTestId("lead-form-save").click();
 			cy.getByTestId("lead-form-error").should("not.exist");
 			cy.getByTestId("lead-row").contains(name).should("be.visible");
+			cy.wait(["@leadPage", "@visitOptions", "@teams"]);
 		});
 	});
 
