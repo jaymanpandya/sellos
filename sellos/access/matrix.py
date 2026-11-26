@@ -215,6 +215,7 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.inventory.media.reorder_listing_media": _INVENTORY_EDITORS,
 	# SOS-P4-05: mandates and the Private Sale Dossier. A Company Admin or an Agent; the archive is the admin's.
 	"sellos.inventory.mandates.mandate_overview": _INVENTORY_EDITORS,
+	"sellos.inventory.mandates.mandate_status": frozenset({SALES_MANAGER}),
 	"sellos.inventory.mandates.save_mandate": _INVENTORY_EDITORS,
 	"sellos.inventory.mandates.sign_mandate": _INVENTORY_EDITORS,
 	"sellos.inventory.mandates.add_dossier_note": _INVENTORY_EDITORS,

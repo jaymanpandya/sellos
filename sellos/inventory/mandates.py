@@ -20,7 +20,7 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from sellos.access.registry import sellos_api
-from sellos.access.roles import AGENT, COMPANY_ADMIN
+from sellos.access.roles import AGENT, COMPANY_ADMIN, SALES_MANAGER
 from sellos.inventory.base import squash
 from sellos.sellos.doctype.mandate.mandate import DRAFT, SIGNED, TYPES
 
@@ -117,6 +117,31 @@ def mandate_overview(include_archived=0):
 	"""The mandates of the seller leads the caller may see, and the sellers a mandate can be made for. The
 	Dossier of a mandate that is not signed shows nothing, not even a count."""
 	return _overview(_flag(include_archived))
+
+
+STATUS_LIMIT = 200
+
+
+@sellos_api(SALES_MANAGER)
+def mandate_status(leads):
+	"""A Sales Manager reads, for the seller leads of its own team, only the id and the status of each mandate
+	(Draft or Signed). Nothing else is returned: no term, fee, document, Dossier or count. A lead the caller may
+	not read is left out, and so is an archived mandate."""
+	names = [str(n) for n in (frappe.parse_json(leads) if isinstance(leads, str) else leads or [])]
+	names = list(dict.fromkeys(names))[:STATUS_LIMIT]
+	readable = [
+		n for n in names if frappe.db.exists("Lead", n) and frappe.has_permission("Lead", "read", doc=n)
+	]
+	if not readable:
+		return {"mandates": []}
+	rows = frappe.get_all(  # the caller's right is the lead permission checked above
+		"Mandate",
+		filters={"lead": ["in", readable], "archived": 0},
+		fields=["name", "lead", "status"],
+		order_by="creation desc",
+		ignore_permissions=True,
+	)
+	return {"mandates": [{"name": r.name, "lead": r.lead, "status": r.status} for r in rows]}
 
 
 @sellos_api(*ROLES)
