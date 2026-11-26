@@ -26,6 +26,7 @@ _READERS = frozenset({AGENT, CHANNEL_PARTNER, COMPANY_ADMIN, SALES_MANAGER})
 _LOGGERS = frozenset({AGENT, COMPANY_ADMIN, SALES_MANAGER})
 _TEAM_USERS = frozenset({COMPANY_ADMIN, SALES_MANAGER})
 _ADMIN_ONLY = frozenset({COMPANY_ADMIN})
+_NOTE_USERS = frozenset({COMPANY_ADMIN, AGENT, SALES_MANAGER})
 _PARTNER_ONLY = frozenset({CHANNEL_PARTNER})
 _CLIENT_ONLY = frozenset({CLIENT})
 _INVENTORY_EDITORS = frozenset({COMPANY_ADMIN, AGENT})
@@ -54,6 +55,14 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.crm.api.delete_lost_reason": _ADMIN_ONLY,
 	"sellos.crm.api.log_call": _LOGGERS,
 	"sellos.crm.api.reassign_lead": _TEAM_USERS,
+	# SOS-LOOP: notes on a lead, a seller and a mandate, judged on the record. The types are the admin's.
+	"sellos.crm.notes.note_types": _NOTE_USERS,
+	"sellos.crm.notes.list_notes": _NOTE_USERS,
+	"sellos.crm.notes.add_note": _NOTE_USERS,
+	"sellos.crm.notes.update_note": _NOTE_USERS,
+	"sellos.crm.notes.delete_note": _NOTE_USERS,
+	"sellos.crm.notes.note_type_settings": _ADMIN_ONLY,
+	"sellos.crm.notes.save_note_type": _ADMIN_ONLY,
 	# SOS-P1-19: bulk reassignment, the agents to pick from, the assignment rules and the default team.
 	"sellos.crm.api.bulk_reassign_leads": _TEAM_USERS,
 	"sellos.crm.api.reassign_options": _TEAM_USERS,

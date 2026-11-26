@@ -361,6 +361,15 @@ SAMPLE_CALLS = {
 	# SOS-P4-05: one draft mandate of a seller lead the company admin owns. In the matrix's order it is corrected,
 	# signed, given a note and a file, opened and archived, so each call finds it in the state it needs.
 	"sellos.inventory.mandates.mandate_overview": {},
+	# SOS-LOOP: notes. One note of the company admin's lead; it is corrected, then removed, in the matrix's order.
+	"sellos.crm.notes.note_types": {},
+	"sellos.crm.notes.list_notes": {"lead": "{lead}"},
+	"sellos.crm.notes.add_note": {"lead": "{lead}", "note_type": "{note_type}", "body": "p105 suite note"},
+	"sellos.crm.notes.update_note": {"name": "{spare_note}", "note_type": "{note_type}", "body": "p105 edit"},
+	"sellos.crm.notes.delete_note": {"name": "{spare_note}"},
+	"sellos.crm.notes.note_type_settings": {},
+	"sellos.crm.notes.save_note_type": {"label": "P105 Suite Type"},
+	"sellos.inventory.mandates.mandate_status": {"leads": ["{lead}", "{spare_mandate_lead}"]},  # SOS-LOOP
 	"sellos.inventory.mandates.save_mandate": {"name": "{spare_mandate}", "values": {"fee_percent": 2}},
 	"sellos.inventory.mandates.sign_mandate": {
 		"name": "{spare_mandate}",
@@ -382,6 +391,7 @@ SAMPLE_CALLS = {
 	"sellos.inventory.mandates.set_mandate_archived": {"name": "{spare_mandate}"},
 	# SOS-P4-06: one pending deal. In the matrix's order it is corrected, approved, reopened and archived.
 	"sellos.inventory.deals.deal_overview": {},
+	"sellos.inventory.deals.get_deal": {"name": "{spare_deal}"},  # SOS-LOOP
 	"sellos.inventory.deals.save_deal": {"name": "{spare_deal}", "values": {"commission_amount": 1000}},
 	"sellos.inventory.deals.approve_splits": {"name": "{spare_deal}"},
 	"sellos.inventory.deals.reopen_splits": {"name": "{spare_deal}"},
@@ -859,6 +869,14 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 				"status": "Draft",
 			}
 		).insert()
+		# SOS-LOOP: a note of the company admin's own lead, for the notes methods.
+		from sellos.crm import notes as loop_notes
+
+		loop_notes.ensure_note_types()
+		note_type = frappe.get_all("Note Type", pluck="name", order_by="sort_order asc", limit=1)[0]
+		spare_note = frappe.get_doc(
+			{"doctype": "Record Note", "lead": lead.name, "note_type": note_type, "body": "p105 suite"}
+		).insert()
 		# SOS-P4-06: a pending deal of the seller's client, for a property of its own, the whole split the company's.
 		spare_deal = frappe.get_doc(
 			{
@@ -1033,6 +1051,9 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"spare_listing": spare_listing.name,
 			"spare_mandate": spare_mandate.name,
 			"spare_deal": spare_deal.name,
+			"spare_note": spare_note.name,
+			"note_type": note_type,
+			"spare_mandate_lead": seller_lead.name,
 			"spare_rate": spare_rate.name,
 			"spare_payout": spare_payout.name,
 			"media_listing": media_listing.name,

@@ -46,6 +46,12 @@ export const PERSONAS = [
 				area: "inventory",
 			},
 			{ key: "users", label: "Users", to: "/company/users", area: "company" },
+			{
+				key: "settings",
+				label: "Company settings",
+				to: "/company/settings",
+				area: "company",
+			},
 			{ key: "support", label: "Support access", to: "/company/support", area: "company" },
 			{ key: "telephony", label: "Telephony", to: "/company/telephony", area: "company" },
 			{

@@ -58,6 +58,10 @@
 				{{ notice }}
 			</p>
 
+			<div v-if="tab === 'notes'" id="panel-notes" role="tabpanel" class="space-y-4">
+				<NotesPanel :mandate="mandate.name" />
+			</div>
+
 			<div v-if="tab === 'overview'" id="panel-overview" role="tabpanel" class="space-y-4">
 				<SectionCard title="Terms">
 					<dl>
@@ -242,6 +246,7 @@ import FileField from "../components/FileField.vue";
 import FormField from "../components/FormField.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import NotesPanel from "../components/NotesPanel.vue";
 import PageTabs from "../components/PageTabs.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import ReadField from "../components/ReadField.vue";
@@ -273,6 +278,7 @@ const loaded = ref(false);
 const tabs = computed(() => [
 	{ key: "overview", label: "Overview" },
 	{ key: "dossier", label: "Dossier" },
+	{ key: "notes", label: "Notes" },
 ]);
 const line = computed(() =>
 	mandate.value

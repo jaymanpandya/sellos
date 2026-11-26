@@ -52,6 +52,8 @@
 				</dl>
 			</SectionCard>
 
+			<NotesPanel :lead="route.params.name" />
+
 			<SectionCard
 				title="Move along the pipeline"
 				help="A move to Closed lost asks for a reason."
@@ -131,6 +133,7 @@ import FieldGrid from "../components/FieldGrid.vue";
 import FormField from "../components/FormField.vue";
 import LoadError from "../components/LoadError.vue";
 import LoadingSkeleton from "../components/LoadingSkeleton.vue";
+import NotesPanel from "../components/NotesPanel.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import ReadField from "../components/ReadField.vue";
 import RecordHeader from "../components/RecordHeader.vue";

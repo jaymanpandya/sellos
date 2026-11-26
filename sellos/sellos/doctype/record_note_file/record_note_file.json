@@ -1,0 +1,25 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["file", "file_name", "kind", "size"],
+ "fields": [
+  {"fieldname": "file", "fieldtype": "Data", "label": "File", "reqd": 1},
+  {"fieldname": "file_name", "fieldtype": "Data", "in_list_view": 1, "label": "Name"},
+  {"fieldname": "kind", "fieldtype": "Select", "label": "Kind", "options": "Image\nDocument"},
+  {"fieldname": "size", "fieldtype": "Int", "label": "Size (bytes)"}
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-26 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Record Note File",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": []
+}

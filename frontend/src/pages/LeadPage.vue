@@ -54,7 +54,7 @@
 		</template>
 
 		<template #tabs>
-			<PageTabs v-model="tab" :tabs="TABS" label="Lead sections" />
+			<PageTabs v-model="tab" :tabs="tabs" label="Lead sections" />
 		</template>
 
 		<div
@@ -503,6 +503,8 @@
 				</SectionCard>
 			</template>
 
+			<NotesPanel v-if="tab === 'notes' && canLog" :lead="route.params.name" />
+
 			<template v-if="tab === 'deals'">
 				<LeadBooking v-if="canBook" :lead="route.params.name" @changed="load" />
 				<EmptyState
@@ -918,6 +920,7 @@ import LeadBooking from "../inventory/LeadBooking.vue";
 import LeadMatches from "../inventory/LeadMatches.vue";
 import LeadShortlists from "../inventory/LeadShortlists.vue";
 import EmptyState from "../components/EmptyState.vue";
+import NotesPanel from "../components/NotesPanel.vue";
 import PageTabs from "../components/PageTabs.vue";
 import PageTemplate from "../components/PageTemplate.vue";
 import RecordHeader from "../components/RecordHeader.vue";
@@ -964,8 +967,11 @@ const TABS = [
 	{ key: "activity", label: "Activity" },
 	{ key: "calls", label: "Calls and WhatsApp" },
 	{ key: "visits", label: "Site visits" },
+	{ key: "notes", label: "Notes" },
 	{ key: "deals", label: "Deals" },
 ];
+// A partner logs nothing and sees no notes: they are the company's own working notes.
+const tabs = computed(() => TABS.filter((t) => t.key !== "notes" || canLog.value));
 const tab = ref(TABS.some((t) => t.key === route.query.tab) ? route.query.tab : "overview");
 // The open tab stays in the address, so a reload or a bookmark opens the same tab.
 watch(tab, (key) => router.replace({ path: route.path, query: { ...route.query, tab: key } }));

@@ -381,6 +381,7 @@ def remove_clients(clients):
 		return {"clients": 0, "leads": 0}
 	leads = frappe.get_all("Lead", filters={"client": ["in", clients]}, pluck="name")
 	_remove_shortlists(clients)  # SOS-P7-09
+	_remove_notes(leads)  # SOS-LOOP
 	_remove_mandates(leads)  # SOS-P4-05
 	_remove_deals(clients)  # SOS-P4-06
 	if leads:
@@ -405,6 +406,18 @@ def remove_clients(clients):
 			frappe.db.delete(doctype, {"name": ["in", names]})
 	frappe.db.commit()  # nosemgrep
 	return {"clients": len(clients), "leads": len(leads)}
+
+
+def _remove_notes(leads):
+	"""The notes of these leads, their rows and private files (tests and the demo seed only, SOS-LOOP). The app
+	refuses a delete, so this goes to the tables."""
+	names = frappe.get_all("Record Note", filters={"lead": ["in", leads or [""]]}, pluck="name")
+	if not names:
+		return
+	frappe.db.delete("File", {"attached_to_doctype": "Record Note", "attached_to_name": ["in", names]})
+	frappe.db.delete("Record Note File", {"parent": ["in", names]})
+	frappe.db.delete("Version", {"ref_doctype": "Record Note", "docname": ["in", names]})
+	frappe.db.delete("Record Note", {"name": ["in", names]})
 
 
 def _remove_mandates(leads):

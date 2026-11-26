@@ -1,0 +1,38 @@
+{
+ "actions": [],
+ "autoname": "format:NOTE-{#####}",
+ "creation": "2026-11-26 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["lead", "mandate", "note_type", "custom_label", "body", "attachments", "section_removed", "removed", "removed_on", "removed_by"],
+ "fields": [
+  {"fieldname": "lead", "fieldtype": "Link", "in_list_view": 1, "label": "Lead", "options": "Lead", "reqd": 1},
+  {"fieldname": "mandate", "fieldtype": "Link", "label": "Mandate", "options": "Mandate"},
+  {"fieldname": "note_type", "fieldtype": "Link", "in_list_view": 1, "label": "Type", "options": "Note Type", "reqd": 1},
+  {"fieldname": "custom_label", "fieldtype": "Data", "label": "Custom label"},
+  {"fieldname": "body", "fieldtype": "Text", "label": "Note"},
+  {"fieldname": "attachments", "fieldtype": "Table", "label": "Attachments", "options": "Record Note File"},
+  {"fieldname": "section_removed", "fieldtype": "Section Break", "label": "Removed"},
+  {"default": "0", "description": "A removed note is hidden, never deleted. Who removed it and when is kept.", "fieldname": "removed", "fieldtype": "Check", "label": "Removed", "read_only": 1},
+  {"fieldname": "removed_on", "fieldtype": "Datetime", "label": "Removed on", "read_only": 1},
+  {"fieldname": "removed_by", "fieldtype": "Link", "label": "Removed by", "options": "User", "read_only": 1}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-26 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Record Note",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "read": 1, "role": "SellOS Company Admin", "write": 1},
+  {"create": 1, "read": 1, "role": "SellOS Agent", "write": 1},
+  {"create": 1, "read": 1, "role": "SellOS Sales Manager", "write": 1}
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "note_type",
+ "track_changes": 1
+}
