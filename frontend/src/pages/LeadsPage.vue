@@ -659,7 +659,7 @@ const columns = computed(() => [
 	{ key: "stage", label: "Stage", sortable: true },
 	{
 		key: "assigned_to",
-		class: "w-[9rem] max-w-[9rem]",
+		class: "w-[7rem] max-w-[7rem]",
 		label: "Agent",
 		sortable: true,
 		sortValue: (l) => agentName(l.assigned_to),

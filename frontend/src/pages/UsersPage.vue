@@ -427,11 +427,12 @@ const columns = [
 		label: "Name",
 		primary: true,
 		sortable: true,
+		class: "w-[15rem] max-w-[15rem]",
 		sortValue: (u) => u.full_name || u.email,
 	},
 	{ key: "role", label: "Role", sortable: true, sortValue: (u) => roleLabel(u.role) },
 	{ key: "status", label: "Status", sortable: true },
-	{ key: "mobile_no", label: "Mobile number" },
+	{ key: "mobile_no", label: "Mobile number", class: "w-[15rem] max-w-[15rem]" },
 	{ key: "work", label: "Open work" },
 ];
 // Every row action is in the row menu (docs/DESIGN_SYSTEM.md, "Lists", rule c).

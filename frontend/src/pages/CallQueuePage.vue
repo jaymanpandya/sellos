@@ -250,7 +250,7 @@ const columns = [
 	{ key: "lead_title", label: "Lead", primary: true },
 	{ key: "source", label: "Source" },
 	{ key: "stage", label: "Stage" },
-	{ key: "consent_status", label: "Consent", wrap: true },
+	{ key: "consent_status", label: "Consent", wrap: true, class: "w-[15rem] max-w-[15rem]" },
 	{ key: "time_left", label: "Consent time left" },
 ];
 
