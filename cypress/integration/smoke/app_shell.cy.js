@@ -15,6 +15,7 @@ context("SOS-P0-10: app shell and access by role", () => {
 		it(`${role} reaches the web app and can sign out`, () => {
 			const hasBell = ["company_admin", "agent", "channel_partner"].includes(role);
 			cy.intercept("POST", "**/sellos.crm.api.list_notifications*").as("notifications");
+			cy.intercept("POST", "**/sellos.access.preferences.get_nav_state*").as("navState");
 			cy.signInFresh(role);
 			cy.visit("/sellos");
 			cy.getByTestId("app-shell").should("be.visible");
@@ -24,6 +25,9 @@ context("SOS-P0-10: app shell and access by role", () => {
 			if (role === "agent") cy.getByTestId("today-counts").should("be.visible");
 			// The bell reads its list on load. Wait for that answer so the sign out refuses nothing.
 			if (hasBell) cy.wait("@notifications");
+			// The shell reads its navigation state on load. Wait for that answer too, or the sign out
+			// makes it answer 401 and the failure lands in the next test's hook.
+			cy.wait("@navState");
 			cy.signOut();
 		});
 

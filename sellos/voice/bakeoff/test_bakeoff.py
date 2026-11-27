@@ -364,6 +364,12 @@ class Handler(BaseHTTPRequestHandler):
 			payload = json.dumps({"audios": [base64.b64encode(wav).decode()]}).encode()
 		elif "/v1/text-to-speech/" in path:
 			payload = wav[44:]
+		elif path.endswith("/v1/chat/completions"):
+			events = [
+				{"choices": [{"delta": {"content": "Namaste "}}]},
+				{"choices": [{"delta": {"content": "Sarvam"}}]},
+			]
+			payload = ("".join(f"data: {json.dumps(e)}\n\n" for e in events) + "data: [DONE]\n\n").encode()
 		else:
 			events = [
 				{"type": "message_start"},
@@ -470,6 +476,34 @@ class TestLiveAdaptersAgainstALocalServer(unittest.TestCase):
 		self.assertIn("HTTP 500", (work / "docs2" / "results.md").read_text())
 		self.assertNotIn(FAKE_KEY, out.getvalue() + err.getvalue() + every_file_text(work))
 
+	def test_n21b_sarvam_llm_and_haiku_run_with_the_key_in_the_header_only(self):
+		work = Path(tempfile.mkdtemp())
+		out, err = io.StringIO(), io.StringIO()
+		with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+			results = cli.run_voice_comparison(
+				adapters.SarvamLlm("sarvam-model-x", self.base),
+				adapters.AnthropicLlm(data.HAIKU_MODEL, self.base),
+				work / "out", work / "docs", "t", "n",
+			)  # fmt: skip
+		self.assertTrue(all(not i["error"] for items in results.values() for i in items))
+		sarvam_calls = [c for c in Handler.seen if c[0] == "/v1/chat/completions"]
+		self.assertEqual(len(sarvam_calls), 4)
+		self.assertEqual(sarvam_calls[0][1]["Api-Subscription-Key"], FAKE_KEY)
+		self.assertNotIn(FAKE_KEY.encode(), sarvam_calls[0][2])
+		self.assertEqual(json.loads(sarvam_calls[0][2])["model"], "sarvam-model-x")
+		self.assertEqual(results["sarvam-model-x"][0]["text"], "Namaste Sarvam")
+		self.assertNotIn(FAKE_KEY, out.getvalue() + err.getvalue() + every_file_text(work))
+		self.server.fail = True
+		with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+			failed = cli.run_voice_comparison(
+				adapters.SarvamLlm("sarvam-model-x", self.base),
+				adapters.AnthropicLlm(data.HAIKU_MODEL, self.base),
+				work / "out2", work / "docs2", "t", "n",
+			)  # fmt: skip
+		self.assertTrue(all(i["error"] for items in failed.values() for i in items))
+		self.assertIn("HTTP 500", (work / "docs2" / "voice-llm-results.md").read_text())
+		self.assertNotIn(FAKE_KEY, out.getvalue() + err.getvalue() + every_file_text(work))
+
 
 class TestShippedDocs(unittest.TestCase):
 	"""SOS-N21A: the files in docs/bakeoff are the ones the harness writes."""
@@ -507,3 +541,115 @@ class TestShippedDocs(unittest.TestCase):
 		self.assertTrue(issubclass(adapters.SarvamTts, adapters.TtsAdapter))
 		self.assertTrue(issubclass(adapters.ElevenLabsTts, adapters.TtsAdapter))
 		self.assertTrue(issubclass(adapters.AnthropicLlm, adapters.LlmAdapter))
+
+
+class TestVoiceComparison(unittest.TestCase):
+	"""SOS-N21B: the Sarvam model and Claude Haiku 5.5 on the disclosure line and the handover cases."""
+
+	def _name_file(self, text):
+		path = Path(tempfile.mkdtemp()) / data.SARVAM_MODEL_FILE
+		path.write_text(text, encoding="utf-8")
+		return path
+
+	def test_the_cases_are_the_disclosure_line_and_three_handovers(self):
+		cases = data.voice_cases()
+		self.assertEqual(len(cases), 4)
+		line = data.default_disclosure()
+		self.assertIn(data.TEST_COMPANY, line)
+		self.assertNotIn("{company}", line)
+		self.assertTrue(line.startswith("Namaste, main Nicole baat kar rahi hoon."))
+		self.assertEqual(cases[0][3], line)
+		self.assertEqual([c[3] for c in cases[1:]], [data.HANDOVER_TAG] * 3)
+		labels = " ".join(c[0] for c in cases)
+		for part in ("during the disclosure", "middle of a reply", "Confused"):
+			self.assertIn(part, labels)
+
+	def test_both_models_answer_every_case_with_times(self):
+		out = Path(tempfile.mkdtemp())
+		sarvam, haiku = adapters.FakeSarvamLlm("sarvam-model-x"), adapters.FakeLlm(data.HAIKU_MODEL)
+		results = runner.run_voice_llm([sarvam, haiku], out)
+		self.assertEqual(list(results), ["sarvam-model-x", "claude-haiku-5-5"])
+		for items in results.values():
+			self.assertEqual(len(items), 4)
+			self.assertTrue(all(not i["error"] and i["first_token_s"] > 0 for i in items))
+			self.assertTrue(all(i["total_s"] >= i["first_token_s"] for i in items))
+		self.assertTrue((out / "voice-llm" / "sarvam-model-x" / "01.txt").is_file())
+
+	def test_both_models_get_the_same_prompt_and_the_handover_rule(self):
+		seen = []
+
+		class Spy(adapters.FakeLlm):
+			def generate(self, system, scenario):
+				seen.append((system, scenario["context"]))
+				return super().generate(system, scenario)
+
+		runner.run_voice_llm([Spy("a"), Spy("b")], tempfile.mkdtemp())
+		self.assertEqual(seen[:4], seen[4:])
+		self.assertIn(data.HANDOVER_TAG, seen[0][0])
+		self.assertIn(data.default_disclosure(), seen[0][1])
+
+	def test_a_fake_run_writes_replies_times_and_the_rating_sheet(self):
+		out = Path(tempfile.mkdtemp())
+		cli.run_fake(out)
+		sheet = (out / "voice-llm-rating-sheet.md").read_text()
+		rows = [
+			ln for ln in sheet.splitlines() if ln.startswith("| ") and ("fake-sarvam" in ln or "haiku" in ln)
+		]
+		self.assertEqual(len(rows), 8)
+		self.assertIn("Hinglish naturalness (1-5)", sheet)
+		self.assertIn("Correctness (1-5)", sheet)
+		self.assertTrue(all(ln.endswith("|  |  |") for ln in rows))
+		results = (out / "voice-llm-results.md").read_text()
+		self.assertIn("First token (s)", results)
+		self.assertIn("claude-haiku-5-5", results)
+		self.assertNotIn("NO |", results)
+		saved = json.loads((out / "voice-llm.json").read_text())
+		self.assertEqual(len(saved["fake-sarvam"]), 4)
+
+	def test_a_reply_that_does_not_hand_over_is_marked(self):
+		class Chatty(adapters.FakeLlm):
+			def generate(self, system, scenario):
+				return adapters.LlmResult("Zaroor, bataiye.", 0.1, 0.2)
+
+		results = runner.run_voice_llm([Chatty("chatty")], tempfile.mkdtemp())
+		self.assertEqual(reports.voice_llm_results_md(results).count("| NO |"), 3)
+
+	def test_the_model_name_file_is_read(self):
+		self.assertEqual(runner.read_sarvam_model(self._name_file("sarvam-the-name\n")), "sarvam-the-name")
+		out = Path(tempfile.mkdtemp())
+		cli.run_fake(out, sarvam_model_file=self._name_file("sarvam-the-name\n"))
+		self.assertIn("sarvam-the-name", (out / "voice-llm-rating-sheet.md").read_text())
+
+	def test_a_missing_empty_or_many_line_model_name_file_is_refused(self):
+		for text in ("", "\n  \n", "one\ntwo\n", "has space\n"):
+			with self.assertRaises(runner.SarvamModelError):
+				runner.read_sarvam_model(self._name_file(text))
+		with self.assertRaises(runner.SarvamModelError):
+			runner.read_sarvam_model(Path(tempfile.mkdtemp()) / "missing.txt")
+
+	def test_live_refuses_without_a_terminal_and_with_a_bad_model_name_file(self):
+		err = io.StringIO()
+		with mock.patch.object(keys, "get_secret") as get_secret, contextlib.redirect_stderr(err):
+			self.assertEqual(cli.main(["--live"], stdin=io.StringIO()), 2)
+		self.assertIn("terminal", err.getvalue())
+		tty = mock.Mock()
+		tty.isatty.return_value = True
+		base = Path(tempfile.mkdtemp())
+		(base / "llm-models.txt").write_text("a\nb\n")
+		err = io.StringIO()
+		with mock.patch.object(keys, "get_secret") as get_secret, contextlib.redirect_stderr(err):
+			self.assertEqual(cli.run_live(base, base, stdin=tty), 2)
+		self.assertIn(data.SARVAM_MODEL_FILE, err.getvalue())
+		get_secret.assert_not_called()
+
+	def test_sarvam_is_behind_the_same_interface_and_reads_only_the_sarvam_key(self):
+		self.assertTrue(issubclass(adapters.SarvamLlm, adapters.LlmAdapter))
+		self.assertTrue(issubclass(adapters.FakeSarvamLlm, adapters.LlmAdapter))
+		self.assertEqual(keys.SARVAM, "sellos_sarvam_key")
+
+	def test_the_shipped_sheet_matches_and_results_stay_not_run(self):
+		docs = REPO / "docs" / "bakeoff"
+		self.assertEqual(
+			(docs / "voice-llm-rating-sheet.md").read_text(), reports.voice_llm_rating_sheet_md()
+		)
+		self.assertIn("Not run yet", (docs / "results.md").read_text())

@@ -415,6 +415,30 @@ class TestLiveAdapters(IntegrationTestCase):
 		self.assertEqual([m["role"] for m in body["messages"]], ["user", "assistant", "user"])
 		self.assertEqual(net.calls[0][2]["x-api-key"], KEY)
 
+	def test_sarvam_llm_uses_the_voice_agent_model_setting_n21b(self):
+		"""SOS-N21B: the Sarvam chat model is the Voice agent model setting when the provider is sarvam."""
+		net = Recorder(
+			json.dumps({"choices": [{"message": {"content": "<think>x</think> Namaste ji "}}]}).encode()
+		)
+		llm = adapters.SarvamLlm(KEY, "the-sarvam-model-for-the-test", post=net.post)
+		text = llm.reply("system", [("agent", "Namaste"), ("caller", "haan")], "Lead: Asha.")
+		body = json.loads(net.calls[0][1])
+		self.assertEqual(text, "Namaste ji")
+		self.assertEqual(body["model"], "the-sarvam-model-for-the-test")
+		self.assertEqual(body["messages"][0]["role"], "system")
+		self.assertIn("Lead: Asha.", body["messages"][0]["content"])
+		self.assertEqual(net.calls[0][2]["api-subscription-key"], KEY)
+		self.assertNotIn(KEY, repr(llm))
+		settings.save_voice_agent_settings(
+			stt_provider="fake",
+			tts_provider="fake",
+			llm_provider="sarvam",
+			voice_agent_model="the-sarvam-model-for-the-test",
+			sarvam_key=KEY,
+		)
+		built = config.build_adapters()[1]
+		self.assertEqual((type(built), built.model), (adapters.SarvamLlm, "the-sarvam-model-for-the-test"))
+
 	def test_no_adapter_shows_its_key_in_its_repr_and_a_failure_names_no_key(self):
 		for adapter in (adapters.DeepgramStt(KEY), adapters.SarvamTts(KEY), adapters.AnthropicLlm(KEY, "m")):
 			self.assertNotIn(KEY, repr(adapter))
@@ -475,7 +499,7 @@ class TestSettings(VoiceCase):
 	def test_every_bake_off_candidate_has_an_adapter(self):
 		self.assertEqual(set(config.STT) - {"fake"}, {"sarvam-saaras-v3", "deepgram-nova-3"})
 		self.assertEqual(set(config.TTS) - {"fake"}, {"sarvam-bulbul-v3", "elevenlabs"})
-		self.assertEqual(set(config.LLM) - {"fake"}, {"anthropic"})
+		self.assertEqual(set(config.LLM) - {"fake"}, {"anthropic", "sarvam"})  # SOS-N21B
 
 	def test_a_missing_provider_key_or_model_is_a_clear_error(self):
 		settings.save_voice_agent_settings(stt_provider="deepgram-nova-3")

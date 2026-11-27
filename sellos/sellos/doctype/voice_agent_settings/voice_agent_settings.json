@@ -34,13 +34,13 @@
    "fieldname": "llm_provider",
    "fieldtype": "Data",
    "label": "Language model provider",
-   "description": "anthropic."
+   "description": "anthropic or sarvam (SOS-N21B). The Sarvam key is the one set below."
   },
   {
    "fieldname": "voice_agent_model",
    "fieldtype": "Data",
    "label": "Voice agent model",
-   "description": "The fast Anthropic model the voice agent speaks with. SOS-N21 chooses."
+   "description": "The model the voice agent speaks with: a fast Anthropic model, or the Sarvam chat model name when the provider is sarvam. SOS-N21 chooses."
   },
   {
    "fieldname": "tts_voice",

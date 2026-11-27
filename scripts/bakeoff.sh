@@ -5,6 +5,10 @@
 #   scripts/bakeoff.sh --live             the real providers; Jayman runs it, from a terminal
 #   scripts/bakeoff.sh --templates        rewrite the shipped files in docs/bakeoff
 #
+# SOS-N21B: every run also compares the Sarvam chat model and claude-haiku-5-5 on the AI disclosure line
+# and the handover cases, and writes voice-llm-results.md and voice-llm-rating-sheet.md. --live reads
+# the Sarvam model name from ~/iespl-baseline/bakeoff/sarvam-llm-model.txt (one line, written by Jayman).
+#
 # --live reads ~/iespl-baseline/bakeoff/audio/*.wav, reference.tsv and llm-models.txt, and the keys
 # sellos_sarvam_key, sellos_deepgram_key, sellos_elevenlabs_key and sellos_anthropic_key from the
 # macOS Keychain. It refuses to start when standard input is not a terminal, so the build loop's

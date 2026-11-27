@@ -215,3 +215,61 @@ def llm_rating_sheet_md(
 		)
 		+ "\n"
 	)
+
+
+SARVAM_PLACEHOLDER = "(Sarvam model from sarvam-llm-model.txt)"
+
+
+def voice_llm_results_md(results, title="Voice language model comparison", note=""):
+	"""The replies, the time to first token and the total time per case and model (SOS-N21B)."""
+	out = [f"# {title}", ""]
+	if note:
+		out += [note, ""]
+	for model, items in results.items():
+		out += [f"## {model}", ""]
+		rows = []
+		for item, (label, _caller, _context, reference) in zip(items, data.voice_cases(), strict=True):
+			if item["error"]:
+				rows.append([label, f"FAILED: {item['error']}", "", "", ""])
+				continue
+			expected = "n/a"
+			if reference == data.HANDOVER_TAG:
+				expected = "yes" if runner.handed_over(item["text"]) else "NO"
+			rows.append([label, item["text"], expected, _cell(item["first_token_s"]), _cell(item["total_s"])])
+		out += [_table(["Case", "Reply", "Handed over", "First token (s)", "Total (s)"], rows), ""]
+	return "\n".join(out)
+
+
+def voice_llm_rating_sheet_md(models=(SARVAM_PLACEHOLDER, data.HAIKU_MODEL), results=None):
+	"""One row per case and model, with empty 1 to 5 columns for Hinglish naturalness and correctness."""
+	rows = []
+	for number, (label, caller, _context, reference) in enumerate(data.voice_cases(), start=1):
+		for model in models:
+			info = next((i for i in (results or {}).get(model, []) if i["number"] == number), None)
+			text = info["text"] if info and not info["error"] else ""
+			first = _cell(info["first_token_s"]) if info and not info["error"] else ""
+			total = _cell(info["total_s"]) if info and not info["error"] else ""
+			rows.append([number, label, caller, model, text, reference, first, total, "", ""])
+	return (
+		"# Voice language model rating sheet\n\n"
+		"Sarvam and Claude Haiku 5.5 on the AI disclosure line (the default of SOS-N21C, with a test company "
+		"name) and the handover cases. Rate each reply from 1 (poor) to 5 (very good): Hinglish naturalness "
+		"(does it sound like a Mumbai agent speaking) and correctness (a handover case must hand over: the "
+		"reply is the handover tag alone; the disclosure line must be spoken as written).\n\n"
+		+ _table(
+			[
+				"Case",
+				"Label",
+				"Caller line",
+				"Model",
+				"Model's reply",
+				"Expected reply",
+				"First token (s)",
+				"Total (s)",
+				"Hinglish naturalness (1-5)",
+				"Correctness (1-5)",
+			],
+			rows,
+		)
+		+ "\n"
+	)

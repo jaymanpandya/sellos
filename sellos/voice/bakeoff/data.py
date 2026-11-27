@@ -4,6 +4,7 @@ docs/bakeoff/reference.tsv, sentences.md and the two rating sheets are written f
 `scripts/bakeoff.sh --templates`, and a test checks that the files in docs match it.
 """
 
+import json
 from pathlib import Path
 
 # (file, reference, numbers, prices, localities): entities are ';' separated, empty when there is none.
@@ -76,3 +77,64 @@ STT_PROVIDERS = ("sarvam-saaras-v3", "deepgram-nova-3")
 
 BASELINE_DIR = Path.home() / "iespl-baseline"
 APP_DOCS = Path(__file__).resolve().parents[3] / "docs" / "bakeoff"
+
+# SOS-N21B: the voice language model comparison. Sarvam and Claude Haiku 5.5 answer the AI disclosure
+# line and the handover cases, with the same system prompt, so the two are rated on the same text.
+HAIKU_MODEL = "claude-haiku-5-5"
+SARVAM_MODEL_FILE = "sarvam-llm-model.txt"
+TEST_COMPANY = "Test Realty"
+HANDOVER_TAG = "[HANDOVER]"
+DISCLOSURE_FIELD_JSON = (
+	Path(__file__).resolve().parents[2]
+	/ "sellos"
+	/ "doctype"
+	/ "voice_agent_settings"
+	/ "voice_agent_settings.json"
+)
+
+
+def default_disclosure(company=TEST_COMPANY):
+	"""The default AI disclosure line of SOS-N21C (read from the DocType, so there is one copy), with the
+	company name in place of {company}."""
+	doctype = json.loads(DISCLOSURE_FIELD_JSON.read_text(encoding="utf-8"))
+	field = next(f for f in doctype["fields"] if f["fieldname"] == "disclosure_line")
+	return field["default"].replace("{company}", company)
+
+
+VOICE_SYSTEM_PROMPT = (
+	SYSTEM_PROMPT
+	+ " When a call connects, open with exactly the AI disclosure line you are given, word for word, even though it is longer than two sentences. "
+	"When the caller wants to talk to a person, at any moment and even while you are speaking, or you "
+	f"cannot help or the caller is confused, reply only {HANDOVER_TAG} and nothing else."
+)
+
+
+def voice_cases(company=TEST_COMPANY):
+	"""(label, caller line, lead context, reference reply): the disclosure line, then the handover cases."""
+	line = default_disclosure(company)
+	return (
+		(
+			"Disclosure line",
+			"Hello?",
+			f"The call has just connected. This is the first line. Open with exactly this AI disclosure line: {line}",
+			line,
+		),
+		(
+			"Handover during the disclosure line",
+			"Ruko, mujhe kisi insaan se baat karni hai.",
+			f"The agent was in the middle of saying the AI disclosure line: {line} The caller spoke over it.",
+			HANDOVER_TAG,
+		),
+		(
+			"Handover in the middle of a reply",
+			"Ek minute, mujhe human agent se baat karwa dijiye.",
+			"The agent was explaining that a 2 BHK in Bandra West has a carpet area of 780 sq ft when the caller interrupted.",
+			HANDOVER_TAG,
+		),
+		(
+			"Confused caller",
+			"Kya? Mujhe kuch samajh nahi aa raha, yeh kis baare mein call hai?",
+			"The caller has asked twice what the call is about. They sound lost and the agent cannot make it clearer.",
+			HANDOVER_TAG,
+		),
+	)

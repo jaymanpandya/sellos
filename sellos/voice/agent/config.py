@@ -30,6 +30,7 @@ TTS = {
 }
 LLM = {
 	"anthropic": (adapters.AnthropicLlm, "anthropic_key"),
+	"sarvam": (adapters.SarvamLlm, "sarvam_key"),  # SOS-N21B
 	FAKE: (adapters.FakeLlm, None),
 }
 KINDS = {"stt": STT, "tts": TTS, "llm": LLM}

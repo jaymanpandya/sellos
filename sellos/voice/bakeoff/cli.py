@@ -28,6 +28,7 @@ def write_templates(docs):
 	(docs / "sentences.md").write_text(reports.sentences_md(), encoding="utf-8")
 	(docs / "rating-sheet.md").write_text(reports.rating_sheet_md(), encoding="utf-8")
 	(docs / "llm-rating-sheet.md").write_text(reports.llm_rating_sheet_md(), encoding="utf-8")
+	(docs / "voice-llm-rating-sheet.md").write_text(reports.voice_llm_rating_sheet_md(), encoding="utf-8")
 	results = docs / "results.md"
 	if not results.exists() or "Not run yet" in results.read_text(encoding="utf-8"):
 		results.write_text(reports.NOT_RUN, encoding="utf-8")
@@ -54,7 +55,24 @@ def run_all(stt_adapters, tts_adapters, llm_adapters, rows, audio_dir, out, docs
 	return stt, tts, llm
 
 
-def run_fake(out, audio_dir=None, reference=None, models_file=None):
+def run_voice_comparison(sarvam, haiku, out, docs, title, note):
+	"""The disclosure line and the handover cases through the Sarvam model and Claude Haiku 5.5 (SOS-N21B).
+	Writes the replies and times (voice-llm-results.md, voice-llm.json) and voice-llm-rating-sheet.md."""
+	out, docs = Path(out), Path(docs)
+	out.mkdir(parents=True, exist_ok=True)
+	docs.mkdir(parents=True, exist_ok=True)
+	results = runner.run_voice_llm([sarvam, haiku], out)
+	(docs / "voice-llm-results.md").write_text(
+		reports.voice_llm_results_md(results, title, note), encoding="utf-8"
+	)
+	(docs / "voice-llm-rating-sheet.md").write_text(
+		reports.voice_llm_rating_sheet_md(tuple(results), results), encoding="utf-8"
+	)
+	(out / "voice-llm.json").write_text(json.dumps(results, indent=1, ensure_ascii=False), encoding="utf-8")
+	return results
+
+
+def run_fake(out, audio_dir=None, reference=None, models_file=None, sarvam_model_file=None):
 	"""The whole harness with fake providers. Without recordings it makes tone recordings of its own."""
 	out = Path(out)
 	out.mkdir(parents=True, exist_ok=True)
@@ -69,6 +87,15 @@ def run_fake(out, audio_dir=None, reference=None, models_file=None):
 			(audio_dir / row["file"]).write_bytes(audio.wav_bytes(audio.tone(0.5, 16000), 16000))
 	models = runner.read_models(models_file) if models_file else ["fake-fast", "fake-strong"]
 	references = {row["file"]: row["reference"] for row in rows}
+	sarvam_model = runner.read_sarvam_model(sarvam_model_file) if sarvam_model_file else "fake-sarvam"
+	run_voice_comparison(
+		adapters.FakeSarvamLlm(sarvam_model),
+		adapters.FakeLlm(data.HAIKU_MODEL),
+		out,
+		out,
+		"Voice language model comparison (FAKE run)",
+		"**This is a fake run.** The models are fakes and the numbers say nothing about real ones.",
+	)
 	return run_all(
 		[adapters.FakeStt("fake-stt-a", references), adapters.FakeStt("fake-stt-b", references, drop=1)],
 		[adapters.FakeTts("fake-tts-a"), adapters.FakeTts("fake-tts-b", 0.2, 0.6)],
@@ -92,6 +119,11 @@ def run_live(base, docs, stdin=None):
 	try:
 		models = runner.read_models(base / runner.LLM_MODELS_FILE)
 	except runner.ModelListError as exc:
+		print(str(exc), file=sys.stderr)
+		return 2
+	try:
+		sarvam_model = runner.read_sarvam_model(base / data.SARVAM_MODEL_FILE)
+	except runner.SarvamModelError as exc:
 		print(str(exc), file=sys.stderr)
 		return 2
 	audio_dir, reference = base / "audio", base / "reference.tsv"
@@ -122,7 +154,15 @@ def run_live(base, docs, stdin=None):
 		"Voice bake-off results",
 		"Live run. Audio and transcripts are in " + str(base / "out") + ".",
 	)
-	print(f"Done. Results: {Path(docs) / 'results.md'}")
+	run_voice_comparison(
+		adapters.SarvamLlm(sarvam_model),
+		adapters.AnthropicLlm(data.HAIKU_MODEL),
+		base / "out",
+		docs,
+		"Voice language model comparison",
+		"Live run. Rate the replies in voice-llm-rating-sheet.md.",
+	)
+	print(f"Done. Results: {Path(docs) / 'results.md'} and {Path(docs) / 'voice-llm-results.md'}")
 	return 0
 
 
@@ -138,6 +178,7 @@ def main(argv=None, stdin=None):
 	parser.add_argument("--audio", help="recordings for a --fake run")
 	parser.add_argument("--reference", help="reference.tsv for a --fake run")
 	parser.add_argument("--llm-models", help="llm-models.txt for a --fake run")
+	parser.add_argument("--sarvam-model", help="sarvam-llm-model.txt for a --fake run")
 	parser.add_argument("--docs", default=str(data.APP_DOCS), help="folder for the docs files")
 	args = parser.parse_args(argv)
 	if args.live:
@@ -146,7 +187,13 @@ def main(argv=None, stdin=None):
 		write_templates(args.docs)
 		return 0
 	out = args.out or tempfile.mkdtemp(prefix="bakeoff-fake-")
-	run_fake(out, args.audio and Path(args.audio), args.reference and Path(args.reference), args.llm_models)
+	run_fake(
+		out,
+		args.audio and Path(args.audio),
+		args.reference and Path(args.reference),
+		args.llm_models,
+		args.sarvam_model,
+	)
 	print(f"Fake run written to {out}")
 	return 0
 

@@ -84,7 +84,16 @@ class FakeLlm(LlmAdapter):
 		self.name, self.first_token_s, self.total_s = name, first_token_s, total_s
 
 	def generate(self, system, scenario):
+		if scenario["reply"] == data.HANDOVER_TAG:  # a handover is the tag alone (SOS-N21B)
+			return LlmResult(data.HANDOVER_TAG, self.first_token_s, self.total_s)
 		return LlmResult(f"({self.name}) {scenario['reply']}", self.first_token_s, self.total_s)
+
+
+class FakeSarvamLlm(FakeLlm):
+	"""The fake of SarvamLlm (SOS-N21B): the same interface, no network, no key."""
+
+	def __init__(self, name="fake-sarvam", first_token_s=0.3, total_s=1.1):
+		super().__init__(name, first_token_s, total_s)
 
 
 # Live adapters. Each sends the request through transport.post, which holds the key.
@@ -254,6 +263,68 @@ class AnthropicLlm(LlmAdapter):
 		)
 		first = sse.first_token_s if sse.first_token_s is not None else reply.total_s
 		return LlmResult("".join(sse.text).strip(), first, reply.total_s)
+
+
+class _SseChat:
+	"""Collects the text deltas of a chat completions stream (Sarvam) and the time of the first one."""
+
+	def __init__(self):
+		self.buffer, self.text, self.first_token_s = b"", [], None
+
+	def feed(self, chunk, elapsed):
+		self.buffer += chunk
+		while b"\n" in self.buffer:
+			line, self.buffer = self.buffer.split(b"\n", 1)
+			line = line.strip()
+			if not line.startswith(b"data:") or line[5:].strip() == b"[DONE]":
+				continue
+			try:
+				event = json.loads(line[5:])
+			except ValueError:
+				continue
+			choices = event.get("choices") if isinstance(event, dict) else None
+			delta = ((choices or [{}])[0] or {}).get("delta") or {}
+			piece = delta.get("content")
+			if isinstance(piece, str) and piece:
+				if self.first_token_s is None:
+					self.first_token_s = elapsed
+				self.text.append(piece)
+
+
+class SarvamLlm(LlmAdapter):
+	"""A Sarvam chat model over its chat completions API, streamed (SOS-N21B). The model name is read by the
+	caller from sarvam-llm-model.txt; this class neither chooses nor checks it. The path and the fields
+	follow Sarvam's documentation and are confirmed on the first live run (SOS-N21BL)."""
+
+	def __init__(self, model, base_url="https://api.sarvam.ai"):
+		self.name, self.model, self.base_url = model, model, base_url
+
+	def generate(self, system, scenario):
+		prompt = f"Lead context: {scenario['context']}\nCaller's line: {scenario['caller']}\nYour reply:"
+		body = {
+			"model": self.model,
+			"max_tokens": 300,
+			"stream": True,
+			"messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+		}
+		sse = _SseChat()
+		reply = transport.post(
+			f"{self.base_url}/v1/chat/completions",
+			json.dumps(body).encode(),
+			("api-subscription-key", "", keys.SARVAM),
+			{"Content-Type": "application/json"},
+			on_chunk=sse.feed,
+			keep_body=False,
+		)
+		first = sse.first_token_s if sse.first_token_s is not None else reply.total_s
+		return LlmResult(_without_thinking("".join(sse.text)), first, reply.total_s)
+
+
+def _without_thinking(text):
+	"""A reasoning model may send its thoughts in <think> tags; only what follows is spoken."""
+	if "</think>" in text:
+		text = text.rsplit("</think>", 1)[1]
+	return text.strip()
 
 
 def timed(function, *args):

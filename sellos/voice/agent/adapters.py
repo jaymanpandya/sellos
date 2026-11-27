@@ -307,3 +307,35 @@ class AnthropicLlm(_Keyed, LlmAdapter):
 		)
 		blocks = _json(reply, "language model").get("content") or []
 		return "".join(b.get("text", "") for b in blocks if b.get("type") == "text").strip()
+
+
+class SarvamLlm(_Keyed, LlmAdapter):
+	"""A Sarvam chat model on Sarvam's chat completions API (SOS-N21B). The model is the setting "Voice agent
+	model", which Jayman enters; the code never picks one. The path and fields follow Sarvam's documentation
+	and are confirmed on the first live run (SOS-N21BL)."""
+
+	url = "https://api.sarvam.ai/v1/chat/completions"
+
+	def __init__(self, key, model, post=None, stream=None):
+		super().__init__(key, post, stream)
+		self.model, self.name = model, "sarvam"
+
+	def reply(self, system, history, context):
+		body = {
+			"model": self.model,
+			"max_tokens": 200,
+			"messages": [
+				{"role": "system", "content": f"{system}\n\nLead context: {context}"},
+				*AnthropicLlm.messages(history),
+			],
+		}
+		reply = self._post(
+			self.url,
+			json.dumps(body).encode(),
+			{"api-subscription-key": self._key, "Content-Type": "application/json"},
+		)
+		choices = _json(reply, "language model").get("choices") or [{}]
+		text = ((choices[0] or {}).get("message") or {}).get("content") or ""
+		if not isinstance(text, str):
+			raise VoiceProviderError("The language model provider sent an answer that could not be read.")
+		return (text.rsplit("</think>", 1)[-1] if "</think>" in text else text).strip()
