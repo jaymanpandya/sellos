@@ -100,3 +100,7 @@ the Department) is Not Needed.
 * **Open questions** (recorded by SOS-P3-01L with LegiScore's written answers): permanent storage, use in
   derived analytics and matching, showing derived figures to several customer companies, and the terms of
   its upstream sources.
+
+* **Limits and cost** (27 November 2026): `docs/LEGISCORE.md` has the rate limits, credit prices, timeouts, the
+  balance call and a worked cost for the Bandra to Andheri corridor. There is no bulk or area listing: buildings
+  come from reviewed seed lists (SOS-P3-04) and are enriched one at a time.
