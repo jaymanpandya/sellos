@@ -778,7 +778,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Launch:** Later
 - **Story Points:** 3
 - **Dependencies:** SOS-N21A, SOS-N21C, SOS-P5-07
-- **Status:** Not Started
+- **Status:** In Progress
 
 ### SOS-N21BL: Run the Sarvam and Claude Haiku 5.5 comparison
 - **Epic:** Compliance, procurement and access
