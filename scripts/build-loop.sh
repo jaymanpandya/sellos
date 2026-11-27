@@ -564,33 +564,10 @@ $(printf '%s' "$PUSH_ERROR" | head -c 3000)"
   done
 }
 
-# Push the branch. A failed try is retried after 10, 30 and 90 seconds. GitHub's own
-# "fatal error in commit_refs" is a server fault, so it is retried like a network error,
-# never treated as a rejection. A real rejection stops at once, because retrying cannot fix it.
-# On failure PUSH_ERROR holds git's exact output. Nothing here ever resets a commit.
-PUSH_ERROR=""
-push_with_retry() {
-  local waits=(10 30 90) attempt=0 out
-  PUSH_ERROR=""
-  while true; do
-    if out="$(git push origin "$BRANCH" 2>&1)"; then
-      printf '%s\n' "$out"
-      return 0
-    fi
-    printf '%s\n' "$out"
-    PUSH_ERROR="$out"
-    if printf '%s\n' "$out" | grep -q "fatal error in commit_refs"; then
-      echo "The push failed with \"fatal error in commit_refs\". That is an error on GitHub's side, not a rejected push. Retrying."
-    elif printf '%s\n' "$out" | grep -q -E "\[rejected\]|\[remote rejected\]|non-fast-forward|fetch first"; then
-      echo "The remote rejected the push. Retrying will not fix that."
-      return 1
-    fi
-    if [[ $attempt -ge ${#waits[@]} ]]; then return 1; fi
-    echo "Push failed. Trying again in ${waits[$attempt]} seconds."
-    sleep "${waits[$attempt]}"
-    attempt=$((attempt + 1))
-  done
-}
+# SOS-LOOP (27 November 2026): push_with_retry lives in scripts/lib/push_retry.sh. A rejected push
+# is fixed by git pull --rebase --autostash origin 1.0 and pushed again (three attempts); only a real
+# rebase conflict stops, after git rebase --abort, with the conflicted files named in PUSH_ERROR.
+source "$SCRIPT_DIR/lib/push_retry.sh"
 
 # SOS-SETUP-14: an environment problem is not a task failure. The gate exits 2 or 3 only from its
 # preflight (wrong site or port, a server that is down or is not SellOS, no baseline, no Semgrep,
