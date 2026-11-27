@@ -188,6 +188,9 @@ class RealTasksFile(unittest.TestCase):
 		for t in self.tasks:
 			if t["status"] in ("Not Needed", "Parked"):
 				continue
+			if t["launch"].lower().startswith("later"):
+				# Launch Later is out of the loop on purpose (Jayman, 27 November 2026).
+				continue
 			self.assertIn(tasks.launch_rank(t["launch"]), (0, 1), t["id"])
 
 	def test_only_reg_l_depends_on_a_regression_task(self):
@@ -197,7 +200,12 @@ class RealTasksFile(unittest.TestCase):
 			self.assertEqual([d for d in t["deps"] if d.startswith("SOS-REG")], [], t["id"])
 
 	def test_reg_l_depends_on_every_other_active_task(self):
-		active = {t["id"] for t in self.tasks if t["status"] not in ("Not Needed", "Parked")}
+		# A Launch Later task is out of the loop (Jayman, 27 November 2026), so SOS-REG-L does not wait on it.
+		active = {
+			t["id"]
+			for t in self.tasks
+			if t["status"] not in ("Not Needed", "Parked") and not t["launch"].lower().startswith("later")
+		}
 		self.assertEqual(set(self.by_id["SOS-REG-L"]["deps"]), active - {"SOS-REG-L"})
 
 	def test_every_dependency_names_a_task(self):
