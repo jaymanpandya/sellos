@@ -1833,6 +1833,7 @@ def make_gate_mandates():
 
 def reset_company_profile_and_docuseal():
 	"""Clear the Company Profile fields and the DocuSeal settings a spec saved (tests only, SOS-LOOP)."""
+	reset_integrations()  # SOS-INT-1: the recorded DocuSeal test lives with the other integrations
 	doc = frappe.get_doc("SellOS Settings")
 	for field in (
 		"brand_color",
@@ -1853,6 +1854,20 @@ def reset_company_profile_and_docuseal():
 	)
 	frappe.clear_document_cache("SellOS Settings", "SellOS Settings")
 	frappe.db.commit()  # nosemgrep
+	return {"reset": True}
+
+
+def reset_integrations():
+	"""Clear the Integration Settings a spec saved and the recorded connection tests (tests only, SOS-INT-1)."""
+	doc = frappe.get_doc("Integration Settings")
+	for field in doc.meta.get_valid_columns():
+		if field not in ("name", "owner", "creation", "modified", "modified_by", "docstatus", "idx"):
+			doc.set(field, None)
+	doc.flags.ignore_permissions = True
+	doc.save()
+	frappe.db.delete("__Auth", {"doctype": "Integration Settings"})
+	frappe.clear_document_cache("Integration Settings", "Integration Settings")
+	frappe.db.commit()  # the browser reads it from another process  # nosemgrep
 	return {"reset": True}
 
 

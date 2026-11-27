@@ -44,24 +44,24 @@ context("SOS-LOOP: company profile, DocuSeal settings, signing panel and Dossier
 
 	it("saves the DocuSeal settings and never shows the key back", () => {
 		cy.signInFresh("company_admin");
-		cy.intercept("POST", "**/sellos.inventory.docuseal.get_docuseal_settings*").as("load");
-		cy.intercept("POST", "**/sellos.inventory.docuseal.save_docuseal_settings*").as("save");
-		cy.visit("/sellos/company/settings");
+		cy.intercept("POST", "**/sellos.config.integrations.list_integrations*").as("load");
+		cy.intercept("POST", "**/sellos.config.integrations.save_integration*").as("save");
+		cy.visit("/sellos/company/integrations");
 		cy.wait("@load");
-		cy.getByTestId("docuseal-state").should("contain", "Not connected");
-		cy.getByTestId("docuseal-url").type("https://sign.gate-example.com");
-		cy.getByTestId("docuseal-key").type("gate-fake-key-only");
-		cy.getByTestId("docuseal-secret").type("gate-fake-secret-only");
-		cy.getByTestId("docuseal-signer-name").type("Gate Signer");
-		cy.getByTestId("docuseal-signer-email").type("gate.signer@example.com");
-		cy.getByTestId("docuseal-save").click();
+		cy.getByTestId("integration-docuseal-status").should("contain", "Not set");
+		cy.getByTestId("integration-docuseal-url").type("https://sign.gate-example.com");
+		cy.getByTestId("integration-docuseal-api_key").type("gate-fake-key-only");
+		cy.getByTestId("integration-docuseal-webhook_secret").type("gate-fake-secret-only");
+		cy.getByTestId("integration-docuseal-signer_name").type("Gate Signer");
+		cy.getByTestId("integration-docuseal-signer_email").type("gate.signer@example.com");
+		cy.getByTestId("integration-docuseal-save").click();
 		cy.wait("@save").its("response.statusCode").should("eq", 200);
-		cy.getByTestId("docuseal-notice").should("contain", "saved");
-		cy.getByTestId("docuseal-state").should("contain", "Connected");
-		cy.getByTestId("docuseal-key").should("have.value", "");
-		cy.getByTestId("docuseal-settings")
+		cy.getByTestId("integration-docuseal-notice").should("contain", "Saved");
+		cy.getByTestId("integration-docuseal-status").should("contain", "Not tested");
+		cy.getByTestId("integration-docuseal-api_key").should("have.value", "");
+		cy.getByTestId("integration-docuseal")
 			.should("not.contain", "gate-fake-key-only")
-			.and("contain", "saved, leave empty to keep it");
+			.and("contain", "Saved, ending");
 		cy.get("@save")
 			.its("response.body")
 			.then((body) => expect(JSON.stringify(body)).to.not.contain("gate-fake-key-only"));
@@ -80,7 +80,7 @@ context("SOS-LOOP: company profile, DocuSeal settings, signing panel and Dossier
 			cy.getByTestId("signing-connect")
 				.should("contain", "Connect DocuSeal")
 				.find("a")
-				.should("have.attr", "href", "/sellos/company/settings");
+				.should("have.attr", "href", "/sellos/company/integrations");
 			cy.getByTestId("signing-send").should("not.exist");
 
 			// An agent is told to ask a Company Admin.

@@ -69,7 +69,7 @@ state, and in each area's colours.
 | Signing badge | `SigningBadge` | the state of a mandate's electronic signing: Not sent, Sent, Viewed, Signed, Declined, Expired |
 | Mandate signing | `MandateSigning` | the signing card of a mandate: the state, each signer, Send for signing or Connect DocuSeal, the signed copy and audit trail |
 | Dossier PDF | `DossierPdf` | the version of the Dossier PDF, Download and Regenerate |
-| DocuSeal settings | `DocusealSettings` | the DocuSeal address, encrypted key and secret (never shown back), the company's signer and the webhook address |
+| Integration card | `IntegrationCard` | one provider's card on the Integrations page: its fields, a status pill (Not set, Not tested, Connected, Failed with the plain reason), the webhook address to paste, Save and Test connection; a saved secret shows only "Saved, ending xxxx" |
 | Colour field | `ColourField` | a hex colour with a swatch and its contrast against white, checked live against a minimum |
 | Logo preview | `LogoPreview` | a small framed picture, such as the company logo |
 | Section card | `SectionCard` | card with the small uppercase heading, optional tag and help, a `FieldGrid`, optional footer |

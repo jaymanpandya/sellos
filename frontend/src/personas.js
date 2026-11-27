@@ -58,6 +58,12 @@ export const PERSONAS = [
 				to: "/company/settings",
 				area: "company",
 			},
+			{
+				key: "integrations",
+				label: "Integrations",
+				to: "/company/integrations",
+				area: "company",
+			},
 			{ key: "support", label: "Support access", to: "/company/support", area: "company" },
 			{ key: "telephony", label: "Telephony", to: "/company/telephony", area: "company" },
 			{

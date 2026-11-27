@@ -154,7 +154,7 @@ class TestDocusealSettings(SigningCase):
 	def test_the_status_says_when_docuseal_is_not_connected(self):
 		as_user("company_admin")
 		self.assertEqual(
-			docuseal.docuseal_status(), {"connected": False, "settings_path": "/company/settings"}
+			docuseal.docuseal_status(), {"connected": False, "settings_path": "/company/integrations"}
 		)
 		self.connect()
 		self.assertTrue(docuseal.docuseal_status()["connected"])

@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "creation": "2026-11-27 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "meta_app_id",
+  "meta_app_secret",
+  "meta_page_access_token",
+  "meta_page_id",
+  "email_host",
+  "email_port",
+  "email_user",
+  "email_password",
+  "email_from_name",
+  "email_from_address",
+  "email_api_key",
+  "legiscore_api_key",
+  "check_results"
+ ],
+ "fields": [
+  {
+   "fieldname": "meta_app_id",
+   "fieldtype": "Data",
+   "label": "Meta app ID"
+  },
+  {
+   "fieldname": "meta_app_secret",
+   "fieldtype": "Password",
+   "label": "Meta app secret"
+  },
+  {
+   "fieldname": "meta_page_access_token",
+   "fieldtype": "Password",
+   "label": "Meta page access token"
+  },
+  {
+   "fieldname": "meta_page_id",
+   "fieldtype": "Data",
+   "label": "Meta page ID"
+  },
+  {
+   "fieldname": "email_host",
+   "fieldtype": "Data",
+   "label": "SMTP host"
+  },
+  {
+   "fieldname": "email_port",
+   "fieldtype": "Int",
+   "label": "SMTP port"
+  },
+  {
+   "fieldname": "email_user",
+   "fieldtype": "Data",
+   "label": "SMTP user"
+  },
+  {
+   "fieldname": "email_password",
+   "fieldtype": "Password",
+   "label": "SMTP password"
+  },
+  {
+   "fieldname": "email_from_name",
+   "fieldtype": "Data",
+   "label": "From name"
+  },
+  {
+   "fieldname": "email_from_address",
+   "fieldtype": "Data",
+   "label": "From address"
+  },
+  {
+   "fieldname": "email_api_key",
+   "fieldtype": "Password",
+   "label": "Email provider API key"
+  },
+  {
+   "fieldname": "legiscore_api_key",
+   "fieldtype": "Password",
+   "label": "LegiScore API key"
+  },
+  {
+   "fieldname": "check_results",
+   "fieldtype": "Long Text",
+   "label": "Last connection tests",
+   "hidden": 1,
+   "read_only": 1,
+   "description": "The last Test connection result of each provider (SOS-INT-1). Holds no secret."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-27 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Integration Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

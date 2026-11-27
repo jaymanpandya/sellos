@@ -158,6 +158,10 @@ SAMPLE_CALLS = {
 	"sellos.access.support.list_support_grants": {},
 	"sellos.access.support.support_access_log": {"grant": "{grant}"},
 	"sellos.config.setup_wizard.get_setup_state": {},
+	# SOS-INT-1: LegiScore has no key on the matrix site, so the check answers "enter the details" and calls no one.
+	"sellos.config.integrations.list_integrations": {},
+	"sellos.config.integrations.save_integration": {"provider": "legiscore", "values": {}},
+	"sellos.config.integrations.check_integration": {"provider": "legiscore"},
 	"sellos.config.setup_wizard.save_profile": {"values": {"company_name": "P105 Realty"}},
 	"sellos.config.setup_wizard.save_branding": {"brand_color": "#0f4c35"},
 	# SOS-P1-07: a stage with leads is never deleted, and the test makes a lead, so the call keeps the

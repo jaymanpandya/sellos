@@ -115,6 +115,10 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.config.setup_wizard.save_stages": _ADMIN_ONLY,
 	"sellos.config.setup_wizard.add_user": _ADMIN_ONLY,
 	"sellos.config.setup_wizard.finish_setup": _ADMIN_ONLY,
+	# SOS-INT-1: the Integrations screen, the company's own provider keys. Only a Company Admin.
+	"sellos.config.integrations.list_integrations": _ADMIN_ONLY,
+	"sellos.config.integrations.save_integration": _ADMIN_ONLY,
+	"sellos.config.integrations.check_integration": _ADMIN_ONLY,
 	# SOS-P1-17: the Company Admin manages users in the web app.
 	"sellos.access.users.list_users": _ADMIN_ONLY,
 	"sellos.access.users.user_open_work": _ADMIN_ONLY,

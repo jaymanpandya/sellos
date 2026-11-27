@@ -22,6 +22,7 @@ export const ICONS = {
 	shortlists: "lucide-bookmark",
 	users: "lucide-user-cog",
 	support: "lucide-life-buoy",
+	integrations: "lucide-plug",
 	telephony: "lucide-phone",
 	whatsapp: "lucide-message-circle",
 	"whatsapp-setup": "lucide-message-circle-more",

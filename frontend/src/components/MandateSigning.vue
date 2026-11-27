@@ -95,7 +95,7 @@ const props = defineProps({ mandate: { type: Object, required: true } });
 const emit = defineEmits(["changed"]);
 
 const connected = ref(null);
-const settingsPath = ref("/company/settings");
+const settingsPath = ref("/company/integrations");
 const busy = ref(false);
 const error = ref("");
 const isAdmin = computed(() => session.roles.includes("SellOS Company Admin"));

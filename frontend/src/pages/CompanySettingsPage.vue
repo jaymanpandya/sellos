@@ -3,7 +3,7 @@
 		<template #header>
 			<PageHeader
 				title="Company settings"
-				text="The note types your team uses, and the connections your company has set up."
+				text="The note types your team uses. Your provider keys are on the Integrations page."
 				icon="lucide-settings"
 			/>
 		</template>
@@ -53,11 +53,17 @@
 		</SectionCard>
 
 		<SectionCard
-			title="DocuSeal"
-			help="Electronic signing of mandates."
-			data-testid="sellos-docuseal-card"
+			title="Integrations"
+			help="Your own WhatsApp, Meta Lead Ads, email, DocuSeal and LegiScore keys, and the Test connection for each, are on the Integrations page."
+			data-testid="sellos-settings-integrations"
 		>
-			<DocusealSettings />
+			<router-link
+				:to="{ name: 'integrations' }"
+				class="ui-link ui-text-strong"
+				data-testid="sellos-settings-integrations-link"
+			>
+				Open Integrations
+			</router-link>
 		</SectionCard>
 
 		<FormDrawer
@@ -88,7 +94,6 @@ import { onMounted, ref } from "vue";
 
 import AppButton from "../components/AppButton.vue";
 import DataTable from "../components/DataTable.vue";
-import DocusealSettings from "../components/DocusealSettings.vue";
 import FormDrawer from "../components/FormDrawer.vue";
 import FormField from "../components/FormField.vue";
 import FormSection from "../components/FormSection.vue";
@@ -99,7 +104,7 @@ import StatusBadge from "../components/StatusBadge.vue";
 import { serverMessage } from "../crm/crmApi";
 import { notesApi } from "../crm/notesApi";
 
-// Company settings (SOS-LOOP): the managed list of note types, and the DocuSeal connection. A Company Admin only.
+// Company settings (SOS-LOOP): the managed list of note types, and a link to the Integrations page (SOS-INT-1), where the DocuSeal connection now is. A Company Admin only.
 const types = ref([]);
 const loaded = ref(false);
 const error = ref("");
