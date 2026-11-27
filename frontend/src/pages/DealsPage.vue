@@ -173,37 +173,51 @@
 				</div>
 				<span v-else class="ui-text-muted">Not set</span>
 			</template>
-			<template #cell-agent_share="{ row }">
-				<div data-testid="sellos-deal-split" data-party="Agent">
-					<span class="block tabular-nums">{{ row.agent_share.percent }}%</span>
-					<span class="block ui-text-muted ui-text-small tabular-nums">{{
-						formatBudget(row.agent_share.amount)
+			<!-- The total commission, then agent and company: each a share and its amount. -->
+			<template #cell-agent_company="{ row }">
+				<div class="grid gap-0.5">
+					<span class="tabular-nums" data-testid="sellos-deal-money">{{
+						formatBudget(row.commission_amount)
 					}}</span>
+					<div
+						class="flex min-w-0 items-baseline gap-ui-sm tabular-nums"
+						data-testid="sellos-deal-split"
+						data-party="Agent"
+					>
+						<span class="w-14 shrink-0 ui-text-muted">Agent</span>
+						<span class="shrink-0">{{ row.agent_share.percent }}%</span>
+						<span class="shrink-0 ui-text-muted">{{
+							formatBudget(row.agent_share.amount)
+						}}</span>
+					</div>
+					<div
+						class="flex min-w-0 items-baseline gap-ui-sm tabular-nums"
+						data-testid="sellos-deal-split"
+						data-party="Company"
+					>
+						<span class="w-14 shrink-0 ui-text-muted">Company</span>
+						<span class="shrink-0">{{ row.company_share.percent }}%</span>
+						<span class="shrink-0 ui-text-muted">{{
+							formatBudget(row.company_share.amount)
+						}}</span>
+					</div>
 				</div>
 			</template>
-			<template #cell-company_share="{ row }">
-				<div data-testid="sellos-deal-split" data-party="Company">
-					<span class="block tabular-nums">{{ row.company_share.percent }}%</span>
-					<span class="block ui-text-muted ui-text-small tabular-nums">{{
-						formatBudget(row.company_share.amount)
-					}}</span>
-				</div>
-			</template>
-			<template #cell-commission_amount="{ row }">
-				<span class="tabular-nums" data-testid="sellos-deal-money">{{
-					formatBudget(row.commission_amount)
-				}}</span>
-			</template>
+			<!-- The status, and under it the date and who approved: the full sentence is on the deal page. -->
 			<template #cell-approval_status="{ row }">
 				<StatusBadge
 					:tone="row.approval_status === 'Approved' ? 'success' : 'warning'"
 					:label="row.approval_status"
 					data-testid="sellos-deal-status"
 				/>
-			</template>
-			<!-- One line: the date and who. The full sentence is on the deal page. -->
-			<template #cell-approval="{ row }">
-				<CellText :value="approvedLine(row)" data-testid="sellos-deal-approved" />
+				<CellText
+					:value="approvedLine(row)"
+					:lines="2"
+					muted
+					blank
+					class="mt-0.5"
+					data-testid="sellos-deal-approved"
+				/>
 			</template>
 		</DataTable>
 
@@ -499,53 +513,42 @@ const kpis = computed(() => [
 	},
 ]);
 
-const amountOf = (d) => Number(d.commission_amount || 0);
 const approvedLine = (d) =>
 	d.approval_status === "Approved"
 		? `${formatDate(d.approved_on)} \u00b7 ${d.approved_by_name}`
 		: "";
 const columns = [
-	{ key: "client_name", label: "Deal", primary: true, sortable: true, class: "w-[13rem]" },
+	{ key: "client_name", label: "Deal", primary: true, sortable: true, class: "w-[10rem]" },
+	// A narrow pill column: the header wraps onto two lines.
 	{
 		key: "has_commission_split",
 		label: "Commission split",
+		class: "w-[5.5rem]",
+		thClass: "w-[5.5rem] !whitespace-normal",
 		sortable: true,
 		sortValue: (d) => d.has_commission_split,
 	},
+	// Room for a partner name of 24 characters, its share and its amount on one line.
 	{
 		key: "partners",
 		label: "Channel partners",
-		class: "w-[17rem]",
-		thClass: "w-[17rem]",
+		class: "w-[17.5rem]",
+		thClass: "w-[17.5rem]",
 		sortable: true,
 		sortValue: (d) => d.partner_splits.reduce((sum, p) => sum + Number(p.amount || 0), 0),
 	},
 	{
-		key: "agent_share",
-		label: "Agent share",
+		key: "agent_company",
+		label: "Commission",
+		class: "w-[10rem]",
 		sortable: true,
-		sortValue: (d) => Number(d.agent_share.amount || 0),
+		sortValue: (d) => Number(d.commission_amount || 0),
 	},
 	{
-		key: "company_share",
-		label: "Company share",
+		key: "approval_status",
+		label: "Status",
+		class: "w-[10rem] max-w-[10rem]",
 		sortable: true,
-		sortValue: (d) => Number(d.company_share.amount || 0),
-	},
-	{
-		key: "commission_amount",
-		label: "Total commission",
-		sortable: true,
-		align: "right",
-		sortValue: amountOf,
-	},
-	{ key: "approval_status", label: "Status", sortable: true },
-	{
-		key: "approval",
-		label: "Approved",
-		class: "max-w-[14rem]",
-		sortable: true,
-		sortValue: (d) => d.approved_on || "",
 	},
 ];
 const rowAttrs = (d) => ({ "data-client": d.client_name, "data-status": d.approval_status });

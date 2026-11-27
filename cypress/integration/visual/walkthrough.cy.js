@@ -50,7 +50,11 @@ function listRules(what, width) {
 		if (width < 1024 && tables.length) problem(`a table at ${width}`);
 		tables.each((_, table) => {
 			const box = table.closest(".ui-table-scroll");
-			if (box.scrollWidth > box.clientWidth + 1)
+			if (
+				box.scrollWidth > box.clientWidth + 1 ||
+				table.scrollWidth > table.clientWidth + 1 ||
+				table.getBoundingClientRect().width > box.clientWidth + 1
+			)
 				problem(
 					`the table scrolls sideways (${box.scrollWidth} > ${
 						box.clientWidth
@@ -150,6 +154,22 @@ ROLES.forEach(({ role, label }) => {
 						capture: "viewport",
 						overwrite: true,
 					});
+				});
+				noListProblems();
+			});
+		});
+
+		it("opens every page at 1280 wide, and no table scrolls sideways", () => {
+			cy.viewport(1280, 800);
+			cy.signInFresh(role);
+			cy.visit("/sellos");
+			pageDrawn();
+			menuLinks().then((links) => {
+				links.forEach((link) => {
+					cy.visit(link.href);
+					pageDrawn();
+					noSidewaysScroll(`${link.label} at 1280`);
+					listRules(`${link.label} at 1280`, 1280);
 				});
 				noListProblems();
 			});

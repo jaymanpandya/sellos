@@ -105,3 +105,15 @@ class TestNotePlan(unittest.TestCase):
 		for _label, text, _photos, days in demo_loop.NOTE_PLAN:
 			self.assertTrue(text and days >= 0)
 			self.assertNotRegex(text.lower(), r"\btest\b|\bdummy\b|\bfake\b")
+
+
+class TestSplitPropertyTitles(unittest.TestCase):
+	def test_titles_are_real_flats_in_a_seeded_project_and_unique(self):
+		titles = [
+			demo_loop.split_property_title(n, f"Saptarishi Heights {n % 3}", "Andheri West")
+			for n in range(1, 12)
+		]
+		self.assertEqual(len(set(titles)), len(titles))
+		for title in titles:
+			self.assertRegex(title, r"^Flat \d{3,4}, .+, Andheri West$")
+			self.assertNotIn("Demo", title)

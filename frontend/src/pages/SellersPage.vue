@@ -166,7 +166,7 @@
 				<NameCell
 					:name="row.client_name || row.lead_title"
 					:identifier="row.phone"
-					:detail="row.seller_city"
+					:detail="[row.seller_city, row.source].filter(Boolean).join(' \u00b7 ')"
 					data-testid="sellos-seller-title"
 				/>
 			</template>
@@ -198,9 +198,6 @@
 					data-testid="sellos-seller-mandate"
 				/>
 				<span v-else class="ui-text-muted">Not set</span>
-			</template>
-			<template #cell-source="{ row }">
-				<CellText :value="row.source" data-testid="sellos-seller-source-cell" />
 			</template>
 			<template #cell-assigned_to="{ row }">
 				<CellText :value="row.assigned_to ? agentName(row.assigned_to) : ''" />
@@ -575,7 +572,6 @@ const columns = [
 		sortValue: (l) => labelOf(l.stage),
 	},
 	{ key: "mandate", label: "Mandate", sortable: true, sortValue: (l) => mandateOf(l.name) },
-	{ key: "source", label: "Source", sortable: true },
 	{
 		key: "assigned_to",
 		label: "Agent",

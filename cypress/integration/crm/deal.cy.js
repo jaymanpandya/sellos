@@ -55,10 +55,19 @@ context("SOS-P4-06: deals and the commission split", () => {
 			row(made.client)
 				.find('[data-testid="sellos-deal-split"][data-party="Channel Partner"]')
 				.should("have.length", 1);
-			// The split columns: Yes for a deal with a channel partner, and the share of each party.
+			// The split columns: the partners line says there is a channel partner, and each party shows its share.
 			row(made.client)
 				.find('[data-testid="sellos-deal-has-split"]')
 				.should("contain", "Yes");
+			row(made.client)
+				.find('[data-testid="sellos-deal-split"][data-party="Channel Partner"]')
+				.should("contain", "20%");
+			row(made.client)
+				.find('[data-testid="sellos-deal-split"][data-party="Agent"]')
+				.should("contain", "40%");
+			row(made.client)
+				.find('[data-testid="sellos-deal-split"][data-party="Company"]')
+				.should("contain", "40%");
 
 			// The period switch defaults to Month to date, shows its dates, and drives the cards.
 			cy.getByTestId("deal-period").should("contain", "Month to date");

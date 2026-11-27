@@ -70,7 +70,16 @@ SPLITS = {
 	2: (40, (15, 15), 30),
 	3: (35, (10, 10, 10), 35),
 }
-PROPERTY_PREFIX = "Demo Split Flat"
+LEGACY_PROPERTY_PREFIX = (
+	"Demo Split Flat"  # the name before the real project names (a site seeded then is redone)
+)
+
+
+def split_property_title(ordinal: int, project_name: str, locality: str) -> str:
+	"""The resale flat of a split deal, named like a real one: its flat number in a seeded project and the area."""
+	floor = 3 + ordinal * 2
+	flat = floor * 100 + ordinal % 4 + 1
+	return f"Flat {flat}, {project_name}, {locality}"
 
 
 def deal_dates(today: date) -> list[date]:
@@ -369,17 +378,37 @@ def _split_deals(ctx):
 	from sellos.inventory import api as inventory
 	from sellos.inventory import deals
 
-	if frappe.db.exists("Property", {"title": ["like", f"{PROPERTY_PREFIX}%"]}):
+	projects = ctx.projects
+	if not projects:
+		return
+	plan = deal_plan(ctx.today)
+	titles = [
+		split_property_title(
+			row["ordinal"],
+			projects[(row["ordinal"] - 1) % len(projects)]["project_name"],
+			projects[(row["ordinal"] - 1) % len(projects)]["locality"],
+		)
+		for row in plan
+	]
+	# A site seeded with the old test names gets the real ones in place: same flats, same deals.
+	legacy = frappe.get_all(
+		"Property", filters={"title": ["like", f"{LEGACY_PROPERTY_PREFIX} %"]}, pluck="title"
+	)
+	for old_title in legacy:
+		ordinal = int(old_title.rsplit(" ", 1)[1])
+		if 1 <= ordinal <= len(titles):
+			frappe.db.set_value("Property", {"title": old_title}, "title", titles[ordinal - 1])
+	if legacy or frappe.db.exists("Property", {"title": titles[0]}):
 		return
 	firms = [p["name"] for p in ctx.partners if p.get("status") == "Approved"]
 	if len(firms) < 3 or not ctx.leads:
 		return
 	agents = list(ctx.users["agents"])
 	buyers = [row for row in ctx.leads if row.get("client")]
-	for row in deal_plan(ctx.today):
+	for row, title in zip(plan, titles, strict=True):
 		prop = inventory.save_property(
 			{
-				"title": f"{PROPERTY_PREFIX} {row['ordinal']}",
+				"title": title,
 				"property_type": "Apartment",
 				"city": ctx.region["city"],
 				"carpet_area": 780 + row["ordinal"] * 15,
