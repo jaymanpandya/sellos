@@ -7,6 +7,7 @@ This file is the backlog for building SellOS, in the BuildOS block format that `
 * A task is a block that starts with `### SOS-<phase>-<number>: <title>`. Nothing else in this file may start with `### `, and prose belongs above the first block, because the loop sends everything up to the next `### ` to the agent as the task.
 * Status values: Not Started, In Progress, Complete, Blocked, Waiting, Parked and Not Needed. The loop picks only Not Started tasks whose dependencies are all satisfied, choosing by Launch tier first (Dec 20 before Jan 1), then dependencies, then file order. A dependency is satisfied when it is Complete or Not Needed. It never picks Waiting, Parked or Not Needed tasks, and never reports a Not Needed one. A Blocked task stops the loop until a person resets it.
 * `- **Launch:**` is the launch tier: Dec 20 or Jan 1. Everything is launch scope, and there is no "After launch". A Not Needed or Parked task says `none`.
+* Priority rule (Jayman, 27 November 2026): the product working as intended matters more than polish or infrastructure, and there is no more pixel work. A task with Launch `Later` is out of the loop and never picked.
 * Waiting means the task belongs to Jayman, AMP Labs, Counsel or the Accountant and is not a task for the agent. A person marks it Complete with `scripts/set-task-status.sh <ID> Complete` when the work is done.
 * Priority is the phase: Phase 0 is P0, Phase 1 is P1, and so on. The N tasks (enablers owned by people) are P0. Priority no longer orders the loop (SOS-SETUP-19); the Launch tier does.
 * `Browser spec: required` means a person sees or uses the result, so the task needs a Cypress spec that names it. `Docs only: yes` and `Gate files: allowed` are written only by a human.
@@ -771,10 +772,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - `--live` still refuses to start when standard input is not a terminal, so the agent never runs it.
   - The Sarvam key comes only from the Keychain item `sellos_sarvam_key` through `get_secret`, and no key appears in any output, log, result file or traceback.
 - **Test Criteria:** Backend tests with fake providers: the comparison on the disclosure line and the handover cases, the model name file read (and a missing or empty one refused), `--live` refused without a terminal, and a fake key that never appears in the output or the written files. The Keychain is never read in a test.
-- **Notes:** Added by Jayman, 24 November 2026 (question 7). The language model named in SOS-N21 is "Sarvam 105B, to be confirmed against docs.sarvam.ai"; the agent does not choose or confirm the model name. Add no package: the bench is shared. `docs/bakeoff/results.md` stays "Not run yet" until Jayman runs the harness. SOS-N21BL is the live run.
+- **Notes:** Added by Jayman, 24 November 2026 (question 7). The language model named in SOS-N21 is "Sarvam 105B, to be confirmed against docs.sarvam.ai"; the agent does not choose or confirm the model name. Add no package: the bench is shared. `docs/bakeoff/results.md` stays "Not run yet" until Jayman runs the harness. SOS-N21BL is the live run. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P5
-- **Launch:** Dec 20
+- **Launch:** Later
 - **Story Points:** 3
 - **Dependencies:** SOS-N21A, SOS-N21C, SOS-P5-07
 - **Status:** Not Started
@@ -1039,13 +1040,13 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - A Cypress spec that names SOS-FIX-1 signs in as each role, opens /sellos/does/not/exist, checks the not found screen and the Home link, and fails on any console error. It fails without the fix and passes with it.
   - A FLOW line for SOS-FIX-1 is added to `docs/regression/flows.md` in the five field form that file describes.
 - **Test Criteria:** The Cypress spec above passes in the gate, and `scripts/check_task_evidence.py` finds the FLOW line.
-- **Notes:** MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Notes:** MUST for 1 January 2027 (Jayman, 27 November 2026). Reset from Blocked to Not Started by Jayman's authorisation, 27 November 2026; MUST, Dec 20.
 - **Owner:** Claude Code
 - **Priority:** P1
 - **Launch:** Dec 20
 - **Story Points:** 1
 - **Dependencies:** SOS-P0-10
-- **Status:** Blocked
+- **Status:** Not Started
 - **Browser spec:** required
 
 ### SOS-P1-09: Build the website lead endpoint
@@ -1329,7 +1330,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The snippet carries the company's Lead intake key (SOS-P1-09) and no other key; rotating the key shows a warning that embedded snippets must be updated.
   - Only a Company Admin builds forms. Nothing is deleted: a form is archived.
 - **Test Criteria:** Backend tests of the record, the permission check, the snippet and shortcode text (no key other than the Lead intake key, no styling, no iframe) and the wording substitution; a Cypress spec of building a form and copying the snippet.
-- **Notes:** Decided by Jayman, 24 November 2026. The website is built in WordPress (SOS-P4-09). A campaign form is not a new kind of guest method: it is the existing public intake method of SOS-P1-09 (scope Lead intake) with extra known fields, built in SOS-P4-12; CLAUDE.md's "Public intake forms" rules apply unchanged. Split with SOS-P4-12 to keep each story within 8 points. Expected flow (Jayman, 24 November 2026; the builder adds it to `docs/regression/flows.md` when building the feature, one `FLOW` line each, and does not add flows in advance): 1. As company_admin, from `/sellos/campaign-forms`: Sign in. Make a campaign form with a name, a phone, a campaign tag and the default consent wording. Open the embed snippet and the WordPress shortcode. Expected: The wording shows the company name instead of the placeholder, the snippet is a div and a script tag with no iframe and no styling, and it holds the Lead intake key and no other key. 2. As company_admin, from `/sellos/campaign-forms`: Add an allowed website domain, then turn the form Off and archive it. Expected: The domain is listed, an Off form is marked Off, and an archived form is kept in the archive, never deleted. 3. As agent, from `/sellos/campaign-forms`: Sign in as the gate agent and type the address of the campaign forms page. Expected: The page says there is no access. MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Notes:** Decided by Jayman, 24 November 2026. The website is built in WordPress (SOS-P4-09). A campaign form is not a new kind of guest method: it is the existing public intake method of SOS-P1-09 (scope Lead intake) with extra known fields, built in SOS-P4-12; CLAUDE.md's "Public intake forms" rules apply unchanged. Split with SOS-P4-12 to keep each story within 8 points. Expected flow (Jayman, 24 November 2026; the builder adds it to `docs/regression/flows.md` when building the feature, one `FLOW` line each, and does not add flows in advance): 1. As company_admin, from `/sellos/campaign-forms`: Sign in. Make a campaign form with a name, a phone, a campaign tag and the default consent wording. Open the embed snippet and the WordPress shortcode. Expected: The wording shows the company name instead of the placeholder, the snippet is a div and a script tag with no iframe and no styling, and it holds the Lead intake key and no other key. 2. As company_admin, from `/sellos/campaign-forms`: Add an allowed website domain, then turn the form Off and archive it. Expected: The domain is listed, an Off form is marked Off, and an archived form is kept in the archive, never deleted. 3. As agent, from `/sellos/campaign-forms`: Sign in as the gate agent and type the address of the campaign forms page. Expected: The page says there is no access. MUST for 1 January 2027 (Jayman, 27 November 2026). Integrates with the Pandya website forms (WordPress, SOS-P4-09); MUST for 1 January 2027 (Jayman, 27 November 2026).
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Launch:** Jan 1
@@ -1349,7 +1350,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The honeypot, rate limit, size cap, strict validation, consent evidence file (the wording shown with `{company}` filled in, its version, the time and the address) and tenant rules of CLAUDE.md apply unchanged, and `sellos/access/test_webhook_guest_guard.py` still passes with no new guest method.
   - The answer is only a thank you and a reference code.
 - **Test Criteria:** Backend tests: a valid submission makes a lead with the campaign and UTM details and a Consent Record with the filled in wording; a wrong domain, an Off form, a bad key, a filled honeypot, an unknown field, an oversized body and a flood are each refused or ignored as the rules say; the guard test passes. A Cypress spec of submitting an embedded form on a page served from an allowed domain.
-- **Notes:** Decided by Jayman, 24 November 2026. Reuses SOS-P1-09's per company key endpoint and SOS-P2-08's public intake registry; it adds no registry, no check of its own and no new kind of guest method. The domain check is a declared check of the same registered method. Expected flow (Jayman, 24 November 2026; the builder adds it to `docs/regression/flows.md` when building the feature, one `FLOW` line each, and does not add flows in advance): 1. As company_admin, from `/sellos/campaign-forms`: Open the test page for a form on an allowed domain, fill it in with UTM details in the address and submit. Then open the new lead. Expected: The form thanks the visitor with a reference, and the lead shows the campaign tag and the UTM details and a Consent Record with the wording as shown. 2. As company_admin, from `/sellos/campaign-forms`: Submit the same form from a page on a domain that is not in the form's list. Expected: The submit gets the same short answer as any refusal and no lead is made. MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Notes:** Decided by Jayman, 24 November 2026. Reuses SOS-P1-09's per company key endpoint and SOS-P2-08's public intake registry; it adds no registry, no check of its own and no new kind of guest method. The domain check is a declared check of the same registered method. Expected flow (Jayman, 24 November 2026; the builder adds it to `docs/regression/flows.md` when building the feature, one `FLOW` line each, and does not add flows in advance): 1. As company_admin, from `/sellos/campaign-forms`: Open the test page for a form on an allowed domain, fill it in with UTM details in the address and submit. Then open the new lead. Expected: The form thanks the visitor with a reference, and the lead shows the campaign tag and the UTM details and a Consent Record with the wording as shown. 2. As company_admin, from `/sellos/campaign-forms`: Submit the same form from a page on a domain that is not in the form's list. Expected: The submit gets the same short answer as any refusal and no lead is made. MUST for 1 January 2027 (Jayman, 27 November 2026). Integrates with the Pandya website forms (WordPress, SOS-P4-09); MUST for 1 January 2027 (Jayman, 27 November 2026).
 - **Owner:** Claude Code
 - **Priority:** P4
 - **Launch:** Jan 1
@@ -1514,10 +1515,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Emails go through Frappe's email queue with the company's branding, name the record without any phone number, and link to it in the web app.
   - A user never gets an email about a record they may not see.
 - **Test Criteria:** Backend tests of each preference, quiet hours with a fixed clock and the record visibility check, with the email captured in the email queue (no real email is sent); a Cypress spec of setting preferences.
-- **Notes:** Added by SOS-SETUP-35 (Jayman approved, 13 November 2026, from the sheet 'New tasks to approve'). Changed by Jayman, 24 November 2026: this task is built and tested against the email queue with captured mail (no real email is sent), so it no longer waits for SOS-P0-13. The real email test is SOS-P7-12L (AMP Labs), which depends on this task and on SOS-P0-13.
+- **Notes:** Added by SOS-SETUP-35 (Jayman approved, 13 November 2026, from the sheet 'New tasks to approve'). Changed by Jayman, 24 November 2026: this task is built and tested against the email queue with captured mail (no real email is sent), so it no longer waits for SOS-P0-13. The real email test is SOS-P7-12L (AMP Labs), which depends on this task and on SOS-P0-13. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P7
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-23
 - **Browser spec:** required
@@ -1563,15 +1564,15 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Acceptance Criteria:**
   - Each mandate has a start and an end date, and a status worked out from them: Active, Expiring (within 30 days of the end) or Expired.
   - A list shows the mandates expiring in the next 30 days and those expired, filterable by agent.
-  - The mandate's agent and the Company Admin are alerted 30, 15 and 7 days before the end date, in the app and by email as their preferences say (SOS-P7-12). The seller is never messaged automatically.
+  - The mandate's agent and the Company Admin are alerted 30, 15 and 7 days before the end date, in the app and by email. Email goes to the mandate's agent and the Company Admin by default; per user preferences (SOS-P7-12, taken out of the loop) apply when it is built. The seller is never messaged automatically.
   - Renewing records a new end date and attaches the new signed document; the earlier terms and documents are kept.
 - **Test Criteria:** Backend tests of the status at each boundary with a fixed clock, the alerts on the right days only once each, and renewal keeping the history; a Cypress spec of renewing a mandate from the expiring list.
-- **Notes:** Added by SOS-SETUP-35 (Jayman approved, 13 November 2026, from the sheet 'New tasks to approve'). MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Notes:** Added by SOS-SETUP-35 (Jayman approved, 13 November 2026, from the sheet 'New tasks to approve'). MUST for 1 January 2027 (Jayman, 27 November 2026). SOS-P7-12 is no longer a dependency (Jayman, 27 November 2026).
 - **Owner:** Claude Code
 - **Priority:** P7
 - **Launch:** Jan 1
 - **Story Points:** 3
-- **Dependencies:** SOS-P4-05, SOS-P7-12, SOS-P7-13
+- **Dependencies:** SOS-P4-05, SOS-P7-13
 - **Browser spec:** required
 - **Status:** Not Started
 
@@ -1582,15 +1583,15 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Every morning at a time the Company Admin sets (default 08:00 India time), each active agent gets an email of their follow ups due today and overdue, new leads assigned to them since the last digest, and today's site visits.
   - Each Sales Manager gets their team's numbers by agent (leads waiting for first contact, overdue follow ups, visits booked today), and each Company Admin the company's.
   - The numbers match the Today screen (SOS-P1-26) at the same moment.
-  - A user with nothing to report gets no email, a user who turned the digest off gets none (SOS-P7-12), and no phone number appears.
+  - A user with nothing to report gets no email, a user who turned the digest off gets none (a simple per user digest on and off switch, built here; SOS-P7-12's full preferences are out of the loop), and no phone number appears.
   - The digest obeys the WhatsApp STOP rule (CLAUDE.md decision 7): a person who sent STOP on WhatsApp gets no digest over WhatsApp, whatever "Consent enforcement" says, and the email digest is unaffected.
 - **Test Criteria:** A test against the STOP rule: a user with a WhatsApp STOP in the consent log receives nothing on WhatsApp and still receives email, and a user without one is not suppressed. Backend tests of each digest's content against seeded records and the Today screen's queries, the skip rules, with a fixed clock and the email captured in the email queue.
-- **Notes:** Added by SOS-SETUP-35 (Jayman approved, 13 November 2026, from the sheet 'New tasks to approve'). MUST for 1 January 2027 (Jayman, 27 November 2026). Dependency SOS-P6-11 added by Jayman's priorities, 27 November 2026, because it records the WhatsApp STOP.
+- **Notes:** Added by SOS-SETUP-35 (Jayman approved, 13 November 2026, from the sheet 'New tasks to approve'). MUST for 1 January 2027 (Jayman, 27 November 2026). Dependency SOS-P6-11 added by Jayman's priorities, 27 November 2026, because it records the WhatsApp STOP. SOS-P7-12 is no longer a dependency (Jayman, 27 November 2026). Must obey the WhatsApp STOP rule and is tested against it: a person with a WhatsApp STOP gets no digest on WhatsApp.
 - **Owner:** Claude Code
 - **Priority:** P7
 - **Launch:** Jan 1
 - **Story Points:** 3
-- **Dependencies:** SOS-P7-12, SOS-P1-26, SOS-P6-11
+- **Dependencies:** SOS-P1-26, SOS-P6-11
 - **Status:** Not Started
 
 ### SOS-P2-14: Onboard the first caller and start the baseline
@@ -2253,27 +2254,43 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Dependencies:** SOS-P3-05, SOS-P3-01L, SOS-P3-04A
 - **Status:** Waiting
 
-### SOS-P6-08: Build the listing scraper for registries and developer sites
+### SOS-P6-08: Build the listing scraper for property portals
 - **Epic:** Listing sources and WhatsApp
-- **Description:** As an Agent, I want listings from public registries and developer sites collected automatically, so that inventory data is not entered by hand. Build Source and Raw Listing records and scheduled collection for RERA registries and developer websites, with polite rate limits, respect for each site's access rules, RERA number matching, a review queue and an on and off switch per source.
+- **Description:** As an Agent, I want listings from the property portals collected automatically, so that I start with inventory I did not type by hand. P6-08 is a scraper that browses the portals itself: it is not a file importer. One source adapter per portal, starting with 99acres, MagicBricks, Housing.com and NoBroker, and adding others as they are found. Each adapter drives a headless browser over public search and listing pages, scoped by the company's micro markets and buildings (SOS-P3-04), and sends what it reads to a review queue of candidate listings.
 - **Acceptance Criteria:**
-  - Each source has a switch and a last run log.
-  - Collection respects rate limits and each site's access rules.
-  - Records are matched on RERA number.
-  - Nothing publishes without review approval.
-  - Each company has a simple on and off setting per source, an ordinary setting a Company Admin changes; there is no legal review gate before a source can run.
-  - Sources are source adapters behind one interface, so a new source is a new adapter, not a change to the collector.
-  - First class import from an agent's own portal export (CSV or XLS): the agent uploads the file their portal gave them, columns are mapped once and remembered, and the rows become Raw Listings in the same review queue, matched on RERA number where present. A bad file is refused with the row and reason.
-- **Test Criteria:** A dry run against saved pages for each source, an import test with a sample CSV and a sample XLS (good rows, a bad row, a re-import that changes nothing), a test of the per company switch, and a test that a changed page layout raises an alert instead of loading bad data.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): The dry runs use saved pages only; no test reaches a live site. MUST for 1 January 2027 (Jayman, 27 November 2026). Decided by Jayman, 27 November 2026: the scraper is built and switched on, and SOS-P6-09 (the portal terms review) is no longer a dependency or a gate. Rate limits, respect for each site's access rules, and no captcha solving or login bypass are unchanged (CLAUDE.md rule 10).
+  - One source adapter per portal, one extraction file per adapter, behind one interface, so a new portal is a new adapter. Each reads: title, price, area, BHK and type, locality, building or project, floor, furnishing, posted date, poster type, listing URL and photo URLs.
+  - Searches are scoped by the company's micro markets and buildings (SOS-P3-04); nothing outside them is searched.
+  - Rate limiting per source, from the source's settings: a delay between page loads with random jitter (default 6 to 12 seconds), a cap per run and a cap per day, one session per source at a time, a quiet window, exponential backoff on 429 or 403, and an automatic pause of the source with an alert when it starts blocking.
+  - Runs are scheduled (nightly by default) on the worker, never in a web request.
+  - Per company settings, ordinary settings a Company Admin changes: each source on or off, search areas, schedule, and an optional proxy URL.
+  - Public pages only. If a portal shows a captcha or a login wall, the source stops and is reported as "blocked by the portal", and the run moves on to the next source. SellOS never solves a captcha and never logs in or bypasses an access control (CLAUDE.md rule 10). Owner phone numbers are behind logins on most portals, so a listing without a phone is still a listing.
+  - Results go to a review queue of candidate listings, deduplicated across portals and runs (the same building, the same floor, and area and price each within a few percent is one property), linked to the building master (SOS-P3-04) where it matches, with the source URL kept. A person approves a candidate, and it becomes a draft listing or a seller lead to call. Nothing publishes by itself.
+  - A health check per adapter fails loudly, and alerts, when a page yields no fields (a changed layout), and loads no bad data.
+- **Test Criteria:** For each adapter, saved sample HTML pages in fixtures and a test of the extraction against them; a test that a page with no fields fails the health check and raises an alert; the rate limit (jitter inside the range, per run and per day caps, one session per source, quiet window, backoff on 429 and 403, pause with alert); a captcha page and a login wall each stop the source with "blocked by the portal" and the run goes on; deduplication across portals and runs; the scope by micro market; the per company switches; nothing publishes without approval. No test or loop run calls a live portal, and the headless browser is driven against saved pages only.
+- **Notes:** Final decision by Jayman, 27 November 2026: a scraper, not a CSV or XLS importer (the import, and "a sample export from an agent" as something Jayman supplies, are dropped). SOS-P6-09 (the portal terms review) is no longer a gate or a dependency; it stays only as a note. The live run of one adapter against a real portal is SOS-P6-08L (Jayman). The headless browser must already be on the machine: the agent never installs one on the shared bench (SOS-SETUP-20), and replies NEEDS_INPUT if none is available. MUST for 1 January 2027. UAE and Australia are out of scope for 1 January.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 8
-- **Dependencies:** SOS-P4-02
+- **Dependencies:** SOS-P4-02, SOS-P3-04
 - **Status:** Not Started
 - **Browser spec:** required
 
+### SOS-P6-08L: Run one scraper adapter against a real portal
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As Jayman, I want a small live run of one adapter against a real portal, so that we know the extraction works on the real pages before it is switched on for a company. Run one adapter over one micro market, check the candidates in the review queue against the portal's own pages, and record what each field read correctly and what it missed.
+- **Acceptance Criteria:**
+  - One adapter ran once, within its per run cap.
+  - The candidates were compared with the portal's pages and the result is recorded.
+  - A captcha, a login wall or a block, if it happened, is recorded.
+- **Test Criteria:** Verified by Jayman against the review queue and the source's last run log.
+- **Notes:** Added by Jayman's decision, 27 November 2026. Jayman's work, so it is Waiting and the loop does not pick it.
+- **Owner:** Jayman
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 2
+- **Dependencies:** SOS-P6-08
+- **Status:** Waiting
 ### SOS-P6-09: Review each portal's terms
 - **Epic:** Listing sources and WhatsApp
 - **Description:** As Jayman, I want each listing portal's terms reviewed, so that we only use sources we are allowed to use. Review each portal's terms and any official feed or partner access, and switch on only the sources that pass.
@@ -2282,7 +2299,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Only approved sources are enabled.
   - Rejected sources stay off.
 - **Test Criteria:** Verified by the decision log and the source switches.
-- **Notes:** Decided by Jayman, 24 November 2026: SOS-P6-08 is the scraper. Every source starts Off, the legal review and switching sources on are Jayman's, and SOS-P6-08's criteria (rate limits, access rules, no captcha solving, no login bypass) are unchanged. Decided by Jayman, 27 November 2026: no longer a dependency of SOS-P6-08 or SOS-P6-10, and no gate on switching a source on.
+- **Notes:** Decided by Jayman, 24 November 2026: SOS-P6-08 is the scraper. Every source starts Off, the legal review and switching sources on are Jayman's, and SOS-P6-08's criteria (rate limits, access rules, no captcha solving, no login bypass) are unchanged. Decided by Jayman, 27 November 2026: no longer a dependency of SOS-P6-08 or SOS-P6-10, and no gate on switching a source on. Final decision, 27 November 2026: a note only. It is not a gate and not a dependency, and no source waits for it.
 - **Owner:** Jayman, Counsel
 - **Priority:** P6
 - **Launch:** Jan 1
@@ -2292,7 +2309,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 
 ### SOS-P6-10: Build the Facebook capture assist
 - **Epic:** Listing sources and WhatsApp
-- **Description:** As an Agent, I want to save a Facebook post to SellOS myself, so that group listings reach our review queue without automated collection. Build a browser extension or share target so that an agent signed in as themselves saves or shares a post, which is parsed into a draft listing in the review queue. Personal data of posters is handled as counsel advises.
+- **Description:** As an Agent, I want to save a property post from a Facebook group to SellOS myself, so that group posts build our starting inventory without automated collection. The main job is the share target and paste flow: an agent signed in as themselves shares or pastes a post, and it is parsed into a draft listing in the review queue. Meta Lead Ads (below) is a secondary, optional part that does not block this.
 - **Acceptance Criteria:**
   - An agent can save a post in two taps or clicks.
   - The post becomes a draft in the review queue.
@@ -2300,14 +2317,14 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Poster personal data follows the counsel rules.
   - A poster's name and number are kept only on the draft listing, masked like a lead's phone, and deleted when the draft is rejected.
   - It is a share target in the SellOS web app on a phone, plus pasting a post's link and text on a computer. There is no browser extension.
-  - Meta Lead Ads: leads from a company's own Facebook lead forms arrive through the official Meta Lead Ads API and enter the CRM through `sellos.crm.intake` (create or merge, consent evidence kept). The credentials (app ID, app secret, page access token, page ID) come from the company's Integrations screen (SOS-INT-1), never from code. Meta's lead notification is a provider webhook under the CLAUDE.md webhook rules (signature first with the app secret, replay and order, body cap, rate limit, tenant from the site), registered in `sellos.access.webhooks` and listed in `docs/permissions.md`.
-- **Test Criteria:** Lead Ads tests through a fake Meta: a valid signed notification creates one lead, an invalid signature, a replay, an out of order and an oversized body write nothing, a company with no keys set gets nothing, and the keys never appear in a log. Parse 20 saved sample posts (fixtures with made up names and numbers from `sellos.tests.phones`) and check the parsing, and a test that nothing is collected without an agent action. The capture of real posts is SOS-P6-10L, owned by Jayman.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): the post parser sits behind one capture interface, and the tests feed it saved post fixtures; no test or code path sends a request to Facebook. The capture of real posts by a signed in agent is SOS-P6-10L. "As counsel advises" has no source (SOS-N13 is Not Needed), and whether the assist is a browser extension or a share target is not decided; both are questions in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 7): the poster rule above replaces "as counsel advises". Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 15): a share target and paste, not a browser extension. MUST for 1 January 2027 (Jayman, 27 November 2026). Decided by Jayman, 27 November 2026: built on the official Meta Lead Ads API, with credentials from SOS-INT-1. Group posts are still saved by an agent through the share target and paste above; nothing scrapes Facebook.
+  - Optional, secondary, and it never blocks the rest of this task: Meta Lead Ads. Leads from a company's own Facebook lead forms arrive through the official Meta Lead Ads API and enter the CRM through `sellos.crm.intake` (create or merge, consent evidence kept). Its credentials (app ID, app secret, page access token, page ID) come from the company's Integrations screen (SOS-INT-1) and nothing in the main flow needs them. Meta's lead notification is a provider webhook under the CLAUDE.md webhook rules (signature first with the app secret, replay and order, body cap, rate limit, tenant from the site), registered in `sellos.access.webhooks` and listed in `docs/permissions.md`. If no Meta app exists when the main work is done, this part is left for later and the task still completes.
+- **Test Criteria:** Parse 20 saved sample posts (fixtures with made up names and numbers from `sellos.tests.phones`) and check the parsing, a test that a shared or pasted post becomes a draft listing in the review queue, and a test that nothing is collected without an agent action. The capture of real posts is SOS-P6-10L, owned by Jayman. Optional part: Lead Ads tests through a fake Meta (a valid signed notification creates one lead; an invalid signature, a replay, an out of order and an oversized body write nothing; a company with no keys set gets nothing; the keys never appear in a log).
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): the post parser sits behind one capture interface, and the tests feed it saved post fixtures; no test or code path sends a request to Facebook. The capture of real posts by a signed in agent is SOS-P6-10L. "As counsel advises" has no source (SOS-N13 is Not Needed), and whether the assist is a browser extension or a share target is not decided; both are questions in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 7): the poster rule above replaces "as counsel advises". Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 15): a share target and paste, not a browser extension. MUST for 1 January 2027 (Jayman, 27 November 2026). Decided by Jayman, 27 November 2026: Facebook capture means capturing property posts from Facebook groups to build starting inventory. That is the main job; the Lead Ads part is secondary and optional, needs no Meta app to finish the main work, and uses the credentials from SOS-INT-1 only when it is built. Nothing scrapes Facebook.
 - **Owner:** Claude Code
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 8
-- **Dependencies:** SOS-P6-08, SOS-INT-1
+- **Dependencies:** SOS-P6-08
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -2335,10 +2352,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - A plan defines limits such as users and listings.
   - A subscription links one company to one plan.
 - **Test Criteria:** Unit tests of the records and their relationships.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): SOS-P1-01 already built a Plan stub on the control site (`plan_name`, `enabled`, `max_users`). Tenant links to it, and SOS-P1-02's worker reads it and writes `sellos_limits` into the new site's config (`sellos/provisioning/tenant_setup.py`). This task supersedes the stub: it extends the same Plan DocType, keeps those three fields and their names, and adds the other limits and the prices. Existing Plan records stay, with empty values in the new fields. The worker writes every new limit into `sellos_limits` the same way. SOS-P1-01's and SOS-P1-02's tests (`sellos/provisioning/test_p1_01_control_site.py`, `sellos/provisioning/test_p1_02_worker.py`) are updated where they read a Plan, and the number of assertions in each changed test must not fall. The Coupon record defined here holds the fields SOS-P6-05 needs (type, value, expiry, redemption limit, cycles); SOS-P6-05 adds the rules and does not redefine the fields.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): SOS-P1-01 already built a Plan stub on the control site (`plan_name`, `enabled`, `max_users`). Tenant links to it, and SOS-P1-02's worker reads it and writes `sellos_limits` into the new site's config (`sellos/provisioning/tenant_setup.py`). This task supersedes the stub: it extends the same Plan DocType, keeps those three fields and their names, and adds the other limits and the prices. Existing Plan records stay, with empty values in the new fields. The worker writes every new limit into `sellos_limits` the same way. SOS-P1-01's and SOS-P1-02's tests (`sellos/provisioning/test_p1_01_control_site.py`, `sellos/provisioning/test_p1_02_worker.py`) are updated where they read a Plan, and the number of assertions in each changed test must not fall. The Coupon record defined here holds the fields SOS-P6-05 needs (type, value, expiry, redemption limit, cycles); SOS-P6-05 adds the rules and does not redefine the fields. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-01
 - **Status:** Not Started
@@ -2350,10 +2367,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - A proposal is delivered.
   - The proposed tiers are written to one data file, and a patch loads them as Plan records and can be run again safely, so the values Jayman approves in SOS-P6-02A are loaded by changing that file.
 - **Test Criteria:** A test that the patch loads every tier in the file and that a second run changes nothing. Limit enforcement is tested in SOS-P6-04. Jayman's written approval is SOS-P6-02A.
-- **Notes:** SOS-SETUP-21: read BuildOS code only in the read only reference copy at `~/iespl-baseline/buildos-reference`, with ls, cat, grep and find, and never write into it. Never read, list or run anything under `apps/buildos`. Split by SOS-SETUP-33 (13 November 2026): the proposal and the loader are this task, owned by Claude Code; the approval is SOS-P6-02A, owned by Jayman.
+- **Notes:** SOS-SETUP-21: read BuildOS code only in the read only reference copy at `~/iespl-baseline/buildos-reference`, with ls, cat, grep and find, and never write into it. Never read, list or run anything under `apps/buildos`. Split by SOS-SETUP-33 (13 November 2026): the proposal and the loader are this task, owned by Claude Code; the approval is SOS-P6-02A, owned by Jayman. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 3
 - **Dependencies:** SOS-P0-01
 - **Status:** Not Started
@@ -2399,10 +2416,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Three worked examples with placeholder data: an Indian customer, an overseas customer and a credit note.
   - Every GST item is marked "To be confirmed by the accountant": GSTIN, tax code (SAC), place of supply, the tax split (CGST and SGST, or IGST), the export wording for overseas customers and any reverse charge or zero rating wording. None is invented.
 - **Test Criteria:** A backend test that the spec names every block, that the template holds only placeholders and uses only UI_STYLE tokens, that the financial year in the number is derived from the date at both ends of the year (31 March and 1 April), and that no real PAN, GSTIN or account number is in the repository. The accountant's approval of samples is SOS-P6-06A.
-- **Notes:** Decided by Jayman, 24 November 2026: owner changed from the Accountant to Claude Code, status Not Started, and the dependency on SOS-N14 is removed (N14 is Parked). The accountant confirms the GST fields later, in SOS-P6-06A. SOS-P6-06 builds this format, so it now depends on this task. Jayman's sample invoice is the reference for structure only and is not in the repository.
+- **Notes:** Decided by Jayman, 24 November 2026: owner changed from the Accountant to Claude Code, status Not Started, and the dependency on SOS-N14 is removed (N14 is Parked). The accountant confirms the GST fields later, in SOS-P6-06A. SOS-P6-06 builds this format, so it now depends on this task. Jayman's sample invoice is the reference for structure only and is not in the repository. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P0
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 2
 - **Dependencies:** none
 - **Status:** Not Started
@@ -2416,10 +2433,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Webhook handling is idempotent.
   - Failed payments are recorded.
 - **Test Criteria:** Tests with the fake gateway and recorded Razorpay webhook bodies through creation, renewal, failure, cancellation and a replayed webhook. The sandbox run with real test keys is SOS-P6-03L, owned by Jayman.
-- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. SOS-N14 (the accounts) is now a dependency of the live test SOS-P6-03L, not of this task. Decided by Jayman, 24 November 2026: still built against the fake gateway; SOS-N14 is Parked, so no real keys exist and SOS-P6-03L is Parked.
+- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. SOS-N14 (the accounts) is now a dependency of the live test SOS-P6-03L, not of this task. Decided by Jayman, 24 November 2026: still built against the fake gateway; SOS-N14 is Parked, so no real keys exist and SOS-P6-03L is Parked. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 8
 - **Dependencies:** SOS-P6-01
 - **Status:** Not Started
@@ -2450,10 +2467,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Webhook handling is idempotent.
   - A customer is routed to Stripe or Razorpay by country.
 - **Test Criteria:** Tests with the fake gateway and recorded Stripe webhook bodies through renewal, failure and a replayed webhook, and a routing test. The sandbox run with real test keys is SOS-P6-15L, owned by Jayman.
-- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. Decided by Jayman, 24 November 2026: still built against the fake gateway; SOS-N14 is Parked, so no real keys exist and SOS-P6-15L is Parked.
+- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): It is built and tested against a fake provider behind the adapter interface, as SOS-N21A does with `--fake`. The agent never calls the real provider and never holds a real key. Decided by Jayman, 24 November 2026: still built against the fake gateway; SOS-N14 is Parked, so no real keys exist and SOS-P6-15L is Parked. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 5
 - **Dependencies:** SOS-P6-03
 - **Status:** Not Started
@@ -2484,10 +2501,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Reactivation restores access.
   - Plan limits are enforced.
 - **Test Criteria:** Simulate failure, grace, suspension and recovery in test mode.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): "test mode" means the fake gateway of SOS-P6-03; no test reaches Razorpay or Stripe.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): "test mode" means the fake gateway of SOS-P6-03; no test reaches Razorpay or Stripe. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 8
 - **Dependencies:** SOS-P6-03, SOS-P6-02
 - **Status:** Not Started
@@ -2500,10 +2517,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Expired or used up coupons are refused.
   - Cycle limits are honoured.
 - **Test Criteria:** Unit tests for each coupon rule.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): the Coupon fields are SOS-P6-01's; this task adds the rules only.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): the Coupon fields are SOS-P6-01's; this task adds the rules only. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 3
 - **Dependencies:** SOS-P6-01
 - **Status:** Not Started
@@ -2520,10 +2537,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - No invoice is issued to a real customer until SOS-N15 is Complete. A platform setting, "Invoice format approved", is Off until then; while it is Off an invoice can be previewed and saved as a draft but not issued to a customer.
   - The invoice is an editable template that a Platform Admin changes without a code change.
 - **Test Criteria:** Tests of numbering, the GST lines (CGST and SGST within the state, IGST across states, the overseas treatment from the setting) and credit notes, with sample invoices saved for the accountant. The accountant's approval is SOS-P6-06A.
-- **Notes:** Split by SOS-SETUP-33 (13 November 2026): SOS-N15's own test is that the accountant approves a sample invoice made by this task, so this task cannot wait for SOS-N15. It builds the invoice from a format held in a setting (the seller's GSTIN, the service code, the numbering series, the overseas treatment) and the accountant's approval is SOS-P6-06A, which depends on SOS-N15. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 17): invoices are built as an editable template now, and none is issued to a real customer until SOS-N15 is Complete. SOS-N15's dependency on SOS-N14 is unchanged: the answer did not cover it. Decided by Jayman, 24 November 2026: builds the format specified and designed in SOS-N15 (`docs/INVOICE_FORMAT.md` and `docs/invoice-template/`).
+- **Notes:** Split by SOS-SETUP-33 (13 November 2026): SOS-N15's own test is that the accountant approves a sample invoice made by this task, so this task cannot wait for SOS-N15. It builds the invoice from a format held in a setting (the seller's GSTIN, the service code, the numbering series, the overseas treatment) and the accountant's approval is SOS-P6-06A, which depends on SOS-N15. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 17): invoices are built as an editable template now, and none is issued to a real customer until SOS-N15 is Complete. SOS-N15's dependency on SOS-N14 is unchanged: the answer did not cover it. Decided by Jayman, 24 November 2026: builds the format specified and designed in SOS-N15 (`docs/INVOICE_FORMAT.md` and `docs/invoice-template/`). Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 5
 - **Dependencies:** SOS-P6-01, SOS-N15
 - **Status:** Not Started
@@ -2554,10 +2571,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - The company receives login details.
   - Failed payments do not create a site.
 - **Test Criteria:** An end to end test in test mode from sign up to first login.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): "test mode" means the fake gateway of SOS-P6-03; no test reaches a real gateway. Recording acceptance of the legal terms at sign up is SOS-P6-13C.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): "test mode" means the fake gateway of SOS-P6-03; no test reaches a real gateway. Recording acceptance of the legal terms at sign up is SOS-P6-13C. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 8
 - **Dependencies:** SOS-P6-04, SOS-P1-03
 - **Status:** Not Started
@@ -2628,6 +2645,25 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Dependencies:** SOS-P0-08, SOS-P1-14
 - **Status:** Not Started
 
+
+### SOS-FIX-LISTS: Small fixes to the Site visits, Call queue, Deals, Sellers and list screens
+- **Epic:** Lists and screens
+- **Description:** As an Agent, I want a few wrong or confusing things on the lists corrected, so that the screens read right. Small fixes only, no new design work.
+- **Acceptance Criteria:**
+  - Site visits show the project name, not the internal code (for example PRJ-00510).
+  - The Call queue leaves out leads whose stage is Closed won or Closed lost, and the seeded stage and consent agree with each other.
+  - Deals: the Status column shows the approval date only, with who approved in the tooltip; the partner names column has a little more width; the Commission cell has spacing between its labels and amounts; the demo row "Marine Crest 1201" is named like the others ("Flat 1201, Marine Crest, Thane"); and the "No" split pill has no dotted icon.
+  - Sellers: the "Never" last activity values in the seed are spread out, not all the same.
+  - Lists: the CI 1280 wide check names any list that still scrolls sideways; only what it names is fixed.
+- **Test Criteria:** Backend tests that read back the Call queue filter, the seeded stage and consent, and the seed's names and last activity values; a Cypress spec of the Site visits project name and the Deals Status cell.
+- **Notes:** Added by Jayman, 27 November 2026. Runs after the MUST list. Browser flows are added to `docs/regression/flows.md`, one line each.
+- **Owner:** Claude Code
+- **Priority:** P1
+- **Launch:** Jan 1
+- **Story Points:** 3
+- **Dependencies:** SOS-P6-12
+- **Status:** Not Started
+- **Browser spec:** required
 ### SOS-P6-12D: Run the restore, upgrade and load tests on staging
 - **Epic:** Platform foundations and DevOps
 - **Description:** As Jayman, I want the platform proven under restore, upgrade and load, so that we can onboard other agencies safely. The deploy half of SOS-P6-12: run SOS-P6-12's scripts on staging, a full restore, a rolling upgrade across 20 test sites and a load test at 50 concurrent users.
@@ -2652,10 +2688,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Acceptance is recorded with the user, the company, each text's version and the time, and is never edited.
   - A new version can be added without a code change, and sign ups after it record the new version.
 - **Test Criteria:** A sign up test confirms that acceptance is recorded with the versions, and a Cypress check of the sign up step.
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Decided by Jayman, 24 November 2026: reads the texts, support details and status page link from the Legal and Support section (SOS-P6-18) at sign up; it now depends on SOS-P6-18.
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026). Decided by Jayman, 24 November 2026: reads the texts, support details and status page link from the Legal and Support section (SOS-P6-18) at sign up; it now depends on SOS-P6-18. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 2
 - **Dependencies:** SOS-P6-07, SOS-P6-18
 - **Status:** Not Started
@@ -2704,10 +2740,10 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
   - Until Jayman adds the content, the section shows each text as a draft placeholder, as SOS-P6-13C expects.
   - Only the Platform Admin edits it; sign up reads the current versions.
 - **Test Criteria:** Backend tests of versions, effective dates (the current version on a given date), that a version cannot be edited or deleted, the permission test for every role, and that SOS-P6-13C's read returns the current versions; a Cypress spec of adding a version and the support details.
-- **Notes:** Decided by Jayman, 24 November 2026. SOS-P6-13 stays Waiting for Jayman (and counsel) to add the content; this task is only the place to put it. Expected flow (Jayman, 24 November 2026; the builder adds it to `docs/regression/flows.md` when building the feature, one `FLOW` line each, and does not add flows in advance): 1. As platform_admin, from `/sellos/control/legal`: Sign in. Add a new version of the terms of service with an effective date, then add the support channel, the response targets and the status page link. Expected: The new version is listed as the current one from its date, the earlier version is kept and cannot be edited, and the support details are saved. 2. As company_admin, from `/sellos/control/legal`: Sign in as the gate company admin and type the address of the section. Expected: The page says there is no access.
+- **Notes:** Decided by Jayman, 24 November 2026. SOS-P6-13 stays Waiting for Jayman (and counsel) to add the content; this task is only the place to put it. Expected flow (Jayman, 24 November 2026; the builder adds it to `docs/regression/flows.md` when building the feature, one `FLOW` line each, and does not add flows in advance): 1. As platform_admin, from `/sellos/control/legal`: Sign in. Add a new version of the terms of service with an effective date, then add the support channel, the response targets and the status page link. Expected: The new version is listed as the current one from its date, the earlier version is kept and cannot be edited, and the support details are saved. 2. As company_admin, from `/sellos/control/legal`: Sign in as the gate company admin and type the address of the section. Expected: The page says there is no access. Taken out of the loop by Jayman, 27 November 2026: Launch tier Later, so the loop does not pick it (Pandya is the only company at launch, and the product working as intended comes first).
 - **Owner:** Claude Code
 - **Priority:** P6
-- **Launch:** Jan 1
+- **Launch:** Later
 - **Story Points:** 5
 - **Dependencies:** SOS-P1-01
 - **Status:** Not Started
