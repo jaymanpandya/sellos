@@ -54,6 +54,7 @@ const SetupWizardPage = () => import("./pages/SetupWizardPage.vue");
 const ClientOverviewPage = () => import("./pages/ClientOverviewPage.vue");
 const ClientShortlistsPage = () => import("./pages/ClientShortlistsPage.vue");
 const ClientShortlistPage = () => import("./pages/ClientShortlistPage.vue");
+const NotFoundPage = () => import("./pages/NotFoundPage.vue");
 const NoAccessPage = () => import("./pages/NoAccessPage.vue");
 const GalleryPage = () => import("./pages/GalleryPage.vue");
 
@@ -391,12 +392,19 @@ export function createAppRouter() {
 				component: NoAccessPage,
 				meta: { area: "home", title: "No access" },
 			},
+			// SOS-FIX-1: any other path under the base shows the page not found screen, for every role.
+			{
+				path: "/:pathMatch(.*)*",
+				name: "not-found",
+				component: NotFoundPage,
+				meta: { area: "home", title: "Page not found" },
+			},
 		],
 	});
 
 	// Every route belongs to an area. A signed in user may only open the areas of their persona.
 	router.beforeEach(async (to) => {
-		if (to.name === "no-access") return true;
+		if (to.name === "no-access" || to.name === "not-found") return true;
 		const persona = personaFor(session.roles);
 		if (!persona || !inAreas(persona, routeArea(to))) return { name: "no-access" };
 		// SOS-P7-01: a partner whose firm is not Approved works nowhere but the page that says why.

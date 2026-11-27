@@ -174,6 +174,8 @@ watch(
 onMounted(async () => {
 	slide();
 	if (hasWhatsApp.value) refreshWhatsAppCount();
+	// SOS-FIX-1: a person with no SellOS role has no sections and may not call the method (403).
+	if (!personaFor(session.roles)) return;
 	try {
 		for (const key of await loadNavState()) closed[key] = true;
 		slide();
