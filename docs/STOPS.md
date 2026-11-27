@@ -59,3 +59,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-23 11:33 | SOS-P5-05 | needs-input | SOS-P5-05 says sellers see "enquiries on their property". I can't build that from what exists, and it exposes buyers' personal data to sellers, so I need your decision first. I changed nothing and le… | 0 | 2.3 |
 | 2026-11-23 20:16 | SOS-P3-04 | blocked | the gate still failed after 2 gate run(s): CHANGED SPEC FAILED: intel/market_master.cy.js; the loop went on to the next task | 31 | 0.0 |
 | 2026-11-23 22:22 | SOS-P3-12 | environment | CI red on 57a08fa (the commit for SOS-P3-12) for a reason outside the code, still red after one rerun: the log of CI run 45271926169 was still not readable after 1800s | 125 | 76.0 |
+| 2026-11-27 03:19 | SOS-N21B | push-failed | the push failed after every retry | 57 | 0.2 |
