@@ -61,3 +61,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-23 22:22 | SOS-P3-12 | environment | CI red on 57a08fa (the commit for SOS-P3-12) for a reason outside the code, still red after one rerun: the log of CI run 45271926169 was still not readable after 1800s | 125 | 76.0 |
 | 2026-11-27 03:19 | SOS-N21B | push-failed | the push failed after every retry | 57 | 0.2 |
 | 2026-11-27 03:54 | SOS-INT-1 | push-failed | the push failed after every retry | 21 | 0.7 |
+| 2026-11-27 06:48 | SOS-FIX-1 | push-failed | the push of CI repair attempt 1 failed after every retry | 135 | 0.1 |
