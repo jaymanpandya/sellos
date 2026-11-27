@@ -60,3 +60,4 @@ second timeout stops the loop with the category `gate timeout`. A timeout is nev
 | 2026-11-23 20:16 | SOS-P3-04 | blocked | the gate still failed after 2 gate run(s): CHANGED SPEC FAILED: intel/market_master.cy.js; the loop went on to the next task | 31 | 0.0 |
 | 2026-11-23 22:22 | SOS-P3-12 | environment | CI red on 57a08fa (the commit for SOS-P3-12) for a reason outside the code, still red after one rerun: the log of CI run 45271926169 was still not readable after 1800s | 125 | 76.0 |
 | 2026-11-27 03:19 | SOS-N21B | push-failed | the push failed after every retry | 57 | 0.2 |
+| 2026-11-27 03:54 | SOS-INT-1 | push-failed | the push failed after every retry | 21 | 0.7 |
