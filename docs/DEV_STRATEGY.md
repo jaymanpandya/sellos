@@ -246,6 +246,8 @@ Copy BuildOS's `scripts/build-loop.sh` and change only these things. Do not rety
    the loop without starting a new task.
 7. Run beside the BuildOS loop (SOS-SETUP-20). Nothing in the loop waits for BuildOS; only the gate's heavy segment takes the shared bench gate lock. The agent prompt says the shared environment is not the agent's to change: no pip install, no npm install -g, no bench update, no bench setup, no bench get-app, no install-app on any site but `sellos_test.localhost` and `sellos_tenant_*.localhost`, nothing under `apps/buildos` read, listed or run (BuildOS code is read only in `~/iespl-baseline/buildos-reference`, section 10), and the server on 8000 and the sites pamaa and awh left alone. At its start the loop checks the installed lock helper against `scripts/shared/bench-gate-lock.sh` and runs `scripts/refresh-buildos-reference.sh` once (SOS-SETUP-21).
 
+8. Any change to `scripts/build-loop.sh` or anything under `scripts/lib/` runs every test that runs `build-loop.sh` before it is pushed (CI run 45944697725: a new `lib/push_retry.sh` was sourced by the loop but missing from the throwaway repository, so 36 loop tests failed on CI while the author ran only the new module). Find them with `grep -l build-loop.sh sellos/tests/*.py` (test_stop_ledger, test_loop_environment_failures, test_loop_pause, test_loop_push_rebase, test_loop_repair_context, test_ci_red_repair, test_gate_watchdog, test_commit_message and the others the grep lists). A new file the loop sources or runs is also added to the sandbox's copy list in `test_loop_environment_failures.py`.
+
 ## 6. Personal data
 
 Every DocType that holds a phone number, an email address or a name of a person is tested like this

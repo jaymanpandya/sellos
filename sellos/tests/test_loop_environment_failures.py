@@ -251,7 +251,16 @@ class LoopSandbox(Sandbox):
 		)
 		self.write(self.bench / "apps/buildos/buildos/hooks.py", "app_name = 'buildos'\n")
 		# SOS-SETUP-33: the loop records every stop in docs/STOPS.md with lib/stops.py.
-		for name in ("tasks.py", "db_secrets.sh", "stops.py", "commit_message.py", "gate_watch.py"):
+		# SOS-LOOP: build-loop.sh sources lib/push_retry.sh before its first task, so the sandbox has it.
+		# Without it the real loop exits early and prints nothing.
+		for name in (
+			"tasks.py",
+			"db_secrets.sh",
+			"stops.py",
+			"commit_message.py",
+			"gate_watch.py",
+			"push_retry.sh",
+		):
 			shutil.copy2(SCRIPTS / "lib" / name, self.repo / "scripts" / "lib" / name)
 		self.write(self.repo / "scripts/run-tests.sh", FAKE_GATE, 0o755)
 		self.write(self.repo / "scripts/notify-telegram.sh", FAKE_NOTIFY, 0o755)
