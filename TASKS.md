@@ -1319,6 +1319,101 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Dependencies:** SOS-P4-08
 - **Status:** Waiting
 
+### SOS-WA-1: Build the WhatsApp flow engine
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As a Company Admin, I want every WhatsApp bot to run on one flow engine, so that the bots SellOS ships and the ones my company builds run on the same data. A flow is stored data, never code: a graph of steps, per company, versioned (Draft and Published). Build the data model, the runner and the triggers. The ten approved bots (SOS-P6-16, SOS-P6-17) are authored as flows in this engine; no bot is separate code.
+- **Acceptance Criteria:**
+  - DocTypes (code, never created in the Desk): Flow (company owned, name, status, kill switch), Flow Version (the step graph as JSON, Draft or Published, number, who and when), Flow Run (one per conversation and flow, state, current step, collected answers), Flow Run Event (one row per step taken, for the run log). Nothing is deleted: a flow is archived (CRM data rule).
+  - Step types, each with a schema the engine validates on save: trigger (inbound keyword or intent, button or list reply, new lead from a form or portal, schedule, stage change, mandate expiry); send message (text, image, document, location); send approved template; ask a question (free text, buttons, list) that saves the answer to a named lead field; branch on a condition; wait (a time, or a reply); create or update a lead, task, site visit or follow up; assign to an agent or team; hand off to a human with the conversation as context; end. The AI step type is registered here and built by SOS-WA-3.
+  - The runner takes an inbound message or an event, finds the one published version of each matching flow for that company, and runs steps until it must wait or end. Runs resume on the next inbound message or when a wait or schedule is due, through a function a test can call directly. An unknown step, a missing branch or a graph cycle that never waits fails the run with a plain reason, never a crash.
+  - Exactly one Published version per flow; a Draft is never run by a real conversation. Publishing and roll back (publish an older version again) are methods here, used by the builder (SOS-WA-7).
+  - Every company has its own flows. Flows, runs and answers never cross a site. No company name, city, project, price or phone number appears in the engine code; the ten bots' text lives in flow data.
+  - Every method is whitelisted and declares its roles (`@sellos_api`). Company Admin builds, edits and publishes. Sales Manager can view flows and run the test panel, and edits nothing. Agents, Clients, Channel Partners and the Platform Admin cannot open or edit flows. All of it is in the permission test matrix and `docs/permissions.md`.
+  - Runs read and write leads, tasks, site visits and follow ups only through the existing CRM functions, so consent, masking and assignment rules apply as they do everywhere. Inbound and outbound messages go through the SOS-P6-11 channel and its consent function.
+- **Test Criteria:** Engine unit tests with saved provider payloads and the fake provider: each step type; a trigger match for every trigger kind; a run that waits and resumes; an unknown step and a cycle failing safely; one Published version only, and roll back; the roles (Company Admin edits, Sales Manager reads, an agent is refused, no other company's flow is visible); no DocType is created outside the app code. No test calls Meta.
+- **Notes:** Split into the engine (this task), its rules (SOS-WA-2) and the AI step (SOS-WA-3) to keep each within 8 points. The step schemas are the contract the builder (SOS-WA-4) edits. Decided by Jayman, 27 November 2026: WhatsApp AI bots and a visual workflow builder, one flow engine for every company, nothing hard coded to Pandya. Design and order are in `docs/whatsapp/ENGINE.md`. No test calls Meta or a language model: the tests use saved provider payloads, the fake provider of SOS-P6-11 and a fake model. The live test is SOS-P6-11L, owned by Jayman, once SOS-INT-1's WhatsApp card holds the keys. MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 8
+- **Dependencies:** SOS-P6-11, SOS-P1-25, SOS-P2-04, SOS-INT-1
+- **Status:** Not Started
+
+### SOS-WA-2: Enforce the WhatsApp rules in the flow engine
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As Jayman, I want the safety rules enforced inside the engine for every flow, so that no flow, built by SellOS or by a company, can break them. The rules live in one place in the send path, not in each flow.
+- **Acceptance Criteria:**
+  - WhatsApp STOP: a STOP always suppresses everything the engine sends unprompted to that person (bot, campaigns, partner digests, nurture, schedules), whatever 'Consent enforcement' says. One confirmation reply, a task for the assigned advisor, the opt out in the consent log, red warning on the lead. The person can still write to us and get replies to their own messages until they opt in again (CLAUDE.md decision 7, 24 November 2026). It reuses SOS-P6-11's rule; it does not copy it.
+  - Meta's 24 hour window: free text, images, documents and locations are sent only inside 24 hours of the person's last inbound message; outside it only an approved template is sent. A step that would send free text outside the window is not sent: the run records it and takes the template fallback if the step has one, otherwise waits for the next inbound message. The window check is computed from stored message times, never from the flow.
+  - Calling hours and do not call flags: any step that creates a call task or schedules a call respects the company's configurable calling hours and the do not call flag. Consent never blocks a call or an SMS (decision 7): a consent status is recorded and shown as a warning only. Consent enforcement (Off by default) stays the one function behind the company setting.
+  - Rate limits per number (messages per minute and per day, configurable per company with safe defaults) and loop protection (a run that sends more than a set number of messages, visits one step too often, or answers a bot message with a bot message is stopped, logged and handed to a human).
+  - Kill switch per flow and per company: Off stops new runs at once and ends running ones at their next step with a logged reason. A Company Admin can use it; it is audited (who, when).
+  - Opt out, window, rate and loop results are written to the Flow Run Event row of the step, so the run log (SOS-WA-7) explains every refusal.
+  - A static checker, used by the builder (SOS-WA-5), reports which steps of a graph would break the 24 hour rule so the warning and the engine agree.
+- **Test Criteria:** Unit tests with saved payloads: STOP then an unprompted send suppressed, a reply to the person's own message still sent, the confirmation, the advisor task and the log entry; a free text step at 23h59 sent and at 24h01 refused with the template fallback taken; calling hours and the do not call flag on a call task; consent status never blocks a call task or an SMS; rate limit and loop protection stop a run; the kill switch for a flow and for the company; the checker and the engine agree on the same graphs. No test calls Meta.
+- **Notes:** The rules are in the engine, so a flow edited in the builder cannot turn them off. Touches consent: follows decision 7 exactly, nothing new decided. Decided by Jayman, 27 November 2026: WhatsApp AI bots and a visual workflow builder, one flow engine for every company, nothing hard coded to Pandya. Design and order are in `docs/whatsapp/ENGINE.md`. No test calls Meta or a language model: the tests use saved provider payloads, the fake provider of SOS-P6-11 and a fake model. The live test is SOS-P6-11L, owned by Jayman, once SOS-INT-1's WhatsApp card holds the keys. MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 8
+- **Dependencies:** SOS-WA-1
+- **Status:** Not Started
+
+### SOS-WA-3: Build the AI step and the per company AI model
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As a Company Admin, I want a flow step that answers or classifies with AI using only my company's instruction and data, so that a bot can talk like my business without making things up. The model is chosen per company.
+- **Acceptance Criteria:**
+  - The AI step takes an instruction the Company Admin writes, the allowed data (named fields of the lead and named company records) and a task (answer, or classify into a fixed list of labels that the flow branches on). It sends nothing but that instruction, the allowed data and the conversation to the model, through one adapter interface.
+  - The AI step never invents prices, availability or legal advice: it may quote only a price or availability that the flow passes in as data, and any question about price, availability, legal or RERA that it has no data for is answered with a fixed safe reply and handed to a human. A checker on the reply refuses a number that was not in the data.
+  - The model is a per company setting on the Integrations screen of SOS-INT-1 (a new 'AI model' card: provider key in an encrypted field, model name, Test connection against a fake provider in tests). The default model follows the SOS-N21B result when Jayman runs it; until then the default is Claude Haiku 5.5 (`claude-haiku-5-5`), as the brain of the WhatsApp bots is Claude (`docs/whatsapp/README.md`). No key is in code, a log or a fixture.
+  - A failed, slow or empty model call never breaks a run: the step takes its fallback path (a fixed reply or a human handoff) and logs the reason.
+  - Every AI step run is logged in the run log with the instruction version, the data fields passed (names, not phone numbers) and the label chosen. Personal data is masked as for an Agent.
+- **Test Criteria:** Unit tests with a fake model that returns scripted replies: an answer inside the data; a price not in the data refused and handed off; a legal question handed off; classification into labels and the branch taken; a model failure taking the fallback; the model setting saved per company and read back, the key masked ('Saved, ending xxxx'); only a Company Admin may change it. The design system checker passes for the new card. No test calls a real model.
+- **Notes:** The tests never call a language model. SOS-N21B is Launch Later; this task does not wait for it. Decided by Jayman, 27 November 2026: WhatsApp AI bots and a visual workflow builder, one flow engine for every company, nothing hard coded to Pandya. Design and order are in `docs/whatsapp/ENGINE.md`. No test calls Meta or a language model: the tests use saved provider payloads, the fake provider of SOS-P6-11 and a fake model. The live test is SOS-P6-11L, owned by Jayman, once SOS-INT-1's WhatsApp card holds the keys. MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 5
+- **Dependencies:** SOS-WA-1, SOS-WA-2
+- **Status:** Not Started
+- **Browser spec:** required
+
+### SOS-P6-16: Rebuild WhatsApp flows, group one
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As an Agent, I want the lead qualification, NRI buyer and investor flows, so that WhatsApp enquiries are qualified automatically. Author these flows in the flow engine of SOS-WA-1 from the designs in `docs/whatsapp/`: flows are stored data, never bot code. Each flow asks its questions, scores the lead and hands over to an agent when needed. This story and SOS-P6-17 were split out of the original rebuild task to keep each within 8 points.
+- **Acceptance Criteria:**
+  - Each flow is a Flow with a Published version in the engine (SOS-WA-1), authored as data in fixture files the builder can open. There is no bot code outside the engine.
+  - Each flow runs end to end.
+  - Answers are stored on the lead.
+  - Handoff works from each flow.
+  - Each flow records the lead's consent status and shows its warning to the agent, and never stops a call or an SMS on consent. Consent never blocks a call or SMS (Jayman, 10 November 2026); a WhatsApp STOP stops everything sent unprompted, with one confirmation reply, an advisor task and a consent log entry, and the person can still write to us and get replies (Jayman, 24 November 2026).
+- **Test Criteria:** Scripted conversations through each flow, run by the engine with the fake WhatsApp provider of SOS-P6-11 and a fake model, using saved provider payloads and the scripted conversations in each `docs/whatsapp/` file.
+- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): tested with SOS-P6-11's fake provider; the real number is SOS-P6-11L. Where "the existing WhatsApp CRM designs" are is a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if they are not in the repository when this task starts. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 14): Meta's Cloud API directly, behind the adapter; Jayman holds the Meta business account and does the business verification; Jayman puts the flow designs and the list of the ten flows in `docs/whatsapp/` (SOS-N23); "the agent's calendar" means Site Visit records. Changed by Jayman, 24 November 2026: depends only on SOS-N23 (the designs), not on business verification. The flows of this group are flows 1 to 5 in `docs/whatsapp/README.md`. MUST for 1 January 2027 (Jayman, 27 November 2026). Changed by Jayman, 27 November 2026: the bots are authored as flows in the one engine (SOS-WA-1 to SOS-WA-3), so the builder (SOS-WA-4 on) edits the data they run on; the engine enforces the STOP and 24 hour rules, so this task does not. Order: right after SOS-P3-04. SOS-N23 must be Complete (Jayman reviews `docs/whatsapp/`) before this task can be picked.
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 8
+- **Dependencies:** SOS-P6-11, SOS-N23, SOS-WA-1, SOS-WA-2, SOS-WA-3
+- **Status:** Not Started
+
+### SOS-P6-17: Rebuild WhatsApp flows, group two
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As an Agent, I want the site visit booking, cold lead nurture, human handoff and remaining flows, so that WhatsApp supports the whole journey. Author the remaining flows in the flow engine of SOS-WA-1 from the designs in `docs/whatsapp/`, as stored data and not bot code, including booking site visits into the agent's calendar and nurture messages for cold leads recording each lead's consent status.
+- **Acceptance Criteria:**
+  - Each flow is a Flow with a Published version in the engine (SOS-WA-1), authored as data in fixture files the builder can open. There is no bot code outside the engine.
+  - Site visits are booked from WhatsApp.
+  - Nurture messages go through the consent function of SOS-P2-04 and record each lead's consent status and warning. A WhatsApp STOP is recorded as Opted out with a red warning and suppresses every nurture message, and anything else unprompted, until the person opts in again; the person can still write to us and get replies. Consent never blocks calls or SMS (Jayman, 10 November 2026; restated 24 November 2026).
+  - Handoff passes the full conversation.
+  - All ten flows are live.
+- **Test Criteria:** Scripted conversations through each flow, run by the engine with the fake WhatsApp provider of SOS-P6-11 and a fake model, using saved provider payloads, including an opt out (no nurture message after a STOP, a reply to the person's own message still sent).
+- **Notes:** Added by SOS-SETUP-33 (13 November 2026): tested with SOS-P6-11's fake provider. The "remaining flows" and the ten flows are not listed anywhere, and "the agent's calendar" is taken to be the Site Visit record; both are in the WhatsApp question in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 14): Meta's Cloud API directly, behind the adapter; Jayman holds the Meta business account and does the business verification; Jayman puts the flow designs and the list of the ten flows in `docs/whatsapp/` (SOS-N23); "the agent's calendar" means Site Visit records. Dependencies SOS-P1-25 added by SOS-SETUP-35 (13 November 2026): the core CRM comes before what uses it. Changed by Jayman, 24 November 2026: depends only on SOS-N23 (the designs), not on business verification. The flows of this group are flows 6 to 10 in `docs/whatsapp/README.md`. Site visit booking is flow 5, in SOS-P6-16's group, which differs from the wording of this task's description; the README lists the split. Restated by Jayman, 24 November 2026: after a WhatsApp STOP no nurture or other unprompted message is sent (see SOS-P6-11). MUST for 1 January 2027 (Jayman, 27 November 2026). Changed by Jayman, 27 November 2026: authored as flows in the one engine (SOS-WA-1 to SOS-WA-3); the engine enforces the STOP rule, so this task does not. Order: right after SOS-P6-16, which is right after SOS-P3-04.
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 8
+- **Dependencies:** SOS-P6-11, SOS-N23, SOS-P1-25, SOS-WA-1, SOS-WA-2, SOS-WA-3, SOS-P6-16
+- **Status:** Not Started
+
 ### SOS-P4-11: Build campaign forms in the web app
 - **Epic:** Inventory, mandates and deals
 - **Description:** As a Company Admin, I want to build a form for each campaign and copy it onto my website, so that every campaign's leads arrive tagged. Build a Campaign Form record and its builder screen in the SellOS web app.
@@ -1723,39 +1818,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Dependencies:** SOS-P6-11, SOS-P0-06D, SOS-N23V
 - **Status:** Waiting
 
-### SOS-P6-16: Rebuild WhatsApp flows, group one
-- **Epic:** Listing sources and WhatsApp
-- **Description:** As an Agent, I want the lead qualification, NRI buyer and investor flows, so that WhatsApp enquiries are qualified automatically. Rebuild these flows from the existing WhatsApp CRM designs inside SellOS. Each flow asks its questions, scores the lead and hands over to an agent when needed. This story and SOS-P6-17 were split out of the original rebuild task to keep each within 8 points.
-- **Acceptance Criteria:**
-  - Each flow runs end to end.
-  - Answers are stored on the lead.
-  - Handoff works from each flow.
-  - Each flow records the lead's consent status and shows its warning to the agent, and never stops a call or an SMS on consent. Consent never blocks a call or SMS (Jayman, 10 November 2026); a WhatsApp STOP stops everything sent unprompted, with one confirmation reply, an advisor task and a consent log entry, and the person can still write to us and get replies (Jayman, 24 November 2026).
-- **Test Criteria:** Scripted conversations through each flow with the fake WhatsApp provider of SOS-P6-11.
-- **Notes:** Changed by SOS-SETUP-33 (13 November 2026): tested with SOS-P6-11's fake provider; the real number is SOS-P6-11L. Where "the existing WhatsApp CRM designs" are is a question in `docs/BACKLOG_AUDIT.md`; reply NEEDS_INPUT if they are not in the repository when this task starts. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 14): Meta's Cloud API directly, behind the adapter; Jayman holds the Meta business account and does the business verification; Jayman puts the flow designs and the list of the ten flows in `docs/whatsapp/` (SOS-N23); "the agent's calendar" means Site Visit records. Changed by Jayman, 24 November 2026: depends only on SOS-N23 (the designs), not on business verification. The flows of this group are flows 1 to 5 in `docs/whatsapp/README.md`.
-- **Owner:** Claude Code
-- **Priority:** P6
-- **Launch:** Jan 1
-- **Story Points:** 8
-- **Dependencies:** SOS-P6-11, SOS-N23
-- **Status:** Not Started
 
-### SOS-P6-17: Rebuild WhatsApp flows, group two
-- **Epic:** Listing sources and WhatsApp
-- **Description:** As an Agent, I want the site visit booking, cold lead nurture, human handoff and remaining flows, so that WhatsApp supports the whole journey. Rebuild the remaining flows from the existing designs, including booking site visits into the agent's calendar and nurture messages for cold leads recording each lead's consent status.
-- **Acceptance Criteria:**
-  - Site visits are booked from WhatsApp.
-  - Nurture messages go through the consent function of SOS-P2-04 and record each lead's consent status and warning. A WhatsApp STOP is recorded as Opted out with a red warning and suppresses every nurture message, and anything else unprompted, until the person opts in again; the person can still write to us and get replies. Consent never blocks calls or SMS (Jayman, 10 November 2026; restated 24 November 2026).
-  - Handoff passes the full conversation.
-  - All ten flows are live.
-- **Test Criteria:** Scripted conversations through each flow with the fake WhatsApp provider of SOS-P6-11, including an opt out (no nurture message after a STOP, a reply to the person's own message still sent).
-- **Notes:** Added by SOS-SETUP-33 (13 November 2026): tested with SOS-P6-11's fake provider. The "remaining flows" and the ten flows are not listed anywhere, and "the agent's calendar" is taken to be the Site Visit record; both are in the WhatsApp question in `docs/BACKLOG_AUDIT.md`. Decided by Jayman (SOS-SETUP-34, 13 November 2026, question 14): Meta's Cloud API directly, behind the adapter; Jayman holds the Meta business account and does the business verification; Jayman puts the flow designs and the list of the ten flows in `docs/whatsapp/` (SOS-N23); "the agent's calendar" means Site Visit records. Dependencies SOS-P1-25 added by SOS-SETUP-35 (13 November 2026): the core CRM comes before what uses it. Changed by Jayman, 24 November 2026: depends only on SOS-N23 (the designs), not on business verification. The flows of this group are flows 6 to 10 in `docs/whatsapp/README.md`. Site visit booking is flow 5, in SOS-P6-16's group, which differs from the wording of this task's description; the README lists the split. Restated by Jayman, 24 November 2026: after a WhatsApp STOP no nurture or other unprompted message is sent (see SOS-P6-11).
-- **Owner:** Claude Code
-- **Priority:** P6
-- **Launch:** Jan 1
-- **Story Points:** 8
-- **Dependencies:** SOS-P6-11, SOS-N23, SOS-P1-25
-- **Status:** Not Started
 
 ### SOS-P5-01: Build the report engine
 - **Epic:** Reporting
@@ -2254,6 +2317,99 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Dependencies:** SOS-P3-05, SOS-P3-01L, SOS-P3-04A
 - **Status:** Waiting
 
+### SOS-WA-4: Build the visual flow builder canvas
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As a Company Admin, I want to draw my own WhatsApp workflow on a canvas, so that I build bots without a developer. A canvas in the SellOS web app (Vue Flow or similar, an addition to the frontend only, never `pip install` or a global install) with draggable steps and connections, a side panel to edit a step, and template and field pickers. It edits the same Flow Version data the engine runs.
+- **Acceptance Criteria:**
+  - A Flows list (Company Admin: edit; Sales Manager: view) and a flow page with the canvas: drag a step from a palette, connect steps, move and delete them, zoom and fit.
+  - A side panel edits the selected step from its schema (SOS-WA-1): text and media, the question and its answer field, branch conditions, wait times, the lead, task, site visit and follow up fields, the team or agent, the handoff note. A step's fields are checked as they are typed.
+  - Pickers: an approved WhatsApp template picker (name, language, variables) and a lead and CRM field picker. Nothing is typed by hand where a picker can offer the real list.
+  - Saving writes a Draft version; a Draft never runs. Nothing the builder edits can turn off an engine rule.
+  - Only a Company Admin can change anything; a Sales Manager sees the canvas read only. An agent never reaches the page: no menu entry, and the method refuses.
+  - Built from the shared components in `frontend/src/components` and `docs/UI_STYLE.md`; no raw controls, no colours or sizes of its own. Works on a laptop screen. New flows are listed in `docs/regression/flows.md`.
+- **Test Criteria:** Component tests of the canvas (add, connect, move, delete, edit a step) and of the pickers; permission tests of the methods (Company Admin edits, Sales Manager reads, an agent refused); `scripts/check-guards.sh` passes; a Cypress spec of opening the builder, adding two steps, connecting them and saving a Draft, with its flow in `docs/regression/flows.md`.
+- **Notes:** The canvas library is added to `frontend/package.json` in the app repository, in the loop's own frontend build, never to the shared environment. The tests use saved step data, no live Meta call. Decided by Jayman, 27 November 2026: WhatsApp AI bots and a visual workflow builder, one flow engine for every company, nothing hard coded to Pandya. Design and order are in `docs/whatsapp/ENGINE.md`. No test calls Meta or a language model: the tests use saved provider payloads, the fake provider of SOS-P6-11 and a fake model. The live test is SOS-P6-11L, owned by Jayman, once SOS-INT-1's WhatsApp card holds the keys. MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 8
+- **Dependencies:** SOS-WA-1, SOS-WA-2, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11
+- **Status:** Not Started
+- **Browser spec:** required
+
+### SOS-WA-5: Validate a flow in the builder
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As a Company Admin, I want the builder to tell me what is wrong before I publish, so that a flow never dead ends or breaks Meta's rules.
+- **Acceptance Criteria:**
+  - Validation runs on every save and before publish and shows each problem on the step it belongs to, with a plain fix: a dead end (a step with no way on and no End or handoff), a missing branch (a condition or a button with no path), an unreachable step, a cycle with no wait, a question with no answer field, a template with an unfilled variable.
+  - The 24 hour rule warning: a step that would send free text outside the window (for example after a wait longer than 24 hours, or a schedule trigger that starts with free text) is marked and the fix offered (switch it to an approved template). It uses the checker of SOS-WA-2, so the warning and the engine agree.
+  - A flow with an error cannot be published. A warning can be published past, with the reason shown in the run log.
+  - A flow that calls or sends unprompted shows the STOP, calling hours and rate limit rules as read only notes, so nobody thinks they are optional.
+- **Test Criteria:** Unit tests of the validator on saved graphs: each error kind, each warning, the 24 hour case agreeing with the engine checker, a clean graph passing, publish refused on an error; a component test that problems appear on the right step; a Cypress check that a dead end is shown and then fixed.
+- **Notes:** The validator lives on the server so the same rules apply to a flow built by an API call, and the canvas only displays them. Decided by Jayman, 27 November 2026: WhatsApp AI bots and a visual workflow builder, one flow engine for every company, nothing hard coded to Pandya. Design and order are in `docs/whatsapp/ENGINE.md`. No test calls Meta or a language model: the tests use saved provider payloads, the fake provider of SOS-P6-11 and a fake model. The live test is SOS-P6-11L, owned by Jayman, once SOS-INT-1's WhatsApp card holds the keys. MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 5
+- **Dependencies:** SOS-WA-4
+- **Status:** Not Started
+- **Browser spec:** required
+
+### SOS-WA-6: Build the flow test panel
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As a Company Admin or Sales Manager, I want to try a flow against a pretend conversation, so that I see what it does before any customer does. The panel runs the Draft or Published flow in a simulator and sends nothing.
+- **Acceptance Criteria:**
+  - A test panel beside the canvas: type as the customer (text, a button or list reply, a STOP, an image), choose the simulated time (inside or outside the 24 hour window), the lead's consent status and the lead's fields, and see each bot reply, the step highlighted on the canvas, the answers saved and the records that would be created.
+  - Nothing is sent: the simulator uses a fake provider and a fake model, writes no lead, task, site visit, follow up, consent record or message, and never reaches Meta or a model. A test can prove it by counting calls to the provider adapter, which must be zero.
+  - The simulator runs the real engine and its rules (STOP, window, calling hours, rate limit, loop protection), so what the panel shows is what a customer would get. A simulated STOP shows the confirmation, the advisor task that would be made and the suppression.
+  - Company Admin and Sales Manager can open the panel; an agent cannot. A simulated run is kept in the run log marked Test, apart from real conversations.
+- **Test Criteria:** Unit tests: a scripted simulated conversation through a flow with the provider call count zero and no record written; a simulated STOP and the 24 hour window behaving as the engine does; the roles; a Test run marked and separate. A Cypress spec of typing a message in the panel and seeing the reply and the highlighted step.
+- **Notes:** Uses the engine's dry run mode, not a copy of the engine. Decided by Jayman, 27 November 2026: WhatsApp AI bots and a visual workflow builder, one flow engine for every company, nothing hard coded to Pandya. Design and order are in `docs/whatsapp/ENGINE.md`. No test calls Meta or a language model: the tests use saved provider payloads, the fake provider of SOS-P6-11 and a fake model. The live test is SOS-P6-11L, owned by Jayman, once SOS-INT-1's WhatsApp card holds the keys. MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 5
+- **Dependencies:** SOS-WA-4, SOS-WA-2
+- **Status:** Not Started
+- **Browser spec:** required
+
+### SOS-WA-7: Build versions, publish, roll back and the run log
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As a Company Admin, I want to publish a flow safely, go back to an earlier version and see exactly what a flow did in a conversation, so that I can trust it.
+- **Acceptance Criteria:**
+  - Versions: a list of a flow's versions (number, Draft or Published, who, when, a note). Publish makes a Draft the one live version and keeps the old one; Roll back publishes an earlier version again as a new version. A running conversation finishes on the version it started on. Every publish and roll back is audited.
+  - Publish asks for a confirmation that shows the validation result (SOS-WA-5) and refuses when there is an error. Only a Company Admin can publish or roll back; a Sales Manager sees the versions; an agent sees nothing.
+  - A kill switch toggle per flow on the flow page (the engine's, SOS-WA-2), with its state and who last changed it.
+  - A run log per conversation: each flow run with its steps in order (what was sent, what the person answered, the branch taken, the AI step label, each refusal and its reason: STOP, window, rate limit, loop, kill switch), filterable by flow, by lead and by Test or real. A lead's page links to its runs. Phone numbers are masked as for an Agent, except for a Company Admin.
+  - The run log is read only and nothing in it is deleted.
+- **Test Criteria:** Unit tests: publish keeps one live version, roll back, a running conversation staying on its version, a publish refused on a validation error, the audit rows, the roles, the log showing refusal reasons and masking phones for a non Company Admin. A Cypress spec of building a simple flow (a welcome message that asks one question and ends), publishing it, sending a simulated message and reading the run log, with its flow in `docs/regression/flows.md` and the seed data in `seed_regression_data`.
+- **Notes:** This task carries the Cypress spec of building and publishing a simple flow that Jayman asked for. Decided by Jayman, 27 November 2026: WhatsApp AI bots and a visual workflow builder, one flow engine for every company, nothing hard coded to Pandya. Design and order are in `docs/whatsapp/ENGINE.md`. No test calls Meta or a language model: the tests use saved provider payloads, the fake provider of SOS-P6-11 and a fake model. The live test is SOS-P6-11L, owned by Jayman, once SOS-INT-1's WhatsApp card holds the keys. MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 5
+- **Dependencies:** SOS-WA-4, SOS-WA-5, SOS-WA-6
+- **Status:** Not Started
+- **Browser spec:** required
+
+### SOS-WA-8: Ship the starter workflows
+- **Epic:** Listing sources and WhatsApp
+- **Description:** As a Company Admin, I want to start from the ten SellOS bots and copy one to change, so that I do not begin with a blank canvas. The ten approved bots, authored as flows by SOS-P6-16 and SOS-P6-17, appear as starter workflows in the builder.
+- **Acceptance Criteria:**
+  - A Starter workflows gallery lists the ten flows (`docs/whatsapp/README.md`) with a plain description of each. Use this starter copies it into the company's own flows as a Draft the company edits; the starter itself is never edited by a company and is never run for a company until that company publishes its copy.
+  - The starters are the same flow data the engine runs, loaded from fixture files in the app. A test fails if a starter is not valid in the validator (SOS-WA-5) or if the bots' data differs from what SOS-P6-16 and SOS-P6-17 run.
+  - Starter text contains no Pandya name, project, price or number: a company fills in its own values in the copy. Loading starters is safe to run again.
+  - A new company gets the starters on provisioning without any of them being live.
+- **Test Criteria:** Unit tests: each starter validates; copying one creates a Draft owned by the company and leaves the starter unchanged; no company name in the starter files (a grep test); running again loads nothing twice; the roles. A Cypress spec of copying a starter and seeing it open in the canvas.
+- **Notes:** The ten bots are the reuse of SOS-P6-16, SOS-P6-17 and SOS-N23. SOS-P6-08 depends on this task so the scraper comes after the builder. Decided by Jayman, 27 November 2026: WhatsApp AI bots and a visual workflow builder, one flow engine for every company, nothing hard coded to Pandya. Design and order are in `docs/whatsapp/ENGINE.md`. No test calls Meta or a language model: the tests use saved provider payloads, the fake provider of SOS-P6-11 and a fake model. The live test is SOS-P6-11L, owned by Jayman, once SOS-INT-1's WhatsApp card holds the keys. MUST for 1 January 2027 (Jayman, 27 November 2026).
+- **Owner:** Claude Code
+- **Priority:** P6
+- **Launch:** Jan 1
+- **Story Points:** 3
+- **Dependencies:** SOS-P6-16, SOS-P6-17, SOS-WA-7
+- **Status:** Not Started
+- **Browser spec:** required
+
 ### SOS-P6-08: Build the listing scraper for property portals
 - **Epic:** Listing sources and WhatsApp
 - **Description:** As an Agent, I want listings from the property portals collected automatically, so that I start with inventory I did not type by hand. P6-08 is a scraper that browses the portals itself: it is not a file importer. One source adapter per portal, starting with 99acres, MagicBricks, Housing.com and NoBroker, and adding others as they are found. Each adapter drives a headless browser over public search and listing pages, scoped by the company's micro markets and buildings (SOS-P3-04), and sends what it reads to a review queue of candidate listings.
@@ -2273,7 +2429,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Priority:** P6
 - **Launch:** Jan 1
 - **Story Points:** 8
-- **Dependencies:** SOS-P4-02, SOS-P3-04
+- **Dependencies:** SOS-P4-02, SOS-P3-04, SOS-WA-8
 - **Status:** Not Started
 - **Browser spec:** required
 
@@ -2815,7 +2971,7 @@ There are no phase gates any more: regression is the scheduled pauses SOS-REG-A,
 - **Owner:** Claude in chat, clickthrough regression
 - **Priority:** P6
 - **Launch:** Jan 1
-- **Dependencies:** SOS-N15, SOS-N21, SOS-N21A, SOS-P0-01, SOS-P0-02, SOS-P0-03, SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-07, SOS-P0-06L, SOS-P0-08, SOS-P0-09, SOS-P0-12, SOS-P1-06A, SOS-P1-06B, SOS-P1-14, SOS-P6-12, SOS-P0-10, SOS-P1-04, SOS-P1-05, SOS-P1-13, SOS-P5-10, SOS-P0-11, SOS-P1-01, SOS-P1-02, SOS-P1-03, SOS-P1-11, SOS-P1-07, SOS-P1-08, SOS-P1-09, SOS-P1-10, SOS-P1-12, SOS-P2-01, SOS-P2-02, SOS-P2-03, SOS-P2-04, SOS-P2-05, SOS-P2-06, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-13, SOS-P2-14, SOS-P3-01, SOS-P3-02, SOS-P3-03, SOS-P3-04, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12, SOS-P3-13, SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07, SOS-P4-08, SOS-P4-09, SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06, SOS-P5-07, SOS-P5-08, SOS-P5-09, SOS-P6-01, SOS-P6-02, SOS-P6-03, SOS-P6-15, SOS-P6-04, SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-09, SOS-P6-10, SOS-P6-11, SOS-P6-16, SOS-P6-17, SOS-P6-13, SOS-REG-A, SOS-REG-B, SOS-REG-C, SOS-FIX-1, SOS-P0-05D, SOS-P0-06D, SOS-P0-08D, SOS-P1-14D, SOS-P6-12D, SOS-P2-02L, SOS-P3-01L, SOS-P3-04A, SOS-P3-10L, SOS-P4-10C, SOS-P5-07L, SOS-P5-09A, SOS-P6-02A, SOS-P6-06A, SOS-P6-10L, SOS-P6-11L, SOS-P6-13C, SOS-N22, SOS-N23, SOS-P0-13, SOS-P1-15, SOS-P1-16, SOS-P1-17, SOS-P1-18, SOS-P1-19, SOS-P1-20, SOS-P1-21, SOS-P1-22, SOS-P1-23, SOS-P1-24, SOS-P1-25, SOS-P1-26, SOS-P7-01, SOS-P7-02, SOS-P7-03, SOS-P7-04, SOS-P7-05, SOS-P7-06, SOS-P7-07, SOS-P7-08, SOS-P7-09, SOS-P7-10, SOS-P7-11, SOS-P7-12, SOS-P7-13, SOS-P7-14, SOS-UI-1, SOS-UI-2, SOS-UI-2B, SOS-UI-3A, SOS-UI-3B, SOS-UI-3C, SOS-UI-3D, SOS-P3-14, SOS-P3-15, SOS-P3-16, SOS-P3-17, SOS-P3-17L, SOS-P4-11, SOS-P4-12, SOS-P6-18, SOS-N21B, SOS-N21BL, SOS-N21C, SOS-N23V, SOS-P7-12L
+- **Dependencies:** SOS-N15, SOS-N21, SOS-N21A, SOS-P0-01, SOS-P0-02, SOS-P0-03, SOS-P0-04, SOS-P0-05, SOS-P0-06, SOS-P0-07, SOS-P0-06L, SOS-P0-08, SOS-P0-09, SOS-P0-12, SOS-P1-06A, SOS-P1-06B, SOS-P1-14, SOS-P6-12, SOS-P0-10, SOS-P1-04, SOS-P1-05, SOS-P1-13, SOS-P5-10, SOS-P0-11, SOS-P1-01, SOS-P1-02, SOS-P1-03, SOS-P1-11, SOS-P1-07, SOS-P1-08, SOS-P1-09, SOS-P1-10, SOS-P1-12, SOS-P2-01, SOS-P2-02, SOS-P2-03, SOS-P2-04, SOS-P2-05, SOS-P2-06, SOS-P2-07, SOS-P2-08, SOS-P2-09, SOS-P2-10, SOS-P2-11, SOS-P2-13, SOS-P2-14, SOS-P3-01, SOS-P3-02, SOS-P3-03, SOS-P3-04, SOS-P3-05, SOS-P3-06, SOS-P3-07, SOS-P3-08, SOS-P3-09, SOS-P3-10, SOS-P3-11, SOS-P3-12, SOS-P3-13, SOS-P4-01, SOS-P4-02, SOS-P4-03, SOS-P4-04, SOS-P4-05, SOS-P4-06, SOS-P4-07, SOS-P4-08, SOS-P4-09, SOS-P5-01, SOS-P5-02, SOS-P5-03, SOS-P5-04, SOS-P5-05, SOS-P5-06, SOS-P5-07, SOS-P5-08, SOS-P5-09, SOS-P6-01, SOS-P6-02, SOS-P6-03, SOS-P6-15, SOS-P6-04, SOS-P6-05, SOS-P6-06, SOS-P6-07, SOS-P6-08, SOS-P6-09, SOS-P6-10, SOS-P6-11, SOS-P6-16, SOS-P6-17, SOS-P6-13, SOS-REG-A, SOS-REG-B, SOS-REG-C, SOS-FIX-1, SOS-P0-05D, SOS-P0-06D, SOS-P0-08D, SOS-P1-14D, SOS-P6-12D, SOS-P2-02L, SOS-P3-01L, SOS-P3-04A, SOS-P3-10L, SOS-P4-10C, SOS-P5-07L, SOS-P5-09A, SOS-P6-02A, SOS-P6-06A, SOS-P6-10L, SOS-P6-11L, SOS-P6-13C, SOS-N22, SOS-N23, SOS-P0-13, SOS-P1-15, SOS-P1-16, SOS-P1-17, SOS-P1-18, SOS-P1-19, SOS-P1-20, SOS-P1-21, SOS-P1-22, SOS-P1-23, SOS-P1-24, SOS-P1-25, SOS-P1-26, SOS-P7-01, SOS-P7-02, SOS-P7-03, SOS-P7-04, SOS-P7-05, SOS-P7-06, SOS-P7-07, SOS-P7-08, SOS-P7-09, SOS-P7-10, SOS-P7-11, SOS-P7-12, SOS-P7-13, SOS-P7-14, SOS-UI-1, SOS-UI-2, SOS-UI-2B, SOS-UI-3A, SOS-UI-3B, SOS-UI-3C, SOS-UI-3D, SOS-P3-14, SOS-P3-15, SOS-P3-16, SOS-P3-17, SOS-P3-17L, SOS-P4-11, SOS-P4-12, SOS-P6-18, SOS-N21B, SOS-N21BL, SOS-N21C, SOS-N23V, SOS-P7-12L, SOS-WA-1, SOS-WA-2, SOS-WA-3, SOS-WA-4, SOS-WA-5, SOS-WA-6, SOS-WA-7, SOS-WA-8
 - **Status:** Waiting
 
 ### SOS-N07: Counsel reviews the consent basis and calling script

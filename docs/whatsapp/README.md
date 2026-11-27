@@ -2,6 +2,8 @@
 
 The WhatsApp flow designs for SellOS (SOS-N23). `SOURCE_workflow_design.md` is Jayman's design document of 24 November 2026: 175 workflows in eleven families, one bot brain behind three doors (the website, the direct WhatsApp number and the SellOS panel). It is the source and is kept exactly as written. **No workflow from it is in `TASKS.md`.**
 
+**Flow engine and builder (Jayman, 27 November 2026):** the ten flows are authored as flows in one engine, and each company can build its own in a visual builder. See [ENGINE.md](ENGINE.md) (SOS-WA-1 to SOS-WA-8).
+
 SOS-P6-16 and SOS-P6-17 build the ten launch flows below from these files, against the fake WhatsApp provider of SOS-P6-11. The real number is SOS-P6-11L.
 
 ## The ten launch flows
