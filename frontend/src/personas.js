@@ -39,6 +39,13 @@ export const PERSONAS = [
 				to: "/inventory",
 				area: "inventory",
 			},
+			// SOS-P3-04: the building review.
+			{
+				key: "buildings",
+				label: "Buildings",
+				to: "/inventory/buildings",
+				area: "inventory",
+			},
 			{
 				key: "inventory-import",
 				label: "Import inventory",
@@ -129,6 +136,13 @@ export const PERSONAS = [
 				to: "/inventory",
 				area: "inventory",
 			},
+			// SOS-P3-04: the building review.
+			{
+				key: "buildings",
+				label: "Buildings",
+				to: "/inventory/buildings",
+				area: "inventory",
+			},
 			{ key: "team-report", label: "Team report", to: "/reports/team", area: "reports" },
 			{ key: "reports", label: "Reports", to: "/reports", area: "insights" },
 		],
@@ -149,6 +163,13 @@ export const PERSONAS = [
 				key: "inventory",
 				label: "Projects and listings",
 				to: "/inventory",
+				area: "inventory",
+			},
+			// SOS-P3-04: the building review.
+			{
+				key: "buildings",
+				label: "Buildings",
+				to: "/inventory/buildings",
 				area: "inventory",
 			},
 			{ key: "reports", label: "Reports", to: "/reports", area: "insights" },

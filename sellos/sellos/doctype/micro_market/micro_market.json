@@ -1,0 +1,134 @@
+{
+ "actions": [],
+ "creation": "2026-11-27 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "market_name",
+  "country",
+  "parent_area",
+  "status",
+  "section_boundary",
+  "boundary",
+  "section_lineage",
+  "split_from",
+  "merged_into",
+  "section_history",
+  "history"
+ ],
+ "fields": [
+  {
+   "fieldname": "market_name",
+   "fieldtype": "Data",
+   "label": "Micro market",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "parent_area",
+   "fieldtype": "Data",
+   "label": "City or region",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nArchived",
+   "default": "Active",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "section_boundary",
+   "fieldtype": "Section Break",
+   "label": "Boundary"
+  },
+  {
+   "fieldname": "boundary",
+   "fieldtype": "Code",
+   "label": "Boundary (GeoJSON)",
+   "options": "JSON",
+   "description": "Optional. A GeoJSON Polygon, MultiPolygon, Feature or FeatureCollection."
+  },
+  {
+   "fieldname": "section_lineage",
+   "fieldtype": "Section Break",
+   "label": "Where it came from"
+  },
+  {
+   "fieldname": "split_from",
+   "fieldtype": "Link",
+   "label": "Split from",
+   "options": "Micro Market",
+   "read_only": 1
+  },
+  {
+   "fieldname": "merged_into",
+   "fieldtype": "Link",
+   "label": "Merged into",
+   "options": "Micro Market",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_history",
+   "fieldtype": "Section Break",
+   "label": "History"
+  },
+  {
+   "fieldname": "history",
+   "fieldtype": "Table",
+   "label": "History",
+   "options": "Micro Market History",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-27 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Micro Market",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "format:MM-{#####}",
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "SellOS Agent",
+   "permlevel": 0,
+   "read": 1
+  },
+  {
+   "role": "SellOS Sales Manager",
+   "permlevel": 0,
+   "read": 1
+  }
+ ],
+ "track_changes": 1,
+ "title_field": "market_name",
+ "show_title_field_in_link": 1
+}

@@ -326,6 +326,21 @@ MATRIX: dict[str, frozenset[str]] = {
 	"sellos.reports.platform.run_platform_report": frozenset({PLATFORM_ADMIN}),
 	# SOS-P3-02: the raw transaction table is on the control site and is read through this method only.
 	"sellos.intel.api.list_raw_transactions": frozenset({PLATFORM_ADMIN}),
+	# SOS-P3-04: micro markets and buildings. A Company Admin edits both, a Company Admin or an Agent reviews and
+	# confirms a building, a Sales Manager reads. The platform master is the Platform Admin's, on the control site.
+	"sellos.intel.buildings_api.list_micro_markets": _INVENTORY_READERS,
+	"sellos.intel.buildings_api.save_micro_market": _ADMIN_ONLY,
+	"sellos.intel.buildings_api.split_micro_market": _ADMIN_ONLY,
+	"sellos.intel.buildings_api.merge_micro_markets": _ADMIN_ONLY,
+	"sellos.intel.buildings_api.set_micro_market_archived": _ADMIN_ONLY,
+	"sellos.intel.buildings_api.load_micro_markets": _ADMIN_ONLY,
+	"sellos.intel.buildings_api.list_buildings": _INVENTORY_READERS,
+	"sellos.intel.buildings_api.get_building": _INVENTORY_READERS,
+	"sellos.intel.buildings_api.save_building": _ADMIN_ONLY,
+	"sellos.intel.buildings_api.correct_building": _INVENTORY_EDITORS,
+	"sellos.intel.buildings_api.confirm_building": _INVENTORY_EDITORS,
+	"sellos.intel.buildings_api.load_building_seed_list": _ADMIN_ONLY,
+	"sellos.intel.buildings_api.load_platform_master": frozenset({PLATFORM_ADMIN}),
 	# SOS-P3-12: Index II party names, for a Company Admin only, every view logged.
 	"sellos.intel.party_names.get_party_names": _ADMIN_ONLY,
 	"sellos.telephony.settings.get_telephony_settings": _ADMIN_ONLY,

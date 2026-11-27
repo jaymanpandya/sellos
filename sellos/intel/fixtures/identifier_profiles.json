@@ -1,0 +1,9 @@
+{
+	"_note": "SOS-P3-04: which identifiers a building shows, by its country. Data, so a country is added here and not in code. Only the first country has a data adapter (SOS-P3-01); the others are stored and shown only.",
+	"default_country": "India",
+	"countries": {
+		"India": ["cts_numbers", "village", "tahsil", "district", "rera_number"],
+		"United Arab Emirates": ["uae_community", "dld_number"],
+		"Australia": ["au_lot", "au_plan"]
+	}
+}

@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "creation": "2026-11-27 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "building",
+  "fieldname",
+  "old_value",
+  "new_value",
+  "corrected_by",
+  "corrected_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "building",
+   "fieldtype": "Link",
+   "label": "Building",
+   "options": "Building",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "fieldname",
+   "fieldtype": "Data",
+   "label": "Field",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "old_value",
+   "fieldtype": "Small Text",
+   "label": "Old value",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "new_value",
+   "fieldtype": "Small Text",
+   "label": "New value",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "corrected_by",
+   "fieldtype": "Link",
+   "label": "Corrected by",
+   "options": "User",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "corrected_on",
+   "fieldtype": "Datetime",
+   "label": "Corrected on",
+   "reqd": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-27 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Building Correction",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "format:BCR-{#######}",
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "SellOS Agent",
+   "permlevel": 0,
+   "read": 1
+  },
+  {
+   "role": "SellOS Sales Manager",
+   "permlevel": 0,
+   "read": 1
+  }
+ ]
+}

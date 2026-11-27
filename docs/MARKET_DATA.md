@@ -104,3 +104,33 @@ the Department) is Not Needed.
 * **Limits and cost** (27 November 2026): `docs/LEGISCORE.md` has the rate limits, credit prices, timeouts, the
   balance call and a worked cost for the Bandra to Andheri corridor. There is no bulk or area listing: buildings
   come from reviewed seed lists (SOS-P3-04) and are enriched one at a time.
+
+## The building and micro market master (SOS-P3-04, `sellos/intel/markets.py`, `buildings.py`, `platform_master.py`)
+
+Decided by Jayman, 27 November 2026. Micro markets are data, never code, and SellOS is sold across India, the UAE and
+Australia (only India's data adapter is built for 1 January).
+
+* **Two layers.** The control site holds a platform master of buildings (Platform Building, curated by the Platform
+  Admin, seeded from the corridor sample with `load_platform_master`). Each company site holds its own Micro Markets
+  and Buildings, a building optionally linked to a platform building by its `platform_building` id. A company's micro
+  market only groups its own buildings, so it can rename, split, merge and archive without touching another company or the
+  platform master. A building that is not on the master has no market data until it is linked.
+* **Micro Market.** Name, country, city or region, an optional GeoJSON boundary (`geo.py` checks it), status Active or
+  Archived and a history. Two active markets of one country never share a name. A rename, a boundary change, a split,
+  a merge, an archive and a restore each add a history line. Nothing is deleted.
+* **Split and merge.** A split archives the old market, makes two new ones (each remembers `split_from`) and moves every
+  building to one of them. A merge moves a market's buildings into the other and archives it (`merged_into`). Each building
+  keeps a list of the micro markets it belonged to, with from and until times and the reason (Added, Moved, Corrected, Split,
+  Merged). An archive is refused while buildings remain.
+* **From a file.** `load_micro_markets` reads `{"markets": [{name, country, parent, boundary}]}` and updates a market of the
+  same name and country instead of doubling it. `sellos/intel/fixtures/corridor_bandra_andheri.json` is a sample for the tests and
+  Pandya's first set, with rough boundary boxes and made up buildings. It is not a rule; the real boundaries and buildings are
+  SOS-P3-04A. Nothing loads by itself, so the Ahmedabad demo company holds nothing real.
+* **Building.** Name, micro market, optional project and country. India: CTS numbers (several), village, tahsil, district and
+  RERA number. Optional, stored and shown only: UAE community and DLD number, Australian lot and plan. Which identifiers show
+  follows the country (`fixtures/identifier_profiles.json`, data, not code).
+* **Seed list.** `load_building_seed_list` takes a CSV with a header (name, RERA, CTS, village, tahsil, district, micro market)
+  or one name a line, and makes buildings that Need review. The same list twice adds nothing. It never calls LegiScore.
+* **Review.** The Buildings screen lists the buildings with name, CTS, RERA and micro market. A Company Admin or Agent corrects
+  a field (a Building Correction keeps the field, old and new value, who and when) or confirms the building. Only Confirmed
+  buildings are returned by `buildings.confirmed_buildings`, which is what the Property Matcher and the roll ups use.

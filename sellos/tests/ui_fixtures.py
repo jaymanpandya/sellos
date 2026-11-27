@@ -951,6 +951,11 @@ def seed_regression_data():
 	  the schedule Regression Monday report (Leads by stage, weekly, the Company Admin, PDF) made through
 	  save_report_schedule. Neither sends anything: a schedule is sent by the hourly job or Send now.
 
+	* Buildings (SOS-P3-04): the micro market Regression Market (Regression City), made by the Company Admin through
+	  the buildings API, with a seed list of Regression Tower One and Regression Tower Two (both Needs review, with
+	  Regression Tower One carrying a CTS number and a RERA number to correct) and Regression Tower Confirmed,
+	  which the Company Admin confirmed.
+
 	Each task that adds data to the product adds its data here and updates this list.
 	Returns {"leads": {title: name}, "agents": [emails], "phone_changed_client": name}.
 	"""
@@ -985,6 +990,7 @@ def seed_regression_data():
 		_seed_deals(admin, agent_one)
 		_seed_client_views(admin, agent_one)
 		_seed_inbound_opt_in()
+		_seed_buildings(admin)
 		return _regression_summary()
 
 	def make(user, title, client_type, seed, source, assigned_to=None, **client_extra):
@@ -1126,6 +1132,7 @@ def seed_regression_data():
 	_seed_deals(admin, agent_one)
 	_seed_client_views(admin, agent_one)
 	_seed_inbound_opt_in()
+	_seed_buildings(admin)
 	_seed_whatsapp(admin, agent_one)
 	_seed_report_definitions()
 	_seed_report_views(admin)
@@ -4776,3 +4783,82 @@ def remove_party_names():
 	frappe.db.delete("Party Name Access Log", {"source_record_id": ["like", "CY-P312-%"]})
 	frappe.db.commit()  # nosemgrep
 	return {"removed": True}
+
+
+GATE_BUILDING_PREFIX = "Gate Tower "
+GATE_MARKET_PREFIX = "Gate Market "
+
+
+def _seed_buildings(admin):
+	"""The regression micro market and three buildings, through the buildings API. Safe to run again."""
+	from sellos.intel import buildings_api
+
+	with _as_user(admin):
+		market = frappe.db.get_value("Micro Market", {"market_name": "Regression Market"}, "name")
+		if not market:
+			market = buildings_api.save_micro_market(
+				values={
+					"market_name": "Regression Market",
+					"country": "India",
+					"parent_area": "Regression City",
+				}
+			)["name"]
+		if frappe.db.exists("Building", {"building_name": "Regression Tower One"}):
+			return
+		buildings_api.load_building_seed_list(
+			'Project name,RERA number,CTS\nRegression Tower One,P51800099201,"101, 102"\nRegression Tower Two,,\n',
+			market,
+		)
+		done = buildings_api.save_building(
+			values={
+				"building_name": "Regression Tower Confirmed",
+				"micro_market": market,
+				"village": "Regression",
+			}
+		)
+		buildings_api.confirm_building(done["name"])
+	frappe.db.commit()  # nosemgrep
+
+
+def seed_building_review():
+	"""Two buildings that Need review under one micro market, for the building review spec (tests only,
+	SOS-P3-04), made by the Company Admin through the buildings API. remove_gate_buildings takes them away."""
+	from sellos.intel import buildings_api
+
+	_test_users()
+	tag = frappe.generate_hash(length=6)
+	with _as_user(TEST_USERS["company_admin"]["email"]):
+		market = buildings_api.save_micro_market(
+			values={
+				"market_name": f"{GATE_MARKET_PREFIX}{tag}",
+				"country": "India",
+				"parent_area": "Gate City",
+			}
+		)["name"]
+		first, second = f"{GATE_BUILDING_PREFIX}{tag} One", f"{GATE_BUILDING_PREFIX}{tag} Two"
+		buildings_api.load_building_seed_list(f"{first}\n{second}", market)
+	frappe.db.commit()  # nosemgrep
+	return {"market": market, "first": first, "second": second}
+
+
+def remove_gate_buildings():
+	"""Remove what the building spec committed (tests only, SOS-P3-04). Nothing is deleted through the app, so
+	this goes to the tables."""
+	names = frappe.get_all(
+		"Building", filters={"building_name": ["like", f"{GATE_BUILDING_PREFIX}%"]}, pluck="name"
+	)
+	markets = frappe.get_all(
+		"Micro Market", filters={"market_name": ["like", f"{GATE_MARKET_PREFIX}%"]}, pluck="name"
+	)
+	if names:
+		frappe.db.delete("Building Correction", {"building": ["in", names]})
+		frappe.db.delete("Building CTS Number", {"parent": ["in", names]})
+		frappe.db.delete("Building Market History", {"parent": ["in", names]})
+		frappe.db.delete("Version", {"ref_doctype": "Building", "docname": ["in", names]})
+		frappe.db.delete("Building", {"name": ["in", names]})
+	if markets:
+		frappe.db.delete("Micro Market History", {"parent": ["in", markets]})
+		frappe.db.delete("Version", {"ref_doctype": "Micro Market", "docname": ["in", markets]})
+		frappe.db.delete("Micro Market", {"name": ["in", markets]})
+	frappe.db.commit()  # nosemgrep
+	return {"buildings": len(names), "markets": len(markets)}

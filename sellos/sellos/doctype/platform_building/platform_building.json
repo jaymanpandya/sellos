@@ -1,0 +1,129 @@
+{
+ "actions": [],
+ "creation": "2026-11-27 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "building_name",
+  "area_name",
+  "country",
+  "project_name",
+  "cts_numbers",
+  "village",
+  "tahsil",
+  "district",
+  "rera_number",
+  "uae_community",
+  "dld_number",
+  "au_lot",
+  "au_plan",
+  "source"
+ ],
+ "fields": [
+  {
+   "fieldname": "building_name",
+   "fieldtype": "Data",
+   "label": "Building",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "area_name",
+   "fieldtype": "Data",
+   "label": "Area",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "project_name",
+   "fieldtype": "Data",
+   "label": "Project"
+  },
+  {
+   "fieldname": "cts_numbers",
+   "fieldtype": "Small Text",
+   "label": "CTS numbers",
+   "description": "One per line."
+  },
+  {
+   "fieldname": "village",
+   "fieldtype": "Data",
+   "label": "Village"
+  },
+  {
+   "fieldname": "tahsil",
+   "fieldtype": "Data",
+   "label": "Tahsil"
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Data",
+   "label": "District"
+  },
+  {
+   "fieldname": "rera_number",
+   "fieldtype": "Data",
+   "label": "RERA number",
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "uae_community",
+   "fieldtype": "Data",
+   "label": "Community"
+  },
+  {
+   "fieldname": "dld_number",
+   "fieldtype": "Data",
+   "label": "DLD number"
+  },
+  {
+   "fieldname": "au_lot",
+   "fieldtype": "Data",
+   "label": "Lot"
+  },
+  {
+   "fieldname": "au_plan",
+   "fieldtype": "Data",
+   "label": "Plan"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Where it came from",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-27 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Platform Building",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "format:PB-{#####}",
+ "permissions": [
+  {
+   "role": "SellOS Platform Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  }
+ ],
+ "track_changes": 1,
+ "title_field": "building_name",
+ "show_title_field_in_link": 1
+}

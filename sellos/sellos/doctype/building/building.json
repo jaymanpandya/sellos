@@ -1,0 +1,208 @@
+{
+ "actions": [],
+ "creation": "2026-11-27 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "building_name",
+  "micro_market",
+  "project",
+  "country",
+  "status",
+  "source",
+  "section_india",
+  "cts_numbers",
+  "village",
+  "tahsil",
+  "district",
+  "rera_number",
+  "section_uae",
+  "uae_community",
+  "dld_number",
+  "section_au",
+  "au_lot",
+  "au_plan",
+  "section_market",
+  "platform_building",
+  "confirmed_by",
+  "confirmed_on",
+  "market_history"
+ ],
+ "fields": [
+  {
+   "fieldname": "building_name",
+   "fieldtype": "Data",
+   "label": "Building",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "micro_market",
+   "fieldtype": "Link",
+   "label": "Micro market",
+   "options": "Micro Market",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Review status",
+   "options": "Needs review\nConfirmed",
+   "default": "Needs review",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Where it came from",
+   "options": "Manual\nSeed list\nSample file",
+   "default": "Manual",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_india",
+   "fieldtype": "Section Break",
+   "label": "India identifiers"
+  },
+  {
+   "fieldname": "cts_numbers",
+   "fieldtype": "Table",
+   "label": "CTS numbers",
+   "options": "Building CTS Number"
+  },
+  {
+   "fieldname": "village",
+   "fieldtype": "Data",
+   "label": "Village"
+  },
+  {
+   "fieldname": "tahsil",
+   "fieldtype": "Data",
+   "label": "Tahsil"
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Data",
+   "label": "District"
+  },
+  {
+   "fieldname": "rera_number",
+   "fieldtype": "Data",
+   "label": "RERA number",
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_uae",
+   "fieldtype": "Section Break",
+   "label": "UAE identifiers (optional)"
+  },
+  {
+   "fieldname": "uae_community",
+   "fieldtype": "Data",
+   "label": "Community"
+  },
+  {
+   "fieldname": "dld_number",
+   "fieldtype": "Data",
+   "label": "DLD number"
+  },
+  {
+   "fieldname": "section_au",
+   "fieldtype": "Section Break",
+   "label": "Australian identifiers (optional)"
+  },
+  {
+   "fieldname": "au_lot",
+   "fieldtype": "Data",
+   "label": "Lot"
+  },
+  {
+   "fieldname": "au_plan",
+   "fieldtype": "Data",
+   "label": "Plan"
+  },
+  {
+   "fieldname": "section_market",
+   "fieldtype": "Section Break",
+   "label": "Market data and review"
+  },
+  {
+   "fieldname": "platform_building",
+   "fieldtype": "Data",
+   "label": "Platform building",
+   "description": "The id of this building on the platform master, once linked. Without it the building has no market data."
+  },
+  {
+   "fieldname": "confirmed_by",
+   "fieldtype": "Link",
+   "label": "Confirmed by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "confirmed_on",
+   "fieldtype": "Datetime",
+   "label": "Confirmed on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "market_history",
+   "fieldtype": "Table",
+   "label": "Micro market history",
+   "options": "Building Market History",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-27 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Building",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "format:BLD-{#####}",
+ "permissions": [
+  {
+   "role": "SellOS Company Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "SellOS Agent",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1
+  },
+  {
+   "role": "SellOS Sales Manager",
+   "permlevel": 0,
+   "read": 1
+  }
+ ],
+ "track_changes": 1,
+ "title_field": "building_name",
+ "show_title_field_in_link": 1
+}

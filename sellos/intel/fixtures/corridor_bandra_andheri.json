@@ -1,0 +1,298 @@
+{
+	"_note": "SOS-P3-04 SAMPLE. A corridor from Bandra to Andheri for the tests and as the company's first set. The boundaries are rough boxes and the buildings are made up, with no RERA number. It is a sample, not a rule: the real boundaries and buildings are SOS-P3-04A.",
+	"markets": [
+		{
+			"name": "Bandra West",
+			"country": "India",
+			"parent": "Mumbai",
+			"boundary": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[
+							72.818,
+							19.05
+						],
+						[
+							72.836,
+							19.05
+						],
+						[
+							72.836,
+							19.072
+						],
+						[
+							72.818,
+							19.072
+						],
+						[
+							72.818,
+							19.05
+						]
+					]
+				]
+			}
+		},
+		{
+			"name": "Khar West",
+			"country": "India",
+			"parent": "Mumbai",
+			"boundary": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[
+							72.826,
+							19.072
+						],
+						[
+							72.838,
+							19.072
+						],
+						[
+							72.838,
+							19.086
+						],
+						[
+							72.826,
+							19.086
+						],
+						[
+							72.826,
+							19.072
+						]
+					]
+				]
+			}
+		},
+		{
+			"name": "Santacruz West",
+			"country": "India",
+			"parent": "Mumbai",
+			"boundary": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[
+							72.83,
+							19.086
+						],
+						[
+							72.842,
+							19.086
+						],
+						[
+							72.842,
+							19.098
+						],
+						[
+							72.83,
+							19.098
+						],
+						[
+							72.83,
+							19.086
+						]
+					]
+				]
+			}
+		},
+		{
+			"name": "Juhu",
+			"country": "India",
+			"parent": "Mumbai",
+			"boundary": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[
+							72.82,
+							19.098
+						],
+						[
+							72.836,
+							19.098
+						],
+						[
+							72.836,
+							19.112
+						],
+						[
+							72.82,
+							19.112
+						],
+						[
+							72.82,
+							19.098
+						]
+					]
+				]
+			}
+		},
+		{
+			"name": "Vile Parle West",
+			"country": "India",
+			"parent": "Mumbai",
+			"boundary": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[
+							72.836,
+							19.098
+						],
+						[
+							72.848,
+							19.098
+						],
+						[
+							72.848,
+							19.112
+						],
+						[
+							72.836,
+							19.112
+						],
+						[
+							72.836,
+							19.098
+						]
+					]
+				]
+			}
+		},
+		{
+			"name": "Andheri West",
+			"country": "India",
+			"parent": "Mumbai",
+			"boundary": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[
+							72.828,
+							19.112
+						],
+						[
+							72.848,
+							19.112
+						],
+						[
+							72.848,
+							19.13
+						],
+						[
+							72.828,
+							19.13
+						],
+						[
+							72.828,
+							19.112
+						]
+					]
+				]
+			}
+		},
+		{
+			"name": "Versova",
+			"country": "India",
+			"parent": "Mumbai",
+			"boundary": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[
+							72.806,
+							19.12
+						],
+						[
+							72.828,
+							19.12
+						],
+						[
+							72.828,
+							19.14
+						],
+						[
+							72.806,
+							19.14
+						],
+						[
+							72.806,
+							19.12
+						]
+					]
+				]
+			}
+		}
+	],
+	"buildings": [
+		{
+			"name": "Sample Tower One",
+			"market": "Bandra West",
+			"cts": [
+				"SAMPLE-101"
+			],
+			"village": "Bandra",
+			"tahsil": "Bandra",
+			"district": "Mumbai Suburban",
+			"country": "India"
+		},
+		{
+			"name": "Sample Tower Two",
+			"market": "Bandra West",
+			"cts": [
+				"SAMPLE-102",
+				"SAMPLE-103"
+			],
+			"village": "Bandra",
+			"tahsil": "Bandra",
+			"district": "Mumbai Suburban",
+			"country": "India"
+		},
+		{
+			"name": "Sample Court",
+			"market": "Khar West",
+			"cts": [
+				"SAMPLE-201"
+			],
+			"village": "Khar",
+			"tahsil": "Bandra",
+			"district": "Mumbai Suburban",
+			"country": "India"
+		},
+		{
+			"name": "Sample Heights",
+			"market": "Juhu",
+			"cts": [
+				"SAMPLE-301"
+			],
+			"village": "Juhu",
+			"tahsil": "Andheri",
+			"district": "Mumbai Suburban",
+			"country": "India"
+		},
+		{
+			"name": "Sample Residency",
+			"market": "Andheri West",
+			"cts": [
+				"SAMPLE-401"
+			],
+			"village": "Andheri",
+			"tahsil": "Andheri",
+			"district": "Mumbai Suburban",
+			"country": "India"
+		},
+		{
+			"name": "Sample Plaza",
+			"market": "Versova",
+			"cts": [
+				"SAMPLE-501"
+			],
+			"village": "Versova",
+			"tahsil": "Andheri",
+			"district": "Mumbai Suburban",
+			"country": "India"
+		}
+	]
+}

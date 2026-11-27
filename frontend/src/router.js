@@ -27,6 +27,7 @@ const WhatsAppPage = () => import("./pages/WhatsAppPage.vue");
 const WhatsAppSetupPage = () => import("./pages/WhatsAppSetupPage.vue");
 const ResponseAlertsPage = () => import("./pages/ResponseAlertsPage.vue");
 const TeamsPage = () => import("./pages/TeamsPage.vue");
+const BuildingsPage = () => import("./pages/BuildingsPage.vue");
 const AssignmentRulesPage = () => import("./pages/AssignmentRulesPage.vue");
 const TeamReportPage = () => import("./pages/TeamReportPage.vue");
 const CallReportsPage = () => import("./pages/CallReportsPage.vue");
@@ -240,6 +241,12 @@ export function createAppRouter() {
 				name: "import-inventory",
 				component: ImportInventoryPage,
 				meta: { area: "inventory", title: "Import inventory", crumb: "Inventory" },
+			},
+			{
+				path: "/inventory/buildings",
+				name: "buildings",
+				component: BuildingsPage,
+				meta: { area: "inventory", title: "Buildings", crumb: "Inventory" },
 			},
 			{
 				path: "/inventory/listings",

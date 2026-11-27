@@ -535,6 +535,35 @@ SAMPLE_CALLS = {
 	"sellos.telephony.dnd.do_not_call_summary": {},
 	# SOS-P3-02: the raw transaction table, read on the control site only.
 	"sellos.intel.api.list_raw_transactions": {},
+	# SOS-P3-04: micro markets and buildings, on spare ones the setUp makes. The split, the merge and the archive
+	# each use their own spare markets, so one call never takes another's away.
+	"sellos.intel.buildings_api.list_micro_markets": {},
+	"sellos.intel.buildings_api.save_micro_market": {
+		"name": "{market_edit}",
+		"values": {"parent_area": "P304 Edited City"},
+	},
+	"sellos.intel.buildings_api.split_micro_market": {
+		"name": "{market_split}",
+		"first": {"market_name": "P304 Split One"},
+		"second": {"market_name": "P304 Split Two"},
+		"assignments": {"{market_split_building}": 0},
+	},
+	"sellos.intel.buildings_api.merge_micro_markets": {"keep": "{market_keep}", "merge": "{market_merge}"},
+	"sellos.intel.buildings_api.set_micro_market_archived": {"name": "{market_archive}", "archived": 1},
+	"sellos.intel.buildings_api.load_micro_markets": {},
+	"sellos.intel.buildings_api.list_buildings": {},
+	"sellos.intel.buildings_api.get_building": {"name": "{spare_building}"},
+	"sellos.intel.buildings_api.save_building": {
+		"name": "{spare_building}",
+		"values": {"village": "P304 Edit"},
+	},
+	"sellos.intel.buildings_api.correct_building": {
+		"name": "{spare_building}",
+		"values": {"district": "P304 Corrected"},
+	},
+	"sellos.intel.buildings_api.confirm_building": {"name": "{spare_building}"},
+	"sellos.intel.buildings_api.load_building_seed_list": {"text": "P304 Matrix Seed"},
+	"sellos.intel.buildings_api.load_platform_master": {},
 	# SOS-P3-12: the Index II names of one registration record, a Company Admin only.
 	"sellos.intel.party_names.get_party_names": {"source_record_id": "P105-none"},
 	"sellos.access.field_history.getdoc": {"doctype": "Client", "name": "{client}"},
@@ -561,7 +590,7 @@ REFUSALS = (frappe.PermissionError, frappe.DoesNotExistError)
 
 def fill(args, names):
 	if isinstance(args, dict):
-		return {key: fill(value, names) for key, value in args.items()}
+		return {fill(key, names): fill(value, names) for key, value in args.items()}
 	if isinstance(args, list):
 		return [fill(value, names) for value in args]  # SOS-P4-03: an order is a list of names
 	if isinstance(args, str) and args.startswith("{") and args.endswith("}"):
@@ -1037,6 +1066,25 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			).insert(ignore_permissions=True)
 			for n in (1, 2)
 		]
+		# SOS-P3-04: spare micro markets (one each for the split, the merge pair, the archive and the edit) and a
+		# building under the one that is split.
+		spare_markets = {}
+		for key in ("edit", "split", "keep", "merge", "archive"):
+			spare_markets[key] = frappe.get_doc(
+				{
+					"doctype": "Micro Market",
+					"market_name": f"P304 Spare {key}",
+					"country": "India",
+					"parent_area": "P304 City",
+				}
+			).insert()
+		spare_building = frappe.get_doc(
+			{
+				"doctype": "Building",
+				"building_name": "P304 Spare Building",
+				"micro_market": spare_markets["split"].name,
+			}
+		).insert()
 		self.names = {
 			"wa_conversation": wa_conversation.name,
 			"call_log": call_row.name,
@@ -1047,6 +1095,13 @@ class TestEveryMethodAsEveryone(IntegrationTestCase):
 			"client_other": other.name,
 			"lead": lead.name,
 			"lead_list": [lead.name],
+			"market_edit": spare_markets["edit"].name,
+			"market_split": spare_markets["split"].name,
+			"market_keep": spare_markets["keep"].name,
+			"market_merge": spare_markets["merge"].name,
+			"market_archive": spare_markets["archive"].name,
+			"spare_building": spare_building.name,
+			"market_split_building": spare_building.name,
 			"spare_source": spare.name,
 			"spare_outcome": spare_outcome.name,
 			"spare_reason": spare_reason.name,

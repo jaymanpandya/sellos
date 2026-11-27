@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "creation": "2026-11-27 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "micro_market",
+  "from_on",
+  "to_on",
+  "reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "micro_market",
+   "fieldtype": "Link",
+   "label": "Micro market",
+   "options": "Micro Market",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "from_on",
+   "fieldtype": "Datetime",
+   "label": "From",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "to_on",
+   "fieldtype": "Datetime",
+   "label": "Until",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Data",
+   "label": "Why",
+   "read_only": 1,
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-27 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SellOS",
+ "name": "Building Market History",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}
