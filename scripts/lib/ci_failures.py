@@ -5,6 +5,7 @@ Usage:
   ci_failures.py extract <log>   the failing tests and their messages, one per line, at most 80 lines
   ci_failures.py kind <log>      "code", "environment <the line that shows it>" or "flake-counter"
   ci_failures.py flaky <log>     the specs the flake counter names, one per line
+  ci_failures.py summary <log>   when no test failed: the failed step and the first error line
 
 A red run is the environment's only when its log names no failing test and shows a runner, quota or
 network fault (a runner lost or shut down, a job GitHub would not start, a host that does not
@@ -113,7 +114,47 @@ def kind(lines):
 	return "code"
 
 
+# A line that tells what broke when no test names it (CI run 45961832978: Cypress crashed with
+# "Error: * is not a valid URL" and no test failed). Runner noise and warnings never count.
+FIRST_ERROR = re.compile(
+	r"\berror\b|\bfatal\b|Traceback|\bexception\b|\bfailed\b|ERR!|not a valid|cannot |could not |"
+	r"no such file|command not found|timed out|permission denied",
+	re.I,
+)
+ERROR_NOISE = re.compile(
+	r"\[Warning\]|\bwarn(ing)?\b|io_uring|create_uring|Process completed with exit code|"
+	r"^\s*at |✔|✓|^\s*Failing:|^\s*Tests:",
+	re.I,
+)
+EXIT_LINE = re.compile(r"Process completed with exit code")
+
+
+def summary(path):
+	"""The failed step and the first error line, or "" when the log has neither."""
+	step, first, exit_step = "", "", ""
+	with open(path, encoding="utf-8", errors="replace") as f:  # nosemgrep: a log path the loop passes
+		for raw in f:
+			raw = ANSI.sub("", raw.rstrip("\n"))
+			fields = raw.split("\t", 2)
+			job_step = fields[1] if len(fields) == 3 else ""
+			text = clean(raw)
+			if not exit_step and EXIT_LINE.search(text) and job_step and job_step != "UNKNOWN STEP":
+				exit_step = job_step
+			if not first and FIRST_ERROR.search(text) and not ERROR_NOISE.search(text):
+				first, step = text.strip()[:300], job_step
+	step = exit_step or (step if step != "UNKNOWN STEP" else "")
+	parts = []
+	if step:
+		parts.append(f"the failed step: {step}")
+	if first:
+		parts.append(f"the first error line: {first}")
+	return "; ".join(parts)
+
+
 def main(argv):
+	if len(argv) == 2 and argv[0] == "summary":
+		print(summary(argv[1]))
+		return 0
 	if len(argv) != 2 or argv[0] not in ("extract", "kind", "flaky"):
 		print(__doc__)
 		return 2

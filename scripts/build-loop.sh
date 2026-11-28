@@ -411,7 +411,9 @@ ci_read_failures() {
     CI_KIND="$(python3 "$SCRIPT_DIR/lib/ci_failures.py" kind "$log" 2>/dev/null || echo code)"
   fi
   if [[ -z "$CI_FAILURES" ]]; then
-    CI_FAILURES="(no failing test could be read from the log; its last lines:)
+    local why
+    why="$(sellos_redact_text "$(python3 "$SCRIPT_DIR/lib/ci_failures.py" summary "$log" 2>/dev/null || true)")"
+    CI_FAILURES="(no failing test could be read from the log${why:+; $why}. Its last lines:)
 $(sellos_redact_text "$(tail -n 30 "$log" | cut -c1-300)")"
   fi
 }

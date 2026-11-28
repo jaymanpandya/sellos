@@ -37,7 +37,7 @@ case "$1 $2" in
       *--json*) if [ "$n" -gt 0 ]; then echo $((n - 1)) >"$F/in_progress"; echo in_progress; else echo completed; fi ;;
       *) echo "$*" >>"$F/log_reads"
          if [ "$n" -gt 0 ]; then echo "run $3 is still in progress; logs will be available when it is complete"; exit 0; fi
-         case "$(cat "$F/ci_last")" in env) cat "$F/env.log" ;; flake) cat "$F/flake.log" ;; *) cat "$F/red.log" ;; esac ;;
+         case "$(cat "$F/ci_last")" in env) cat "$F/env.log" ;; crash) cat "$F/crash.log" ;; flake) cat "$F/flake.log" ;; *) cat "$F/red.log" ;; esac ;;
     esac ;;
   "run rerun") echo "$*" >>"$F/gh_reruns" ;;
   *) exit 0 ;;
@@ -77,6 +77,18 @@ FLAKE_LOG = (
 )
 
 
+# CI run 45961832978: Cypress crashed at its second spec. No test failed, and the log's only error line
+# was the crash. The repair agent has to be told the step and that line.
+CRASH_LOG = (
+	"UI\tRun the Cypress suite\t2026-11-27T12:29:55.0000000Z   Running:  crm/business_reports.cy.js (2 of 75)\n"
+	"UI\tRun the Cypress suite\t2026-11-27T12:29:55.1000000Z \x1b[31m* is not a valid URL\x1b[39m\n"
+	"UI\tRun the Cypress suite\t2026-11-27T12:29:55.1383767Z ^[[31mError: * is not a valid URL^[[39m\n"
+	"UI\tRun the Cypress suite\t2026-11-27T12:29:55.1402535Z ^[[31m    at <embedded>:562:567204^[[39m\n"
+	"UI\tRun the Cypress suite\t2026-11-27T12:29:55.2701929Z UI tests failed\n"
+	"UI\tRun the Cypress suite\t2026-11-27T12:29:55.3000000Z ##[error]Process completed with exit code 1.\n"
+)
+
+
 class CiSandbox(loop_env.LoopSandbox):
 	def setUp(self):
 		super().setUp()
@@ -88,6 +100,7 @@ class CiSandbox(loop_env.LoopSandbox):
 		self.write(self.fake / "red.log", RED_LOG)
 		self.write(self.fake / "env.log", ENV_LOG)
 		self.write(self.fake / "flake.log", FLAKE_LOG)
+		self.write(self.fake / "crash.log", CRASH_LOG)
 		self.origin = self.root / "origin.git"
 		self.serve(302)
 
@@ -136,6 +149,14 @@ class ARedCiIsRepaired(CiSandbox):
 		self.assertIn("after repair attempt 1. Going on.", notices)
 		self.assertNotIn("| ci-red |", self.ledger())
 		self.assertIn("Stop recorded in docs/STOPS.md: no-work", self.out)
+
+	def test_a_log_with_no_failing_test_names_the_step_and_the_first_error_line(self):
+		code = self.run_ci([0, 0], ["crash", "green"])
+		self.assertEqual(code, 0, self.out)
+		prompt = self.read("prompt-2")
+		self.assertIn("no failing test could be read from the log", prompt)
+		self.assertIn("the failed step: Run the Cypress suite", prompt)
+		self.assertIn("the first error line: * is not a valid URL", prompt)
 
 	def test_red_after_two_repairs_stops_with_the_failures(self):
 		code = self.run_ci([0, 0, 0], ["red", "red", "red"])

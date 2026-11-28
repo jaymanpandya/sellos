@@ -362,6 +362,24 @@ jobs:
         working-directory: /home/runner/frappe-bench
         run: bash "$GITHUB_WORKSPACE/scripts/lib/prepare_test_site.sh" test_site sellos
 
+      - name: Pin Chrome (SOS-LOOP)
+        # CI run 45961832978: the runner image moved from Chrome 157 to 158 and Cypress 13.17 crashed at
+        # the second spec with "Error: * is not a valid URL", with no assertion failing (the last green
+        # run, 4c22a2e, ran Chrome 157). bench run-ui-tests starts `cypress run --browser chrome`, which
+        # finds google-chrome first, so the pinned build is linked under that name. Move the number up on
+        # purpose, after the suite has passed with the new one.
+        id: chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: 157
+
+      - name: Use the pinned Chrome
+        run: |
+          sudo ln -sf "${{ steps.chrome.outputs.chrome-path }}" /usr/local/bin/google-chrome
+          version="$(google-chrome --version)"
+          echo "$version"
+          case "$version" in *" 157."*) ;; *) echo "Chrome is not the pinned 157: $version"; exit 1 ;; esac
+
       - name: Restore the flaky log (SOS-SETUP-27)
         # The count of reruns that passed lives across runs in the Actions cache, as the local gate's
         # lives in ~/iespl-baseline/sellos-flaky.log. Each run saves a new entry and the next run
