@@ -366,7 +366,8 @@ jobs:
         # CI run 45961832978: the runner image moved from Chrome 157 to 158 and Cypress 13.17 crashed at
         # the second spec with "Error: * is not a valid URL", with no assertion failing (the last green
         # run, 4c22a2e, ran Chrome 157). bench run-ui-tests starts `cypress run --browser chrome`, which
-        # finds google-chrome first, so the pinned build is linked under that name. Move the number up on
+        # ignores PATH (run 46130628177 still ran 158 with google-chrome linked), so the Cypress step is
+        # given the pinned binary by path in SELLOS_CYPRESS_BROWSER. Move the number up on
         # purpose, after the suite has passed with the new one.
         id: chrome
         uses: browser-actions/setup-chrome@v2
@@ -375,8 +376,8 @@ jobs:
 
       - name: Use the pinned Chrome
         run: |
-          sudo ln -sf "${{ steps.chrome.outputs.chrome-path }}" /usr/local/bin/google-chrome
-          version="$(google-chrome --version)"
+          echo "SELLOS_CYPRESS_BROWSER=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+          version="$("${{ steps.chrome.outputs.chrome-path }}" --version)"
           echo "$version"
           case "$version" in *" 157."*) ;; *) echo "Chrome is not the pinned 157: $version"; exit 1 ;; esac
 

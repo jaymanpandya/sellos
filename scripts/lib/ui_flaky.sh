@@ -40,16 +40,19 @@ _sellos_ui_summary() {
 # Prints nothing of its own. Returns Cypress's exit status, not the filter's.
 _sellos_ui_run() {
   local log="$1" spec="${2:-}" status limit label
+  # CI pins Chrome by path (SELLOS_CYPRESS_BROWSER, .github/workflows/ci.yml): Cypress ignores PATH.
+  local browser=()
+  [ -n "${SELLOS_CYPRESS_BROWSER:-}" ] && browser=(--browser "$SELLOS_CYPRESS_BROWSER")
   limit="${SELLOS_SPEC_TIMEOUT:-900}"
   label="the Cypress spec $spec"
   if [ -z "$spec" ]; then
     limit="${SELLOS_UI_SUITE_TIMEOUT:-2700}"
     label="the whole Cypress suite"
-    sellos_limited "$label" "$limit" bench --site "$SITE" run-ui-tests "$APP" --headless 2>&1 \
+    sellos_limited "$label" "$limit" bench --site "$SITE" run-ui-tests "$APP" --headless ${browser[@]+"${browser[@]}"} 2>&1 \
       | _sellos_ui_filter | tee "$log"
   else
     sellos_limited "$label" "$limit" \
-      bench --site "$SITE" run-ui-tests "$APP" --headless --spec "cypress/integration/$spec" 2>&1 \
+      bench --site "$SITE" run-ui-tests "$APP" --headless ${browser[@]+"${browser[@]}"} --spec "cypress/integration/$spec" 2>&1 \
       | _sellos_ui_filter | tee "$log"
   fi
   status="${PIPESTATUS[0]}"

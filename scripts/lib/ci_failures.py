@@ -117,9 +117,8 @@ def kind(lines):
 # A line that tells what broke when no test names it (CI run 45961832978: Cypress crashed with
 # "Error: * is not a valid URL" and no test failed). Runner noise and warnings never count.
 FIRST_ERROR = re.compile(
-	r"\berror\b|\bfatal\b|Traceback|\bexception\b|\bfailed\b|ERR!|not a valid|cannot |could not |"
-	r"no such file|command not found|timed out|permission denied",
-	re.I,
+	r"^\W*(\w*Error|Fatal|fatal|Traceback|npm ERR!)\b"
+	r"|(?i:not a valid|\bfailed\b|cannot |could not |no such file|command not found|timed out|permission denied)"
 )
 ERROR_NOISE = re.compile(
 	r"\[Warning\]|\bwarn(ing)?\b|io_uring|create_uring|Process completed with exit code|"
